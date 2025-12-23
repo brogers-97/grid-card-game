@@ -899,6 +899,16 @@
       50% { opacity: 1; }
     }
 
+    /* Hide buff effects when a unit is on the tile */
+    .cell.buff-tile.has-unit::before,
+    .cell.buff-tile.has-unit::after {
+      display: none;
+    }
+
+    .cell.buff-tile.has-unit {
+      animation: none;
+    }
+
     /* Different colors for different buff types */
     .cell.buff-tile.buff-energy {
       --buff-color: rgba(250, 204, 21, 0.8);
@@ -1131,6 +1141,36 @@
 
     .unit.spell-unit .unitArt {
       background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc);
+    }
+
+    /* Enemy unit styling - red glow/border */
+    .unit.enemy-unit {
+      border-color: rgba(239, 68, 68, 0.8);
+      box-shadow: 
+        0 0 10px rgba(239, 68, 68, 0.5),
+        0 0 20px rgba(239, 68, 68, 0.3),
+        inset 0 0 10px rgba(239, 68, 68, 0.2);
+    }
+
+    .unit.enemy-unit::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 10px;
+      border: 2px solid rgba(239, 68, 68, 0.6);
+      pointer-events: none;
+      animation: enemyPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes enemyPulse {
+      0%, 100% { 
+        border-color: rgba(239, 68, 68, 0.6);
+        box-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
+      }
+      50% { 
+        border-color: rgba(239, 68, 68, 0.9);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+      }
     }
 
     .selected{
@@ -1628,8 +1668,25 @@
     }
 
     .tooltip-buff {
-      color: #4ade80;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+
+    .tooltip-buff-label {
+      font-size: 10px;
+      color: #a78bfa;
+      text-transform: uppercase;
       font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-buff-desc {
+      font-size: 11px;
+      color: #c4b5fd;
+      line-height: 1.4;
     }
 
     .tooltip-stat-label {
