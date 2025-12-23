@@ -59,9 +59,9 @@ const DECKS = {
       { key: "warbanner", name: "War Banner", atk: 0, hp: 4, cost: 2, type: "spell", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies +1 ATK.", art: "/images/War Banner.png" },
       { key: "shrine", name: "Healing Shrine", atk: 0, hp: 5, cost: 3, type: "spell", effect: "startOfTurn", effectId: "shrine_heal", effectDesc: "START: Heal row allies 1 HP.", art: "/images/Healing Shrine.png" },
       { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "spell", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: Deployed units +1 HP.", art: "/images/Armory.png" },
-      { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_back", effectDesc: "INSTANT: Back row +15 HP.", art: "/images/Castle Walls.png" },
+      { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_row", effectDesc: "INSTANT: This row +15 HP.", art: "/images/Castle Walls.png", requiresTarget: "row" },
       { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/King's Treasury.png" },
-      { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "refresh_attacks", effectDesc: "INSTANT: Units can attack again.", art: "/images/Rallying Cry.png" },
+      { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "double_attack", effectDesc: "INSTANT: Target unit can attack twice.", art: "/images/Rallying Cry.png", requiresTarget: "unit" },
     ]
   }
 };
@@ -186,15 +186,14 @@ function getEffectiveRowOwner(state, row) {
 
 // Check if a player can deploy on a row
 function canDeployOnRow(state, row, role) {
-  // Can always deploy on your home rows if they have HP or you own them
-  if (role === "gold" && row <= 1) {
-    return state.rowHP[row] > 0 || state.rowOwner[row] === "gold";
+  // Can ONLY deploy on your own home rows
+  if (role === "gold") {
+    return row <= 1; // Gold can only deploy on rows 0 and 1 (A and B)
   }
-  if (role === "silver" && row >= 5) {
-    return state.rowHP[row] > 0 || state.rowOwner[row] === "silver";
+  if (role === "silver") {
+    return row >= 5; // Silver can only deploy on rows 5 and 6 (F and G)
   }
-  // For other rows (middle or enemy home), must own it via units
-  return state.rowOwner[row] === role;
+  return false;
 }
 
 function getAdjacentAllies(state, uid) {
@@ -284,11 +283,21 @@ function processStartOfTurnEffects(lobby, role) {
   }
 }
 
-function processInstantSpell(lobby, role, effectId) {
+function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
   const state = lobby.gameState.state;
-  if (effectId === "fortify_back") { const br = role === "gold" ? 0 : 5; state.rowHP[br] = Math.min(state.rowHP[br] + 15, 99); logToLobby(lobby, role.toUpperCase() + " back row +15 HP"); }
+  if (effectId === "fortify_row") { 
+    if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
+      state.rowHP[targetRow] = Math.min((state.rowHP[targetRow] || 0) + 15, 99); 
+      logToLobby(lobby, role.toUpperCase() + " fortified row " + String.fromCharCode(65 + targetRow) + " +15 HP"); 
+    }
+  }
   if (effectId === "draw_two") { drawCards(lobby, role, 2); logToLobby(lobby, role.toUpperCase() + " draws 2"); }
-  if (effectId === "refresh_attacks") { state.attackedThisTurn.clear(); logToLobby(lobby, role.toUpperCase() + " units can attack again"); }
+  if (effectId === "double_attack") { 
+    if (targetUnitId && state.units[targetUnitId]) {
+      state.units[targetUnitId].canDoubleAttack = true;
+      logToLobby(lobby, state.units[targetUnitId].name + " can attack twice!");
+    }
+  }
 }
 
 function emitLobbyState(lobby) {
@@ -436,34 +445,28 @@ io.on("connection", (socket) => {
         state.firstTurn = false;
       }
       
+      // Reset double attack buffs and attack counts for all units
+      for (const uid in state.units) {
+        state.units[uid].canDoubleAttack = false;
+        state.units[uid].attackCountThisTurn = 0;
+      }
+      
       state.activeSide = enemyOf(role); 
       state.movedThisTurn.clear(); 
       state.attackedThisTurn.clear();
       state.moveCountThisTurn = {}; // Reset move counts for new turn
       const np = players[state.activeSide]; 
       
-      // Count rows owned by the next player
-      recomputeOwners(state);
-      let rowsOwned = 0;
-      for (let r = 0; r < ROWS; r++) {
-        const owner = getEffectiveRowOwner(state, r);
-        if (owner === state.activeSide) rowsOwned++;
-      }
-      
       // Calculate passive energy: +1 base, +1 more every 3 turns
       // Turn 1-3: +1, Turn 4-6: +2, Turn 7-9: +3, etc.
-      let passiveEnergy = 1 + Math.floor((state.turnNumber - 1) / 3);
+      let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
       
       // Energy Well buff tile bonus
       if (playerHasBuff(state, state.activeSide, "energy_buff")) {
-        passiveEnergy += 1;
+        energyGain += 1;
       }
       
-      // Total energy gain: passive + rows owned
-      const rowEnergy = Math.max(0, rowsOwned);
-      const totalEnergyGain = passiveEnergy + rowEnergy;
-      
-      np.energy = Math.min(np.energy + totalEnergyGain, MAX_ENERGY);
+      np.energy = Math.min(np.energy + energyGain, MAX_ENERGY);
       np.hasDrawn = false;
       
       // Healing Spring buff - heal units on that tile
@@ -483,7 +486,7 @@ io.on("connection", (socket) => {
       
       processStartOfTurnEffects(lobby, state.activeSide);
       if (role === "silver") state.turnNumber++;
-      logToLobby(lobby, "--- " + state.activeSide.toUpperCase() + "'s turn (+" + passiveEnergy + " passive, +" + rowEnergy + " from rows) ---");
+      logToLobby(lobby, "--- " + state.activeSide.toUpperCase() + "'s turn (+" + energyGain + " energy) ---");
       return emitGameState(lobby);
     }
 
@@ -510,14 +513,25 @@ io.on("connection", (socket) => {
     }
 
     if (payload.type === "playCard") {
-      const { cardId, row, col, spawn } = payload; const p = players[role];
+      const { cardId, row, col, spawn, targetUnitId } = payload; const p = players[role];
       const idx = p.hand.findIndex(c => c.id === cardId); if (idx === -1) return socket.emit("log", "Card not found.");
       const card = p.hand[idx]; const cost = card.cost || 0;
       if (p.energy < cost) return socket.emit("log", "Not enough energy.");
 
       if (card.effect === "instant") {
+        // Handle targeted instant spells
+        if (card.requiresTarget === "unit") {
+          if (!targetUnitId || !state.units[targetUnitId]) return socket.emit("log", "Select a target unit.");
+          if (state.units[targetUnitId].owner !== role) return socket.emit("log", "Must target your own unit.");
+        }
+        if (card.requiresTarget === "row") {
+          if (row === undefined || row === null || row < 0 || row >= ROWS) return socket.emit("log", "Select a target row.");
+          // Check if player can target this row (owns it or it's their home row)
+          if (!canDeployOnRow(state, row, role)) return socket.emit("log", "Can only target your own rows.");
+        }
+        
         p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
-        processInstantSpell(lobby, role, card.effectId);
+        processInstantSpell(lobby, role, card.effectId, row, targetUnitId);
         logToLobby(lobby, role.toUpperCase() + " cast " + card.name);
         return emitGameState(lobby);
       }
@@ -550,7 +564,6 @@ io.on("connection", (socket) => {
 
     if (payload.type === "moveFromSpawn") {
       const { unitId, toRow, toCol } = payload;
-      if (state.firstTurn) return socket.emit("log", "Can't move on first turn.");
       if (state.spawn[role] !== unitId) return socket.emit("log", "Not your spawn unit.");
       const u = state.units[unitId]; if (!u || u.owner !== role) return;
       if (state.movedThisTurn.has(unitId)) return socket.emit("log", "Already moved.");
@@ -565,7 +578,6 @@ io.on("connection", (socket) => {
 
     if (payload.type === "move") {
       const { unitId, toRow, toCol } = payload; const u = state.units[unitId];
-      if (state.firstTurn) return socket.emit("log", "Can't move on first turn.");
       if (!u || u.owner !== role) return;
       
       // Check move limits based on unit abilities
@@ -597,9 +609,13 @@ io.on("connection", (socket) => {
       
       if (!validMove) return socket.emit("log", "Must be adjacent (or next to a Knight for Squire).");
       
-      recomputeOwners(state); 
-      const destOwner = getEffectiveRowOwner(state, toRow);
-      if (destOwner === enemyOf(role)) return socket.emit("log", "Can't move into enemy row.");
+      // Check if trying to move into enemy home row
+      const enemy = enemyOf(role);
+      const isEnemyHomeRow = (enemy === "gold" && toRow <= 1) || (enemy === "silver" && toRow >= 5);
+      if (isEnemyHomeRow && state.rowHP[toRow] > 0) {
+        return socket.emit("log", "Can't move into enemy row until its HP is 0.");
+      }
+      
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "move", unitId, fromRow: from.r, fromCol: from.c, toRow, toCol });
       if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "move", unitId, fromRow: from.r, fromCol: from.c, toRow, toCol });
       state.board[from.r][from.c] = null; state.board[toRow][toCol] = unitId;
@@ -644,9 +660,21 @@ io.on("connection", (socket) => {
       
       if (!validAttack) return socket.emit("log", "Target out of range.");
       
+      // Check if unit has already attacked (considering double attack buff)
+      const attackCount = a.attackCountThisTurn || 0;
+      const maxAttacks = a.canDoubleAttack ? 2 : 1;
+      if (attackCount >= maxAttacks) return socket.emit("log", "Already attacked.");
+      
       let dmg = getEffectiveAtk(state, attackerId); dmg = applyDamageReduction(state, targetId, dmg);
-      const before = t.hp; t.hp -= dmg; state.attackedThisTurn.add(attackerId);
-      logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name);
+      const before = t.hp; t.hp -= dmg;
+      
+      // Track attack count
+      a.attackCountThisTurn = attackCount + 1;
+      if (a.attackCountThisTurn >= maxAttacks) {
+        state.attackedThisTurn.add(attackerId);
+      }
+      
+      logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name + (a.canDoubleAttack && a.attackCountThisTurn < maxAttacks ? " (can attack again)" : ""));
       
       // Royal Guard cleave - splash damage to adjacent enemies
       if (a.effectId === "cleave") {
@@ -694,9 +722,12 @@ io.on("connection", (socket) => {
       if (!a || a.owner !== role) return;
       if (state.attackedThisTurn.has(attackerId)) return socket.emit("log", "Already attacked.");
       if (row < 0 || row >= ROWS || state.rowHP[row] <= 0) return socket.emit("log", "No HP.");
-      recomputeOwners(state); 
-      const rowOwner = getEffectiveRowOwner(state, row);
-      if (rowOwner !== enemyOf(role)) return socket.emit("log", "Not enemy row.");
+      
+      // Can only attack enemy HOME rows (gold: 0-1, silver: 5-6)
+      const enemy = enemyOf(role);
+      const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+      if (!isEnemyHomeRow) return socket.emit("log", "Can only attack enemy home rows.");
+      
       const ap = getUnitPos(state, attackerId); if (!ap) return;
       // Check cardinal adjacency to any cell in the target row
       let adj = false; for (let c = 0; c < COLS; c++) if (isCardinalAdjacent(ap.r, ap.c, row, c)) { adj = true; break; }
@@ -704,7 +735,6 @@ io.on("connection", (socket) => {
       let dmg = getEffectiveAtk(state, attackerId); if (a.effectId === "siege") dmg *= 2;
       state.attackedThisTurn.add(attackerId); state.rowHP[row] = Math.max(0, state.rowHP[row] - dmg);
       logToLobby(lobby, a.name + " hits row for " + dmg + " (HP: " + state.rowHP[row] + ")");
-      recomputeOwners(state); // Recompute after attack in case row is destroyed
       return emitGameState(lobby);
     }
 
@@ -714,9 +744,19 @@ io.on("connection", (socket) => {
       if (state.attackedThisTurn.has(attackerId)) return socket.emit("log", "Already attacked.");
       if (target === role) return socket.emit("log", "Can't attack own heart.");
       const pos = getUnitPos(state, attackerId); if (!pos) return;
-      // Must be in row adjacent to heart: gold heart = row 0, silver heart = row 6
-      const reqRow = target === "gold" ? 0 : 6; 
-      if (pos.r !== reqRow) return socket.emit("log", "Must be in row next to heart.");
+      
+      // Heart attack range:
+      // - Must be in the enemy's heart row to attack (row 0 for gold heart, row 6 for silver heart)
+      // - Archers (ranged): can attack from 1 additional row away (so rows 0-1 for gold heart, rows 5-6 for silver heart)
+      const heartRow = target === "gold" ? 0 : 6; 
+      const distance = Math.abs(pos.r - heartRow);
+      const isRanged = u.effectId === "ranged";
+      const maxRange = isRanged ? 1 : 0;
+      
+      if (distance > maxRange) {
+        return socket.emit("log", isRanged ? "Archer must be within 1 row of the heart." : "Must be in the heart's row to attack.");
+      }
+      
       const dmg = getEffectiveAtk(state, attackerId); state.attackedThisTurn.add(attackerId);
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
       logToLobby(lobby, role.toUpperCase() + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
