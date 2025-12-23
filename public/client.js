@@ -19,16 +19,122 @@ const tooltipEl = document.getElementById("unitTooltip");
 const discardModal = document.getElementById("discardModal");
 const discardCardsEl = document.getElementById("discardCards");
 const animationLayer = document.getElementById("cardAnimationLayer");
+const menuBtn = document.getElementById("menuBtn");
+const gameMenu = document.getElementById("gameMenu");
+
+// Audio elements
+const bgMusic = document.getElementById("bgMusic");
+const muteBtn = document.getElementById("muteBtn");
+const volumeSlider = document.getElementById("volumeSlider");
+
+let isMuted = false;
+let myDeckId = null;
+let enemyDeckId = null;
+
+// Audio setup
+function setupAudio(deckId) {
+  if (!bgMusic || !deckId) return;
+  
+  const audioSrc = `/audio/${deckId}-theme.mp3`;
+  
+  // Only change source if different
+  if (bgMusic.src !== window.location.origin + audioSrc) {
+    bgMusic.src = audioSrc;
+    bgMusic.volume = (volumeSlider?.value || 30) / 100;
+    
+    // Try to play (may be blocked by browser autoplay policy)
+    bgMusic.play().catch(e => {
+      console.log("Autoplay blocked - click anywhere to start music");
+      // Add one-time click listener to start music
+      document.addEventListener('click', startMusicOnInteraction, { once: true });
+    });
+  }
+}
+
+function startMusicOnInteraction() {
+  if (bgMusic && myDeckId && !isMuted) {
+    bgMusic.play().catch(e => console.log("Could not play audio"));
+  }
+}
+
+// Mute button handler
+if (muteBtn) {
+  muteBtn.addEventListener('click', () => {
+    isMuted = !isMuted;
+    if (bgMusic) {
+      bgMusic.muted = isMuted;
+    }
+    muteBtn.textContent = isMuted ? '🔇' : '🔊';
+    muteBtn.classList.toggle('muted', isMuted);
+  });
+}
+
+// Volume slider handler
+if (volumeSlider) {
+  volumeSlider.addEventListener('input', (e) => {
+    if (bgMusic) {
+      bgMusic.volume = e.target.value / 100;
+    }
+  });
+}
+
+// Set background images based on deck selections
+function setBackgroundImages(playerDeckId, enemyDeckId) {
+  if (!boardEl) return;
+  
+  const playerBg = playerDeckId ? `/images/${playerDeckId}-bg.png` : 'none';
+  const enemyBg = enemyDeckId ? `/images/${enemyDeckId}-bg.png` : 'none';
+  
+  boardEl.style.setProperty('--player-bg', `url('${playerBg}')`);
+  boardEl.style.setProperty('--enemy-bg', `url('${enemyBg}')`);
+}
+
+// Parse URL params to rejoin lobby
+const urlParams = new URLSearchParams(window.location.search);
+const lobbyCode = urlParams.get('lobby');
+const isHost = urlParams.get('host') === '1';
+myDeckId = urlParams.get('myDeck');
+enemyDeckId = urlParams.get('enemyDeck');
+
+// Initialize audio and backgrounds when page loads
+if (myDeckId) {
+  setupAudio(myDeckId);
+  setBackgroundImages(myDeckId, enemyDeckId);
+}
+
+// Rejoin lobby when connected
+socket.on('connect', () => {
+  if (lobbyCode) {
+    socket.emit('rejoinGame', { code: lobbyCode, isHost: isHost });
+  }
+});
+
+// Enemy heart click handler for attacking
+const enemyHeartContainer = document.getElementById("enemyRow");
+if (enemyHeartContainer) {
+  enemyHeartContainer.addEventListener("click", () => {
+    if (!selectedUnitId) return;
+    if (!isMyTurn()) return;
+    
+    const enemyHeartEl = document.getElementById("enemyHeartHP");
+    if (!enemyHeartEl?.parentElement?.classList.contains("heart-attackable")) return;
+    
+    const enemy = enemyOf(myRole);
+    sendAction({ type: "attackHeart", attackerId: selectedUnitId, target: enemy });
+    selectedUnitId = null;
+    clearHighlights();
+  });
+}
 
 // Track previous row HP for damage effects
-let prevRowHP = [15, 15, 0, 15, 15];
+let prevRowHP = [15, 15, 0, 0, 0, 15, 15];
 let prevHeartHP = { gold: 30, silver: 30 };
 
 // Store card element positions for animation
 let cardElements = {};
 
 // ===== TOOLTIP FUNCTIONS =====
-function showTooltip(unitId, x, y) {
+function showTooltip(unitId, x, y, buff) {
   const u = S.units[unitId];
   if (!u || !tooltipEl) return;
   
@@ -52,6 +158,14 @@ function showTooltip(unitId, x, y) {
     </div>
   ` : '';
   
+  // Buff tile info if present
+  const buffHtml = buff ? `
+    <div class="tooltip-buff">
+      <div class="tooltip-buff-label">${buff.icon} ${buff.name}</div>
+      <div class="tooltip-buff-desc">${buff.desc}</div>
+    </div>
+  ` : '';
+  
   tooltipEl.innerHTML = `
     <div class="tooltip-card ${typeClass}">
       <div class="tooltip-art" style="${artStyle}">${artIconHtml}</div>
@@ -72,6 +186,7 @@ function showTooltip(unitId, x, y) {
           </div>
         </div>
         ${effectHtml}
+        ${buffHtml}
       </div>
     </div>
   `;
@@ -155,6 +270,40 @@ function hideTooltip() {
   if (tooltipEl) tooltipEl.classList.remove("visible");
 }
 
+// Buff tile tooltip functions
+const buffTooltipEl = document.getElementById("buffTooltip");
+
+function showBuffTooltip(buff, x, y) {
+  if (!buffTooltipEl || !buff) return;
+  
+  buffTooltipEl.innerHTML = `
+    <div class="buff-tooltip-name">${buff.icon} ${buff.name}</div>
+    <div class="buff-tooltip-desc">${buff.desc}</div>
+  `;
+  
+  positionBuffTooltip(x, y);
+  buffTooltipEl.classList.add("visible");
+}
+
+function positionBuffTooltip(x, y) {
+  if (!buffTooltipEl) return;
+  const padding = 15;
+  let left = x + padding;
+  let top = y + padding;
+  
+  if (left + 200 > window.innerWidth) left = x - 200 - padding;
+  if (top + 100 > window.innerHeight) top = y - 100 - padding;
+  if (left < 0) left = padding;
+  if (top < 0) top = padding;
+  
+  buffTooltipEl.style.left = left + "px";
+  buffTooltipEl.style.top = top + "px";
+}
+
+function hideBuffTooltip() {
+  if (buffTooltipEl) buffTooltipEl.classList.remove("visible");
+}
+
 function setupCellTooltip(cellEl, unitId) {
   cellEl.addEventListener("mouseenter", (e) => {
     if (unitId && S.units[unitId]) {
@@ -209,7 +358,8 @@ function parseLogType(msg) {
   return "system";
 }
 
-const SIZE = 5;
+const ROWS = 7;
+const COLS = 6;
 
 let myRole = "spectator";
 let activeSide = "silver";
@@ -229,15 +379,18 @@ let myDiscardCount = 0;
 let canDraw = false;
 
 let S = {
-  rowHP: [15, 15, 0, 15, 15],
-  rowOwner: ["gold", "gold", "neutral", "silver", "silver"],
+  rowHP: [15, 15, 0, 0, 0, 15, 15],
+  rowOwner: [null, null, null, null, null, null, null],
   heartHP: { gold: 30, silver: 30 },
-  board: Array.from({ length: 5 }, () => Array(5).fill(null)),
+  board: Array.from({ length: 7 }, () => Array(6).fill(null)),
   units: {},
   gameOver: false,
   spawn: { gold: null, silver: null },
   movedThisTurn: [],
   attackedThisTurn: [],
+  firstTurn: true,
+  buffTiles: {},
+  moveCountThisTurn: {}
 };
 
 function enemyOf(owner) {
@@ -250,6 +403,7 @@ function clearHighlights(){
   document.querySelectorAll(".cell.attack-valid").forEach(c => c.classList.remove("attack-valid"));
   document.querySelectorAll(".cell.row-attack-valid").forEach(c => c.classList.remove("row-attack-valid"));
   document.querySelectorAll(".attack-icon").forEach(icon => icon.remove());
+  document.querySelectorAll(".heart-attackable").forEach(h => h.classList.remove("heart-attackable"));
   if (spawnEnemyEl) spawnEnemyEl.classList.remove("deploy-valid", "move-valid", "selected");
   if (spawnYouEl) spawnYouEl.classList.remove("deploy-valid", "move-valid", "selected");
 }
@@ -258,17 +412,64 @@ function highlightDeployTiles(){
   clearHighlights();
   if (!deployCardId) return;
 
-  // Normal board deploy highlights
-  for (let vr = 0; vr < SIZE; vr++) {
+  const card = myHand.find(c => c.id === deployCardId);
+  if (!card) return;
+
+  // Helper to check if player can deploy on a row (matches server logic)
+  // Players can ONLY deploy on their own home rows
+  function canDeployOnRow(row) {
+    if (myRole === "gold") {
+      return row <= 1; // Gold can only deploy on rows 0 and 1 (A and B)
+    }
+    if (myRole === "silver") {
+      return row >= 5; // Silver can only deploy on rows 5 and 6 (F and G)
+    }
+    return false;
+  }
+
+  // Handle targeted instant spells
+  if (card.effect === "instant" && card.requiresTarget === "unit") {
+    // Rallying Cry - highlight friendly units
+    for (let vr = 0; vr < ROWS; vr++) {
+      const sr = toServerRow(vr);
+      for (let c = 0; c < COLS; c++) {
+        const unitId = S.board[sr][c];
+        if (unitId && S.units[unitId] && S.units[unitId].owner === myRole) {
+          const el = document.getElementById(cellId(vr, c));
+          if (el) el.classList.add("deploy-valid");
+        }
+      }
+    }
+    return;
+  }
+
+  if (card.effect === "instant" && card.requiresTarget === "row") {
+    // Castle Walls - highlight your home rows only
+    for (let vr = 0; vr < ROWS; vr++) {
+      const sr = toServerRow(vr);
+      if (canDeployOnRow(sr)) {
+        // Highlight any cell in the row as valid target
+        for (let c = 0; c < COLS; c++) {
+          const el = document.getElementById(cellId(vr, c));
+          if (el) el.classList.add("deploy-valid");
+        }
+      }
+    }
+    return;
+  }
+
+  // Non-targeted instant spells play immediately (handled elsewhere)
+  if (card.effect === "instant") {
+    return;
+  }
+
+  // Normal board deploy highlights for unit cards - only home rows
+  for (let vr = 0; vr < ROWS; vr++) {
     const sr = toServerRow(vr);
-    for (let c = 0; c < SIZE; c++) {
+    for (let c = 0; c < COLS; c++) {
       if (S.board[sr][c]) continue;
 
-      const ro = S.rowOwner[sr];
-      const isHome = myRole === "gold" ? sr <= 1 : sr >= 3;
-      const canDeploy = isHome || ro === myRole;
-
-      if (canDeploy) {
+      if (canDeployOnRow(sr)) {
         const el = document.getElementById(cellId(vr, c));
         if (el) el.classList.add("deploy-valid");
       }
@@ -297,90 +498,26 @@ function highlightSpawnMoveTiles() {
   
   // Spawn unit can move to any empty cell in home row (back row)
   // Gold's back row is 0, Silver's back row is 4
-  const backRow = myRole === "gold" ? 0 : 4;
-  const vr = toServerRow(backRow) === backRow ? (viewFlipped ? SIZE - 1 - backRow : backRow) : (viewFlipped ? SIZE - 1 - backRow : backRow);
+  const backRow = myRole === "gold" ? 0 : 6;
+  const vr = toServerRow(backRow) === backRow ? (viewFlipped ? ROWS - 1 - backRow : backRow) : (viewFlipped ? ROWS - 1 - backRow : backRow);
   
   // Actually, let's just allow the entire home rows for flexibility
-  const homeRows = myRole === "gold" ? [0, 1] : [3, 4];
+  const homeRows = myRole === "gold" ? [0, 1] : [5, 6];
   
   for (const sr of homeRows) {
-    for (let c = 0; c < SIZE; c++) {
+    for (let c = 0; c < COLS; c++) {
       if (S.board[sr][c]) continue; // Skip occupied
       
-      const viewRow = viewFlipped ? (SIZE - 1 - sr) : sr;
+      const viewRow = viewFlipped ? (ROWS - 1 - sr) : sr;
       const el = document.getElementById(cellId(viewRow, c));
       if (el) el.classList.add("move-valid");
     }
   }
 }
 
-// Highlight valid moves and attacks for a selected unit on the board
-function highlightUnitMoves(unitId) {
-  clearHighlights();
-  if (!unitId) return;
-  
-  const u = S.units[unitId];
-  if (!u || u.owner !== myRole) return;
-  
-  const pos = findUnitPos(unitId);
-  if (!pos) return;
-  
-  const hasMoved = S.movedThisTurn.includes(unitId);
-  const hasAttacked = S.attackedThisTurn.includes(unitId);
-  
-  // Check all adjacent cells
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      
-      const nr = pos.r + dr;
-      const nc = pos.c + dc;
-      
-      if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
-      
-      const viewRow = viewFlipped ? (SIZE - 1 - nr) : nr;
-      const cellEl = document.getElementById(cellId(viewRow, nc));
-      if (!cellEl) continue;
-      
-      const occupantId = S.board[nr][nc];
-      
-      if (occupantId) {
-        // There's a unit here - check if it's an enemy and we can attack
-        if (!hasAttacked) {
-          const occupant = S.units[occupantId];
-          if (occupant && occupant.owner !== myRole) {
-            // Enemy unit - can attack!
-            cellEl.classList.add("attack-valid");
-            // Add sword icon overlay
-            const icon = document.createElement("div");
-            icon.className = "attack-icon";
-            icon.innerHTML = "⚔️";
-            cellEl.appendChild(icon);
-          }
-        }
-      } else {
-        // Empty cell - check if we can move there (only if not moved yet)
-        if (!hasMoved) {
-          const rowOwner = S.rowOwner[nr];
-          const enemyOwned = rowOwner === enemyOf(myRole);
-          const rowHasHP = S.rowHP[nr] > 0;
-          const enemyUnitsInRow = rowHasUnitsOf(nr, enemyOf(myRole));
-          
-          if (enemyOwned && rowHasHP && !enemyUnitsInRow && !hasAttacked) {
-            // Can attack the row
-            cellEl.classList.add("row-attack-valid");
-            const icon = document.createElement("div");
-            icon.className = "attack-icon row-attack";
-            icon.innerHTML = "🏰";
-            cellEl.appendChild(icon);
-          } else if (!enemyOwned) {
-            // Can move here
-            cellEl.classList.add("move-valid");
-          }
-        }
-      }
-    }
-  }
+// Check if two positions are cardinally adjacent (no diagonal)
+function isCardinalAdjacent(r1, c1, r2, c2) {
+  return (Math.abs(r1 - r2) === 1 && c1 === c2) || (Math.abs(c1 - c2) === 1 && r1 === r2);
 }
 
 // Highlight valid moves and attacks for a selected unit on the board
@@ -395,8 +532,26 @@ function highlightUnitMoves(unitId) {
   if (!pos) return;
   
   const enemy = enemyOf(myRole);
+  const moveCount = S.moveCountThisTurn[unitId] || 0;
+  const canDoubleMove = u.effectId === "double_move" || hasBuffTile("move_buff");
+  const maxMoves = canDoubleMove ? 2 : 1;
+  const canStillMove = moveCount < maxMoves;
+  const hasAttacked = S.attackedThisTurn.includes(unitId);
+  const isFirstTurn = S.firstTurn;
   
-  // Check all adjacent cells
+  // Unit ability checks
+  const canDiagonalAttack = u.effectId === "diagonal_attack";
+  const isRanged = u.effectId === "ranged";
+  const canKnightLeap = u.effectId === "knight_leap";
+  
+  // Helper to check if a row is an enemy home row with HP remaining
+  function isBlockedEnemyRow(row) {
+    if (enemy === "gold" && row <= 1 && S.rowHP[row] > 0) return true;
+    if (enemy === "silver" && row >= 5 && S.rowHP[row] > 0) return true;
+    return false;
+  }
+  
+  // Check all adjacent cells (diagonal for movement)
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
       if (dr === 0 && dc === 0) continue;
@@ -404,34 +559,133 @@ function highlightUnitMoves(unitId) {
       const nr = pos.r + dr;
       const nc = pos.c + dc;
       
-      if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
       
-      const viewRow = viewFlipped ? (SIZE - 1 - nr) : nr;
+      const viewRow = viewFlipped ? (ROWS - 1 - nr) : nr;
       const el = document.getElementById(cellId(viewRow, nc));
       if (!el) continue;
       
       const targetId = S.board[nr][nc];
+      const isCardinal = isCardinalAdjacent(pos.r, pos.c, nr, nc);
       
       if (targetId) {
         // There's a unit here - can we attack it?
         const target = S.units[targetId];
-        if (target && target.owner === enemy) {
+        // Peasant can attack diagonally, others need cardinal
+        const canAttackHere = canDiagonalAttack ? true : isCardinal;
+        if (target && target.owner === enemy && !hasAttacked && canAttackHere) {
           el.classList.add("attack-valid");
+          const icon = document.createElement("div");
+          icon.className = "attack-icon";
+          icon.innerHTML = "⚔️";
+          el.appendChild(icon);
         }
       } else {
-        // Empty cell - can we move here?
-        const rowOwner = S.rowOwner[nr];
+        // Empty cell
+        // Check if this is an enemy home row with HP (can attack the row) - cardinal only
+        const isEnemyHomeRow = (enemy === "gold" && nr <= 1) || (enemy === "silver" && nr >= 5);
         
-        // Check if this is an enemy-owned row with HP (can attack the row)
-        if (rowOwner === enemy && S.rowHP[nr] > 0) {
+        if (isEnemyHomeRow && S.rowHP[nr] > 0 && !hasAttacked && isCardinal) {
           el.classList.add("row-attack-valid");
-        } else if (rowOwner !== enemy) {
-          // Can move to neutral or own rows
+          const icon = document.createElement("div");
+          icon.className = "attack-icon row-attack";
+          icon.innerHTML = "🏰";
+          el.appendChild(icon);
+        } else if (!isBlockedEnemyRow(nr) && canStillMove) {
+          // Can move to neutral rows, own rows, or enemy rows with 0 HP
           el.classList.add("move-valid");
         }
       }
     }
   }
+  
+  // Archer ranged attack - can attack 2 tiles away (cardinal only)
+  if (isRanged && !hasAttacked) {
+    const rangedOffsets = [
+      { dr: -2, dc: 0 }, { dr: 2, dc: 0 }, { dr: 0, dc: -2 }, { dr: 0, dc: 2 }
+    ];
+    for (const offset of rangedOffsets) {
+      const nr = pos.r + offset.dr;
+      const nc = pos.c + offset.dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      
+      const targetId = S.board[nr][nc];
+      if (targetId) {
+        const target = S.units[targetId];
+        if (target && target.owner === enemy) {
+          const viewRow = viewFlipped ? (ROWS - 1 - nr) : nr;
+          const el = document.getElementById(cellId(viewRow, nc));
+          if (el && !el.classList.contains("attack-valid")) {
+            el.classList.add("attack-valid");
+            const icon = document.createElement("div");
+            icon.className = "attack-icon";
+            icon.innerHTML = "🏹";
+            el.appendChild(icon);
+          }
+        }
+      }
+    }
+  }
+  
+  // Squire knight leap - can move to adjacent tile of any Knight
+  if (canKnightLeap && canStillMove) {
+    for (const id in S.units) {
+      const other = S.units[id];
+      if (other.owner === myRole && other.key === "knight") {
+        const kpos = findUnitPos(id);
+        if (!kpos) continue;
+        
+        // Check all tiles adjacent to this knight
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = kpos.r + dr;
+            const nc = kpos.c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            if (S.board[nr][nc]) continue; // Skip occupied
+            
+            // Can't move into enemy home row with HP remaining
+            if (isBlockedEnemyRow(nr)) continue;
+            
+            const viewRow = viewFlipped ? (ROWS - 1 - nr) : nr;
+            const el = document.getElementById(cellId(viewRow, nc));
+            if (el && !el.classList.contains("move-valid")) {
+              el.classList.add("move-valid");
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Check if can attack enemy heart
+  // Normal units: must be in the heart's row (row 0 for gold heart, row 6 for silver)
+  // Archers: can attack from 1 row away (so rows 0-1 for gold heart, rows 5-6 for silver)
+  const enemyHeartRow = enemy === "gold" ? 0 : 6;
+  const distanceToHeart = Math.abs(pos.r - enemyHeartRow);
+  const maxHeartRange = isRanged ? 1 : 0;
+  
+  if (distanceToHeart <= maxHeartRange && !hasAttacked) {
+    // Highlight enemy heart as attackable
+    const enemyHeartEl = document.getElementById("enemyHeartHP");
+    if (enemyHeartEl) {
+      enemyHeartEl.parentElement.classList.add("heart-attackable");
+    }
+  }
+}
+
+// Check if current player has a unit on a specific buff tile type
+function hasBuffTile(buffId) {
+  for (const key in S.buffTiles) {
+    const buff = S.buffTiles[key];
+    if (buff.id !== buffId) continue;
+    const [r, c] = key.split("-").map(Number);
+    const unitId = S.board[r][c];
+    if (unitId && S.units[unitId] && S.units[unitId].owner === myRole) {
+      return true;
+    }
+  }
+  return false;
 }
 
 
@@ -446,25 +700,31 @@ function isAdjacent(r1, c1, r2, c2) {
 }
 
 function toServerRow(viewRow) {
-  return viewFlipped ? (SIZE - 1 - viewRow) : viewRow;
+  return viewFlipped ? (ROWS - 1 - viewRow) : viewRow;
 }
 
 function toViewRow(serverRow) {
-  return viewFlipped ? (SIZE - 1 - serverRow) : serverRow;
+  return viewFlipped ? (ROWS - 1 - serverRow) : serverRow;
 }
 
 function coordLabel(serverRow, col) {
   return String.fromCharCode(65 + serverRow) + (col + 1);
 }
 
-function rowClass(owner) {
-  if (owner === "gold") return "row-gold";
-  if (owner === "silver") return "row-silver";
-  return "";
+function rowClass(owner, serverRow) {
+  // Only color home rows based on their original owner (if they still have HP)
+  // Don't color rows based on unit presence anymore
+  if (serverRow !== undefined) {
+    // Gold home rows (0, 1)
+    if (serverRow <= 1 && S.rowHP[serverRow] > 0) return "row-gold";
+    // Silver home rows (5, 6)
+    if (serverRow >= 5 && S.rowHP[serverRow] > 0) return "row-silver";
+  }
+  return ""; // Neutral or destroyed rows have no color
 }
 
 function rowHasUnitsOf(row, owner) {
-  for (let c = 0; c < SIZE; c++) {
+  for (let c = 0; c < COLS; c++) {
     const id = S.board[row][c];
     if (!id) continue;
     const u = S.units[id];
@@ -474,8 +734,8 @@ function rowHasUnitsOf(row, owner) {
 }
 
 function findUnitPos(unitId) {
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
       if (S.board[r][c] === unitId) return { r, c };
     }
   }
@@ -493,7 +753,7 @@ function getAdjacentUnitsWithEffect(unitId, effectId) {
       if (dr === 0 && dc === 0) continue;
       const nr = pos.r + dr;
       const nc = pos.c + dc;
-      if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
       
       const adjId = S.board[nr][nc];
       if (!adjId) continue;
@@ -514,7 +774,7 @@ function getEffectiveAtk(unitId) {
   
   let atk = u.atk;
   // War Banner buff
-  if (getAdjacentUnitsWithEffect(unitId, "atk_aura").length > 0) {
+  if (getAdjacentUnitsWithEffect(unitId, "attack_aura").length > 0) {
     atk += 1;
   }
   return atk;
@@ -526,7 +786,7 @@ function getAtkBuff(unitId) {
   if (!u) return 0;
   
   let buff = 0;
-  if (getAdjacentUnitsWithEffect(unitId, "atk_aura").length > 0) {
+  if (getAdjacentUnitsWithEffect(unitId, "attack_aura").length > 0) {
     buff += 1;
   }
   return buff;
@@ -540,13 +800,14 @@ function spawnClick(spawnSide){ // spawnSide = "gold" | "silver"
   if (myRole !== "gold" && myRole !== "silver") return log("Spectator cannot act.");
   if (!isMyTurn()) return log("Not your turn.");
   
-  // If clicking your own spawn with a unit in it (and no card selected), select it for movement
+  // If clicking your own spawn with a unit in it (and no card selected), select it for movement/attack
   if (spawnSide === myRole && S.spawn[spawnSide] && !deployCardId) {
     selectedSpawnUnit = S.spawn[spawnSide];
     selectedUnitId = null;
     selectedCardId = null;
-    log(`Selected spawn unit. Click a highlighted tile to move it.`);
+    log(`Selected spawn unit. Click a highlighted tile to move or attack.`);
     highlightSpawnMoveTiles();
+    highlightSpawnAttackTargets(); // Also show attack targets
     renderAll();
     return;
   }
@@ -581,6 +842,39 @@ function spawnClick(spawnSide){ // spawnSide = "gold" | "silver"
   }
 }
 
+// Highlight attack targets for spawn unit (can attack enemies in adjacent row)
+function highlightSpawnAttackTargets() {
+  if (!selectedSpawnUnit) return;
+  
+  const u = S.units[selectedSpawnUnit];
+  if (!u || u.owner !== myRole) return;
+  
+  const hasAttacked = S.attackedThisTurn.includes(selectedSpawnUnit);
+  if (hasAttacked) return;
+  
+  // Spawn can attack units in the adjacent row (row 0 for gold, row 4 for silver)
+  const adjRow = myRole === "gold" ? 0 : 6;
+  const enemy = enemyOf(myRole);
+  
+  for (let c = 0; c < COLS; c++) {
+    const targetId = S.board[adjRow][c];
+    if (!targetId) continue;
+    
+    const target = S.units[targetId];
+    if (target && target.owner === enemy) {
+      const viewRow = viewFlipped ? (ROWS - 1 - adjRow) : adjRow;
+      const el = document.getElementById(cellId(viewRow, c));
+      if (el) {
+        el.classList.add("attack-valid");
+        const icon = document.createElement("div");
+        icon.className = "attack-icon";
+        icon.innerHTML = "⚔️";
+        el.appendChild(icon);
+      }
+    }
+  }
+}
+
 // Click handlers for spawn tiles
 if (spawnEnemyEl) spawnEnemyEl.addEventListener("click", () => {
   const spawnSide = myRole === "gold" ? "silver" : "gold";
@@ -600,8 +894,8 @@ function buildBoardOnce() {
   if (!boardEl) return;
   boardEl.innerHTML = "";
 
-  for (let vr = 0; vr < SIZE; vr++) {
-    for (let c = 0; c < SIZE; c++) {
+  for (let vr = 0; vr < ROWS; vr++) {
+    for (let c = 0; c < COLS; c++) {
       const cell = document.createElement("div");
       cell.className = "cell";
       cell.id = cellId(vr, c);
@@ -662,6 +956,17 @@ function renderHand() {
 
     el.onclick = () => {
       if (!isMyTurn()) return log("Not your turn.", "system");
+      
+      // If clicking the same card, deselect it
+      if (selectedCardId === card.id) {
+        selectedCardId = null;
+        deployCardId = null;
+        clearHighlights();
+        renderHand();
+        log("Card deselected.", "system");
+        return;
+      }
+      
       selectedCardId = card.id;
       deployCardId = card.id;
       selectedUnitId = null;
@@ -744,21 +1049,22 @@ function renderSpawnUnit(el, unitId, spawnEl) {
 function renderAll() {
   if (!boardEl) return;
 
-  for (let vr = 0; vr < SIZE; vr++) {
+  for (let vr = 0; vr < ROWS; vr++) {
     const sr = toServerRow(vr);
 
     const hpEl = document.getElementById(rowHpId(vr));
 
     if (hpEl) {
-      if (sr === 2) {
+      // Middle rows (2, 3, 4) have no HP
+      if (sr === 2 || sr === 3 || sr === 4) {
         hpEl.textContent = "";
-        hpEl.classList.add("row-c");
+        hpEl.classList.add(sr === 2 ? "row-c" : (sr === 3 ? "row-d" : "row-e"));
       } else {
         const currentHP = S.rowHP[sr];
         const previousHP = prevRowHP[sr];
         
         hpEl.textContent = currentHP;
-        hpEl.classList.remove("row-c");
+        hpEl.classList.remove("row-c", "row-d", "row-e");
         
         // Trigger damage/heal animation
         if (currentHP < previousHP) {
@@ -775,7 +1081,7 @@ function renderAll() {
 
     const clsGold = "row-gold";
     const clsSilver = "row-silver";
-    const rc = rowClass(S.rowOwner[sr]);
+    const rc = rowClass(S.rowOwner[sr], sr);
 
     const applyCls = (el) => {
       if (!el) return;
@@ -785,22 +1091,52 @@ function renderAll() {
 
     applyCls(hpEl);
 
-    for (let c = 0; c < SIZE; c++) {
+    for (let c = 0; c < COLS; c++) {
       const cellEl = document.getElementById(cellId(vr, c));
       if (!cellEl) continue;
 
       applyCls(cellEl);
 
-      cellEl.classList.remove("selected");
+      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit");
+      cellEl.removeAttribute("data-buff-icon");
       cellEl.innerHTML = "";
+      
+      // Check if this is a buff tile
+      const buffKey = `${sr}-${c}`;
+      const buff = S.buffTiles[buffKey];
+      if (buff) {
+        cellEl.classList.add("buff-tile");
+        // Add color-specific class based on buff type
+        if (buff.id === "energy_buff") cellEl.classList.add("buff-energy");
+        else if (buff.id === "heal_buff") cellEl.classList.add("buff-heal");
+        else if (buff.id === "atk_row_buff") cellEl.classList.add("buff-attack");
+        else if (buff.id === "draw_buff") cellEl.classList.add("buff-draw");
+        else if (buff.id === "move_buff") cellEl.classList.add("buff-move");
+        else if (buff.id === "hp_buff") cellEl.classList.add("buff-hp");
+        
+        cellEl.setAttribute("data-buff-name", buff.name);
+        cellEl.setAttribute("data-buff-desc", buff.desc);
+      }
 
       const unitId = S.board[sr][c];
 
+      // If there's a unit on a buff tile, add has-unit class to hide effects
+      if (unitId && buff) {
+        cellEl.classList.add("has-unit");
+      }
+
       if (!unitId) {
         cellEl.textContent = coordLabel(sr, c);
-        cellEl.onmouseenter = null;
-        cellEl.onmousemove = null;
-        cellEl.onmouseleave = null;
+        // Add buff tile hover handlers
+        if (buff) {
+          cellEl.onmouseenter = (e) => showBuffTooltip(buff, e.clientX, e.clientY);
+          cellEl.onmousemove = (e) => positionBuffTooltip(e.clientX, e.clientY);
+          cellEl.onmouseleave = hideBuffTooltip;
+        } else {
+          cellEl.onmouseenter = null;
+          cellEl.onmousemove = null;
+          cellEl.onmouseleave = null;
+        }
         continue;
       }
 
@@ -817,6 +1153,10 @@ function renderAll() {
       wrap.className = "unit";
       if (u.effectId) wrap.classList.add("has-effect");
       if (u.type === "spell") wrap.classList.add("spell-unit");
+      
+      // Add enemy class for visual distinction
+      const isEnemy = u.owner !== myRole && myRole !== "spectator";
+      if (isEnemy) wrap.classList.add("enemy-unit");
       
       // Calculate buffs
       const atkBuff = getAtkBuff(unitId);
@@ -842,14 +1182,19 @@ function renderAll() {
       `;
       cellEl.appendChild(wrap);
       
-      // Attach tooltip
-      cellEl.onmouseenter = (e) => showTooltip(unitId, e.clientX, e.clientY);
+      // Attach tooltip - show both unit tooltip and buff tooltip if on buff tile
+      cellEl.onmouseenter = (e) => {
+        showTooltip(unitId, e.clientX, e.clientY, buff);
+      };
       cellEl.onmousemove = (e) => {
         if (tooltipEl?.classList.contains("visible")) {
           positionTooltip(e.clientX, e.clientY);
         }
       };
-      cellEl.onmouseleave = hideTooltip;
+      cellEl.onmouseleave = () => {
+        hideTooltip();
+        hideBuffTooltip();
+      };
 
       if (unitId === selectedUnitId) cellEl.classList.add("selected");
     }
@@ -861,7 +1206,7 @@ function renderAll() {
   }
   if (endTurnBtn) endTurnBtn.disabled = !isMyTurn() || S.gameOver;
 
-  if (energyEl) energyEl.textContent = `${myEnergy}/${myMaxEnergy}`;
+  if (energyEl) energyEl.textContent = `${myEnergy}/10`;
 
   const enemyHeartHpEl = document.getElementById("enemyHeartHP");
   const yourHeartHpEl = document.getElementById("yourHeartHP");
@@ -930,12 +1275,27 @@ function onCellClick(viewRow, col) {
   const row = toServerRow(viewRow);
   const occId = S.board[row][col];
 
-  // Handle spawn unit movement
+  // Handle spawn unit movement/attack
   if (selectedSpawnUnit) {
-    if (occId) return log("That tile is occupied.");
+    // Check if clicking on enemy unit to attack
+    if (occId) {
+      const target = S.units[occId];
+      if (target && target.owner !== myRole) {
+        // Check if in adjacent row (row 0 for gold, row 4 for silver)
+        const adjRow = myRole === "gold" ? 0 : 6;
+        if (row === adjRow) {
+          sendAction({ type: "attackFromSpawn", targetId: occId });
+          selectedSpawnUnit = null;
+          clearHighlights();
+          renderAll();
+          return;
+        }
+      }
+      return log("That tile is occupied.");
+    }
     
     // Check if valid move (home rows only)
-    const homeRows = myRole === "gold" ? [0, 1] : [3, 4];
+    const homeRows = myRole === "gold" ? [0, 1] : [5, 6];
     if (!homeRows.includes(row)) {
       return log("Spawn units can only move to home rows.");
     }
@@ -950,10 +1310,44 @@ function onCellClick(viewRow, col) {
 
   // Handle card deployment
   if (deployCardId) {
+    // Find the card
+    const card = myHand.find(c => c.id === deployCardId);
+    if (!card) {
+      deployCardId = null;
+      selectedCardId = null;
+      clearHighlights();
+      return;
+    }
+    
+    // Handle targeted instant spells
+    if (card.effect === "instant" && card.requiresTarget === "unit") {
+      // Rallying Cry - target a friendly unit
+      if (!occId || !S.units[occId] || S.units[occId].owner !== myRole) {
+        return log("Select one of your units.");
+      }
+      const cardIdToPlay = deployCardId;
+      deployCardId = null;
+      selectedCardId = null;
+      clearHighlights();
+      sendAction({ type: "playCard", cardId: cardIdToPlay, targetUnitId: occId });
+      renderHand();
+      return;
+    }
+    
+    if (card.effect === "instant" && card.requiresTarget === "row") {
+      // Castle Walls - target a row you control
+      const cardIdToPlay = deployCardId;
+      deployCardId = null;
+      selectedCardId = null;
+      clearHighlights();
+      sendAction({ type: "playCard", cardId: cardIdToPlay, row });
+      renderHand();
+      return;
+    }
+    
+    // Normal unit deployment - tile must be empty
     if (occId) return log("That tile is occupied.");
     
-    // Find the card and target cell for animation
-    const card = myHand.find(c => c.id === deployCardId);
     const targetCell = document.getElementById(cellId(viewRow, col));
     const cardIdToPlay = deployCardId;
     
@@ -987,8 +1381,27 @@ function onCellClick(viewRow, col) {
         const ap = findUnitPos(selectedUnitId);
         const tp = findUnitPos(occId);
         if (!ap || !tp) return log("Error: position not found.");
-        if (!isAdjacent(ap.r, ap.c, tp.r, tp.c)) {
-          // Not adjacent - deselect instead
+        
+        // Check if this is a valid attack based on unit abilities
+        let canAttack = false;
+        
+        // Peasant diagonal attack
+        if (a.effectId === "diagonal_attack") {
+          canAttack = isAdjacent(ap.r, ap.c, tp.r, tp.c);
+        }
+        // Archer ranged attack (up to 2 tiles, cardinal only)
+        else if (a.effectId === "ranged") {
+          const rowDist = Math.abs(ap.r - tp.r);
+          const colDist = Math.abs(ap.c - tp.c);
+          canAttack = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
+        }
+        // Default: cardinal adjacent only
+        else {
+          canAttack = isCardinalAdjacent(ap.r, ap.c, tp.r, tp.c);
+        }
+        
+        if (!canAttack) {
+          // Not in range - deselect instead
           selectedUnitId = null;
           clearHighlights();
           renderAll();
@@ -1044,25 +1457,55 @@ function onCellClick(viewRow, col) {
   const ap = findUnitPos(selectedUnitId);
   if (!ap) return log("Error: unit position not found.");
 
-  if (!isAdjacent(ap.r, ap.c, row, col)) {
-    // Clicked non-adjacent empty cell - deselect
+  // Check if this is a valid move (adjacent OR knight leap for squires)
+  let validMove = isAdjacent(ap.r, ap.c, row, col);
+  
+  // Squire knight_leap - can move to tiles adjacent to any friendly Knight
+  if (a.effectId === "knight_leap" && !validMove) {
+    for (const id in S.units) {
+      const other = S.units[id];
+      if (other.owner === myRole && other.key === "knight") {
+        const kpos = findUnitPos(id);
+        if (kpos && isAdjacent(kpos.r, kpos.c, row, col)) {
+          validMove = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!validMove) {
+    // Clicked non-adjacent empty cell (and not a valid knight leap) - deselect
     selectedUnitId = null;
     clearHighlights();
     renderAll();
     return;
   }
 
-  const ro = S.rowOwner[row];
   const enemy = enemyOf(myRole);
-  const enemyUnitsInRow = rowHasUnitsOf(row, enemy);
   const rowHasHP = S.rowHP[row] > 0;
-  const isEnemyOwnedRow = ro === enemy;
+  const hasAttacked = S.attackedThisTurn.includes(selectedUnitId);
+  const hasMoved = S.movedThisTurn.includes(selectedUnitId);
+  
+  // Check if this is an enemy home row
+  const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
 
-  if (isEnemyOwnedRow && rowHasHP && !enemyUnitsInRow) {
+  // Check if clicking on a row-attack-valid cell (enemy home row with HP, no enemy units there)
+  if (isEnemyHomeRow && rowHasHP && !hasAttacked) {
     return sendAction({ type: "attackRow", attackerId: selectedUnitId, row });
   }
 
-  sendAction({ type: "move", unitId: selectedUnitId, toRow: row, toCol: col });
+  // Can't move into enemy home row with HP remaining
+  const isBlockedEnemyRow = isEnemyHomeRow && rowHasHP;
+
+  // Otherwise try to move (only if not already moved and not blocked)
+  if (!hasMoved && !isBlockedEnemyRow) {
+    sendAction({ type: "move", unitId: selectedUnitId, toRow: row, toCol: col });
+  } else if (hasMoved) {
+    log("Already moved this unit.", "system");
+  } else {
+    log("Cannot move into enemy row until its HP is 0.", "system");
+  }
 }
 
 socket.on("connect", () => log("Connected: " + socket.id, "system"));
@@ -1298,20 +1741,7 @@ socket.on("role", (role) => {
   renderHand();
 });
 
-socket.on("privateState", (p) => {
-  if (!p) return;
-
-  myHand = Array.isArray(p.hand) ? p.hand : [];
-  myDeckCount = p.deckCount ?? 0;
-  myDiscardCount = p.discardCount ?? 0;
-
-  myEnergy = p.energy ?? myEnergy;
-  myMaxEnergy = p.maxEnergy ?? myMaxEnergy;
-  canDraw = p.canDraw ?? false;
-
-  renderHand();
-  renderAll();
-});
+// Private state now included in main state event
 
 socket.on("state", (st) => {
   if (!st) return;
@@ -1330,6 +1760,20 @@ socket.on("state", (st) => {
   S.spawn = st.spawn || { gold: null, silver: null };
   S.movedThisTurn = st.movedThisTurn || [];
   S.attackedThisTurn = st.attackedThisTurn || [];
+  S.firstTurn = !!st.firstTurn;
+  S.buffTiles = st.buffTiles || {};
+  S.moveCountThisTurn = st.moveCountThisTurn || {};
+
+  // Handle private state (hand, energy, etc) - now included in state
+  if (st.hand !== undefined) {
+    myHand = Array.isArray(st.hand) ? st.hand : [];
+    myDeckCount = st.deckCount ?? 0;
+    myDiscardCount = st.discardCount ?? 0;
+    myEnergy = st.energy ?? 0;
+    myMaxEnergy = st.maxEnergy ?? 0;
+    canDraw = !!st.canDraw;
+    renderHand();
+  }
 
   // Animate heart damage
   animateHeartDamage();
@@ -1363,5 +1807,50 @@ function animateHeartDamage() {
   }
 }
 
+// ===== GAME MENU =====
+if (menuBtn) {
+  menuBtn.onclick = () => {
+    if (gameMenu) gameMenu.classList.remove("hidden");
+  };
+}
 
-sendAction({ type: "requestState" });
+const resumeBtn = document.getElementById("resumeBtn");
+const restartBtn = document.getElementById("restartBtn");
+const leaveBtn = document.getElementById("leaveBtn");
+
+if (resumeBtn) {
+  resumeBtn.onclick = () => {
+    if (gameMenu) gameMenu.classList.add("hidden");
+  };
+}
+
+if (restartBtn) {
+  restartBtn.onclick = () => {
+    if (confirm("Restart the game? This will reset all progress.")) {
+      socket.emit("restartGame");
+      if (gameMenu) gameMenu.classList.add("hidden");
+    }
+  };
+}
+
+if (leaveBtn) {
+  leaveBtn.onclick = () => {
+    if (confirm("Leave the game? This will end it for both players.")) {
+      socket.emit("leaveGame");
+      window.location.href = "/home.html";
+    }
+  };
+}
+
+// Show restart button only for host
+socket.on("role", (role) => {
+  if (restartBtn && isHost) {
+    restartBtn.style.display = "block";
+  }
+});
+
+// Handle errors (disconnection, etc)
+socket.on("lobbyError", (msg) => {
+  alert(msg);
+  window.location.href = "/home.html";
+});
