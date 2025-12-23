@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grid Card Game - Home</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e2e8f0;
+    }
+    
+    .container {
+      background: rgba(20, 20, 40, 0.95);
+      border: 2px solid rgba(138, 43, 226, 0.4);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      text-align: center;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    
+    .section {
+      margin-bottom: 24px;
+    }
+    
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      color: #a78bfa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    
+    select, input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(30, 30, 60, 0.8);
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    
+    select:focus, input:focus {
+      border-color: rgba(138, 43, 226, 0.7);
+      box-shadow: 0 0 12px rgba(138, 43, 226, 0.3);
+    }
+    
+    input::placeholder {
+      color: #64748b;
+    }
+    
+    .deck-description {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 8px;
+      font-style: italic;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-create {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+    
+    .btn-create:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-join {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+    }
+    
+    .btn-join:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 24px 0;
+    }
+    
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(138, 43, 226, 0.3);
+    }
+    
+    .divider span {
+      padding: 0 16px;
+      color: #64748b;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    
+    .error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #f87171;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+    }
+    
+    .error.show {
+      display: block;
+    }
+    
+    /* Lobby Screen */
+    .lobby-screen {
+      display: none;
+    }
+    
+    .lobby-screen.active {
+      display: block;
+    }
+    
+    .home-screen.hidden {
+      display: none;
+    }
+    
+    .lobby-code {
+      background: rgba(30, 30, 60, 0.8);
+      border: 2px dashed rgba(251, 191, 36, 0.5);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .lobby-code-label {
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    
+    .lobby-code-value {
+      font-family: 'Cinzel', serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: #fbbf24;
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+    }
+    
+    .lobby-code-hint {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+    
+    .player-status {
+      background: rgba(30, 30, 60, 0.6);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .player-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    
+    .player-icon.gold {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    }
+    
+    .player-icon.silver {
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+    }
+    
+    .player-name {
+      font-weight: 600;
+    }
+    
+    .player-deck {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    .player-ready {
+      font-size: 24px;
+    }
+    
+    .waiting {
+      color: #64748b;
+      font-style: italic;
+    }
+    
+    .btn-start {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      margin-top: 20px;
+    }
+    
+    .btn-start:disabled {
+      background: #374151;
+      color: #6b7280;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-start:not(:disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+    }
+    
+    .waiting-message {
+      text-align: center;
+      color: #94a3b8;
+      margin-top: 20px;
+      font-style: italic;
+    }
+    
+    .copy-btn {
+      background: rgba(138, 43, 226, 0.3);
+      border: 1px solid rgba(138, 43, 226, 0.5);
+      color: #a78bfa;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .copy-btn:hover {
+      background: rgba(138, 43, 226, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Home Screen -->
+    <div class="home-screen" id="homeScreen">
+      <h1>⚔️ Grid Card Game</h1>
+      <p class="subtitle">Medieval tactical card battles</p>
+      
+      <div class="error" id="errorMessage"></div>
+      
+      <div class="section">
+        <div class="section-title">Choose Your Deck</div>
+        <select id="deckSelect">
+          <option value="medieval">Medieval Kingdom</option>
+        </select>
+        <p class="deck-description" id="deckDescription">Classic knights, archers, and siege warfare</p>
+      </div>
+      
+      <div class="buttons">
+        <button class="btn-create" id="createBtn">Create Game</button>
+      </div>
+      
+      <div class="divider"><span>or join a friend</span></div>
+      
+      <div class="section">
+        <input type="text" id="codeInput" placeholder="Enter invite code" maxlength="5" style="text-transform: uppercase; text-align: center; font-size: 20px; letter-spacing: 4px;">
+      </div>
+      
+      <button class="btn-join" id="joinBtn" style="width: 100%;">Join Game</button>
+    </div>
+    
+    <!-- Lobby Screen -->
+    <div class="lobby-screen" id="lobbyScreen">
+      <h1>⚔️ Game Lobby</h1>
+      <p class="subtitle" id="lobbySubtitle">Waiting for players...</p>
+      
+      <div class="error" id="lobbyError"></div>
+      
+      <div class="lobby-code" id="lobbyCodeSection">
+        <div class="lobby-code-label">Invite Code</div>
+        <div class="lobby-code-value" id="lobbyCodeDisplay">-----</div>
+        <div class="lobby-code-hint">Share this code with your friend</div>
+        <button class="copy-btn" id="copyCodeBtn">📋 Copy Code</button>
+      </div>
+      
+      <div class="player-status">
+        <div class="player-info">
+          <div class="player-icon gold">👑</div>
+          <div>
+            <div class="player-name">Player 1 (Host)</div>
+            <div class="player-deck" id="hostDeckName">Medieval Kingdom</div>
+          </div>
+        </div>
+        <div class="player-ready" id="hostReady">✅</div>
+      </div>
+      
+      <div class="player-status">
+        <div class="player-info">
+          <div class="player-icon silver">⚔️</div>
+          <div>
+            <div class="player-name">Player 2</div>
+            <div class="player-deck" id="guestDeckName"><span class="waiting">Waiting to join...</span></div>
+          </div>
+        </div>
+        <div class="player-ready" id="guestReady">⏳</div>
+      </div>
+      
+      <div id="hostControls" style="display: none;">
+        <button class="btn-start" id="startBtn" disabled>Start Game</button>
+      </div>
+      
+      <div id="guestControls" style="display: none;">
+        <p class="waiting-message">Waiting for host to start the game...</p>
+      </div>
+    </div>
+  </div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    
+    // Elements
+    const homeScreen = document.getElementById('homeScreen');
+    const lobbyScreen = document.getElementById('lobbyScreen');
+    const errorMessage = document.getElementById('errorMessage');
+    const lobbyError = document.getElementById('lobbyError');
+    const deckSelect = document.getElementById('deckSelect');
+    const deckDescription = document.getElementById('deckDescription');
+    const codeInput = document.getElementById('codeInput');
+    const createBtn = document.getElementById('createBtn');
+    const joinBtn = document.getElementById('joinBtn');
+    const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
+    const copyCodeBtn = document.getElementById('copyCodeBtn');
+    const hostDeckName = document.getElementById('hostDeckName');
+    const guestDeckName = document.getElementById('guestDeckName');
+    const hostReady = document.getElementById('hostReady');
+    const guestReady = document.getElementById('guestReady');
+    const hostControls = document.getElementById('hostControls');
+    const guestControls = document.getElementById('guestControls');
+    const startBtn = document.getElementById('startBtn');
+    const lobbySubtitle = document.getElementById('lobbySubtitle');
+    
+    let deckList = [];
+    let isHost = false;
+    let currentLobby = {};
+    
+    // Receive deck list
+    socket.on('deckList', (decks) => {
+      deckList = decks;
+      deckSelect.innerHTML = decks.map(d => 
+        `<option value="${d.id}">${d.name}</option>`
+      ).join('');
+      if (decks.length > 0) {
+        deckDescription.textContent = decks[0].description;
+      }
+    });
+    
+    deckSelect.addEventListener('change', () => {
+      const deck = deckList.find(d => d.id === deckSelect.value);
+      if (deck) deckDescription.textContent = deck.description;
+    });
+    
+    // Create lobby
+    createBtn.addEventListener('click', () => {
+      socket.emit('createLobby', { deckId: deckSelect.value });
+    });
+    
+    // Join lobby
+    joinBtn.addEventListener('click', () => {
+      const code = codeInput.value.trim().toUpperCase();
+      if (code.length < 5) {
+        showError('Please enter a valid 5-character code');
+        return;
+      }
+      socket.emit('joinLobby', { code, deckId: deckSelect.value });
+    });
+    
+    // Enter key to join
+    codeInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') joinBtn.click();
+    });
+    
+    // Copy code
+    copyCodeBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(lobbyCodeDisplay.textContent);
+      copyCodeBtn.textContent = '✓ Copied!';
+      setTimeout(() => copyCodeBtn.textContent = '📋 Copy Code', 2000);
+    });
+    
+    // Start game
+    startBtn.addEventListener('click', () => {
+      socket.emit('startGame');
+    });
+    
+    // Lobby state update
+    socket.on('lobbyState', (lobby) => {
+      currentLobby = lobby; // Store for later use
+      homeScreen.classList.add('hidden');
+      lobbyScreen.classList.add('active');
+      
+      isHost = lobby.isHost;
+      lobbyCodeDisplay.textContent = lobby.code;
+      
+      // Update deck names
+      const hostDeck = deckList.find(d => d.id === lobby.hostDeck);
+      hostDeckName.textContent = hostDeck ? hostDeck.name : lobby.hostDeck;
+      
+      if (lobby.guestJoined) {
+        const guestDeck = deckList.find(d => d.id === lobby.guestDeck);
+        guestDeckName.innerHTML = guestDeck ? guestDeck.name : lobby.guestDeck;
+        guestReady.textContent = '✅';
+        lobbySubtitle.textContent = 'Ready to battle!';
+      } else {
+        guestDeckName.innerHTML = '<span class="waiting">Waiting to join...</span>';
+        guestReady.textContent = '⏳';
+        lobbySubtitle.textContent = 'Waiting for opponent...';
+      }
+      
+      // Show appropriate controls
+      if (isHost) {
+        hostControls.style.display = 'block';
+        guestControls.style.display = 'none';
+        startBtn.disabled = !lobby.guestJoined;
+      } else {
+        hostControls.style.display = 'none';
+        guestControls.style.display = 'block';
+      }
+    });
+    
+    // Error handling
+    socket.on('lobbyError', (msg) => {
+      if (lobbyScreen.classList.contains('active')) {
+        lobbyError.textContent = msg;
+        lobbyError.classList.add('show');
+      } else {
+        showError(msg);
+      }
+    });
+    
+    // Role assigned - show game instead of redirect
+    socket.on('role', (data) => {
+      // Hide lobby, load game UI
+      document.querySelector('.container').innerHTML = '<p style="text-align:center; color: #94a3b8;">Loading game...</p>';
+      // Redirect with lobby info in URL including deck selections
+      const params = new URLSearchParams({
+        lobby: lobbyCodeDisplay.textContent,
+        host: isHost ? '1' : '0',
+        myDeck: isHost ? currentLobby.hostDeck : currentLobby.guestDeck,
+        enemyDeck: isHost ? currentLobby.guestDeck : currentLobby.hostDeck
+      });
+      window.location.href = '/game.html?' + params.toString();
+    });
+    
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorMessage.classList.add('show');
+      setTimeout(() => errorMessage.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>
