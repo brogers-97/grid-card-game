@@ -38,6 +38,7 @@ const DECKS = {
   medieval: {
     name: "Medieval Kingdom",
     description: "Classic knights, archers, and siege warfare",
+    archetype: "medieval",
     cards: [
       { key: "peasant", name: "Peasant", atk: 1, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Peasant.png" },
       { key: "peasant", name: "Peasant", atk: 1, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Peasant.png" },
@@ -53,7 +54,7 @@ const DECKS = {
       { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png" },
       { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png" },
       { key: "crusader", name: "Crusader", atk: 5, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "heal_on_kill", effectDesc: "ON KILL: Heal self 2 HP.", art: "/images/Crusader.png" },
-      { key: "royalguard", name: "Royal Guard", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "cleave", effectDesc: "PASSIVE: Attack splashes to adjacent enemies for half damage.", art: "/images/Royal Guard.png" },
+      { key: "royalguard", name: "Royal Guard", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "cleave", effectDesc: "PASSIVE: Deals half damage to adjacent enemies.", art: "/images/Royal Guard.png" },
       { key: "paladin", name: "Paladin", atk: 6, hp: 5, cost: 4, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 energy.", art: "/images/Paladin.png" },
       { key: "siegeram", name: "Battering Ram", atk: 2, hp: 6, cost: 3, type: "monster", effect: "passive", effectId: "siege", effectDesc: "PASSIVE: 2x damage to rows.", art: "/images/Battering Ram.png" },
       { key: "warbanner", name: "War Banner", atk: 0, hp: 4, cost: 2, type: "spell", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies +1 ATK.", art: "/images/War Banner.png" },
@@ -62,6 +63,57 @@ const DECKS = {
       { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_row", effectDesc: "INSTANT: This row +15 HP.", art: "/images/Castle Walls.png", requiresTarget: "row" },
       { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/King's Treasury.png" },
       { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "double_attack", effectDesc: "INSTANT: Target unit can attack twice.", art: "/images/Rallying Cry.png", requiresTarget: "unit" },
+    ]
+  },
+  "void-alien": {
+    name: "Void Alien",
+    description: "Alien swarm with energy manipulation and adaptation",
+    archetype: "alien",
+    cards: [
+      // Void Drone x3 (1 cost filler)
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png" },
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png" },
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png" },
+      // Scavenger Larva x3 (energy on death)
+      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png" },
+      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png" },
+      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png" },
+      // Spitter Crawler x3 (vanilla 2 cost)
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png" },
+      // Phase Skirmisher x2 (double move)
+      { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png" },
+      { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png" },
+      // Energy Leech x2 (drain energy on kill)
+      { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png" },
+      { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png" },
+      // Burrower Beast x2 (untargetable next turn, can deploy adjacent to allies)
+      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png" },
+      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png" },
+      // Psionic Overseer x2 (attack aura)
+      { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png" },
+      { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png" },
+      // Neural Harvester x2 (energy on attack if target survives)
+      { key: "neuralharvester", name: "Neural Harvester", atk: 3, hp: 3, cost: 3, type: "monster", effect: "onAttack", effectId: "energy_on_hit", effectDesc: "ON ATTACK: If target survives, gain 1 Energy.", art: "/images/Neural Harvester.png" },
+      { key: "neuralharvester", name: "Neural Harvester", atk: 3, hp: 3, cost: 3, type: "monster", effect: "onAttack", effectId: "energy_on_hit", effectDesc: "ON ATTACK: If target survives, gain 1 Energy.", art: "/images/Neural Harvester.png" },
+      // Adaptive Colossus x1 (gains max HP when damaged)
+      { key: "adaptivecolossus", name: "Adaptive Colossus", atk: 4, hp: 5, cost: 4, type: "monster", effect: "passive", effectId: "adapt_hp", effectDesc: "PASSIVE: Gains +1 Max HP when surviving damage.", art: "/images/Adaptive Colossus.png" },
+      // Spore Titan x1 (1 damage splash to enemies adjacent to target)
+      { key: "sporetitan", name: "Spore Titan", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "half_damage_aura", effectDesc: "PASSIVE: Attacks deal 1 splash damage to enemies adjacent to target.", art: "/images/Spore Titan.png" },
+      // Void Broodmother x1 (spawn drone on kill)
+      { key: "voidbroodmother", name: "Void Broodmother", atk: 2, hp: 6, cost: 4, type: "monster", effect: "onKill", effectId: "spawn_drone", effectDesc: "ON KILL: Spawn a Void Drone in the killed unit's tile.", art: "/images/Void Broodmother.png" },
+      // Eclipse Devourer x1 (energy on kill)
+      { key: "eclipsedevourer", name: "Eclipse Devourer", atk: 5, hp: 4, cost: 5, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 Energy.", art: "/images/Eclipse Devourer.png" },
+      // UFO Scraper x1 (absorb friendly alien stats)
+      { key: "ufoscraper", name: "UFO Scraper", atk: 1, hp: 1, cost: 4, type: "monster", effect: "passive", effectId: "absorb_ally", effectDesc: "PASSIVE: Can attack friendly Aliens to absorb their stats.", art: "/images/UFO Scraper.png" },
+      // Assimilation x2 (destroy enemy with <=2 HP)
+      { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit" },
+      { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit" },
+      // Void Collapse x1 (damage all enemies in row)
+      { key: "voidcollapse", name: "Void Collapse", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "row_damage", effectDesc: "INSTANT: Deal 1 damage to all enemies in target row.", art: "/images/Void Collapse.png", requiresTarget: "row" },
+      // Hive Ascension x1 (buff all friendly units)
+      { key: "hiveascension", name: "Hive Ascension", atk: 0, hp: 0, cost: 7, type: "spell", effect: "instant", effectId: "mass_buff", effectDesc: "INSTANT: All friendly units gain +1 ATK and +1 HP permanently.", art: "/images/Hive Ascension.png" },
     ]
   }
 };
@@ -229,14 +281,51 @@ function drawCards(lobby, role, count) {
   for (let i = 0; i < count; i++) { if (p.hand.length >= MAX_HAND_SIZE) break; if (p.deck.length === 0) { if (p.discard.length === 0) break; p.deck = shuffle([...p.discard]); p.discard = []; logToLobby(lobby, role.toUpperCase() + " reshuffles"); } if (p.deck.length > 0) p.hand.push(p.deck.pop()); }
 }
 
-function processOnKillEffect(lobby, aid, role) {
-  const a = lobby.gameState.state.units[aid]; if (!a || a.effect !== "onKill") return;
+function processOnKillEffect(lobby, aid, role, killedUnitPos) {
+  const state = lobby.gameState.state;
+  const a = state.units[aid]; if (!a || a.effect !== "onKill") return;
   if (a.effectId === "heal_on_kill") { 
     const maxHp = a.maxHp || a.hp;
     a.hp = Math.min(a.hp + 2, maxHp); 
     logToLobby(lobby, a.name + " heals 2 HP"); 
   }
-  if (a.effectId === "energy_on_kill") { lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY); logToLobby(lobby, role.toUpperCase() + " gains 1 energy"); }
+  if (a.effectId === "energy_on_kill") { 
+    lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY); 
+    logToLobby(lobby, role.toUpperCase() + " gains 1 energy"); 
+  }
+  if (a.effectId === "drain_energy") {
+    const enemy = enemyOf(role);
+    if (lobby.gameState.players[enemy].energy > 0) {
+      lobby.gameState.players[enemy].energy = Math.max(0, lobby.gameState.players[enemy].energy - 1);
+      logToLobby(lobby, a.name + " drains 1 energy from " + enemy.toUpperCase());
+    }
+  }
+  if (a.effectId === "spawn_drone" && killedUnitPos) {
+    // Spawn a Void Drone in the killed unit's tile
+    const droneId = genId();
+    state.units[droneId] = { 
+      id: droneId, 
+      owner: role, 
+      key: "voiddrone", 
+      name: "Void Drone", 
+      atk: 1, 
+      hp: 2, 
+      maxHp: 2, 
+      type: "monster",
+      art: "/images/Void Drone.png"
+    };
+    state.board[killedUnitPos.r][killedUnitPos.c] = droneId;
+    logToLobby(lobby, a.name + " spawns a Void Drone!");
+  }
+}
+
+// Process on-death effects (for the dying unit's owner)
+function processOnDeathEffect(lobby, deadUnit, deadUnitOwner) {
+  if (!deadUnit || deadUnit.effect !== "onDeath") return;
+  if (deadUnit.effectId === "energy_on_death") {
+    lobby.gameState.players[deadUnitOwner].energy = Math.min(lobby.gameState.players[deadUnitOwner].energy + 1, MAX_ENERGY);
+    logToLobby(lobby, deadUnit.name + " grants " + deadUnitOwner.toUpperCase() + " 1 energy on death");
+  }
 }
 
 function processEndOfTurnEffects(lobby, role) {
@@ -297,6 +386,72 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       state.units[targetUnitId].canDoubleAttack = true;
       logToLobby(lobby, state.units[targetUnitId].name + " can attack twice!");
     }
+  }
+  // Void Alien spells
+  if (effectId === "destroy_weak") {
+    // Assimilation - destroy enemy with 2 or less HP
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner !== role && target.hp <= 2) {
+        const pos = getUnitPos(state, targetUnitId);
+        if (pos) {
+          // Check if target is untargetable (Burrower Beast on deploy turn)
+          if (target.untargetable) {
+            logToLobby(lobby, target.name + " is untargetable!");
+            return false;
+          }
+          // Process on-death effect before removing
+          processOnDeathEffect(lobby, target, target.owner);
+          state.board[pos.r][pos.c] = null;
+          delete state.units[targetUnitId];
+          logToLobby(lobby, "Assimilation destroys " + target.name + "!");
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  if (effectId === "row_damage") {
+    // Void Collapse - deal 1 damage to all enemies in target row
+    if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
+      let damaged = 0;
+      const toRemove = [];
+      for (let c = 0; c < COLS; c++) {
+        const uid = state.board[targetRow][c];
+        if (uid && state.units[uid] && state.units[uid].owner !== role) {
+          const target = state.units[uid];
+          // Check untargetable
+          if (target.untargetable) continue;
+          target.hp -= 1;
+          damaged++;
+          if (target.hp <= 0) {
+            toRemove.push({ id: uid, col: c });
+          }
+        }
+      }
+      // Remove dead units
+      for (const item of toRemove) {
+        const deadUnit = state.units[item.id];
+        processOnDeathEffect(lobby, deadUnit, deadUnit.owner);
+        state.board[targetRow][item.col] = null;
+        delete state.units[item.id];
+      }
+      logToLobby(lobby, "Void Collapse hits " + damaged + " enemies in row " + String.fromCharCode(65 + targetRow) + "!");
+    }
+  }
+  if (effectId === "mass_buff") {
+    // Hive Ascension - all friendly units gain +1 ATK and +1 HP permanently
+    let buffed = 0;
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      if (u.owner === role) {
+        u.atk += 1;
+        u.hp += 1;
+        u.maxHp = (u.maxHp || u.hp) + 1;
+        buffed++;
+      }
+    }
+    logToLobby(lobby, "Hive Ascension buffs " + buffed + " units with +1 ATK and +1 HP!");
   }
 }
 
@@ -445,10 +600,23 @@ io.on("connection", (socket) => {
         state.firstTurn = false;
       }
       
-      // Reset double attack buffs and attack counts for all units
+      // Reset double attack buffs, attack counts, and handle burrower/untargetable
       for (const uid in state.units) {
-        state.units[uid].canDoubleAttack = false;
-        state.units[uid].attackCountThisTurn = 0;
+        const u = state.units[uid];
+        u.canDoubleAttack = false;
+        u.attackCountThisTurn = 0;
+        
+        // For units belonging to the player ending their turn:
+        if (u.owner === role) {
+          // Clear untargetable (it lasted for opponent's turn)
+          u.untargetable = false;
+          // Activate burrowPending -> becomes untargetable during opponent's turn
+          if (u.burrowPending) {
+            u.untargetable = true;
+            u.burrowPending = false;
+            logToLobby(lobby, u.name + " burrows underground!");
+          }
+        }
       }
       
       state.activeSide = enemyOf(role); 
@@ -485,7 +653,7 @@ io.on("connection", (socket) => {
       }
       
       processStartOfTurnEffects(lobby, state.activeSide);
-      if (role === "silver") state.turnNumber++;
+      state.turnNumber++; // Increment every turn
       logToLobby(lobby, "--- " + state.activeSide.toUpperCase() + "'s turn (+" + energyGain + " energy) ---");
       return emitGameState(lobby);
     }
@@ -524,10 +692,17 @@ io.on("connection", (socket) => {
           if (!targetUnitId || !state.units[targetUnitId]) return socket.emit("log", "Select a target unit.");
           if (state.units[targetUnitId].owner !== role) return socket.emit("log", "Must target your own unit.");
         }
+        if (card.requiresTarget === "enemy_unit") {
+          if (!targetUnitId || !state.units[targetUnitId]) return socket.emit("log", "Select a target unit.");
+          if (state.units[targetUnitId].owner === role) return socket.emit("log", "Must target an enemy unit.");
+        }
         if (card.requiresTarget === "row") {
           if (row === undefined || row === null || row < 0 || row >= ROWS) return socket.emit("log", "Select a target row.");
-          // Check if player can target this row (owns it or it's their home row)
-          if (!canDeployOnRow(state, row, role)) return socket.emit("log", "Can only target your own rows.");
+          // Only fortify_row (Castle Walls) requires your own rows
+          // row_damage (Void Collapse) can target any row
+          if (card.effectId === "fortify_row" && !canDeployOnRow(state, row, role)) {
+            return socket.emit("log", "Can only fortify your own rows.");
+          }
         }
         
         p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
@@ -542,7 +717,12 @@ io.on("connection", (socket) => {
         p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
         const id = genId(); const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
-        state.units[id] = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        // Burrower Beast - becomes untargetable at start of next turn
+        if (card.effectId === "burrow") {
+          unitData.burrowPending = true; // Will become untargetable next turn
+        }
+        state.units[id] = unitData;
         state.spawn[spawn] = id;
         logToLobby(lobby, role.toUpperCase() + " deployed " + card.name + " to spawn");
         return emitGameState(lobby);
@@ -550,12 +730,39 @@ io.on("connection", (socket) => {
 
       if (row == null || col == null || row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
       if (state.board[row][col]) return socket.emit("log", "Tile occupied.");
-      recomputeOwners(state);
-      if (!canDeployOnRow(state, row, role)) return socket.emit("log", "Can't deploy here.");
+      
+      // Burrower Beast can deploy cardinal-adjacent to any friendly unit
+      let canDeploy = canDeployOnRow(state, row, role);
+      if (!canDeploy && card.effectId === "burrow") {
+        // Check if there's a friendly unit cardinal-adjacent to this position
+        const cardinalOffsets = [{r: -1, c: 0}, {r: 1, c: 0}, {r: 0, c: -1}, {r: 0, c: 1}];
+        for (const offset of cardinalOffsets) {
+          const nr = row + offset.r;
+          const nc = col + offset.c;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const adjId = state.board[nr][nc];
+          if (adjId && state.units[adjId] && state.units[adjId].owner === role) {
+            // Check it's not an enemy home row with HP
+            const enemy = enemyOf(role);
+            const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+            if (!isEnemyHomeRow || state.rowHP[row] <= 0) {
+              canDeploy = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (!canDeploy) return socket.emit("log", "Can't deploy here.");
       p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
       const id = genId(); const hpB = getArmoryBonus(state, role);
       const maxHp = card.hp + hpB;
-      state.units[id] = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+      const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+      // Burrower Beast - becomes untargetable at start of next turn
+      if (card.effectId === "burrow") {
+        unitData.burrowPending = true;
+      }
+      state.units[id] = unitData;
       state.board[row][col] = id;
       recomputeOwners(state); // Update row ownership after placing unit
       logToLobby(lobby, role.toUpperCase() + " played " + card.name);
@@ -634,7 +841,17 @@ io.on("connection", (socket) => {
     if (payload.type === "attackUnit") {
       const { attackerId, targetId } = payload;
       const a = state.units[attackerId], t = state.units[targetId];
-      if (!a || !t || a.owner !== role || t.owner === role) return;
+      if (!a || !t || a.owner !== role) return;
+      
+      // UFO Scraper can attack friendly aliens to absorb stats
+      const isAbsorbAttack = a.effectId === "absorb_ally" && t.owner === role;
+      
+      // Normal attacks can't target own units (unless UFO Scraper)
+      if (t.owner === role && !isAbsorbAttack) return;
+      
+      // Check if target is untargetable (Burrower Beast on deploy turn)
+      if (t.untargetable && !isAbsorbAttack) return socket.emit("log", t.name + " is untargetable this turn.");
+      
       if (state.attackedThisTurn.has(attackerId)) return socket.emit("log", "Already attacked.");
       const ap = getUnitPos(state, attackerId), tp = getUnitPos(state, targetId);
       if (!ap || !tp) return socket.emit("log", "Position not found.");
@@ -665,8 +882,36 @@ io.on("connection", (socket) => {
       const maxAttacks = a.canDoubleAttack ? 2 : 1;
       if (attackCount >= maxAttacks) return socket.emit("log", "Already attacked.");
       
-      let dmg = getEffectiveAtk(state, attackerId); dmg = applyDamageReduction(state, targetId, dmg);
-      const before = t.hp; t.hp -= dmg;
+      // Handle UFO Scraper absorb attack
+      if (isAbsorbAttack) {
+        // UFO Scraper kills friendly and absorbs stats
+        a.atk += t.atk;
+        a.hp += t.hp;
+        a.maxHp = (a.maxHp || 1) + (t.maxHp || t.hp);
+        logToLobby(lobby, a.name + " absorbs " + t.name + "! Now " + a.atk + "/" + a.hp);
+        state.board[tp.r][tp.c] = null;
+        delete state.units[targetId];
+        state.attackedThisTurn.add(attackerId);
+        a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
+        return emitGameState(lobby);
+      }
+      
+      // Calculate damage
+      let dmg = getEffectiveAtk(state, attackerId);
+      
+      dmg = applyDamageReduction(state, targetId, dmg);
+      const before = t.hp; 
+      t.hp -= dmg;
+      
+      // Send damage animation
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
+      
+      // Adaptive Colossus - gains +1 max HP when surviving damage (for the target if it has this ability)
+      if (t.effectId === "adapt_hp" && t.hp > 0 && dmg > 0) {
+        t.maxHp = (t.maxHp || t.hp) + 1;
+        logToLobby(lobby, t.name + " adapts! Max HP now " + t.maxHp);
+      }
       
       // Track attack count
       a.attackCountThisTurn = attackCount + 1;
@@ -676,11 +921,16 @@ io.on("connection", (socket) => {
       
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name + (a.canDoubleAttack && a.attackCountThisTurn < maxAttacks ? " (can attack again)" : ""));
       
-      // Royal Guard cleave - splash damage to adjacent enemies
+      // Neural Harvester - gain energy if target survives
+      if (a.effectId === "energy_on_hit" && t.hp > 0) {
+        lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY);
+        logToLobby(lobby, a.name + " harvests 1 energy!");
+      }
+      
+      // Royal Guard cleave - splash half damage to adjacent enemies of target
       if (a.effectId === "cleave") {
         const splashDmg = Math.floor(dmg / 2);
         if (splashDmg > 0) {
-          // Hit enemies to left and right of target
           const splashPositions = [
             { r: tp.r, c: tp.c - 1 },
             { r: tp.r, c: tp.c + 1 }
@@ -690,10 +940,12 @@ io.on("connection", (socket) => {
             const splashId = state.board[sp.r][sp.c];
             if (splashId && state.units[splashId] && state.units[splashId].owner !== role) {
               const splashTarget = state.units[splashId];
+              if (splashTarget.untargetable) continue;
               const reducedSplash = applyDamageReduction(state, splashId, splashDmg);
               splashTarget.hp -= reducedSplash;
               logToLobby(lobby, a.name + " cleaves " + splashTarget.name + " for " + reducedSplash);
               if (splashTarget.hp <= 0) {
+                processOnDeathEffect(lobby, splashTarget, splashTarget.owner);
                 state.board[sp.r][sp.c] = null; 
                 delete state.units[splashId];
                 logToLobby(lobby, splashTarget.name + " destroyed by cleave!");
@@ -703,11 +955,47 @@ io.on("connection", (socket) => {
         }
       }
       
+      // Spore Titan - deals 1 damage to enemies adjacent to the TARGET (not the attacker)
+      if (a.effectId === "half_damage_aura") {
+        const splashPositions = [
+          { r: tp.r, c: tp.c - 1 },
+          { r: tp.r, c: tp.c + 1 },
+          { r: tp.r - 1, c: tp.c },
+          { r: tp.r + 1, c: tp.c }
+        ];
+        for (const sp of splashPositions) {
+          if (sp.r < 0 || sp.r >= ROWS || sp.c < 0 || sp.c >= COLS) continue;
+          const splashId = state.board[sp.r][sp.c];
+          if (splashId && state.units[splashId] && state.units[splashId].owner !== role) {
+            const splashTarget = state.units[splashId];
+            if (splashTarget.untargetable) continue;
+            splashTarget.hp -= 1;
+            logToLobby(lobby, a.name + " spore damages " + splashTarget.name + " for 1");
+            if (splashTarget.hp <= 0) {
+              processOnDeathEffect(lobby, splashTarget, splashTarget.owner);
+              state.board[sp.r][sp.c] = null; 
+              delete state.units[splashId];
+              logToLobby(lobby, splashTarget.name + " destroyed by spores!");
+            }
+          }
+        }
+      }
+      
       if (t.hp <= 0) {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
-        processOnKillEffect(lobby, attackerId, role);
-        state.board[tp.r][tp.c] = null; delete state.units[targetId];
+        // Process on-death effect for dying unit
+        processOnDeathEffect(lobby, t, t.owner);
+        // Process on-kill effect for attacker (pass killed unit position for spawn_drone)
+        processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c });
+        // Only remove unit if spawn_drone didn't place a drone there
+        if (!state.board[tp.r][tp.c]) {
+          // Position is empty, unit was removed
+        } else if (state.board[tp.r][tp.c] === targetId) {
+          // Drone wasn't spawned, remove the dead unit
+          state.board[tp.r][tp.c] = null;
+        }
+        delete state.units[targetId];
         logToLobby(lobby, t.name + " destroyed!");
         const overflow = Math.max(0, dmg - before);
         if (overflow > 0 && state.rowHP[tp.r] > 0) { state.rowHP[tp.r] = Math.max(0, state.rowHP[tp.r] - overflow); logToLobby(lobby, "Row takes " + overflow + " overflow"); }
