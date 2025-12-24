@@ -85,6 +85,19 @@
     #turnLabel.gold { color: #fbbf24; }
     #turnLabel.silver { color: #e2e8f0; }
 
+    #turnCounter {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(100, 116, 139, 0.3);
+    }
+
+    #turnNumber {
+      color: #a78bfa;
+      font-weight: 700;
+    }
+
     /* ===== CENTER AREA - Board ===== */
     #centerArea {
       display: flex;
@@ -232,19 +245,157 @@
     #energyDisplay {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
+      gap: 8px;
+      padding: 8px 12px;
       background: rgba(59, 130, 246, 0.1);
       border: 1px solid rgba(59, 130, 246, 0.3);
       border-radius: 8px;
     }
 
-    .energyIcon { font-size: 18px; }
+    /* Battery style energy meter */
+    .batteryContainer {
+      display: flex;
+      align-items: center;
+    }
+
+    .batteryBody {
+      display: flex;
+      gap: 2px;
+      padding: 3px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid rgba(96, 165, 250, 0.6);
+      border-radius: 4px;
+    }
+
+    .batteryBody.maxed {
+      border-color: #fbbf24;
+      animation: batteryMaxGlow 1s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+    }
+
+    @keyframes batteryMaxGlow {
+      0%, 100% { 
+        box-shadow: 0 0 10px rgba(251, 191, 36, 0.6), 0 0 20px rgba(251, 191, 36, 0.3);
+        border-color: #fbbf24;
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.9), 0 0 40px rgba(251, 191, 36, 0.5);
+        border-color: #fef08a;
+      }
+    }
+
+    .batterySlot {
+      width: 8px;
+      height: 16px;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+
+    .batterySlot.filled {
+      background: linear-gradient(to top, #3b82f6, #60a5fa);
+      box-shadow: 0 0 6px rgba(96, 165, 250, 0.6);
+    }
+
+    .batterySlot.filled.low {
+      background: linear-gradient(to top, #ef4444, #f87171);
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+    }
+
+    .batterySlot.filled.medium {
+      background: linear-gradient(to top, #f59e0b, #fbbf24);
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+    }
+
+    .batterySlot.filled.maxed {
+      background: linear-gradient(to top, #fbbf24, #fef08a);
+      box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+      animation: slotGlow 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes slotGlow {
+      0% { 
+        background: linear-gradient(to top, #fbbf24, #fef08a);
+        box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+      }
+      100% { 
+        background: linear-gradient(to top, #fef08a, #ffffff);
+        box-shadow: 0 0 12px rgba(254, 240, 138, 1);
+      }
+    }
+
+    .batteryTip {
+      display: none;
+    }
 
     #energyLabel {
       font-weight: 900;
-      font-size: 18px;
+      font-size: 14px;
       color: #60a5fa;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    #energyLabel.maxed {
+      color: #fbbf24;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+      animation: textGlow 1s ease-in-out infinite;
+    }
+
+    @keyframes textGlow {
+      0%, 100% { text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
+      50% { text-shadow: 0 0 20px rgba(251, 191, 36, 1), 0 0 30px rgba(254, 240, 138, 0.5); }
+    }
+
+    /* ===== ACTIVE BUFFS DISPLAY ===== */
+    #activeBuffs {
+      padding: 8px 12px;
+      background: linear-gradient(145deg, rgba(30, 30, 60, 0.8), rgba(20, 20, 40, 0.8));
+      border: 1px solid rgba(138, 43, 226, 0.2);
+      border-radius: 8px;
+      min-height: 40px;
+    }
+
+    #activeBuffsLabel {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    #activeBuffsList {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .activeBuff {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: rgba(74, 222, 128, 0.15);
+      border: 1px solid rgba(74, 222, 128, 0.4);
+      border-radius: 4px;
+      font-size: 11px;
+      color: #4ade80;
+    }
+
+    .activeBuff.energy { background: rgba(96, 165, 250, 0.15); border-color: rgba(96, 165, 250, 0.4); color: #60a5fa; }
+    .activeBuff.heal { background: rgba(74, 222, 128, 0.15); border-color: rgba(74, 222, 128, 0.4); color: #4ade80; }
+    .activeBuff.attack { background: rgba(251, 146, 60, 0.15); border-color: rgba(251, 146, 60, 0.4); color: #fb923c; }
+    .activeBuff.draw { background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #a855f7; }
+    .activeBuff.move { background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.4); color: #22d3ee; }
+    .activeBuff.hp { background: rgba(244, 114, 182, 0.15); border-color: rgba(244, 114, 182, 0.4); color: #f472b6; }
+
+    .activeBuffIcon { font-size: 14px; }
+    .activeBuffName { font-weight: 600; }
+
+    .noBuffs {
+      color: #64748b;
+      font-size: 11px;
+      font-style: italic;
     }
 
     /* ===== HAND ROW - Deck outside, hand inside box ===== */
@@ -1185,6 +1336,37 @@
       50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.9); }
     }
 
+    /* Unit damage animation */
+    .unit.taking-damage {
+      animation: unitDamage 0.4s ease-out;
+    }
+
+    @keyframes unitDamage {
+      0% { transform: scale(1); filter: brightness(1); }
+      15% { transform: scale(0.9) translateX(-3px); filter: brightness(2) saturate(0); }
+      30% { transform: scale(1.05) translateX(3px); filter: brightness(1.5); }
+      45% { transform: scale(0.95) translateX(-2px); }
+      60% { transform: scale(1.02) translateX(2px); }
+      75% { transform: scale(0.98); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+
+    .unit.taking-damage::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 12px;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.8) 0%, transparent 70%);
+      animation: damageFlash 0.4s ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes damageFlash {
+      0% { opacity: 0; }
+      20% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
     /* ===== HIGHLIGHTS ===== */
     .cell.deploy-valid{
       outline: 3px solid #10b981 !important;
@@ -1716,6 +1898,18 @@
       font-size: 11px;
       color: #fef3c7;
       line-height: 1.4;
+    }
+
+    .tooltip-status {
+      font-size: 11px;
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.15);
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin-top: 8px;
+      text-align: center;
+      font-weight: 600;
     }
 
     .tooltip-cost {
@@ -2307,6 +2501,7 @@
       <div id="turnIndicator">
         <div id="turnText">Turn</div>
         <div id="turnLabel">SILVER</div>
+        <div id="turnCounter">Turn <span id="turnNumber">1</span></div>
       </div>
     </div>
 
@@ -2354,8 +2549,22 @@
       <!-- Controls row -->
       <div id="handControls">
         <div id="energyDisplay">
-          <span class="energyIcon">⚡</span>
-          <span id="energyLabel">0/0</span>
+          <div class="batteryContainer">
+            <div class="batteryBody">
+              <div class="batterySlot" data-slot="1"></div>
+              <div class="batterySlot" data-slot="2"></div>
+              <div class="batterySlot" data-slot="3"></div>
+              <div class="batterySlot" data-slot="4"></div>
+              <div class="batterySlot" data-slot="5"></div>
+              <div class="batterySlot" data-slot="6"></div>
+              <div class="batterySlot" data-slot="7"></div>
+              <div class="batterySlot" data-slot="8"></div>
+              <div class="batterySlot" data-slot="9"></div>
+              <div class="batterySlot" data-slot="10"></div>
+            </div>
+            <div class="batteryTip"></div>
+          </div>
+          <span id="energyLabel">0/10</span>
         </div>
         <button id="endTurnBtn">End Turn</button>
       </div>
@@ -2371,6 +2580,12 @@
         <div id="handSection">
           <div id="hand"></div>
         </div>
+      </div>
+      
+      <!-- Active buff tiles display -->
+      <div id="activeBuffs">
+        <div id="activeBuffsLabel">Active Buffs</div>
+        <div id="activeBuffsList"></div>
       </div>
     </div>
   </div>
