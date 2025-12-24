@@ -145,6 +145,10 @@ function showTooltip(unitId, x, y, buff) {
   const atkBuff = getAtkBuff(unitId);
   const effectiveAtk = u.atk + atkBuff;
   
+  // HP display with max HP
+  const maxHp = u.maxHp || u.hp;
+  const hpDisplay = `${u.hp}/${maxHp}`;
+  
   // Art section
   const icon = CARD_ICONS[u.key] || '⚔️';
   const hasArt = u.art;
@@ -166,6 +170,14 @@ function showTooltip(unitId, x, y, buff) {
     </div>
   ` : '';
   
+  // Status effects
+  let statusHtml = '';
+  if (u.untargetable) {
+    statusHtml = '<div class="tooltip-status">🛡️ Untargetable</div>';
+  } else if (u.burrowPending) {
+    statusHtml = '<div class="tooltip-status">⏳ Burrowing next turn</div>';
+  }
+  
   tooltipEl.innerHTML = `
     <div class="tooltip-card ${typeClass}">
       <div class="tooltip-art" style="${artStyle}">${artIconHtml}</div>
@@ -181,10 +193,11 @@ function showTooltip(unitId, x, y, buff) {
             <div class="tooltip-stat-label">⚔ Attack${atkBuff > 0 ? ` (+${atkBuff})` : ''}</div>
           </div>
           <div class="tooltip-stat">
-            <div class="tooltip-stat-value hp">${u.hp}</div>
+            <div class="tooltip-stat-value hp">${hpDisplay}</div>
             <div class="tooltip-stat-label">♥ Health</div>
           </div>
         </div>
+        ${statusHtml}
         ${effectHtml}
         ${buffHtml}
       </div>
@@ -393,6 +406,9 @@ let S = {
   moveCountThisTurn: {}
 };
 
+// Track cells that are currently showing damage animation
+let damagingCells = new Set();
+
 function enemyOf(owner) {
   return owner === "silver" ? "gold" : "silver";
 }
@@ -443,12 +459,41 @@ function highlightDeployTiles(){
     return;
   }
 
-  if (card.effect === "instant" && card.requiresTarget === "row") {
-    // Castle Walls - highlight your home rows only
+  if (card.effect === "instant" && card.requiresTarget === "enemy_unit") {
+    // Assimilation - highlight enemy units with 2 or less HP
     for (let vr = 0; vr < ROWS; vr++) {
       const sr = toServerRow(vr);
-      if (canDeployOnRow(sr)) {
-        // Highlight any cell in the row as valid target
+      for (let c = 0; c < COLS; c++) {
+        const unitId = S.board[sr][c];
+        if (unitId && S.units[unitId] && S.units[unitId].owner !== myRole) {
+          const u = S.units[unitId];
+          // Only highlight if HP <= 2 and not untargetable
+          if (u.hp <= 2 && !u.untargetable) {
+            const el = document.getElementById(cellId(vr, c));
+            if (el) el.classList.add("attack-valid"); // Red highlight for enemy target
+          }
+        }
+      }
+    }
+    return;
+  }
+
+  if (card.effect === "instant" && card.requiresTarget === "row") {
+    // Castle Walls / Void Collapse - highlight rows
+    // Castle Walls targets your rows, Void Collapse can target any row
+    for (let vr = 0; vr < ROWS; vr++) {
+      const sr = toServerRow(vr);
+      // For fortify_row (Castle Walls), only your rows
+      // For row_damage (Void Collapse), any row
+      if (card.effectId === "fortify_row") {
+        if (canDeployOnRow(sr)) {
+          for (let c = 0; c < COLS; c++) {
+            const el = document.getElementById(cellId(vr, c));
+            if (el) el.classList.add("deploy-valid");
+          }
+        }
+      } else {
+        // Void Collapse can target any row
         for (let c = 0; c < COLS; c++) {
           const el = document.getElementById(cellId(vr, c));
           if (el) el.classList.add("deploy-valid");
@@ -464,12 +509,37 @@ function highlightDeployTiles(){
   }
 
   // Normal board deploy highlights for unit cards - only home rows
+  // Exception: Burrower Beast can deploy cardinal-adjacent to any friendly unit
+  const isBurrower = card.effectId === "burrow";
+  
   for (let vr = 0; vr < ROWS; vr++) {
     const sr = toServerRow(vr);
     for (let c = 0; c < COLS; c++) {
       if (S.board[sr][c]) continue;
 
-      if (canDeployOnRow(sr)) {
+      let canDeploy = canDeployOnRow(sr);
+      
+      // Burrower Beast can also deploy adjacent to friendly units
+      if (!canDeploy && isBurrower) {
+        const cardinalOffsets = [{r: -1, c: 0}, {r: 1, c: 0}, {r: 0, c: -1}, {r: 0, c: 1}];
+        for (const offset of cardinalOffsets) {
+          const nr = sr + offset.r;
+          const nc = c + offset.c;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const adjId = S.board[nr][nc];
+          if (adjId && S.units[adjId] && S.units[adjId].owner === myRole) {
+            // Check it's not an enemy home row with HP
+            const enemy = enemyOf(myRole);
+            const isEnemyHomeRow = (enemy === "gold" && sr <= 1) || (enemy === "silver" && sr >= 5);
+            if (!isEnemyHomeRow || S.rowHP[sr] <= 0) {
+              canDeploy = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (canDeploy) {
         const el = document.getElementById(cellId(vr, c));
         if (el) el.classList.add("deploy-valid");
       }
@@ -543,6 +613,7 @@ function highlightUnitMoves(unitId) {
   const canDiagonalAttack = u.effectId === "diagonal_attack";
   const isRanged = u.effectId === "ranged";
   const canKnightLeap = u.effectId === "knight_leap";
+  const canAbsorbAlly = u.effectId === "absorb_ally";
   
   // Helper to check if a row is an enemy home row with HP remaining
   function isBlockedEnemyRow(row) {
@@ -573,7 +644,17 @@ function highlightUnitMoves(unitId) {
         const target = S.units[targetId];
         // Peasant can attack diagonally, others need cardinal
         const canAttackHere = canDiagonalAttack ? true : isCardinal;
-        if (target && target.owner === enemy && !hasAttacked && canAttackHere) {
+        
+        // UFO Scraper can attack friendly units (cardinal only)
+        if (target && target.owner === myRole && canAbsorbAlly && !hasAttacked && isCardinal) {
+          el.classList.add("deploy-valid"); // Green highlight for absorb
+          const icon = document.createElement("div");
+          icon.className = "attack-icon";
+          icon.innerHTML = "🛸";
+          el.appendChild(icon);
+        }
+        // Normal attack on enemies
+        else if (target && target.owner === enemy && !hasAttacked && canAttackHere) {
           el.classList.add("attack-valid");
           const icon = document.createElement("div");
           icon.className = "attack-icon";
@@ -709,6 +790,79 @@ function toViewRow(serverRow) {
 
 function coordLabel(serverRow, col) {
   return String.fromCharCode(65 + serverRow) + (col + 1);
+}
+
+// Battery energy display
+function updateBatteryDisplay(energy) {
+  const slots = document.querySelectorAll('.batterySlot');
+  const batteryBody = document.querySelector('.batteryBody');
+  const energyLabel = document.getElementById('energyLabel');
+  const isMaxed = energy >= 10;
+  
+  // Update battery body glow
+  if (batteryBody) {
+    batteryBody.classList.toggle('maxed', isMaxed);
+  }
+  
+  // Update energy label glow
+  if (energyLabel) {
+    energyLabel.classList.toggle('maxed', isMaxed);
+  }
+  
+  slots.forEach((slot, index) => {
+    const slotNum = index + 1;
+    slot.classList.remove('filled', 'low', 'medium', 'maxed');
+    if (slotNum <= energy) {
+      slot.classList.add('filled');
+      if (isMaxed) {
+        slot.classList.add('maxed');
+      } else if (energy <= 2) {
+        slot.classList.add('low');
+      } else if (energy <= 5) {
+        slot.classList.add('medium');
+      }
+    }
+  });
+}
+
+// Active buffs display
+function updateActiveBuffsDisplay() {
+  const buffsList = document.getElementById('activeBuffsList');
+  if (!buffsList || !S.buffTiles) return;
+  
+  const BUFF_INFO = {
+    'energy_buff': { icon: '⚡', name: 'Energy Well', class: 'energy' },
+    'heal_buff': { icon: '💚', name: 'Healing Spring', class: 'heal' },
+    'atk_row_buff': { icon: '⚔️', name: 'War Shrine', class: 'attack' },
+    'draw_buff': { icon: '🎴', name: 'Mystic Altar', class: 'draw' },
+    'move_buff': { icon: '💨', name: 'Wind Temple', class: 'move' },
+    'hp_buff': { icon: '🛡️', name: 'Stone Circle', class: 'hp' }
+  };
+  
+  // Find which buff tiles have the player's units on them
+  const activeBuffs = [];
+  for (const key in S.buffTiles) {
+    const buff = S.buffTiles[key];
+    const [row, col] = key.split('-').map(Number);
+    const unitId = S.board[row][col];
+    if (unitId && S.units[unitId] && S.units[unitId].owner === myRole) {
+      const buffInfo = BUFF_INFO[buff.id];
+      if (buffInfo && !activeBuffs.find(b => b.id === buff.id)) {
+        activeBuffs.push({ ...buffInfo, id: buff.id });
+      }
+    }
+  }
+  
+  if (activeBuffs.length === 0) {
+    buffsList.innerHTML = '<span class="noBuffs">No active buffs</span>';
+  } else {
+    buffsList.innerHTML = activeBuffs.map(b => `
+      <div class="activeBuff ${b.class}">
+        <span class="activeBuffIcon">${b.icon}</span>
+        <span class="activeBuffName">${b.name}</span>
+      </div>
+    `).join('');
+  }
 }
 
 function rowClass(owner, serverRow) {
@@ -914,10 +1068,16 @@ buildBoardOnce();
 
 // Card icons based on card key
 const CARD_ICONS = {
+  // Medieval
   peasant: '🧑‍🌾', squire: '🗡️', archer: '🏹', manatarms: '⚔️', shieldbearer: '🛡️',
-  warhound: '🐕', medic: '💊', knight: '🐴', crusader: '✝️', royalguard: '👑',
+  warhound: '🐕', battlefieldmedic: '💊', knight: '🐴', crusader: '✝️', royalguard: '👑',
   paladin: '⚜️', siegeram: '🪵', warbanner: '🚩', shrine: '⛪', armory: '🏛️',
-  healspring: '💧', castlewalls: '🏰', treasury: '💰', rally: '📯'
+  healspring: '💧', castlewalls: '🏰', treasury: '💰', rally: '📯',
+  // Void Alien
+  voiddrone: '🛸', scavengerlarva: '🐛', spittercrawler: '🕷️', phaseskirmisher: '👾',
+  energyleech: '🦠', burrowerbeast: '🪱', psionicoverseer: '🧠', neuralharvester: '🎃',
+  adaptivecolossus: '🦑', sporetitan: '🍄', voidbroodmother: '👽', eclipsedevourer: '🌑',
+  ufoscraper: '🛸', assimilation: '💀', voidcollapse: '🌀', hiveascension: '⬆️'
 };
 
 function renderHand() {
@@ -1158,6 +1318,12 @@ function renderAll() {
       const isEnemy = u.owner !== myRole && myRole !== "spectator";
       if (isEnemy) wrap.classList.add("enemy-unit");
       
+      // Add damage animation if this cell is being damaged
+      const damageKey = `${sr}-${c}`;
+      if (damagingCells.has(damageKey)) {
+        wrap.classList.add("taking-damage");
+      }
+      
       // Calculate buffs
       const atkBuff = getAtkBuff(unitId);
       const atkBuffHtml = atkBuff > 0 ? `<span class="buff">+${atkBuff}</span>` : '';
@@ -1206,7 +1372,18 @@ function renderAll() {
   }
   if (endTurnBtn) endTurnBtn.disabled = !isMyTurn() || S.gameOver;
 
+  // Update turn counter
+  const turnNumberEl = document.getElementById("turnNumber");
+  if (turnNumberEl && S.turnNumber) {
+    turnNumberEl.textContent = S.turnNumber;
+  }
+
+  // Update battery energy display
+  updateBatteryDisplay(myEnergy);
   if (energyEl) energyEl.textContent = `${myEnergy}/10`;
+
+  // Update active buffs display
+  updateActiveBuffsDisplay();
 
   const enemyHeartHpEl = document.getElementById("enemyHeartHP");
   const yourHeartHpEl = document.getElementById("yourHeartHP");
@@ -1334,8 +1511,29 @@ function onCellClick(viewRow, col) {
       return;
     }
     
+    if (card.effect === "instant" && card.requiresTarget === "enemy_unit") {
+      // Assimilation - target an enemy unit with 2 or less HP
+      if (!occId || !S.units[occId] || S.units[occId].owner === myRole) {
+        return log("Select an enemy unit.");
+      }
+      const target = S.units[occId];
+      if (target.hp > 2) {
+        return log("Target must have 2 or less HP.");
+      }
+      if (target.untargetable) {
+        return log("That unit is untargetable.");
+      }
+      const cardIdToPlay = deployCardId;
+      deployCardId = null;
+      selectedCardId = null;
+      clearHighlights();
+      sendAction({ type: "playCard", cardId: cardIdToPlay, targetUnitId: occId });
+      renderHand();
+      return;
+    }
+    
     if (card.effect === "instant" && card.requiresTarget === "row") {
-      // Castle Walls - target a row you control
+      // Castle Walls / Void Collapse - target a row
       const cardIdToPlay = deployCardId;
       deployCardId = null;
       selectedCardId = null;
@@ -1377,7 +1575,11 @@ function onCellClick(viewRow, col) {
 
     if (selectedUnitId && selectedUnitId !== occId) {
       const a = S.units[selectedUnitId];
-      if (a && a.owner === myRole && clickedUnit.owner !== myRole) {
+      
+      // UFO Scraper can attack friendly units to absorb them
+      const isAbsorbAttack = a && a.owner === myRole && a.effectId === "absorb_ally" && clickedUnit.owner === myRole;
+      
+      if (a && a.owner === myRole && (clickedUnit.owner !== myRole || isAbsorbAttack)) {
         const ap = findUnitPos(selectedUnitId);
         const tp = findUnitPos(occId);
         if (!ap || !tp) return log("Error: position not found.");
@@ -1518,8 +1720,27 @@ socket.on("animate", (data) => {
     animateUnitMove(data.unitId, data.fromRow, data.fromCol, data.toRow, data.toCol);
   } else if (data.type === "destroy") {
     animateDestruction(data.row, data.col);
+  } else if (data.type === "damage") {
+    // Add to tracking set and let renderAll apply the class
+    const key = `${data.row}-${data.col}`;
+    damagingCells.add(key);
+    // Remove after animation completes
+    setTimeout(() => {
+      damagingCells.delete(key);
+    }, 500);
   }
 });
+
+// Animate unit taking damage - called from renderAll
+function applyDamageAnimation(cell, serverRow, col) {
+  const key = `${serverRow}-${col}`;
+  if (damagingCells.has(key)) {
+    const unitEl = cell.querySelector('.unit');
+    if (unitEl) {
+      unitEl.classList.add('taking-damage');
+    }
+  }
+}
 
 // Animate unit movement on board
 function animateUnitMove(unitId, fromRow, fromCol, toRow, toCol) {
