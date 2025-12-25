@@ -1350,6 +1350,21 @@
       background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc);
     }
 
+    /* Stolen unit from Soul Collector - grayscale ghost effect */
+    .unit.stolen-unit {
+      filter: grayscale(100%) !important;
+      border-color: rgba(148, 163, 184, 0.6) !important;
+      box-shadow: 0 0 10px rgba(148, 163, 184, 0.5) !important;
+    }
+
+    .unit.stolen-unit .unitArt {
+      filter: grayscale(100%) !important;
+    }
+
+    .unit.stolen-unit .unitArt::after {
+      background: linear-gradient(to top, rgba(100, 116, 139, 0.95), transparent) !important;
+    }
+
     /* Enemy unit styling - red glow/border */
     .unit.enemy-unit {
       border-color: rgba(239, 68, 68, 0.8);
@@ -1378,6 +1393,95 @@
         border-color: rgba(239, 68, 68, 0.9);
         box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
       }
+    }
+
+    /* Untargetable unit styling - shield effect */
+    .unit.untargetable {
+      border-color: rgba(56, 189, 248, 0.9) !important;
+      box-shadow: 
+        0 0 15px rgba(56, 189, 248, 0.7),
+        0 0 30px rgba(56, 189, 248, 0.4),
+        0 0 45px rgba(56, 189, 248, 0.2),
+        inset 0 0 20px rgba(56, 189, 248, 0.3) !important;
+    }
+
+    .unit.untargetable::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 12px;
+      border: 3px solid transparent;
+      background: linear-gradient(45deg, 
+        rgba(56, 189, 248, 0.8), 
+        rgba(147, 197, 253, 0.9), 
+        rgba(56, 189, 248, 0.8),
+        rgba(147, 197, 253, 0.9)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: shieldRotate 3s linear infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    @keyframes shieldRotate {
+      0% { 
+        filter: hue-rotate(0deg) brightness(1);
+      }
+      50% { 
+        filter: hue-rotate(20deg) brightness(1.2);
+      }
+      100% { 
+        filter: hue-rotate(0deg) brightness(1);
+      }
+    }
+
+    .shield-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 15;
+      background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+      animation: shieldPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes shieldPulse {
+      0%, 100% { 
+        background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+      }
+      50% { 
+        background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.3) 0%, transparent 70%);
+      }
+    }
+
+    .shield-icon {
+      font-size: 24px;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)) 
+              drop-shadow(0 0 16px rgba(56, 189, 248, 0.6));
+      animation: shieldFloat 2s ease-in-out infinite;
+    }
+
+    @keyframes shieldFloat {
+      0%, 100% { 
+        transform: translateY(0) scale(1);
+        opacity: 0.9;
+      }
+      50% { 
+        transform: translateY(-3px) scale(1.1);
+        opacity: 1;
+      }
+    }
+
+    /* Enemy untargetable should still show shield but with different tint */
+    .unit.enemy-unit.untargetable {
+      border-color: rgba(56, 189, 248, 0.9) !important;
+      box-shadow: 
+        0 0 15px rgba(56, 189, 248, 0.7),
+        0 0 30px rgba(56, 189, 248, 0.4),
+        inset 0 0 20px rgba(56, 189, 248, 0.3) !important;
     }
 
     .selected{
@@ -1728,6 +1832,29 @@
     .handCard.spell-card:hover {
       border-color: rgba(168, 85, 247, 0.9);
       box-shadow: 0 8px 24px rgba(168, 85, 247, 0.5);
+    }
+
+    /* Stolen cards from Soul Collector - grayscale with ghost effect */
+    .handCard.stolen-card {
+      filter: grayscale(100%);
+      border-color: rgba(148, 163, 184, 0.6);
+      box-shadow: 0 0 15px rgba(148, 163, 184, 0.4);
+    }
+
+    .handCard.stolen-card:hover {
+      filter: grayscale(80%);
+      border-color: rgba(148, 163, 184, 0.9);
+      box-shadow: 0 8px 24px rgba(148, 163, 184, 0.6);
+    }
+
+    .stolenBadge {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      font-size: 14px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+      z-index: 5;
+      opacity: 0.8;
     }
 
     .spell-art {

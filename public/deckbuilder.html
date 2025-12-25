@@ -49,6 +49,7 @@
     @keyframes pulse-glow-legendary { 0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } }
     .preview-art { width: 100%; height: 200px; background-color: rgba(30, 30, 60, 0.5); background-size: cover; background-position: center top; border-radius: 8px; }
     .preview-art.void-alien { background-color: rgba(6, 95, 70, 0.3); }
+    .preview-art.crimson-court { background-color: rgba(127, 29, 29, 0.3); }
     .preview-name { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #fbbf24; text-align: center; margin-bottom: 8px; margin-top: 10px; }
     .preview-type { font-size: 12px; color: #94a3b8; text-align: center; margin-bottom: 12px; }
     .preview-stats { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
@@ -112,6 +113,7 @@
     .rarity-gem.legendary { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 0 5px rgba(251, 191, 36, 0.6); }
     .card-art { width: 100%; height: 55%; background-color: rgba(30, 30, 60, 0.5); background-size: cover; background-position: center top; }
     .card-art.void-alien { background-color: rgba(6, 95, 70, 0.3); background-size: cover; background-position: center top; }
+    .card-art.crimson-court { background-color: rgba(127, 29, 29, 0.3); background-size: cover; background-position: center top; }
     .card-cost { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: white; }
     .card-count { position: absolute; top: 3px; left: 3px; background: rgba(0, 0, 0, 0.8); padding: 1px 5px; border-radius: 6px; font-size: 9px; font-weight: 600; color: #fbbf24; }
     .card-count.none { color: #ef4444; }
@@ -126,6 +128,12 @@
     .deck-name-input { width: 100%; padding: 8px 10px; background: rgba(20, 20, 40, 0.8); border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 6px; color: #fbbf24; font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; text-align: center; }
     .deck-name-input:focus { outline: none; border-color: rgba(251, 191, 36, 0.6); }
     .deck-name-input::placeholder { color: #64748b; }
+    .deck-customization { padding: 10px 12px; background: rgba(30, 30, 60, 0.3); border-bottom: 1px solid rgba(138, 43, 226, 0.2); }
+    .customization-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .customization-row:last-child { margin-bottom: 0; }
+    .customization-row label { font-size: 11px; color: #94a3b8; min-width: 85px; }
+    .customization-select { flex: 1; padding: 6px 8px; background: rgba(20, 20, 40, 0.8); border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 5px; color: #e2e8f0; font-size: 11px; cursor: pointer; }
+    .customization-select:focus { outline: none; border-color: rgba(251, 191, 36, 0.6); }
     .deck-info { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(30, 30, 60, 0.3); border-bottom: 1px solid rgba(138, 43, 226, 0.2); }
     .deck-count { font-size: 13px; color: #94a3b8; }
     .deck-count span { font-weight: 700; color: #fbbf24; }
@@ -191,7 +199,7 @@
         <div class="filters">
           <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search">
           <div class="filter-group"><label>Own:</label><select class="filter-select" id="ownedFilter"><option value="all">All</option><option value="owned">Owned</option><option value="not-owned">Not Owned</option></select></div>
-          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option></select></div>
+          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option></select></div>
           <div class="filter-group"><label>Type:</label><select class="filter-select" id="typeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option></select></div>
           <div class="filter-group"><label>Cost:</label><select class="filter-select" id="costFilter"><option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
           <div class="filter-group"><label>Rarity:</label><select class="filter-select" id="rarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
@@ -202,10 +210,24 @@
       <div class="panel deck-panel">
         <div class="panel-header"><div class="panel-title">🃏 Current Deck</div></div>
         <div class="deck-selector-section">
-          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option></select>
+          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option><option value="crimson-court">Crimson Court Deck 🔒</option></select>
         </div>
         <div class="deck-name-section">
           <input type="text" class="deck-name-input" id="deckNameInput" placeholder="Deck name..." maxlength="25">
+        </div>
+        <div class="deck-customization">
+          <div class="customization-row">
+            <label>🎵 Music:</label>
+            <select class="customization-select" id="musicSelect">
+              <option value="default">Default</option>
+            </select>
+          </div>
+          <div class="customization-row">
+            <label>🖼️ Background:</label>
+            <select class="customization-select" id="backgroundSelect">
+              <option value="default">Default</option>
+            </select>
+          </div>
         </div>
         <div class="deck-info">
           <div class="deck-count" id="deckCount"><span>0</span> / 25-35</div>
@@ -245,13 +267,13 @@
       siegeram: { name: "Battering Ram", cost: 3, atk: 2, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Deals double damage to row HP", art: "/images/Battering Ram.png", rarity: "rare" },
       warbanner: { name: "War Banner", cost: 2, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Adjacent allies gain +1 ATK", art: "/images/War Banner.png", rarity: "rare" },
       shrine: { name: "Healing Shrine", cost: 3, atk: 0, hp: 5, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Heals allies in same row 1 HP per turn", art: "/images/Healing Shrine.png", rarity: "rare" },
-      armory: { name: "Armory", cost: 3, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Units you deploy gain +1 HP", art: "/images/Armory.png", rarity: "rare" },
+      armory: { name: "Armory", cost: 3, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Units you deploy gain +1 HP. Stacks.", art: "/images/Armory.png", rarity: "rare" },
       castlewalls: { name: "Castle Walls", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Add +15 HP to target friendly row", art: "/images/Castle Walls.png", rarity: "common" },
       treasury: { name: "King's Treasury", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Draw 2 cards", art: "/images/Kings Treasury.png", rarity: "common" },
       rally: { name: "Rallying Cry", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Target unit attacks twice this turn", art: "/images/Rallying Cry.png", rarity: "common" },
       voiddrone: { name: "Void Drone", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Void Drone.png", rarity: "common" },
       scavengerlarva: { name: "Scavenger Larva", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy when this unit dies", art: "/images/Scavenger Larva.png", rarity: "common" },
-      spittercrawler: { name: "Spitter Crawler", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Spitter Crawler.png", rarity: "common" },
+      spittercrawler: { name: "Spitter Crawler", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Ranged: Can attack 2 tiles away", art: "/images/Spitter Crawler.png", rarity: "common" },
       phaseskirmisher: { name: "Phase Skirmisher", cost: 2, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Can move twice per turn", art: "/images/Phase Skirmisher.png", rarity: "rare" },
       energyleech: { name: "Energy Leech", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Drain 1 energy from opponent on kill", art: "/images/Energy Leech.png", rarity: "common" },
       burrowerbeast: { name: "Burrower Beast", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Untargetable next turn, can deploy adjacent to allies", art: "/images/Burrower Beast.png", rarity: "rare" },
@@ -280,14 +302,47 @@
       deadmanshand: { name: "Dead Man's Hand", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Draw 2 cards, then discard 1", art: "/images/Dead Mans Hand.png", rarity: "common" },
       mostwanted: { name: "Most Wanted", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Target enemy takes +2 damage from all attacks", art: "/images/Most Wanted.png", rarity: "rare" },
       shallowgrave: { name: "Shallow Grave", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Return a random friendly unit from discard to hand", art: "/images/Shallow Grave.png", rarity: "legendary" },
-      highnoon: { name: "High Noon", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Deal 2 damage to all enemies in target row", art: "/images/High Noon.png", rarity: "legendary" }
+      highnoon: { name: "High Noon", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Deal 2 damage to all enemies in target row", art: "/images/High Noon.png", rarity: "legendary" },
+      // Crimson Court (Vampire) cards
+      thrall: { name: "Thrall", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "crimson-court", effect: false, effectDesc: null, art: "/images/Thrall.png", rarity: "common" },
+      bloodfamiliar: { name: "Blood Familiar", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Attacks twice. Second attack deals 1 damage", art: "/images/Blood Familiar.png", rarity: "common" },
+      nightstalker: { name: "Nightstalker", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Lifesteal: Heals 1 HP when attacking or attacked", art: "/images/Nightstalker.png", rarity: "common" },
+      cryptkeeper: { name: "Crypt Keeper", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Gains +1 Max HP when a friendly unit dies", art: "/images/Crypt Keeper.png", rarity: "rare" },
+      vampirespawn: { name: "Vampire Spawn", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Lifesteal: Heals 1 HP when attacking or attacked", art: "/images/Vampire Spawn.png", rarity: "common" },
+      bloodpriest: { name: "Blood Priest", cost: 3, atk: 2, hp: 4, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "End of turn: Heal adjacent allies for 1", art: "/images/Blood Priest.png", rarity: "rare" },
+      soulcollector: { name: "Soul Collector", cost: 3, atk: 3, hp: 2, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "On kill: Add a copy of killed unit to your hand", art: "/images/Soul Collector.png", rarity: "rare" },
+      nosferatu: { name: "Nosferatu", cost: 4, atk: 3, hp: 4, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Lifesteal. Adjacent enemies deal -1 damage", art: "/images/Nosferatu.png", rarity: "rare" },
+      coffin: { name: "Coffin", cost: 4, atk: 0, hp: 6, type: "structure", archetype: "crimson-court", effect: true, effectDesc: "If destroyed, resummon at start of your next turn", art: "/images/Coffin.png", rarity: "rare" },
+      bloodcountess: { name: "Blood Countess", cost: 5, atk: 4, hp: 5, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Lifesteal. On kill: Gain +1/+1", art: "/images/Blood Countess.png", rarity: "legendary" },
+      eldervampire: { name: "Elder Vampire", cost: 5, atk: 3, hp: 6, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "When this would die, heal to full HP (once)", art: "/images/Elder Vampire.png", rarity: "legendary" },
+      vampirelord: { name: "Vampire Lord", cost: 6, atk: 5, hp: 7, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Diagonal attack. All friendly units have Lifesteal", art: "/images/Vampire Lord.png", rarity: "legendary" },
+      bloodpact: { name: "Blood Pact", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Deal 2 to friendly unit. Draw 2 cards", art: "/images/Blood Pact.png", rarity: "rare" },
+      bloodtransfusion: { name: "Blood Transfusion", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Swap target unit's ATK and HP", art: "/images/Blood Transfusion.png", rarity: "rare" },
+      crimsonrevival: { name: "Crimson Revival", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Return the last 2 units that died to your hand", art: "/images/Crimson Revival.png", rarity: "rare" },
+      sanguinefeast: { name: "Sanguine Feast", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Deal 2 to all enemies in row. Heal heart for each hit", art: "/images/Sanguine Feast.png", rarity: "legendary" }
     };
     const DEFAULT_DECKS = {
       medieval: { name: "Medieval Kingdom", cards: ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','royalguard','royalguard','paladin','siegeram','siegeram','warbanner','warbanner','shrine','shrine','armory','castlewalls','treasury','rally'] },
       'void-alien': { name: "Void Swarm", cards: ['voiddrone','voiddrone','voiddrone','scavengerlarva','scavengerlarva','scavengerlarva','spittercrawler','spittercrawler','spittercrawler','phaseskirmisher','phaseskirmisher','energyleech','energyleech','burrowerbeast','burrowerbeast','psionicoverseer','psionicoverseer','neuralharvester','neuralharvester','adaptivecolossus','sporetitan','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','assimilation','assimilation','voidcollapse','voidcollapse','hiveascension'] },
-      'western-skeleton': { name: "Boot Hill Outlaws", cards: ['bonedeputy','bonedeputy','bonedeputy','dustyrattler','dustyrattler','dustyrattler','graverobber','graverobber','phantomscout','phantomscout','phantomscout','bonerevolver','bonerevolver','undeadsheriff','undeadsheriff','coffintrapper','coffintrapper','undertaker','undertaker','thehangedman','ghostlystampede','bonecolossus','deadmanshand','deadmanshand','deadmanshand','mostwanted','mostwanted','shallowgrave','highnoon'] }
+      'western-skeleton': { name: "Boot Hill Outlaws", cards: ['bonedeputy','bonedeputy','bonedeputy','dustyrattler','dustyrattler','dustyrattler','graverobber','graverobber','phantomscout','phantomscout','phantomscout','bonerevolver','bonerevolver','undeadsheriff','undeadsheriff','coffintrapper','coffintrapper','undertaker','undertaker','thehangedman','ghostlystampede','bonecolossus','deadmanshand','deadmanshand','deadmanshand','mostwanted','mostwanted','shallowgrave','highnoon'] },
+      'crimson-court': { name: "Crimson Court", cards: ['thrall','thrall','thrall','bloodfamiliar','bloodfamiliar','bloodfamiliar','nightstalker','nightstalker','nightstalker','cryptkeeper','cryptkeeper','vampirespawn','vampirespawn','vampirespawn','bloodpriest','bloodpriest','soulcollector','soulcollector','nosferatu','nosferatu','coffin','coffin','bloodcountess','eldervampire','vampirelord','bloodpact','bloodpact','bloodtransfusion','bloodtransfusion','crimsonrevival','sanguinefeast'] }
     };
     let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
+    let currentMusic = 'default', currentBackground = 'default';
+    const MUSIC_OPTIONS = {
+      'default': 'Default (Match Theme)',
+      'medieval': 'Medieval Kingdom',
+      'void-alien': 'Void Alien Swarm',
+      'western-skeleton': 'Western Skeleton',
+      'crimson-court': 'Crimson Court'
+    };
+    const BACKGROUND_OPTIONS = {
+      'default': 'Default (Match Theme)',
+      'medieval': 'Medieval Castle',
+      'void-alien': 'Alien Hive',
+      'western-skeleton': 'Ghost Town',
+      'crimson-court': 'Vampire Manor'
+    };
     const cardGrid = document.getElementById('cardGrid'), deckCards = document.getElementById('deckCards'), deckCount = document.getElementById('deckCount');
     const collectionCount = document.getElementById('collectionCount'), saveBtn = document.getElementById('saveBtn'), clearBtn = document.getElementById('clearBtn');
     const fixCollectionBtn = document.getElementById('fixCollectionBtn');
@@ -295,6 +350,7 @@
     const searchInput = document.getElementById('searchInput'), ownedFilter = document.getElementById('ownedFilter'), archetypeFilter = document.getElementById('archetypeFilter');
     const typeFilter = document.getElementById('typeFilter'), costFilter = document.getElementById('costFilter'), rarityFilter = document.getElementById('rarityFilter'), resetFiltersBtn = document.getElementById('resetFiltersBtn');
     const toast = document.getElementById('toast'), toastIcon = document.getElementById('toastIcon'), toastMessage = document.getElementById('toastMessage');
+    const musicSelect = document.getElementById('musicSelect'), backgroundSelect = document.getElementById('backgroundSelect');
     function init() {
       const storedUser = localStorage.getItem('gridCardUser');
       if (storedUser) { try { currentUser = JSON.parse(storedUser); loadUserData(); } catch(e) { showLoginPrompt(); } }
@@ -310,16 +366,50 @@
       saveBtn.addEventListener('click', saveDeck);
       deckSelect.addEventListener('change', switchDeckType);
       deckNameInput.addEventListener('input', function() { currentDeckName = deckNameInput.value; hasChanges = true; updateSaveButton(); });
+      musicSelect.addEventListener('change', function() { currentMusic = musicSelect.value; hasChanges = true; updateSaveButton(); });
+      backgroundSelect.addEventListener('change', function() { currentBackground = backgroundSelect.value; hasChanges = true; updateSaveButton(); });
       fixCollectionBtn.addEventListener('click', fixCollection);
+      populateCustomizationSelects();
     }
     function showLoginPrompt() { cardGrid.innerHTML = '<div class="login-prompt" style="grid-column:1/-1"><div class="login-prompt-icon">🔒</div><h2>Login Required</h2><a href="/home.html" class="back-btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:#1a1a2e;font-weight:600">← Login</a></div>'; }
+    function populateCustomizationSelects() {
+      // Get unlocked music and backgrounds from user data
+      const unlockedMusic = currentUser?.unlockedMusic || ['medieval'];
+      const unlockedBackgrounds = currentUser?.unlockedBackgrounds || ['medieval'];
+      
+      // Populate music select
+      musicSelect.innerHTML = '<option value="default">Default (Match Theme)</option>';
+      Object.keys(MUSIC_OPTIONS).forEach(key => {
+        if (key === 'default') return;
+        const isUnlocked = unlockedMusic.includes(key) || key === 'medieval';
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = isUnlocked ? MUSIC_OPTIONS[key] : MUSIC_OPTIONS[key] + ' 🔒';
+        option.disabled = !isUnlocked;
+        musicSelect.appendChild(option);
+      });
+      
+      // Populate background select
+      backgroundSelect.innerHTML = '<option value="default">Default (Match Theme)</option>';
+      Object.keys(BACKGROUND_OPTIONS).forEach(key => {
+        if (key === 'default') return;
+        const isUnlocked = unlockedBackgrounds.includes(key) || key === 'medieval';
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = isUnlocked ? BACKGROUND_OPTIONS[key] : BACKGROUND_OPTIONS[key] + ' 🔒';
+        option.disabled = !isUnlocked;
+        backgroundSelect.appendChild(option);
+      });
+    }
     function loadUserData() {
       userCollection = currentUser.cardCollection || {};
       unlockedDecks = currentUser.unlockedDecks || ['medieval'];
+      populateCustomizationSelects();
       const customDecks = currentUser.customDecks || [];
       const medievalCustom = customDecks.find(function(d) { return d.id === 'medieval'; });
       const voidCustom = customDecks.find(function(d) { return d.id === 'void-alien'; });
       const skeletonCustom = customDecks.find(function(d) { return d.id === 'western-skeleton'; });
+      const vampireCustom = customDecks.find(function(d) { return d.id === 'crimson-court'; });
       deckSelect.querySelector('option[value="medieval"]').textContent = medievalCustom ? medievalCustom.name : 'Medieval Deck';
       const voidOption = deckSelect.querySelector('option[value="void-alien"]');
       if (unlockedDecks.includes('void-alien')) { voidOption.disabled = false; voidOption.textContent = voidCustom ? voidCustom.name : 'Void Alien Deck'; }
@@ -327,6 +417,9 @@
       const skeletonOption = deckSelect.querySelector('option[value="western-skeleton"]');
       if (unlockedDecks.includes('western-skeleton')) { skeletonOption.disabled = false; skeletonOption.textContent = skeletonCustom ? skeletonCustom.name : 'Western Skeleton Deck'; }
       else { skeletonOption.disabled = true; skeletonOption.textContent = 'Western Skeleton Deck 🔒'; }
+      const vampireOption = deckSelect.querySelector('option[value="crimson-court"]');
+      if (unlockedDecks.includes('crimson-court')) { vampireOption.disabled = false; vampireOption.textContent = vampireCustom ? vampireCustom.name : 'Crimson Court Deck'; }
+      else { vampireOption.disabled = true; vampireOption.textContent = 'Crimson Court Deck 🔒'; }
       loadDeckType('medieval');
       renderCollection();
       const total = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k); }).length;
@@ -337,15 +430,29 @@
     function loadDeckType(deckType) {
       currentDeckType = deckType; deckSelect.value = deckType;
       const customDeck = currentUser.customDecks ? currentUser.customDecks.find(function(d) { return d.id === deckType; }) : null;
-      if (customDeck) { currentDeckName = customDeck.name || DEFAULT_DECKS[deckType].name; currentDeck = customDeck.cards ? customDeck.cards.slice() : DEFAULT_DECKS[deckType].cards.slice(); }
-      else { currentDeckName = DEFAULT_DECKS[deckType].name; currentDeck = DEFAULT_DECKS[deckType].cards.slice(); }
-      deckNameInput.value = currentDeckName; hasChanges = false; selectedCardKey = null;
+      if (customDeck) { 
+        currentDeckName = customDeck.name || DEFAULT_DECKS[deckType].name; 
+        currentDeck = customDeck.cards ? customDeck.cards.slice() : DEFAULT_DECKS[deckType].cards.slice();
+        currentMusic = customDeck.music || 'default';
+        currentBackground = customDeck.background || 'default';
+      }
+      else { 
+        currentDeckName = DEFAULT_DECKS[deckType].name; 
+        currentDeck = DEFAULT_DECKS[deckType].cards.slice();
+        currentMusic = 'default';
+        currentBackground = 'default';
+      }
+      deckNameInput.value = currentDeckName; 
+      musicSelect.value = currentMusic;
+      backgroundSelect.value = currentBackground;
+      hasChanges = false; selectedCardKey = null;
       renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview();
     }
     function selectCard(key) { selectedCardKey = key; renderCollection(); renderDeck(); renderCardPreview(); }
     function getArchetypeName(archetype) {
       if (archetype === 'void-alien') return 'Void Alien';
       if (archetype === 'western-skeleton') return 'Western Skeleton';
+      if (archetype === 'crimson-court') return 'Crimson Court';
       return 'Medieval';
     }
     function renderCardPreview() {
@@ -373,6 +480,7 @@
     function getLockedBossName(archetype) {
       if (archetype === 'void-alien') return 'The Void Scout';
       if (archetype === 'western-skeleton') return 'The Dead Sheriff';
+      if (archetype === 'crimson-court') return 'The Blood Countess';
       return 'Unknown Boss';
     }
     function renderCollection() {
@@ -501,7 +609,14 @@
       if (!currentUser || currentUser.id === 'admin') { showToast('Cannot save', true); return; }
       saveBtn.disabled = true; saveBtn.textContent = '💾 Saving...';
       try {
-        const res = await fetch('/api/saveDeck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.id, deckType: currentDeckType, deckName: currentDeckName.trim(), cards: currentDeck }) });
+        const res = await fetch('/api/saveDeck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ 
+          userId: currentUser.id, 
+          deckType: currentDeckType, 
+          deckName: currentDeckName.trim(), 
+          cards: currentDeck,
+          music: currentMusic,
+          background: currentBackground
+        }) });
         const data = await res.json();
         if (data.success) {
           if (data.user) { localStorage.setItem('gridCardUser', JSON.stringify(data.user)); currentUser = data.user; }

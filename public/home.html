@@ -416,6 +416,8 @@
       padding: 30px;
       overflow-y: auto;
       flex: 1;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(138, 43, 226, 0.5) rgba(30, 30, 60, 0.5);
     }
     .modal-body::-webkit-scrollbar {
       width: 8px;
@@ -648,7 +650,28 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     
-    .boss-list { display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; overflow-x: hidden; }
+    .boss-list { display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; overflow-x: hidden; padding-right: 8px; }
+    
+    /* Custom Scrollbar for Boss List */
+    .boss-list::-webkit-scrollbar { width: 8px; }
+    .boss-list::-webkit-scrollbar-track { 
+      background: rgba(20, 20, 40, 0.6); 
+      border-radius: 4px;
+    }
+    .boss-list::-webkit-scrollbar-thumb { 
+      background: linear-gradient(180deg, #8b5cf6, #7c3aed); 
+      border-radius: 4px;
+      border: 1px solid rgba(138, 43, 226, 0.3);
+    }
+    .boss-list::-webkit-scrollbar-thumb:hover { 
+      background: linear-gradient(180deg, #a78bfa, #8b5cf6); 
+    }
+    /* Firefox scrollbar */
+    .boss-list { 
+      scrollbar-width: thin; 
+      scrollbar-color: #8b5cf6 rgba(20, 20, 40, 0.6); 
+    }
+    
     .boss-card {
       background: rgba(30, 30, 60, 0.6);
       border: 2px solid rgba(138, 43, 226, 0.3);
@@ -684,9 +707,10 @@
     .diff-btn.hard.selected { border-color: white; box-shadow: 0 0 8px #ef4444; }
     
     .boss-desc { font-size: 12px; color: #94a3b8; }
-    .boss-stars { margin-top: 5px; font-size: 14px; }
-    .star { color: #64748b; }
-    .star.earned { color: #fbbf24; }
+    .boss-stars { margin-top: 8px; font-size: 14px; display: flex; gap: 4px; align-items: center; }
+    .star { color: #64748b; transition: color 0.2s, text-shadow 0.2s; }
+    .star.earned { color: #fbbf24; text-shadow: 0 0 6px rgba(251, 191, 36, 0.5); }
+    .boss-stars-label { font-size: 10px; color: #64748b; margin-left: 6px; }
     
     .lobby-code {
       background: rgba(30, 30, 60, 0.6);
@@ -1013,6 +1037,17 @@
         const isLocked = boss.id > currentLevel;
         const earnedStars = stars[String(boss.id)] || 0;
         
+        // Star labels: Easy, Medium, Hard
+        const starLabels = ['Easy', 'Medium', 'Hard'];
+        const starsHtml = [1,2,3].map(i => 
+          `<span class="star ${i <= earnedStars ? 'earned' : ''}" title="${starLabels[i-1]}">★</span>`
+        ).join('');
+        
+        // Show highest difficulty beaten
+        const difficultyLabel = earnedStars > 0 
+          ? `<span class="boss-stars-label">(${starLabels[earnedStars - 1]} beaten)</span>` 
+          : `<span class="boss-stars-label">(Not beaten)</span>`;
+        
         return `
           <div class="boss-card ${isLocked ? 'locked' : ''}" data-boss-id="${boss.id}" data-difficulty="2">
             <div class="boss-header">
@@ -1025,7 +1060,8 @@
             </div>
             <div class="boss-desc">${boss.description}</div>
             <div class="boss-stars">
-              ${[1,2,3].map(i => `<span class="star ${i <= earnedStars ? 'earned' : ''}">★</span>`).join('')}
+              ${starsHtml}
+              ${difficultyLabel}
             </div>
           </div>
         `;
@@ -1327,7 +1363,9 @@
         enemyDeck: data.enemyDeck,
         username: getUsername(),
         campaign: '1',
-        boss: data.bossName
+        boss: data.bossName,
+        music: data.music || 'default',
+        background: data.background || 'default'
       });
       window.location.href = '/game.html?' + params.toString();
     });
@@ -1356,6 +1394,8 @@
         <button class="modal-nav-btn" data-section="energy">⚡ Energy</button>
         <button class="modal-nav-btn" data-section="combat">⚔️ Combat</button>
         <button class="modal-nav-btn" data-section="effects">✨ Effects</button>
+        <button class="modal-nav-btn" data-section="campaign">🏰 Campaign</button>
+        <button class="modal-nav-btn" data-section="decks">📚 Decks</button>
         <button class="modal-nav-btn" data-section="tips">💡 Tips</button>
       </nav>
       
@@ -1863,6 +1903,189 @@
               <div class="help-card-icon">⚡</div>
               <div class="help-card-title">Energy Drain</div>
               <div class="help-card-text">Steal or reduce enemy energy.</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- CAMPAIGN SECTION -->
+        <div class="help-section" id="help-campaign">
+          <h3 class="help-title">🏰 Campaign Mode</h3>
+          <p class="help-text">
+            Battle through a series of increasingly challenging AI bosses to unlock new cards, decks, music, and backgrounds!
+          </p>
+          
+          <h3 class="help-subtitle">Boss Battles</h3>
+          <p class="help-text">
+            Each boss has a unique deck theme and rewards. Defeat them to unlock their cards for your collection!
+          </p>
+          
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">👽</div>
+              <div class="help-card-title">The Void Scout</div>
+              <div class="help-card-text">Defeat to unlock the <strong style="color: #10b981;">Void Alien</strong> deck with energy-draining creatures!</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🤠</div>
+              <div class="help-card-title">The Dead Sheriff</div>
+              <div class="help-card-text">Defeat to unlock the <strong style="color: #a78bfa;">Western Skeleton</strong> deck with undead outlaws!</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🧛</div>
+              <div class="help-card-title">The Blood Countess</div>
+              <div class="help-card-text">Defeat to unlock the <strong style="color: #ef4444;">Crimson Court</strong> vampire deck with lifesteal!</div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">⚙️ Difficulty Settings</h3>
+          <p class="help-text">
+            Choose your challenge level before each boss battle! Click the difficulty selector on a boss card to change it.
+          </p>
+          
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">🟢</div>
+              <div class="help-card-title">Easy</div>
+              <div class="help-card-text">AI makes simpler decisions. Great for learning new decks or casual play.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🟡</div>
+              <div class="help-card-title">Medium</div>
+              <div class="help-card-text">Balanced challenge. AI plays strategically but isn't ruthless.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🔴</div>
+              <div class="help-card-title">Hard</div>
+              <div class="help-card-text">AI plays optimally, prioritizes threats, and punishes mistakes!</div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">🎰 Victory Rewards & Lottery</h3>
+          <p class="help-text">
+            When you defeat a boss, you'll spin the <strong style="color: #fbbf24;">Card Lottery</strong> to win new cards!
+          </p>
+          
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon" style="color: #94a3b8;">⬜</div>
+              <div class="help-card-title">Common Cards</div>
+              <div class="help-card-text">Most frequent drops. You can own up to <strong>3 copies</strong> of each common card.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon" style="color: #3b82f6;">🔷</div>
+              <div class="help-card-title">Rare Cards</div>
+              <div class="help-card-text">Less common, more powerful. You can own up to <strong>2 copies</strong> of each rare card.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon" style="color: #fbbf24;">⭐</div>
+              <div class="help-card-title">Legendary Cards</div>
+              <div class="help-card-text">The rarest and strongest! You can only own <strong>1 copy</strong> of each legendary.</div>
+            </div>
+          </div>
+          
+          <div class="help-tip">
+            <div class="help-tip-icon">💡</div>
+            <div class="help-tip-text">
+              <strong>Lottery Tip:</strong> The lottery animation shows the card's rarity with special effects - watch for golden sparkles on legendary drops!
+            </div>
+          </div>
+        </div>
+        
+        <!-- DECKS SECTION -->
+        <div class="help-section" id="help-decks">
+          <h3 class="help-title">📚 Deck Building</h3>
+          <p class="help-text">
+            Build custom decks from cards you've collected! Access the Deck Builder from the home screen.
+          </p>
+          
+          <h3 class="help-subtitle">Deck Rules</h3>
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon">📊</div>
+              <div>
+                <div class="effect-name">Deck Size</div>
+                <div class="effect-desc">Each deck must have <strong style="color: #fbbf24;">25-35 cards</strong>. Find the right balance!</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🔢</div>
+              <div>
+                <div class="effect-name">Copy Limits</div>
+                <div class="effect-desc">Max copies per card: <strong style="color: #94a3b8;">3 Common</strong>, <strong style="color: #3b82f6;">2 Rare</strong>, <strong style="color: #fbbf24;">1 Legendary</strong></div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🎨</div>
+              <div>
+                <div class="effect-name">Card Sets</div>
+                <div class="effect-desc">Cards belong to sets (Medieval, Void Alien, etc). You can mix cards from different sets!</div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Available Decks</h3>
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">⚔️</div>
+              <div class="help-card-title">Medieval Kingdom</div>
+              <div class="help-card-text">Classic knights, archers, and siege warfare. Always available to all players.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">👽</div>
+              <div class="help-card-title">Void Alien</div>
+              <div class="help-card-text">Energy manipulation and swarm tactics. Unlock by defeating The Void Scout.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">💀</div>
+              <div class="help-card-title">Western Skeleton</div>
+              <div class="help-card-text">Undead outlaws with death triggers. Unlock by defeating The Dead Sheriff.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🧛</div>
+              <div class="help-card-title">Crimson Court</div>
+              <div class="help-card-text">Vampires with lifesteal and soul theft. Unlock by defeating The Blood Countess.</div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">🎵 Deck Customization</h3>
+          <p class="help-text">
+            In the deck builder, you can customize more than just cards:
+          </p>
+          
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon">🎵</div>
+              <div>
+                <div class="effect-name">Battle Music</div>
+                <div class="effect-desc">Choose which theme music plays during battles with this deck.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🖼️</div>
+              <div>
+                <div class="effect-name">Background</div>
+                <div class="effect-desc">Select a battlefield background from themes you've unlocked.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">✏️</div>
+              <div>
+                <div class="effect-name">Deck Name</div>
+                <div class="effect-desc">Give your custom deck a unique name!</div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">⚡ Energy Curve</h3>
+          <p class="help-text">
+            The deck builder shows your <strong style="color: #3b82f6;">energy curve</strong> - a chart showing how many cards you have at each cost. 
+            A good deck has a mix of cheap and expensive cards!
+          </p>
+          
+          <div class="help-tip">
+            <div class="help-tip-icon">💡</div>
+            <div class="help-tip-text">
+              <strong>Building Tip:</strong> Include plenty of 1-3 cost cards for early game, and a few powerful 4-6 cost cards for late game finishers!
             </div>
           </div>
         </div>
