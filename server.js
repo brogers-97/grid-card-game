@@ -1,17 +1,49 @@
+require('dotenv').config();
 const path = require("path");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const { connectDB, User, CAMPAIGN_BOSSES, authHelpers } = require("./database");
+const GameAI = require("./gameAI");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Connect to MongoDB
+connectDB();
+
 app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json()); // For parsing JSON bodies
 
 // Redirect root to home page
 app.get("/", (req, res) => {
   res.redirect("/home.html");
+});
+
+// REST API endpoints for auth
+app.post("/api/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await authHelpers.register(username, password);
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await authHelpers.login(username, password);
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/campaign/bosses", (req, res) => {
+  res.json({ bosses: CAMPAIGN_BOSSES });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -455,6 +487,43 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
   }
 }
 
+// Handle campaign victory rewards
+async function handleCampaignVictory(lobby) {
+  try {
+    const { state } = lobby.gameState;
+    
+    // Calculate stars based on remaining HP
+    const heartHP = state.heartHP.gold;
+    let stars = 1;
+    if (heartHP >= 20) stars = 3;
+    else if (heartHP >= 10) stars = 2;
+    
+    const result = await authHelpers.completeBoss(lobby.hostUserId, lobby.bossId, stars);
+    
+    // Send rewards to player
+    if (lobby.hostSocket) {
+      lobby.hostSocket.emit("campaignVictory", {
+        bossId: lobby.bossId,
+        stars: stars,
+        rewards: result.rewards,
+        user: result.user
+      });
+    }
+    
+    logToLobby(lobby, "🎉 Boss defeated! Earned " + stars + " star(s)!");
+    logToLobby(lobby, "Cards won: " + result.rewards.cards.join(", "));
+    
+    if (result.rewards.music) {
+      logToLobby(lobby, "🎵 Unlocked: " + result.rewards.music + " music!");
+    }
+    if (result.rewards.background) {
+      logToLobby(lobby, "🖼️ Unlocked: " + result.rewards.background + " background!");
+    }
+  } catch (err) {
+    console.error("Campaign victory error:", err);
+  }
+}
+
 function emitLobbyState(lobby) {
   const info = { code: lobby.code, hostDeck: lobby.hostDeck, guestDeck: lobby.guestDeck, hostReady: lobby.hostReady, guestReady: lobby.guestReady, guestJoined: !!lobby.guestSocket, gameStarted: lobby.gameStarted };
   if (lobby.hostSocket) lobby.hostSocket.emit("lobbyState", { ...info, isHost: true });
@@ -484,16 +553,314 @@ function emitGameState(lobby) {
   if (lobby.guestSocket) lobby.guestSocket.emit("state", { ...base, hand: players.silver.hand, deckCount: players.silver.deck.length, discardCount: players.silver.discard.length, energy: players.silver.energy, maxEnergy: players.silver.maxEnergy, canDraw: !players.silver.hasDrawn && players.silver.hand.length < MAX_HAND_SIZE });
 }
 
+// Process AI turn for campaign mode
+async function processAITurn(lobby) {
+  const { state, players } = lobby.gameState;
+  const ai = lobby.ai;
+  if (!ai) return;
+
+  const aiRole = "silver";
+  const aiPlayer = players[aiRole];
+  
+  // Add delay to make AI feel more natural
+  const actionDelay = 800 + Math.random() * 400;
+  
+  const executeAIAction = async () => {
+    if (state.gameOver || state.activeSide !== aiRole) return;
+    
+    const action = ai.decideAction(
+      state,
+      aiPlayer.hand,
+      aiPlayer.energy,
+      aiPlayer.hasDrawn
+    );
+    
+    if (action.type === "endTurn") {
+      // AI ends turn - process end of turn
+      processEndOfTurnEffects(lobby, aiRole);
+      
+      for (const uid in state.units) {
+        const u = state.units[uid];
+        u.canDoubleAttack = false;
+        u.attackCountThisTurn = 0;
+        if (u.owner === aiRole) {
+          u.untargetable = false;
+          if (u.burrowPending) {
+            u.untargetable = true;
+            u.burrowPending = false;
+            logToLobby(lobby, u.name + " burrows underground!");
+          }
+        }
+      }
+      
+      state.activeSide = "gold";
+      state.movedThisTurn.clear();
+      state.attackedThisTurn.clear();
+      state.moveCountThisTurn = {};
+      
+      const goldPlayer = players.gold;
+      let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
+      if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
+      goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
+      goldPlayer.hasDrawn = false;
+      
+      processStartOfTurnEffects(lobby, "gold");
+      state.turnNumber++;
+      logToLobby(lobby, "--- GOLD's turn (+" + energyGain + " energy) ---");
+      emitGameState(lobby);
+      return;
+    }
+    
+    // Execute the action
+    await executeAction(lobby, aiRole, action);
+    emitGameState(lobby);
+    
+    // Continue AI turn after delay
+    if (state.activeSide === aiRole && !state.gameOver) {
+      setTimeout(executeAIAction, actionDelay);
+    }
+  };
+  
+  // Start AI turn with delay
+  setTimeout(executeAIAction, actionDelay);
+}
+
+// Execute a single AI action
+async function executeAction(lobby, role, action) {
+  const { state, players } = lobby.gameState;
+  const p = players[role];
+  
+  switch (action.type) {
+    case "drawCard": {
+      if (p.hasDrawn) return;
+      if (p.deck.length === 0 && p.discard.length === 0) return;
+      if (p.hand.length >= MAX_HAND_SIZE) return;
+      const drawCount = playerHasBuff(state, role, "draw_buff") ? 2 : 1;
+      drawCards(lobby, role, drawCount);
+      p.hasDrawn = true;
+      logToLobby(lobby, role.toUpperCase() + " draws " + drawCount);
+      break;
+    }
+    
+    case "playCard": {
+      const idx = p.hand.findIndex(c => c.id === action.cardId);
+      if (idx === -1) return;
+      const card = p.hand[idx];
+      if (p.energy < card.cost) return;
+      
+      if (card.effect === "instant") {
+        p.energy -= card.cost;
+        p.hand.splice(idx, 1);
+        p.discard.push(card);
+        processInstantSpell(lobby, role, card.effectId, action.row, action.targetUnitId);
+        logToLobby(lobby, role.toUpperCase() + " cast " + card.name);
+      } else if (action.spawn) {
+        p.energy -= card.cost;
+        p.hand.splice(idx, 1);
+        p.discard.push(card);
+        const id = genId();
+        const hpB = getArmoryBonus(state, role);
+        const maxHp = card.hp + hpB;
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        if (card.effectId === "burrow") unitData.burrowPending = true;
+        state.units[id] = unitData;
+        state.spawn[role] = id;
+        logToLobby(lobby, role.toUpperCase() + " deployed " + card.name + " to spawn");
+      } else if (action.row !== undefined && action.col !== undefined) {
+        if (state.board[action.row][action.col]) return;
+        p.energy -= card.cost;
+        p.hand.splice(idx, 1);
+        p.discard.push(card);
+        const id = genId();
+        const hpB = getArmoryBonus(state, role);
+        const maxHp = card.hp + hpB;
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        if (card.effectId === "burrow") unitData.burrowPending = true;
+        state.units[id] = unitData;
+        state.board[action.row][action.col] = id;
+        recomputeOwners(state);
+        logToLobby(lobby, role.toUpperCase() + " played " + card.name);
+      }
+      break;
+    }
+    
+    case "move": {
+      const u = state.units[action.unitId];
+      if (!u || u.owner !== role) return;
+      const moveCount = state.moveCountThisTurn[action.unitId] || 0;
+      const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
+      if (moveCount >= (canDoubleMove ? 2 : 1)) return;
+      
+      const from = getUnitPos(state, action.unitId);
+      if (!from) return;
+      if (state.board[action.toRow][action.toCol]) return;
+      
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "move", unitId: action.unitId, fromRow: from.r, fromCol: from.c, toRow: action.toRow, toCol: action.toCol });
+      state.board[from.r][from.c] = null;
+      state.board[action.toRow][action.toCol] = action.unitId;
+      state.moveCountThisTurn[action.unitId] = moveCount + 1;
+      if (state.moveCountThisTurn[action.unitId] >= (canDoubleMove ? 2 : 1)) {
+        state.movedThisTurn.add(action.unitId);
+      }
+      recomputeOwners(state);
+      logToLobby(lobby, role.toUpperCase() + " moved");
+      break;
+    }
+    
+    case "moveFromSpawn": {
+      if (state.spawn[role] !== action.unitId) return;
+      const u = state.units[action.unitId];
+      if (!u) return;
+      if (state.board[action.toRow][action.toCol]) return;
+      state.spawn[role] = null;
+      state.board[action.toRow][action.toCol] = action.unitId;
+      state.movedThisTurn.add(action.unitId);
+      recomputeOwners(state);
+      logToLobby(lobby, role.toUpperCase() + "'s " + u.name + " entered board");
+      break;
+    }
+    
+    case "attackUnit": {
+      const a = state.units[action.attackerId];
+      const t = state.units[action.targetId];
+      if (!a || !t || a.owner !== role) return;
+      if (state.attackedThisTurn.has(action.attackerId)) return;
+      
+      const ap = getUnitPos(state, action.attackerId);
+      const tp = getUnitPos(state, action.targetId);
+      if (!ap || !tp) return;
+      
+      let dmg = getEffectiveAtk(state, action.attackerId);
+      dmg = applyDamageReduction(state, action.targetId, dmg);
+      const before = t.hp;
+      t.hp -= dmg;
+      
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
+      
+      state.attackedThisTurn.add(action.attackerId);
+      logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name);
+      
+      if (t.hp <= 0) {
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
+        processOnDeathEffect(lobby, t, t.owner);
+        processOnKillEffect(lobby, action.attackerId, role, { r: tp.r, c: tp.c });
+        if (!state.board[tp.r][tp.c] || state.board[tp.r][tp.c] === action.targetId) {
+          state.board[tp.r][tp.c] = null;
+        }
+        delete state.units[action.targetId];
+        logToLobby(lobby, t.name + " destroyed!");
+        recomputeOwners(state);
+      }
+      break;
+    }
+    
+    case "attackRow": {
+      const a = state.units[action.attackerId];
+      if (!a || a.owner !== role) return;
+      if (state.attackedThisTurn.has(action.attackerId)) return;
+      if (state.rowHP[action.row] <= 0) return;
+      
+      let dmg = getEffectiveAtk(state, action.attackerId);
+      if (a.effectId === "siege") dmg *= 2;
+      state.rowHP[action.row] = Math.max(0, state.rowHP[action.row] - dmg);
+      state.attackedThisTurn.add(action.attackerId);
+      logToLobby(lobby, a.name + " attacks row for " + dmg);
+      
+      if (state.rowHP[action.row] <= 0) {
+        logToLobby(lobby, "Row " + String.fromCharCode(65 + action.row) + " destroyed!");
+        // Deal overflow to heart
+        const overflow = Math.max(0, dmg - state.rowHP[action.row]);
+        if (action.row <= 1) {
+          state.heartHP.gold = Math.max(0, state.heartHP.gold - overflow);
+          if (state.heartHP.gold <= 0) {
+            state.gameOver = true;
+            state.winner = role;
+            logToLobby(lobby, role.toUpperCase() + " WINS!");
+          }
+        }
+      }
+      break;
+    }
+  }
+}
+
 io.on("connection", (socket) => {
   console.log("Connected:", socket.id);
   socket.emit("deckList", Object.entries(DECKS).map(([id, d]) => ({ id, name: d.name, description: d.description })));
+  socket.emit("campaignBosses", CAMPAIGN_BOSSES);
 
   socket.on("createLobby", (data) => {
     const code = generateLobbyCode();
-    lobbies[code] = { code, hostSocket: socket, guestSocket: null, hostDeck: data.deckId || "medieval", guestDeck: null, hostReady: true, guestReady: false, gameStarted: false, gameState: null, log: [] };
-    socket.data.lobbyCode = code; socket.data.isHost = true;
-    console.log("Lobby " + code + " created");
+    lobbies[code] = { 
+      code, 
+      hostSocket: socket, 
+      guestSocket: null, 
+      hostDeck: data.deckId || "medieval", 
+      guestDeck: null, 
+      hostReady: true, 
+      guestReady: false, 
+      gameStarted: false, 
+      gameState: null, 
+      log: [],
+      hostUsername: data.username || "Guest",
+      guestUsername: null,
+      hostUserId: data.userId || null,
+      guestUserId: null,
+      isAIGame: false,
+      aiLevel: 1
+    };
+    socket.data.lobbyCode = code; 
+    socket.data.isHost = true;
+    socket.data.username = data.username || "Guest";
+    console.log("Lobby " + code + " created by " + socket.data.username);
     emitLobbyState(lobbies[code]);
+  });
+
+  // Start campaign game against AI
+  socket.on("startCampaign", async (data) => {
+    const { bossId, deckId, username, userId } = data;
+    const boss = CAMPAIGN_BOSSES.find(b => b.id === bossId);
+    if (!boss) return socket.emit("lobbyError", "Invalid boss.");
+
+    const code = generateLobbyCode();
+    lobbies[code] = {
+      code,
+      hostSocket: socket,
+      guestSocket: null,
+      hostDeck: deckId || "medieval",
+      guestDeck: boss.deckId,
+      hostReady: true,
+      guestReady: true,
+      gameStarted: true,
+      gameState: null,
+      log: [],
+      hostUsername: username || "Guest",
+      guestUsername: boss.name,
+      hostUserId: userId || null,
+      guestUserId: null,
+      isAIGame: true,
+      aiLevel: boss.aiLevel,
+      bossId: bossId,
+      ai: new GameAI(boss.aiLevel)
+    };
+    
+    socket.data.lobbyCode = code;
+    socket.data.isHost = true;
+    socket.data.username = username || "Guest";
+    
+    lobbies[code].gameState = createGameState(deckId || "medieval", boss.deckId);
+    socket.emit("role", "gold");
+    socket.emit("campaignStart", { 
+      code: code, 
+      myDeck: deckId || "medieval", 
+      enemyDeck: boss.deckId,
+      bossName: boss.name 
+    });
+    socket.emit("enemyInfo", { username: boss.name, isAI: true });
+    logToLobby(lobbies[code], "=== CAMPAIGN: " + boss.name.toUpperCase() + " ===");
+    logToLobby(lobbies[code], "GOLD's turn");
+    emitLobbyState(lobbies[code]);
+    emitGameState(lobbies[code]);
   });
 
   socket.on("joinLobby", (data) => {
@@ -501,9 +868,15 @@ io.on("connection", (socket) => {
     if (!lobby) return socket.emit("lobbyError", "Lobby not found.");
     if (lobby.guestSocket) return socket.emit("lobbyError", "Lobby full.");
     if (lobby.gameStarted) return socket.emit("lobbyError", "Game in progress.");
-    lobby.guestSocket = socket; lobby.guestDeck = data.deckId || "medieval"; lobby.guestReady = true;
-    socket.data.lobbyCode = code; socket.data.isHost = false;
-    console.log("Joined lobby " + code);
+    lobby.guestSocket = socket; 
+    lobby.guestDeck = data.deckId || "medieval"; 
+    lobby.guestReady = true;
+    lobby.guestUsername = data.username || "Guest";
+    lobby.guestUserId = data.userId || null;
+    socket.data.lobbyCode = code; 
+    socket.data.isHost = false;
+    socket.data.username = data.username || "Guest";
+    console.log(socket.data.username + " joined lobby " + code);
     emitLobbyState(lobby);
   });
 
@@ -519,7 +892,9 @@ io.on("connection", (socket) => {
     lobby.gameStarted = true;
     lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck);
     lobby.hostSocket.emit("role", "gold");
+    lobby.hostSocket.emit("enemyInfo", { username: lobby.guestUsername, isAI: false });
     lobby.guestSocket.emit("role", "silver");
+    lobby.guestSocket.emit("enemyInfo", { username: lobby.hostUsername, isAI: false });
     logToLobby(lobby, "=== GAME START ===");
     logToLobby(lobby, "GOLD's turn");
     emitLobbyState(lobby);
@@ -655,7 +1030,13 @@ io.on("connection", (socket) => {
       processStartOfTurnEffects(lobby, state.activeSide);
       state.turnNumber++; // Increment every turn
       logToLobby(lobby, "--- " + state.activeSide.toUpperCase() + "'s turn (+" + energyGain + " energy) ---");
-      return emitGameState(lobby);
+      emitGameState(lobby);
+      
+      // If it's now AI's turn, process AI actions
+      if (lobby.isAIGame && state.activeSide === "silver" && !state.gameOver) {
+        processAITurn(lobby);
+      }
+      return;
     }
 
     if (payload.type === "drawCard") {
@@ -1048,7 +1429,16 @@ io.on("connection", (socket) => {
       const dmg = getEffectiveAtk(state, attackerId); state.attackedThisTurn.add(attackerId);
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
       logToLobby(lobby, role.toUpperCase() + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
-      if (state.heartHP[target] <= 0) { state.gameOver = true; logToLobby(lobby, "=== " + target.toUpperCase() + " DESTROYED! " + role.toUpperCase() + " WINS! ==="); }
+      if (state.heartHP[target] <= 0) { 
+        state.gameOver = true; 
+        state.winner = role;
+        logToLobby(lobby, "=== " + target.toUpperCase() + " DESTROYED! " + role.toUpperCase() + " WINS! ==="); 
+        
+        // Handle campaign rewards
+        if (lobby.isAIGame && role === "gold" && lobby.hostUserId && lobby.bossId) {
+          handleCampaignVictory(lobby);
+        }
+      }
       return emitGameState(lobby);
     }
     

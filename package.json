@@ -10,9 +10,16 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.6.1",
     "express": "^4.18.2",
+    "mongoose": "^8.0.0",
     "socket.io": "^4.6.1"
   },
-  "keywords": ["game", "multiplayer", "cards"],
+  "keywords": [
+    "game",
+    "multiplayer",
+    "cards"
+  ],
   "license": "MIT"
 }
