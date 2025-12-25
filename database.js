@@ -130,6 +130,60 @@ userSchema.methods.toPublicJSON = function() {
 
 const User = mongoose.model('User', userSchema);
 
+// Card rarity definitions (used for lottery system)
+const CARD_RARITIES = {
+  // Void Alien
+  'voiddrone': 'common',
+  'scavengerlarva': 'common',
+  'spittercrawler': 'common',
+  'phaseskirmisher': 'common',
+  'energyleech': 'rare',
+  'burrowerbeast': 'rare',
+  'psionicoverseer': 'rare',
+  'neuralharvester': 'rare',
+  'adaptivecolossus': 'legendary',
+  'sporetitan': 'legendary',
+  'voidbroodmother': 'legendary',
+  'eclipsedevourer': 'legendary',
+  'ufoscraper': 'legendary',
+  'assimilation': 'rare',
+  'voidcollapse': 'rare',
+  'hiveascension': 'legendary',
+  // Western Skeleton
+  'bonedeputy': 'common',
+  'dustyrattler': 'common',
+  'graverobber': 'rare',
+  'phantomscout': 'common',
+  'bonerevolver': 'rare',
+  'undeadsheriff': 'rare',
+  'coffintrapper': 'rare',
+  'undertaker': 'rare',
+  'thehangedman': 'legendary',
+  'ghostlystampede': 'legendary',
+  'bonecolossus': 'legendary',
+  'deadmanshand': 'common',
+  'mostwanted': 'rare',
+  'shallowgrave': 'legendary',
+  'highnoon': 'legendary',
+  // Crimson Court (Vampire)
+  'thrall': 'common',
+  'bloodfamiliar': 'common',
+  'nightstalker': 'common',
+  'cryptkeeper': 'rare',
+  'vampirespawn': 'common',
+  'bloodpriest': 'rare',
+  'soulcollector': 'rare',
+  'nosferatu': 'rare',
+  'coffin': 'rare',
+  'bloodcountess': 'legendary',
+  'eldervampire': 'legendary',
+  'vampirelord': 'legendary',
+  'bloodpact': 'rare',
+  'bloodtransfusion': 'rare',
+  'crimsonrevival': 'rare',
+  'sanguinefeast': 'legendary'
+};
+
 // Campaign Bosses Definition
 const CAMPAIGN_BOSSES = [
   {
@@ -157,6 +211,20 @@ const CAMPAIGN_BOSSES = [
     unlocks: {
       music: 'western-skeleton',
       background: 'western-skeleton'
+    }
+  },
+  {
+    id: 3,
+    name: "The Blood Countess",
+    description: "An ancient vampire queen who has fed on countless souls",
+    deckId: "crimson-court",
+    difficulty: "hard",
+    aiLevel: 3,
+    requiresBoss: 2,
+    cardRewards: ['thrall', 'bloodfamiliar', 'nightstalker', 'cryptkeeper', 'vampirespawn', 'bloodpriest', 'soulcollector', 'nosferatu', 'coffin', 'bloodcountess', 'eldervampire', 'vampirelord', 'bloodpact', 'bloodtransfusion', 'crimsonrevival', 'sanguinefeast'],
+    unlocks: {
+      music: 'crimson-court',
+      background: 'crimson-court'
     }
   }
 ];
@@ -273,14 +341,60 @@ const authHelpers = {
     return user.toPublicJSON();
   },
   
-  async completeBoss(userId, bossId, stars) {
+  async completeBoss(userId, bossId, stars, aiLevel = 2) {
+    // Rarity chances based on difficulty
+    // Easy (1): 15% rare, 5% legendary
+    // Medium (2): 35% rare, 15% legendary  
+    // Hard (3): 50% rare, 30% legendary
+    const rarityChances = {
+      1: { rare: 0.15, legendary: 0.05 },   // Easy
+      2: { rare: 0.35, legendary: 0.15 },   // Medium
+      3: { rare: 0.50, legendary: 0.30 }    // Hard
+    };
+    
+    const chances = rarityChances[aiLevel] || rarityChances[2];
+    
+    // Helper to pick a card based on rarity roll
+    const pickCardByRarity = (availableCards) => {
+      const roll = Math.random();
+      let targetRarity;
+      
+      if (roll < chances.legendary) {
+        targetRarity = 'legendary';
+      } else if (roll < chances.legendary + chances.rare) {
+        targetRarity = 'rare';
+      } else {
+        targetRarity = 'common';
+      }
+      
+      // Filter cards by target rarity
+      let pool = availableCards.filter(card => CARD_RARITIES[card] === targetRarity);
+      
+      // If no cards of that rarity available, fall back to any available card
+      if (pool.length === 0) {
+        // Try lower rarities
+        if (targetRarity === 'legendary') {
+          pool = availableCards.filter(card => CARD_RARITIES[card] === 'rare');
+        }
+        if (pool.length === 0) {
+          pool = availableCards.filter(card => CARD_RARITIES[card] === 'common');
+        }
+        if (pool.length === 0) {
+          pool = availableCards; // Just pick anything
+        }
+      }
+      
+      if (pool.length === 0) return null;
+      return pool[Math.floor(Math.random() * pool.length)];
+    };
+    
     if (userId === 'admin') {
       // Admin still gets the reward display but nothing persists
       const boss = CAMPAIGN_BOSSES.find(b => b.id === bossId);
       const rewardCards = [];
       for (let i = 0; i < 3; i++) {
-        const randomCard = boss.cardRewards[Math.floor(Math.random() * boss.cardRewards.length)];
-        rewardCards.push(randomCard);
+        const card = pickCardByRarity(boss.cardRewards);
+        if (card) rewardCards.push(card);
       }
       return {
         user: null,
@@ -336,20 +450,26 @@ const authHelpers = {
       user.unlockedDecks.push(boss.deckId);
     }
     
-    // Random card rewards (3 cards) - max 3 copies of any card
+    // Random card rewards (3 cards) - max 3 copies of any card, rarity based on difficulty
     const rewardCards = [];
     for (let i = 0; i < 3; i++) {
-      // Find cards that aren't maxed out yet
+      // Find cards that aren't maxed out yet (respect rarity limits: common 3, rare 2, legendary 1)
       const availableCards = boss.cardRewards.filter(card => {
         const currentCount = user.cardCollection.get(card) || 0;
-        return currentCount < 3;
+        const rarity = CARD_RARITIES[card] || 'common';
+        const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
+        return currentCount < maxCopies;
       });
       
       if (availableCards.length > 0) {
-        const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-        rewardCards.push(randomCard);
-        const currentCount = user.cardCollection.get(randomCard) || 0;
-        user.cardCollection.set(randomCard, Math.min(currentCount + 1, 3));
+        const selectedCard = pickCardByRarity(availableCards);
+        if (selectedCard) {
+          rewardCards.push(selectedCard);
+          const currentCount = user.cardCollection.get(selectedCard) || 0;
+          const rarity = CARD_RARITIES[selectedCard] || 'common';
+          const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
+          user.cardCollection.set(selectedCard, Math.min(currentCount + 1, maxCopies));
+        }
       }
     }
     

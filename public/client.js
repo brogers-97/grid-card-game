@@ -96,10 +96,30 @@ const isHost = urlParams.get('host') === '1';
 myDeckId = urlParams.get('myDeck');
 enemyDeckId = urlParams.get('enemyDeck');
 
+// Get custom music and background from URL (from deck builder settings)
+const customMusic = urlParams.get('music');
+const customBackground = urlParams.get('background');
+
+// Determine which music to use: custom setting, or default to deck theme
+function getMusicDeckId() {
+  if (customMusic && customMusic !== 'default') {
+    return customMusic;
+  }
+  return myDeckId;
+}
+
+// Determine which background to use: custom setting, or default to deck theme
+function getBackgroundDeckId() {
+  if (customBackground && customBackground !== 'default') {
+    return customBackground;
+  }
+  return myDeckId;
+}
+
 // Initialize audio and backgrounds when page loads
 if (myDeckId) {
-  setupAudio(myDeckId);
-  setBackgroundImages(myDeckId, enemyDeckId);
+  setupAudio(getMusicDeckId());
+  setBackgroundImages(getBackgroundDeckId(), enemyDeckId);
 }
 
 // Rejoin lobby when connected
@@ -144,6 +164,7 @@ function showTooltip(unitId, x, y, buff) {
   // Calculate buffs
   const atkBuff = getAtkBuff(unitId);
   const effectiveAtk = u.atk + atkBuff;
+  const hpBuff = u.hpBuffed ? 1 : 0;
   
   // HP display with max HP
   const maxHp = u.maxHp || u.hp;
@@ -176,8 +197,6 @@ function showTooltip(unitId, x, y, buff) {
   let statusHtml = '';
   if (u.untargetable) {
     statusHtml = '<div class="tooltip-status">🛡️ Untargetable</div>';
-  } else if (u.burrowPending) {
-    statusHtml = '<div class="tooltip-status">⏳ Burrowing next turn</div>';
   }
   
   tooltipEl.innerHTML = `
@@ -199,7 +218,7 @@ function showTooltip(unitId, x, y, buff) {
           </div>
           <div class="tooltip-stat">
             <div class="tooltip-stat-value hp">${hpDisplay}</div>
-            <div class="tooltip-stat-label">♥ HP</div>
+            <div class="tooltip-stat-label">♥ HP${hpBuff > 0 ? ` (+${hpBuff})` : ''}</div>
           </div>
         </div>
         ${statusHtml}
@@ -1095,6 +1114,7 @@ function renderHand() {
     el.className = "handCard";
     if (card.type === "spell") el.classList.add("spell-card");
     if (card.id === selectedCardId) el.classList.add("selected");
+    if (card.stolen) el.classList.add("stolen-card"); // Grayscale for Soul Collector stolen cards
 
     const icon = CARD_ICONS[card.key] || '⚔️';
     const effectLabel = card.effectDesc ? card.effectDesc.split(':')[0] : '';
@@ -1114,6 +1134,7 @@ function renderHand() {
       <div class="cardArt ${card.type === 'spell' ? 'spell-art' : ''}" style="${artStyle}">${artContent}</div>
       <div class="cardCost">${card.cost}</div>
       ${card.type === 'spell' ? '<div class="cardType">SPELL</div>' : ''}
+      ${card.stolen ? '<div class="stolenBadge">👻</div>' : ''}
       <div class="cardInfoOverlay">
         <div class="cardName">${card.name}</div>
         ${effectLabel ? `<div class="cardEffect">${effectLabel}</div>` : ''}
@@ -1194,7 +1215,7 @@ function renderSpawnUnit(el, unitId, spawnEl) {
   
   const u = S.units[unitId];
   el.innerHTML = `
-    <div class="unitName">${u.name}${u.effectId ? ' ✨' : ''}</div>
+    <div class="unitName">${u.name}</div>
     <div class="unitStats">
       <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${u.atk}</div>
       <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}</div>
@@ -1328,6 +1349,12 @@ function renderAll() {
       const isEnemy = u.owner !== myRole && myRole !== "spectator";
       if (isEnemy) wrap.classList.add("enemy-unit");
       
+      // Add stolen class for Soul Collector stolen units
+      if (u.stolen) wrap.classList.add("stolen-unit");
+      
+      // Add untargetable class for burrowed/phantom units
+      if (u.untargetable) wrap.classList.add("untargetable");
+      
       // Add damage animation if this cell is being damaged
       const damageKey = `${sr}-${c}`;
       if (damagingCells.has(damageKey)) {
@@ -1337,6 +1364,7 @@ function renderAll() {
       // Calculate buffs
       const atkBuff = getAtkBuff(unitId);
       const atkBuffHtml = atkBuff > 0 ? `<span class="buff">+${atkBuff}</span>` : '';
+      const hpBuffHtml = u.hpBuffed ? `<span class="buff">+1</span>` : '';
       
       // Art display
       const icon = CARD_ICONS[u.key] || '⚔️';
@@ -1344,18 +1372,20 @@ function renderAll() {
       const encodedArt = hasArt ? encodeURI(u.art) : '';
       const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
       const artContent = hasArt ? '' : icon;
-      const effectBadge = u.effectId ? '<div class="unitEffectBadge">✨</div>' : '';
-      const unitCost = u.cost !== undefined ? u.cost : 0;
+      const effectBadge = ''; // Removed star badge
+      
+      // Shield overlay for untargetable units
+      const shieldOverlay = u.untargetable ? '<div class="shield-overlay"><div class="shield-icon">🛡️</div></div>' : '';
       
       wrap.innerHTML = `
         <div class="unitArt" style="${artStyle}">${artContent}</div>
-        <div class="unitCostBadge">${unitCost}</div>
         ${effectBadge}
+        ${shieldOverlay}
         <div class="unitInfoOverlay">
           <div class="unitName">${u.name}</div>
           <div class="unitStats">
             <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${u.atk}${atkBuffHtml}</div>
-            <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}</div>
+            <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}${hpBuffHtml}</div>
           </div>
         </div>
       `;
@@ -2216,6 +2246,129 @@ function showCampaignVictoryPopup(data) {
       box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
       animation: slotReveal 0.5s ease;
     }
+    /* Common reveal - simple gold border */
+    .slot-card.revealed.common {
+      border-color: #9ca3af;
+      box-shadow: 0 0 15px rgba(156, 163, 175, 0.5);
+    }
+    /* Rare reveal - blue glow with pulse */
+    .slot-card.revealed.rare {
+      border-color: #3b82f6;
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.4);
+      animation: slotReveal 0.5s ease, rareGlow 1.5s ease-in-out infinite;
+    }
+    @keyframes rareGlow {
+      0%, 100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8), 0 0 50px rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 35px rgba(59, 130, 246, 1), 0 0 70px rgba(59, 130, 246, 0.6); }
+    }
+    /* Legendary reveal - EPIC rainbow shimmer with particles */
+    .slot-card.revealed.legendary {
+      border-color: #fbbf24;
+      animation: slotReveal 0.5s ease, legendaryGlow 2s ease-in-out infinite, legendaryBorder 3s linear infinite;
+      position: relative;
+    }
+    .slot-card.revealed.legendary::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000);
+      background-size: 400% 400%;
+      border-radius: 12px;
+      z-index: -1;
+      animation: legendaryRainbow 2s linear infinite;
+      filter: blur(8px);
+    }
+    .slot-card.revealed.legendary::after {
+      content: '✦';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      color: #fbbf24;
+      text-shadow: 0 0 10px #fbbf24, 0 0 20px #fbbf24, 0 0 30px #ff8c00;
+      animation: legendarySparkle 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes legendaryGlow {
+      0%, 100% { 
+        box-shadow: 0 0 30px rgba(251, 191, 36, 0.9), 
+                    0 0 60px rgba(251, 191, 36, 0.6),
+                    0 0 90px rgba(255, 140, 0, 0.4),
+                    inset 0 0 30px rgba(251, 191, 36, 0.2);
+      }
+      50% { 
+        box-shadow: 0 0 50px rgba(251, 191, 36, 1), 
+                    0 0 100px rgba(251, 191, 36, 0.8),
+                    0 0 150px rgba(255, 140, 0, 0.6),
+                    inset 0 0 50px rgba(251, 191, 36, 0.3);
+      }
+    }
+    @keyframes legendaryRainbow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 400% 50%; }
+    }
+    @keyframes legendaryBorder {
+      0%, 100% { border-color: #fbbf24; }
+      25% { border-color: #ff8c00; }
+      50% { border-color: #ff6b6b; }
+      75% { border-color: #ffd700; }
+    }
+    @keyframes legendarySparkle {
+      0% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: translateX(-50%) scale(1.3) rotate(15deg); opacity: 0.8; }
+    }
+    /* Legendary particles */
+    .legendary-particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+    .legendary-particles span {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #fbbf24;
+      border-radius: 50%;
+      animation: particle 1.5s ease-in-out infinite;
+      box-shadow: 0 0 6px #fbbf24, 0 0 12px #ff8c00;
+    }
+    .legendary-particles span:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .legendary-particles span:nth-child(2) { left: 30%; animation-delay: 0.2s; }
+    .legendary-particles span:nth-child(3) { left: 50%; animation-delay: 0.4s; }
+    .legendary-particles span:nth-child(4) { left: 70%; animation-delay: 0.6s; }
+    .legendary-particles span:nth-child(5) { left: 90%; animation-delay: 0.8s; }
+    @keyframes particle {
+      0%, 100% { bottom: 0; opacity: 0; transform: scale(0); }
+      10% { opacity: 1; transform: scale(1); }
+      90% { opacity: 1; }
+      100% { bottom: 100%; opacity: 0; transform: scale(0.5); }
+    }
+    /* Rarity label */
+    .rarity-label {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 8px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-family: 'Cinzel', serif;
+    }
+    .rarity-label.common { background: #4b5563; color: #e5e7eb; }
+    .rarity-label.rare { background: #1d4ed8; color: #bfdbfe; text-shadow: 0 0 5px #3b82f6; }
+    .rarity-label.legendary { 
+      background: linear-gradient(135deg, #f59e0b, #fbbf24); 
+      color: #1a1a2e; 
+      text-shadow: none;
+      animation: legendaryLabelPulse 1s ease-in-out infinite;
+    }
+    @keyframes legendaryLabelPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
     @keyframes slotReveal {
       0% { transform: scale(1.2); }
       50% { transform: scale(0.9); }
@@ -2287,7 +2440,40 @@ function showCampaignVictoryPopup(data) {
     'ufoscraper': 'UFO Scraper',
     'assimilation': 'Assimilation',
     'voidcollapse': 'Void Collapse',
-    'hiveascension': 'Hive Ascension'
+    'hiveascension': 'Hive Ascension',
+    // Western Skeleton cards
+    'bonedeputy': 'Bone Deputy',
+    'dustyrattler': 'Dusty Rattler',
+    'graverobber': 'Grave Robber',
+    'phantomscout': 'Phantom Scout',
+    'bonerevolver': 'Bone Revolver',
+    'undeadsheriff': 'Undead Sheriff',
+    'coffintrapper': 'Coffin Trapper',
+    'undertaker': 'Undertaker',
+    'thehangedman': 'The Hanged Man',
+    'ghostlystampede': 'Ghostly Stampede',
+    'bonecolossus': 'Bone Colossus',
+    'deadmanshand': 'Dead Mans Hand',
+    'mostwanted': 'Most Wanted',
+    'shallowgrave': 'Shallow Grave',
+    'highnoon': 'High Noon',
+    // Crimson Court cards
+    'thrall': 'Thrall',
+    'bloodfamiliar': 'Blood Familiar',
+    'nightstalker': 'Nightstalker',
+    'cryptkeeper': 'Crypt Keeper',
+    'vampirespawn': 'Vampire Spawn',
+    'bloodpriest': 'Blood Priest',
+    'soulcollector': 'Soul Collector',
+    'nosferatu': 'Nosferatu',
+    'coffin': 'Coffin',
+    'bloodcountess': 'Blood Countess',
+    'eldervampire': 'Elder Vampire',
+    'vampirelord': 'Vampire Lord',
+    'bloodpact': 'Blood Pact',
+    'bloodtransfusion': 'Blood Transfusion',
+    'crimsonrevival': 'Crimson Revival',
+    'sanguinefeast': 'Sanguine Feast'
   };
   
   // Slot machine reveal animation
@@ -2317,26 +2503,124 @@ function showCampaignVictoryPopup(data) {
     'ufoscraper': '/images/UFO Scraper.png',
     'assimilation': '/images/Assimilation.png',
     'voidcollapse': '/images/Void Collapse.png',
-    'hiveascension': '/images/Hive Ascension.png'
+    'hiveascension': '/images/Hive Ascension.png',
+    // Western Skeleton cards
+    'bonedeputy': '/images/Bone Deputy.png',
+    'dustyrattler': '/images/Dusty Rattler.png',
+    'graverobber': '/images/Grave Robber.png',
+    'phantomscout': '/images/Phantom Scout.png',
+    'bonerevolver': '/images/Bone Revolver.png',
+    'undeadsheriff': '/images/Undead Sheriff.png',
+    'coffintrapper': '/images/Coffin Trapper.png',
+    'undertaker': '/images/Undertaker.png',
+    'thehangedman': '/images/The Hanged Man.png',
+    'ghostlystampede': '/images/Ghostly Stampede.png',
+    'bonecolossus': '/images/Bone Colossus.png',
+    'deadmanshand': '/images/Dead Mans Hand.png',
+    'mostwanted': '/images/Most Wanted.png',
+    'shallowgrave': '/images/Shallow Grave.png',
+    'highnoon': '/images/High Noon.png',
+    // Crimson Court cards
+    'thrall': '/images/Thrall.png',
+    'bloodfamiliar': '/images/Blood Familiar.png',
+    'nightstalker': '/images/Nightstalker.png',
+    'cryptkeeper': '/images/Crypt Keeper.png',
+    'vampirespawn': '/images/Vampire Spawn.png',
+    'bloodpriest': '/images/Blood Priest.png',
+    'soulcollector': '/images/Soul Collector.png',
+    'nosferatu': '/images/Nosferatu.png',
+    'coffin': '/images/Coffin.png',
+    'bloodcountess': '/images/Blood Countess.png',
+    'eldervampire': '/images/Elder Vampire.png',
+    'vampirelord': '/images/Vampire Lord.png',
+    'bloodpact': '/images/Blood Pact.png',
+    'bloodtransfusion': '/images/Blood Transfusion.png',
+    'crimsonrevival': '/images/Crimson Revival.png',
+    'sanguinefeast': '/images/Sanguine Feast.png'
+  };
+  
+  // Card rarities for visual effects
+  const cardRarities = {
+    // Void Alien
+    'voiddrone': 'common',
+    'scavengerlarva': 'common',
+    'spittercrawler': 'common',
+    'phaseskirmisher': 'common',
+    'energyleech': 'rare',
+    'burrowerbeast': 'rare',
+    'psionicoverseer': 'rare',
+    'neuralharvester': 'rare',
+    'adaptivecolossus': 'legendary',
+    'sporetitan': 'legendary',
+    'voidbroodmother': 'legendary',
+    'eclipsedevourer': 'legendary',
+    'ufoscraper': 'legendary',
+    'assimilation': 'rare',
+    'voidcollapse': 'rare',
+    'hiveascension': 'legendary',
+    // Western Skeleton
+    'bonedeputy': 'common',
+    'dustyrattler': 'common',
+    'graverobber': 'rare',
+    'phantomscout': 'common',
+    'bonerevolver': 'rare',
+    'undeadsheriff': 'rare',
+    'coffintrapper': 'rare',
+    'undertaker': 'rare',
+    'thehangedman': 'legendary',
+    'ghostlystampede': 'legendary',
+    'bonecolossus': 'legendary',
+    'deadmanshand': 'common',
+    'mostwanted': 'rare',
+    'shallowgrave': 'legendary',
+    'highnoon': 'legendary',
+    // Crimson Court
+    'thrall': 'common',
+    'bloodfamiliar': 'common',
+    'nightstalker': 'common',
+    'cryptkeeper': 'rare',
+    'vampirespawn': 'common',
+    'bloodpriest': 'rare',
+    'soulcollector': 'rare',
+    'nosferatu': 'rare',
+    'coffin': 'rare',
+    'bloodcountess': 'legendary',
+    'eldervampire': 'legendary',
+    'vampirelord': 'legendary',
+    'bloodpact': 'rare',
+    'bloodtransfusion': 'rare',
+    'crimsonrevival': 'rare',
+    'sanguinefeast': 'legendary'
   };
   
   // Reveal cards one by one with delays
   data.rewards.cards.forEach((card, index) => {
     setTimeout(() => {
       const slot = slots[index];
+      const rarity = cardRarities[card] || 'common';
+      
       slot.classList.remove('spinning');
-      slot.classList.add('revealed');
+      slot.classList.add('revealed', rarity);
       
       // Use actual card art image - encode URL for spaces
       const artPath = encodeURI(cardArtPaths[card] || `/images/${card}.png`);
       
+      // Build particles HTML for legendary
+      const particlesHtml = rarity === 'legendary' ? `
+        <div class="legendary-particles">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      ` : '';
+      
       slot.innerHTML = `
+        ${particlesHtml}
         <div class="card-reveal">
           <div class="card-art" style="background-image: url('${artPath}')"></div>
           <div class="card-info">
             <div class="card-name">${cardNames[card] || card}</div>
           </div>
         </div>
+        <div class="rarity-label ${rarity}">${rarity}</div>
       `;
       
       // Play a sound effect (optional - just visual for now)

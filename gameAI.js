@@ -824,7 +824,7 @@ class GameAI {
     
     // === TRADE EVALUATION ===
     const myValue = attacker.atk * 2 + attacker.hp * 1.5 + (attacker.effectId ? 10 : 0);
-    const theirValue = target.atk * 2 + target.hp * 1.5 + (target.effectId ? 10 : 0);
+    let theirValue = target.atk * 2 + target.hp * 1.5 + (target.effectId ? 10 : 0);
     
     // Add strategic value to their unit
     if (target.effectId) theirValue += 10;
@@ -1016,33 +1016,60 @@ class GameAI {
     const tiles = [];
     const { board, rowHP, units } = gameState;
     const unit = units[unitId];
-    const canDoubleMove = unit.canDoubleMove;
+    const canDoubleMove = unit.effectId === 'double_move' || unit.effectId === 'stampede';
     const maxDist = canDoubleMove ? 2 : 1;
 
-    // For double move, we need to check path validity
+    // Cardinal directions only (no diagonal movement)
+    const directions = [
+      { dr: -1, dc: 0 }, // up
+      { dr: 1, dc: 0 },  // down
+      { dr: 0, dc: -1 }, // left
+      { dr: 0, dc: 1 }   // right
+    ];
+
     if (canDoubleMove) {
-      // Simple: just check 2-tile radius
-      for (let dr = -maxDist; dr <= maxDist; dr++) {
-        for (let dc = -maxDist; dc <= maxDist; dc++) {
-          if (dr === 0 && dc === 0) continue;
-          if (Math.abs(dr) + Math.abs(dc) > maxDist) continue; // Manhattan distance
-          const nr = pos.r + dr, nc = pos.c + dc;
+      // For double move, check tiles within 2 steps (cardinal only)
+      for (let dist = 1; dist <= maxDist; dist++) {
+        for (const dir of directions) {
+          const nr = pos.r + (dir.dr * dist);
+          const nc = pos.c + (dir.dc * dist);
           if (nr < 0 || nr >= 7 || nc < 0 || nc >= 6) continue;
           if (board[nr][nc]) continue;
+          // Can't move into gold's home rows if they have HP
           if (nr <= 1 && rowHP[nr] > 0) continue;
           tiles.push({ row: nr, col: nc });
         }
       }
-    } else {
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (dr === 0 && dc === 0) continue;
-          const nr = pos.r + dr, nc = pos.c + dc;
+      // Also check L-shaped moves (1 cardinal + 1 cardinal different direction)
+      for (const dir1 of directions) {
+        const midR = pos.r + dir1.dr;
+        const midC = pos.c + dir1.dc;
+        if (midR < 0 || midR >= 7 || midC < 0 || midC >= 6) continue;
+        // Mid tile must be empty to pass through
+        if (board[midR][midC]) continue;
+        for (const dir2 of directions) {
+          if (dir1.dr === -dir2.dr && dir1.dc === -dir2.dc) continue; // Don't go back
+          const nr = midR + dir2.dr;
+          const nc = midC + dir2.dc;
           if (nr < 0 || nr >= 7 || nc < 0 || nc >= 6) continue;
+          if (nr === pos.r && nc === pos.c) continue; // Back to start
           if (board[nr][nc]) continue;
           if (nr <= 1 && rowHP[nr] > 0) continue;
-          tiles.push({ row: nr, col: nc });
+          // Avoid duplicates
+          if (!tiles.some(t => t.row === nr && t.col === nc)) {
+            tiles.push({ row: nr, col: nc });
+          }
         }
+      }
+    } else {
+      // Single move - cardinal directions only
+      for (const dir of directions) {
+        const nr = pos.r + dir.dr;
+        const nc = pos.c + dir.dc;
+        if (nr < 0 || nr >= 7 || nc < 0 || nc >= 6) continue;
+        if (board[nr][nc]) continue;
+        if (nr <= 1 && rowHP[nr] > 0) continue;
+        tiles.push({ row: nr, col: nc });
       }
     }
 

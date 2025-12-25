@@ -129,13 +129,13 @@ app.post("/api/fixCollection", async (req, res) => {
 // Save deck endpoint - saves to medieval or void-alien slot
 app.post("/api/saveDeck", async (req, res) => {
   try {
-    const { userId, deckType, deckName, cards } = req.body;
+    const { userId, deckType, deckName, cards, music, background } = req.body;
     
     if (!userId || userId === 'admin') {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
     
-    if (!deckType || !['medieval', 'void-alien', 'western-skeleton'].includes(deckType)) {
+    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court'].includes(deckType)) {
       return res.status(400).json({ success: false, error: 'Invalid deck type' });
     }
     
@@ -155,6 +155,22 @@ app.post("/api/saveDeck", async (req, res) => {
     // Check if void-alien is unlocked
     if (deckType === 'void-alien' && !user.unlockedDecks.includes('void-alien')) {
       return res.status(400).json({ success: false, error: 'Void Alien deck not unlocked' });
+    }
+    
+    // Validate music selection is unlocked
+    if (music && music !== 'default' && music !== 'medieval') {
+      const unlockedMusic = user.unlockedMusic || ['medieval'];
+      if (!unlockedMusic.includes(music)) {
+        return res.status(400).json({ success: false, error: 'Music not unlocked' });
+      }
+    }
+    
+    // Validate background selection is unlocked
+    if (background && background !== 'default' && background !== 'medieval') {
+      const unlockedBackgrounds = user.unlockedBackgrounds || ['medieval'];
+      if (!unlockedBackgrounds.includes(background)) {
+        return res.status(400).json({ success: false, error: 'Background not unlocked' });
+      }
     }
     
     // Validate that user owns all cards in deck
@@ -179,12 +195,16 @@ app.post("/api/saveDeck", async (req, res) => {
     if (existingDeckIndex >= 0) {
       user.customDecks[existingDeckIndex].name = deckName.trim();
       user.customDecks[existingDeckIndex].cards = cards;
+      user.customDecks[existingDeckIndex].music = music || 'default';
+      user.customDecks[existingDeckIndex].background = background || 'default';
       user.customDecks[existingDeckIndex].updatedAt = new Date();
     } else {
       user.customDecks.push({
         id: deckType,
         name: deckName.trim(),
         cards: cards,
+        music: music || 'default',
+        background: background || 'default',
         createdAt: new Date()
       });
     }
@@ -265,13 +285,13 @@ const DECKS = {
       { key: "battlefieldmedic", name: "Battlefield Medic", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies 1 HP.", art: "/images/Battlefield Medic.png", rarity: "common" },
       { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png", rarity: "common" },
       { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png", rarity: "common" },
-      { key: "crusader", name: "Crusader", atk: 5, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "heal_on_kill", effectDesc: "ON KILL: Heal self 2 HP.", art: "/images/Crusader.png", rarity: "legendary" },
+      { key: "crusader", name: "Crusader", atk: 5, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "heal_on_kill", effectDesc: "ON KILL: Heal 2 HP (can exceed max).", art: "/images/Crusader.png", rarity: "legendary" },
       { key: "royalguard", name: "Royal Guard", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "cleave", effectDesc: "PASSIVE: Deals half damage to adjacent enemies.", art: "/images/Royal Guard.png", rarity: "rare" },
       { key: "paladin", name: "Paladin", atk: 6, hp: 5, cost: 4, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 energy.", art: "/images/Paladin.png", rarity: "legendary" },
       { key: "siegeram", name: "Battering Ram", atk: 2, hp: 6, cost: 3, type: "monster", effect: "passive", effectId: "siege", effectDesc: "PASSIVE: 2x damage to rows.", art: "/images/Battering Ram.png", rarity: "rare" },
       { key: "warbanner", name: "War Banner", atk: 0, hp: 4, cost: 2, type: "spell", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies +1 ATK.", art: "/images/War Banner.png", rarity: "rare" },
       { key: "shrine", name: "Healing Shrine", atk: 0, hp: 5, cost: 3, type: "spell", effect: "startOfTurn", effectId: "shrine_heal", effectDesc: "START: Heal row allies 1 HP.", art: "/images/Healing Shrine.png", rarity: "rare" },
-      { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "spell", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: Deployed units +1 HP.", art: "/images/Armory.png", rarity: "rare" },
+      { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "spell", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: Deployed units +1 HP. Stacks.", art: "/images/Armory.png", rarity: "rare" },
       { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_row", effectDesc: "INSTANT: This row +15 HP.", art: "/images/Castle Walls.png", requiresTarget: "row", rarity: "common" },
       { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/Kings Treasury.png", rarity: "common" },
       { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "double_attack", effectDesc: "INSTANT: Target unit can attack twice.", art: "/images/Rallying Cry.png", requiresTarget: "unit", rarity: "common" },
@@ -291,9 +311,9 @@ const DECKS = {
       { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
       { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
       // Spitter Crawler x3 (vanilla 2 cost)
-      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png", rarity: "common" },
-      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png", rarity: "common" },
-      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png", rarity: "common" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "ranged", effectDesc: "PASSIVE: Can attack 2 tiles away.", art: "/images/Spitter Crawler.png", rarity: "common" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "ranged", effectDesc: "PASSIVE: Can attack 2 tiles away.", art: "/images/Spitter Crawler.png", rarity: "common" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "ranged", effectDesc: "PASSIVE: Can attack 2 tiles away.", art: "/images/Spitter Crawler.png", rarity: "common" },
       // Phase Skirmisher x2 (double move)
       { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png", rarity: "rare" },
       { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png", rarity: "rare" },
@@ -301,8 +321,8 @@ const DECKS = {
       { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png", rarity: "common" },
       { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png", rarity: "common" },
       // Burrower Beast x2 (untargetable next turn, can deploy adjacent to allies)
-      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png", rarity: "rare" },
-      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png", rarity: "rare" },
+      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable for 2 turns. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png", rarity: "rare" },
+      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable for 2 turns. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png", rarity: "rare" },
       // Psionic Overseer x2 (attack aura)
       { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png", rarity: "rare" },
       { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png", rarity: "rare" },
@@ -375,6 +395,60 @@ const DECKS = {
       { key: "shallowgrave", name: "Shallow Grave", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "resurrect", effectDesc: "INSTANT: Return a random friendly unit from discard to hand.", art: "/images/Shallow Grave.png", rarity: "legendary" },
       // High Noon x1 (row damage)
       { key: "highnoon", name: "High Noon", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "high_noon", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row.", art: "/images/High Noon.png", requiresTarget: "row", rarity: "legendary" },
+    ]
+  },
+  "crimson-court": {
+    name: "Crimson Court",
+    description: "Aristocratic vampires who drain life and rise from the grave",
+    archetype: "vampire",
+    cards: [
+      // Thrall x3 (basic unit)
+      { key: "thrall", name: "Thrall", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Thrall.png", rarity: "common" },
+      { key: "thrall", name: "Thrall", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Thrall.png", rarity: "common" },
+      { key: "thrall", name: "Thrall", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Thrall.png", rarity: "common" },
+      // Blood Familiar x3 (attacks twice, second heals self)
+      { key: "bloodfamiliar", name: "Blood Familiar", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "blood_bite", effectDesc: "PASSIVE: Attacks twice. Second attack deals 1 damage.", art: "/images/Blood Familiar.png", rarity: "common" },
+      { key: "bloodfamiliar", name: "Blood Familiar", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "blood_bite", effectDesc: "PASSIVE: Attacks twice. Second attack deals 1 damage.", art: "/images/Blood Familiar.png", rarity: "common" },
+      { key: "bloodfamiliar", name: "Blood Familiar", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "blood_bite", effectDesc: "PASSIVE: Attacks twice. Second attack deals 1 damage.", art: "/images/Blood Familiar.png", rarity: "common" },
+      // Nightstalker x3 (lifesteal)
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      // Crypt Keeper x2 (gains max HP on ally death)
+      { key: "cryptkeeper", name: "Crypt Keeper", atk: 1, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "grow_max_hp_on_ally_death", effectDesc: "PASSIVE: Gains +1 Max HP when a friendly unit dies.", art: "/images/Crypt Keeper.png", rarity: "rare" },
+      { key: "cryptkeeper", name: "Crypt Keeper", atk: 1, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "grow_max_hp_on_ally_death", effectDesc: "PASSIVE: Gains +1 Max HP when a friendly unit dies.", art: "/images/Crypt Keeper.png", rarity: "rare" },
+      // Vampire Spawn x3 (lifesteal)
+      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Vampire Spawn.png", rarity: "common" },
+      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Vampire Spawn.png", rarity: "common" },
+      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Vampire Spawn.png", rarity: "common" },
+      // Blood Priest x2 (heals adjacent allies end of turn)
+      { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
+      { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
+      // Soul Collector x2 (on kill: steal card)
+      { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
+      { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
+      // Nosferatu x2 (lifesteal + weaken aura)
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      // Coffin x2 (resurrects self)
+      { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
+      { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
+      // Blood Countess x1 (lifesteal + grows on kill)
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      // Elder Vampire x1 (immortal - heals to full once)
+      { key: "eldervampire", name: "Elder Vampire", atk: 3, hp: 6, cost: 5, type: "monster", effect: "passive", effectId: "immortal", effectDesc: "PASSIVE: When this would die, instead heal to full HP (once per game).", art: "/images/Elder Vampire.png", rarity: "legendary" },
+      // Vampire Lord x1 (diagonal + grants lifesteal to all)
+      { key: "vampirelord", name: "Vampire Lord", atk: 5, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "lifesteal_lord", effectDesc: "PASSIVE: Can attack diagonally. All friendly units have Lifesteal.", art: "/images/Vampire Lord.png", rarity: "legendary" },
+      // Blood Pact x2 (damage friendly, draw 2)
+      { key: "bloodpact", name: "Blood Pact", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blood_pact", effectDesc: "INSTANT: Deal 2 damage to target friendly unit. Draw 2 cards.", art: "/images/Blood Pact.png", requiresTarget: "unit", rarity: "rare" },
+      { key: "bloodpact", name: "Blood Pact", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blood_pact", effectDesc: "INSTANT: Deal 2 damage to target friendly unit. Draw 2 cards.", art: "/images/Blood Pact.png", requiresTarget: "unit", rarity: "rare" },
+      // Blood Transfusion x2 (swap ATK and HP)
+      { key: "bloodtransfusion", name: "Blood Transfusion", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "swap_stats", effectDesc: "INSTANT: Swap target unit's ATK and HP.", art: "/images/Blood Transfusion.png", requiresTarget: "any_unit", rarity: "rare" },
+      { key: "bloodtransfusion", name: "Blood Transfusion", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "swap_stats", effectDesc: "INSTANT: Swap target unit's ATK and HP.", art: "/images/Blood Transfusion.png", requiresTarget: "any_unit", rarity: "rare" },
+      // Crimson Revival x1 (return last 2 dead to hand)
+      { key: "crimsonrevival", name: "Crimson Revival", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "mass_resurrect", effectDesc: "INSTANT: Return the last 2 units that died to your hand.", art: "/images/Crimson Revival.png", rarity: "rare" },
+      // Sanguine Feast x1 (row damage + heal)
+      { key: "sanguinefeast", name: "Sanguine Feast", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "sanguine_feast", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row. Heal your Heart for each hit.", art: "/images/Sanguine Feast.png", requiresTarget: "row", rarity: "legendary" },
     ]
   }
 };
@@ -465,7 +539,8 @@ function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCusto
     attackedThisTurn: new Set(), 
     firstTurn: true,
     buffTiles: buffTiles,
-    moveCountThisTurn: {} // Track moves per unit for double_move
+    moveCountThisTurn: {}, // Track moves per unit for double_move
+    pendingCoffinResurrects: { gold: [], silver: [] } // For Coffin resurrect_self
   };
   
   // Create decks - use custom cards if provided, otherwise default deck
@@ -582,7 +657,7 @@ function getEffectiveAtk(state, uid, targetId) {
       }
     }
   }
-  // Weaken aura - attacker deals -1 damage if adjacent to Undead Sheriff
+  // Weaken aura - attacker deals -1 damage if adjacent to Undead Sheriff or Nosferatu
   const tp = targetId ? getUnitPos(state, targetId) : null;
   if (tp) {
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
@@ -590,7 +665,8 @@ function getEffectiveAtk(state, uid, targetId) {
       const nr = pos.r + dr, nc = pos.c + dc; 
       if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
       const aid = state.board[nr][nc]; 
-      if (aid && state.units[aid] && state.units[aid].owner !== u.owner && state.units[aid].effectId === "weaken_aura") {
+      if (aid && state.units[aid] && state.units[aid].owner !== u.owner && 
+          (state.units[aid].effectId === "weaken_aura" || state.units[aid].effectId === "lifesteal_weaken")) {
         atk = Math.max(0, atk - 1);
         break;
       }
@@ -632,7 +708,46 @@ function applyDamageReduction(state, tid, dmg, attackerId) {
   return dmg;
 }
 
-function getArmoryBonus(state, role) { for (const id in state.units) if (state.units[id].owner === role && state.units[id].effectId === "armory_buff") return 1; return 0; }
+function getArmoryBonus(state, role) { 
+  let bonus = 0;
+  for (const id in state.units) {
+    if (state.units[id].owner === role && state.units[id].effectId === "armory_buff") {
+      bonus += 1;
+    }
+  }
+  return bonus;
+}
+
+// Check if player has Vampire Lord granting lifesteal to all friendly units
+function hasVampireLordBuff(state, role) {
+  for (const id in state.units) {
+    if (state.units[id].owner === role && state.units[id].effectId === "lifesteal_lord") {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Check if unit has lifesteal_weaken or nosferatu aura (adjacent enemies deal -1)
+function hasNosferatuWeakenAura(state, unitId) {
+  const pos = getUnitPos(state, unitId);
+  if (!pos) return false;
+  const u = state.units[unitId];
+  if (!u) return false;
+  
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = pos.r + dr, nc = pos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const aid = state.board[nr][nc];
+      if (aid && state.units[aid] && state.units[aid].owner !== u.owner && state.units[aid].effectId === "lifesteal_weaken") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 // Check if player has hp_buff (Fortified Ground) - gives all units +1 HP
 function getHpBuffBonus(state, role) {
@@ -663,13 +778,14 @@ function drawCards(lobby, role, count) {
   for (let i = 0; i < count; i++) { if (p.hand.length >= MAX_HAND_SIZE) break; if (p.deck.length === 0) { if (p.discard.length === 0) break; p.deck = shuffle([...p.discard]); p.discard = []; logToLobby(lobby, role.toUpperCase() + " reshuffles"); } if (p.deck.length > 0) p.hand.push(p.deck.pop()); }
 }
 
-function processOnKillEffect(lobby, aid, role, killedUnitPos) {
+function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
   const state = lobby.gameState.state;
   const a = state.units[aid]; if (!a || a.effect !== "onKill") return;
   if (a.effectId === "heal_on_kill") { 
-    const maxHp = a.maxHp || a.hp;
-    a.hp = Math.min(a.hp + 2, maxHp); 
-    logToLobby(lobby, a.name + " heals 2 HP"); 
+    // Crusader heals 2 HP on kill, even past max HP
+    a.hp += 2;
+    a.maxHp = Math.max(a.maxHp || a.hp, a.hp); // Increase max if needed
+    logToLobby(lobby, a.name + " heals 2 HP! Now " + a.hp + "/" + a.maxHp); 
   }
   if (a.effectId === "energy_on_kill") { 
     lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY); 
@@ -703,6 +819,38 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos) {
   if (a.effectId === "draw_on_kill") {
     drawCards(lobby, role, 1);
     logToLobby(lobby, a.name + " draws a card!");
+  }
+  // Soul Collector - add copy of killed unit to hand
+  if (a.effectId === "steal_card" && killedUnit) {
+    const p = lobby.gameState.players[role];
+    if (p.hand.length < MAX_HAND_SIZE) {
+      // Create a copy of the killed unit as a card
+      const stolenCard = {
+        id: genId(),
+        key: killedUnit.key,
+        name: killedUnit.name,
+        atk: killedUnit.atk || 1,
+        hp: killedUnit.maxHp || killedUnit.hp || 1,
+        cost: killedUnit.cost || Math.max(1, Math.floor((killedUnit.atk || 0) + (killedUnit.maxHp || killedUnit.hp || 0)) / 2),
+        type: killedUnit.type || "monster",
+        effect: killedUnit.effect,
+        effectId: killedUnit.effectId,
+        effectDesc: killedUnit.effectDesc,
+        art: killedUnit.art,
+        stolen: true // Mark as stolen for grayscale effect
+      };
+      p.hand.push(stolenCard);
+      logToLobby(lobby, a.name + " steals " + killedUnit.name + "'s soul!");
+    } else {
+      logToLobby(lobby, a.name + "'s hand is full - soul escapes!");
+    }
+  }
+  // Blood Countess / lifesteal_grow - gain +1/+1 on kill
+  if (a.effectId === "lifesteal_grow") {
+    a.atk += 1;
+    a.hp += 1;
+    a.maxHp = (a.maxHp || a.hp) + 1;
+    logToLobby(lobby, a.name + " grows stronger! Now " + a.atk + "/" + a.hp);
   }
 }
 
@@ -770,16 +918,55 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos) {
   }
 }
 
-// Process friendly unit death for Undertaker
-function processAllyDeathTriggers(lobby, deadUnitOwner) {
+// Check if dying unit is a Coffin - queue for resurrection
+function processCoffinDeath(lobby, deadUnit, deadUnitOwner, deadPos) {
+  if (!deadUnit || deadUnit.effectId !== "resurrect_self") return;
   const state = lobby.gameState.state;
+  
+  // Queue the coffin for resurrection at start of owner's next turn
+  if (!state.pendingCoffinResurrects) {
+    state.pendingCoffinResurrects = { gold: [], silver: [] };
+  }
+  
+  state.pendingCoffinResurrects[deadUnitOwner].push({
+    key: deadUnit.key,
+    name: deadUnit.name,
+    atk: deadUnit.atk,
+    hp: deadUnit.maxHp || deadUnit.hp,
+    maxHp: deadUnit.maxHp || deadUnit.hp,
+    type: deadUnit.type,
+    effect: deadUnit.effect,
+    effectId: deadUnit.effectId,
+    effectDesc: deadUnit.effectDesc,
+    art: deadUnit.art,
+    pos: deadPos ? { r: deadPos.r, c: deadPos.c } : null
+  });
+  logToLobby(lobby, deadUnit.name + " will resurrect next turn!");
+}
+
+// Process friendly unit death for Undertaker and Crypt Keeper
+function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos = null) {
+  const state = lobby.gameState.state;
+  
+  // Check for Coffin resurrection
+  if (deadUnit && deadUnit.effectId === "resurrect_self") {
+    processCoffinDeath(lobby, deadUnit, deadUnitOwner, deadPos);
+  }
+  
   for (const uid in state.units) {
     const u = state.units[uid];
+    // Undertaker - gains +1/+1 on ally death
     if (u.owner === deadUnitOwner && u.effectId === "grow_on_ally_death") {
       u.atk += 1;
       u.hp += 1;
       u.maxHp = (u.maxHp || u.hp) + 1;
       logToLobby(lobby, u.name + " grows from ally death! Now " + u.atk + "/" + u.hp);
+    }
+    // Crypt Keeper - gains +1 max HP on ally death
+    if (u.owner === deadUnitOwner && u.effectId === "grow_max_hp_on_ally_death") {
+      u.maxHp = (u.maxHp || u.hp) + 1;
+      u.hp += 1; // Also heal for the new max
+      logToLobby(lobby, u.name + " absorbs death essence! Max HP now " + u.maxHp);
     }
   }
 }
@@ -806,6 +993,75 @@ function processEndOfTurnEffects(lobby, role) {
 
 function processStartOfTurnEffects(lobby, role) {
   const state = lobby.gameState.state;
+  
+  // Resurrect any pending Coffins
+  if (state.pendingCoffinResurrects && state.pendingCoffinResurrects[role]) {
+    const coffins = state.pendingCoffinResurrects[role];
+    state.pendingCoffinResurrects[role] = []; // Clear the queue
+    
+    for (const coffin of coffins) {
+      // Find an empty tile in home rows to spawn
+      const homeRows = role === "gold" ? [0, 1] : [5, 6];
+      let spawned = false;
+      
+      // First try original position if available
+      if (coffin.pos && !state.board[coffin.pos.r][coffin.pos.c]) {
+        const id = genId();
+        state.units[id] = {
+          id,
+          owner: role,
+          key: coffin.key,
+          name: coffin.name,
+          atk: coffin.atk,
+          hp: coffin.hp,
+          maxHp: coffin.maxHp,
+          type: coffin.type,
+          effect: coffin.effect,
+          effectId: coffin.effectId,
+          effectDesc: coffin.effectDesc,
+          art: coffin.art
+        };
+        state.board[coffin.pos.r][coffin.pos.c] = id;
+        logToLobby(lobby, coffin.name + " rises from the grave!");
+        spawned = true;
+      }
+      
+      // Otherwise find any empty home row tile
+      if (!spawned) {
+        for (const row of homeRows) {
+          for (let c = 0; c < COLS; c++) {
+            if (!state.board[row][c]) {
+              const id = genId();
+              state.units[id] = {
+                id,
+                owner: role,
+                key: coffin.key,
+                name: coffin.name,
+                atk: coffin.atk,
+                hp: coffin.hp,
+                maxHp: coffin.maxHp,
+                type: coffin.type,
+                effect: coffin.effect,
+                effectId: coffin.effectId,
+                effectDesc: coffin.effectDesc,
+                art: coffin.art
+              };
+              state.board[row][c] = id;
+              logToLobby(lobby, coffin.name + " rises from the grave!");
+              spawned = true;
+              break;
+            }
+          }
+          if (spawned) break;
+        }
+      }
+      
+      if (!spawned) {
+        logToLobby(lobby, coffin.name + " has no room to resurrect!");
+      }
+    }
+  }
+  
   for (const id in state.units) { 
     const u = state.units[id]; 
     if (u.owner !== role || u.effect !== "startOfTurn") continue; 
@@ -839,8 +1095,11 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
   if (effectId === "draw_two") { drawCards(lobby, role, 2); logToLobby(lobby, role.toUpperCase() + " draws 2"); }
   if (effectId === "double_attack") { 
     if (targetUnitId && state.units[targetUnitId]) {
-      state.units[targetUnitId].canDoubleAttack = true;
-      logToLobby(lobby, state.units[targetUnitId].name + " can attack twice!");
+      const unit = state.units[targetUnitId];
+      unit.canDoubleAttack = true;
+      // Remove from attackedThisTurn so it can attack again (if it already attacked once)
+      state.attackedThisTurn.delete(targetUnitId);
+      logToLobby(lobby, unit.name + " can attack twice!");
     }
   }
   // Void Alien spells
@@ -988,6 +1247,108 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       logToLobby(lobby, "High Noon! " + damaged + " enemies hit for 2 damage in row " + String.fromCharCode(65 + targetRow) + "!");
     }
   }
+  
+  // === CRIMSON COURT VAMPIRE SPELLS ===
+  
+  if (effectId === "blood_pact") {
+    // Blood Pact - deal 2 damage to friendly unit, draw 2 cards
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        target.hp -= 2;
+        logToLobby(lobby, "Blood Pact deals 2 damage to " + target.name);
+        
+        if (target.hp <= 0) {
+          const pos = getUnitPos(state, targetUnitId);
+          processOnDeathEffect(lobby, target, target.owner, pos);
+          processAllyDeathTriggers(lobby, target.owner);
+          if (pos) state.board[pos.r][pos.c] = null;
+          delete state.units[targetUnitId];
+          logToLobby(lobby, target.name + " destroyed!");
+        }
+        
+        drawCards(lobby, role, 2);
+        logToLobby(lobby, role.toUpperCase() + " draws 2 cards");
+      }
+    }
+  }
+  
+  if (effectId === "swap_stats") {
+    // Blood Transfusion - swap target's ATK and HP
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      const oldAtk = target.atk;
+      const oldHp = target.hp;
+      target.atk = oldHp;
+      target.hp = oldAtk;
+      target.maxHp = oldAtk; // Update max HP too
+      logToLobby(lobby, "Blood Transfusion! " + target.name + " is now " + target.atk + "/" + target.hp);
+      
+      // If HP becomes 0 or less, unit dies
+      if (target.hp <= 0) {
+        const pos = getUnitPos(state, targetUnitId);
+        processOnDeathEffect(lobby, target, target.owner, pos);
+        processAllyDeathTriggers(lobby, target.owner);
+        if (pos) state.board[pos.r][pos.c] = null;
+        delete state.units[targetUnitId];
+        logToLobby(lobby, target.name + " destroyed!");
+      }
+    }
+  }
+  
+  if (effectId === "mass_resurrect") {
+    // Crimson Revival - return last 2 dead units to hand
+    const p = lobby.gameState.players[role];
+    const unitCards = p.discard.filter(c => c.type !== "spell");
+    const toReturn = unitCards.slice(-2); // Last 2 units
+    
+    if (toReturn.length > 0) {
+      for (const card of toReturn) {
+        const idx = p.discard.indexOf(card);
+        if (idx !== -1) {
+          p.discard.splice(idx, 1);
+          p.hand.push({ ...card, id: genId() });
+        }
+      }
+      logToLobby(lobby, "Crimson Revival returns " + toReturn.map(c => c.name).join(" and ") + " to hand!");
+    } else {
+      logToLobby(lobby, "No units in discard to revive!");
+    }
+  }
+  
+  if (effectId === "sanguine_feast") {
+    // Sanguine Feast - deal 2 damage to all enemies in row, heal heart for each hit
+    if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
+      let hitCount = 0;
+      const toRemove = [];
+      for (let c = 0; c < COLS; c++) {
+        const uid = state.board[targetRow][c];
+        if (uid && state.units[uid] && state.units[uid].owner !== role) {
+          const target = state.units[uid];
+          if (target.untargetable) continue;
+          target.hp -= 2;
+          hitCount++;
+          if (target.hp <= 0) {
+            toRemove.push({ id: uid, col: c });
+          }
+        }
+      }
+      for (const item of toRemove) {
+        const deadUnit = state.units[item.id];
+        processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
+        processAllyDeathTriggers(lobby, deadUnit.owner);
+        state.board[targetRow][item.col] = null;
+        delete state.units[item.id];
+      }
+      // Heal heart for each unit hit
+      if (hitCount > 0) {
+        state.heartHP[role] = Math.min(state.heartHP[role] + hitCount, 30);
+        logToLobby(lobby, "Sanguine Feast hits " + hitCount + " enemies! Heart heals for " + hitCount + "!");
+      } else {
+        logToLobby(lobby, "Sanguine Feast finds no victims!");
+      }
+    }
+  }
 }
 
 // Handle campaign victory rewards
@@ -995,13 +1356,13 @@ async function handleCampaignVictory(lobby) {
   try {
     const { state } = lobby.gameState;
     
-    // Calculate stars based on remaining HP
-    const heartHP = state.heartHP.gold;
-    let stars = 1;
-    if (heartHP >= 20) stars = 3;
-    else if (heartHP >= 10) stars = 2;
+    // Stars = difficulty level beaten (1=easy, 2=medium, 3=hard)
+    // If you beat hard, you get all 3 stars
+    // If you beat medium, you get 2 stars
+    // If you beat easy, you get 1 star
+    const stars = lobby.aiLevel || 2;
     
-    const result = await authHelpers.completeBoss(lobby.hostUserId, lobby.bossId, stars);
+    const result = await authHelpers.completeBoss(lobby.hostUserId, lobby.bossId, stars, lobby.aiLevel);
     
     // Send rewards to player
     if (lobby.hostSocket) {
@@ -1013,7 +1374,8 @@ async function handleCampaignVictory(lobby) {
       });
     }
     
-    logToLobby(lobby, "🎉 Boss defeated! Earned " + stars + " star(s)!");
+    const difficultyNames = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+    logToLobby(lobby, "🎉 Boss defeated on " + difficultyNames[stars] + "! Earned " + stars + " star(s)!");
     logToLobby(lobby, "Cards won: " + result.rewards.cards.join(", "));
     
     if (result.rewards.music) {
@@ -1079,6 +1441,13 @@ async function processAITurn(lobby) {
   const { state, players } = lobby.gameState;
   const ai = lobby.ai;
   if (!ai) return;
+  
+  // Prevent multiple AI loops from running simultaneously
+  if (lobby.aiProcessing) {
+    console.log("AI already processing, skipping duplicate call");
+    return;
+  }
+  lobby.aiProcessing = true;
 
   const aiRole = "silver";
   const aiPlayer = players[aiRole];
@@ -1086,60 +1455,125 @@ async function processAITurn(lobby) {
   // Add delay to make AI feel more natural
   const actionDelay = 800 + Math.random() * 400;
   
+  // Track actions to prevent infinite loops
+  let actionCount = 0;
+  let consecutiveFailedMoves = 0;
+  const MAX_ACTIONS_PER_TURN = 50;
+  const MAX_CONSECUTIVE_FAILED_MOVES = 5;
+  
   const executeAIAction = async () => {
-    if (state.gameOver || state.activeSide !== aiRole) return;
-    
-    const action = ai.decideAction(
-      state,
-      aiPlayer.hand,
-      aiPlayer.energy,
-      aiPlayer.hasDrawn
-    );
-    
-    if (action.type === "endTurn") {
-      // AI ends turn - process end of turn
-      processEndOfTurnEffects(lobby, aiRole);
-      
-      for (const uid in state.units) {
-        const u = state.units[uid];
-        u.canDoubleAttack = false;
-        u.attackCountThisTurn = 0;
-        if (u.owner === aiRole) {
-          u.untargetable = false;
-          if (u.burrowPending) {
-            u.untargetable = true;
-            u.burrowPending = false;
-            logToLobby(lobby, u.name + " burrows underground!");
-          }
-        }
+    try {
+      if (state.gameOver || state.activeSide !== aiRole) {
+        lobby.aiProcessing = false;
+        return;
       }
       
-      state.activeSide = "gold";
-      state.movedThisTurn.clear();
-      state.attackedThisTurn.clear();
-      state.moveCountThisTurn = {};
+      // Safety check - force end turn if too many actions
+      actionCount++;
+      if (actionCount > MAX_ACTIONS_PER_TURN) {
+        console.log("AI reached max actions, forcing end turn");
+        forceAIEndTurn();
+        return;
+      }
       
-      const goldPlayer = players.gold;
-      let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
-      if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
-      goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
-      goldPlayer.hasDrawn = false;
+      const action = ai.decideAction(
+        state,
+        aiPlayer.hand,
+        aiPlayer.energy,
+        aiPlayer.hasDrawn
+      );
       
-      processStartOfTurnEffects(lobby, "gold");
-      state.turnNumber++;
-      logToLobby(lobby, "--- GOLD's turn (+" + energyGain + " energy) ---");
+      console.log("AI action:", action.type);
+      
+      if (action.type === "endTurn") {
+        // AI ends turn - process end of turn
+        processEndOfTurnEffects(lobby, aiRole);
+        
+        for (const uid in state.units) {
+          const u = state.units[uid];
+          u.canDoubleAttack = false;
+          u.attackCountThisTurn = 0;
+          if (u.owner === aiRole) {
+            u.untargetable = false;
+          }
+        }
+        
+        state.activeSide = "gold";
+        state.movedThisTurn.clear();
+        state.attackedThisTurn.clear();
+        state.moveCountThisTurn = {};
+        
+        const goldPlayer = players.gold;
+        let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
+        if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
+        goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
+        goldPlayer.hasDrawn = false;
+        
+        processStartOfTurnEffects(lobby, "gold");
+        state.turnNumber++;
+        logToLobby(lobby, "--- GOLD's turn (+" + energyGain + " energy) ---");
+        lobby.aiProcessing = false; // Clear the flag
+        emitGameState(lobby);
+        return;
+      }
+      
+      // Track if this is a move action (most likely to fail repeatedly)
+      const isMoveAction = action.type === "move";
+      const stateBeforeAction = isMoveAction ? JSON.stringify(state.board) : null;
+      
+      // Execute the action
+      await executeAction(lobby, aiRole, action);
+      
+      // Check if move actually happened
+      if (isMoveAction) {
+        const stateAfterAction = JSON.stringify(state.board);
+        if (stateBeforeAction === stateAfterAction) {
+          consecutiveFailedMoves++;
+          console.log("AI move failed, consecutive failures:", consecutiveFailedMoves);
+          
+          if (consecutiveFailedMoves >= MAX_CONSECUTIVE_FAILED_MOVES) {
+            console.log("Too many failed moves, forcing end turn");
+            forceAIEndTurn();
+            return;
+          }
+        } else {
+          consecutiveFailedMoves = 0; // Reset on successful move
+        }
+      } else {
+        consecutiveFailedMoves = 0; // Reset on non-move action
+      }
+      
       emitGameState(lobby);
-      return;
+      
+      // Continue AI turn after delay
+      if (state.activeSide === aiRole && !state.gameOver) {
+        setTimeout(executeAIAction, actionDelay);
+      } else {
+        lobby.aiProcessing = false; // Clear if turn ended another way
+      }
+    } catch (err) {
+      console.error("AI turn error:", err.message, err.stack);
+      forceAIEndTurn();
     }
-    
-    // Execute the action
-    await executeAction(lobby, aiRole, action);
+  };
+  
+  // Helper to force end turn
+  const forceAIEndTurn = () => {
+    lobby.aiProcessing = false;
+    processEndOfTurnEffects(lobby, aiRole);
+    state.activeSide = "gold";
+    state.movedThisTurn.clear();
+    state.attackedThisTurn.clear();
+    state.moveCountThisTurn = {};
+    const goldPlayer = players.gold;
+    let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
+    if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
+    goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
+    goldPlayer.hasDrawn = false;
+    processStartOfTurnEffects(lobby, "gold");
+    state.turnNumber++;
+    logToLobby(lobby, "--- GOLD's turn (+" + energyGain + " energy) ---");
     emitGameState(lobby);
-    
-    // Continue AI turn after delay
-    if (state.activeSide === aiRole && !state.gameOver) {
-      setTimeout(executeAIAction, actionDelay);
-    }
   };
   
   // Start AI turn with delay
@@ -1182,8 +1616,13 @@ async function executeAction(lobby, role, action) {
         const id = genId();
         const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
-        if (card.effectId === "burrow") unitData.burrowPending = true;
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        if (card.effectId === "burrow") {
+          unitData.untargetable = true;
+          unitData.burrowTurnsLeft = 2;
+        }
+        if (card.effectId === "phantom") unitData.untargetable = true;
+        if (card.stolen) unitData.stolen = true;
         state.units[id] = unitData;
         state.spawn[role] = id;
         logToLobby(lobby, role.toUpperCase() + " deployed " + card.name + " to spawn");
@@ -1195,8 +1634,13 @@ async function executeAction(lobby, role, action) {
         const id = genId();
         const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
-        if (card.effectId === "burrow") unitData.burrowPending = true;
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        if (card.effectId === "burrow") {
+          unitData.untargetable = true;
+          unitData.burrowTurnsLeft = 2;
+        }
+        if (card.effectId === "phantom") unitData.untargetable = true;
+        if (card.stolen) unitData.stolen = true;
         state.units[id] = unitData;
         state.board[action.row][action.col] = id;
         recomputeOwners(state);
@@ -1209,12 +1653,24 @@ async function executeAction(lobby, role, action) {
       const u = state.units[action.unitId];
       if (!u || u.owner !== role) return;
       const moveCount = state.moveCountThisTurn[action.unitId] || 0;
-      const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
+      const canDoubleMove = u.effectId === "double_move" || u.effectId === "stampede" || playerHasBuff(state, role, "move_buff");
       if (moveCount >= (canDoubleMove ? 2 : 1)) return;
       
       const from = getUnitPos(state, action.unitId);
       if (!from) return;
       if (state.board[action.toRow][action.toCol]) return;
+      
+      // Validate move is adjacent (or within 2 for double move)
+      const rowDist = Math.abs(from.r - action.toRow);
+      const colDist = Math.abs(from.c - action.toCol);
+      const maxDist = canDoubleMove ? 2 : 1;
+      if (rowDist > maxDist || colDist > maxDist) return; // Too far
+      if (rowDist === 0 && colDist === 0) return; // Same tile
+      
+      // Can't move into enemy home rows with HP
+      const enemy = enemyOf(role);
+      const isEnemyHomeRow = (enemy === "gold" && action.toRow <= 1) || (enemy === "silver" && action.toRow >= 5);
+      if (isEnemyHomeRow && state.rowHP[action.toRow] > 0) return;
       
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "move", unitId: action.unitId, fromRow: from.r, fromCol: from.c, toRow: action.toRow, toCol: action.toCol });
       state.board[from.r][from.c] = null;
@@ -1265,7 +1721,7 @@ async function executeAction(lobby, role, action) {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
         processAllyDeathTriggers(lobby, t.owner);
-        processOnKillEffect(lobby, action.attackerId, role, { r: tp.r, c: tp.c });
+        processOnKillEffect(lobby, action.attackerId, role, { r: tp.r, c: tp.c }, t);
         if (!state.board[tp.r][tp.c] || state.board[tp.r][tp.c] === action.targetId) {
           state.board[tp.r][tp.c] = null;
         }
@@ -1299,6 +1755,86 @@ async function executeAction(lobby, role, action) {
             state.winner = role;
             logToLobby(lobby, role.toUpperCase() + " WINS!");
           }
+        }
+      }
+      break;
+    }
+    
+    case "attackFromSpawn": {
+      // AI attacking from spawn position
+      const attackerId = state.spawn[role];
+      if (!attackerId || attackerId !== action.attackerId) return;
+      const a = state.units[attackerId];
+      const t = state.units[action.targetId];
+      if (!a || !t || a.owner !== role || t.owner === role) return;
+      if (state.attackedThisTurn.has(attackerId)) return;
+      
+      const tp = getUnitPos(state, action.targetId);
+      if (!tp) return;
+      
+      // Spawn can attack units in adjacent row (row 6 for silver)
+      const adjRow = role === "gold" ? 0 : 6;
+      if (tp.r !== adjRow) return;
+      
+      let dmg = getEffectiveAtk(state, attackerId, action.targetId);
+      dmg = applyDamageReduction(state, action.targetId, dmg, attackerId);
+      t.hp -= dmg;
+      state.attackedThisTurn.add(attackerId);
+      
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
+      
+      logToLobby(lobby, a.name + " (from spawn) deals " + dmg + " to " + t.name);
+      
+      if (t.hp <= 0) {
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner);
+        processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
+        state.board[tp.r][tp.c] = null;
+        delete state.units[action.targetId];
+        logToLobby(lobby, t.name + " destroyed!");
+        recomputeOwners(state);
+      }
+      break;
+    }
+    
+    case "attackHeart": {
+      const a = state.units[action.attackerId];
+      if (!a || a.owner !== role) return;
+      if (state.attackedThisTurn.has(action.attackerId)) return;
+      
+      const target = action.target; // 'gold' or 'silver'
+      if (target === role) return; // Can't attack own heart
+      
+      const pos = getUnitPos(state, action.attackerId);
+      if (!pos) return;
+      
+      // Check if walls are down
+      if (target === "gold" && (state.rowHP[0] > 0 || state.rowHP[1] > 0)) return;
+      if (target === "silver" && (state.rowHP[5] > 0 || state.rowHP[6] > 0)) return;
+      
+      // Check range - must be in heart row or ranged 1 row away
+      const heartRow = target === "gold" ? 0 : 6;
+      const distance = Math.abs(pos.r - heartRow);
+      const isRanged = a.effectId === "ranged";
+      const maxRange = isRanged ? 1 : 0;
+      if (distance > maxRange) return;
+      
+      let dmg = getEffectiveAtk(state, action.attackerId);
+      if (a.effectId === "stampede") dmg += 2; // Structure bonus
+      
+      state.attackedThisTurn.add(action.attackerId);
+      state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
+      logToLobby(lobby, a.name + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
+      
+      if (state.heartHP[target] <= 0) {
+        state.gameOver = true;
+        state.winner = role;
+        logToLobby(lobby, "=== " + target.toUpperCase() + " DESTROYED! " + role.toUpperCase() + " WINS! ===");
+        
+        // Handle campaign rewards for AI victory (shouldn't happen often!)
+        if (lobby.isAIGame && role === "gold" && lobby.hostUserId && lobby.bossId) {
+          handleCampaignVictory(lobby);
         }
       }
       break;
@@ -1350,6 +1886,8 @@ io.on("connection", (socket) => {
 
     // Look up user's custom deck if they have one
     let customDeckCards = null;
+    let deckMusic = 'default';
+    let deckBackground = 'default';
     if (userId) {
       try {
         const user = await User.findById(userId);
@@ -1360,7 +1898,9 @@ io.on("connection", (socket) => {
           console.log('Found custom deck:', customDeck ? 'yes' : 'no');
           if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
             customDeckCards = customDeck.cards;
-            console.log('Using custom deck with', customDeckCards.length, 'cards');
+            deckMusic = customDeck.music || 'default';
+            deckBackground = customDeck.background || 'default';
+            console.log('Using custom deck with', customDeckCards.length, 'cards, music:', deckMusic, 'background:', deckBackground);
           }
         }
       } catch (err) {
@@ -1401,7 +1941,9 @@ io.on("connection", (socket) => {
       code: code, 
       myDeck: deckId || "medieval", 
       enemyDeck: boss.deckId,
-      bossName: boss.name 
+      bossName: boss.name,
+      music: deckMusic,
+      background: deckBackground
     });
     socket.emit("enemyInfo", { username: boss.name, isAI: true });
     logToLobby(lobbies[code], "=== CAMPAIGN: " + boss.name.toUpperCase() + " ===");
@@ -1500,6 +2042,12 @@ io.on("connection", (socket) => {
       lobby.hostSocket = socket;
       socket.emit("role", "gold");
       console.log("Host rejoined lobby " + code);
+      
+      // If it's AI's turn and this is a campaign game, restart AI processing
+      if (lobby.isAIGame && lobby.ai && lobby.gameState.state.activeSide === "silver" && !lobby.gameState.state.gameOver) {
+        console.log("Restarting AI turn after host rejoin");
+        setTimeout(() => processAITurn(lobby), 1000);
+      }
     } else {
       lobby.guestSocket = socket;
       socket.emit("role", "silver");
@@ -1559,13 +2107,22 @@ io.on("connection", (socket) => {
         
         // For units belonging to the player ending their turn:
         if (u.owner === role) {
-          // Clear untargetable (it lasted for opponent's turn)
-          u.untargetable = false;
-          // Activate burrowPending -> becomes untargetable during opponent's turn
-          if (u.burrowPending) {
-            u.untargetable = true;
-            u.burrowPending = false;
-            logToLobby(lobby, u.name + " burrows underground!");
+          // Handle Burrower Beast - stays untargetable for 2 turns
+          if (u.effectId === "burrow" && u.untargetable) {
+            u.burrowTurnsLeft = (u.burrowTurnsLeft || 2) - 1;
+            if (u.burrowTurnsLeft <= 0) {
+              u.untargetable = false;
+              delete u.burrowTurnsLeft;
+              logToLobby(lobby, u.name + " emerges from the ground!");
+            }
+          } 
+          // Phantom Scout - only untargetable for 1 turn (clears after opponent's turn)
+          else if (u.effectId === "phantom") {
+            u.untargetable = false;
+          }
+          // Other untargetable effects clear normally
+          else if (u.untargetable) {
+            u.untargetable = false;
           }
         }
       }
@@ -1674,10 +2231,17 @@ io.on("connection", (socket) => {
         p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
         const id = genId(); const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
-        // Burrower Beast - becomes untargetable at start of next turn
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        // Preserve stolen flag for Soul Collector cards
+        if (card.stolen) unitData.stolen = true;
+        // Burrower Beast - untargetable for 2 turns
         if (card.effectId === "burrow") {
-          unitData.burrowPending = true; // Will become untargetable next turn
+          unitData.untargetable = true;
+          unitData.burrowTurnsLeft = 2;
+        }
+        // Phantom Scout - untargetable for 1 turn
+        if (card.effectId === "phantom") {
+          unitData.untargetable = true;
         }
         state.units[id] = unitData;
         state.spawn[spawn] = id;
@@ -1714,10 +2278,13 @@ io.on("connection", (socket) => {
       p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
       const id = genId(); const hpB = getArmoryBonus(state, role);
       const maxHp = card.hp + hpB;
-      const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
-      // Burrower Beast - becomes untargetable at start of next turn
+      const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+      // Preserve stolen flag for Soul Collector cards
+      if (card.stolen) unitData.stolen = true;
+      // Burrower Beast - untargetable for 2 turns (deploy turn + next turn)
       if (card.effectId === "burrow") {
-        unitData.burrowPending = true;
+        unitData.untargetable = true;
+        unitData.burrowTurnsLeft = 2;
       }
       // Phantom Scout - untargetable immediately (until your next turn starts)
       if (card.effectId === "phantom") {
@@ -1826,7 +2393,12 @@ io.on("connection", (socket) => {
       // Check if target is untargetable (Burrower Beast on deploy turn)
       if (t.untargetable && !isAbsorbAttack) return socket.emit("log", t.name + " is untargetable this turn.");
       
-      if (state.attackedThisTurn.has(attackerId)) return socket.emit("log", "Already attacked.");
+      // Check if unit has already attacked (considering double attack buff)
+      // Must check this BEFORE the attackedThisTurn set, since Rally Cry can be cast after first attack
+      const attackCount = a.attackCountThisTurn || 0;
+      const maxAttacks = a.canDoubleAttack ? 2 : 1;
+      if (attackCount >= maxAttacks) return socket.emit("log", "Already attacked.");
+      
       const ap = getUnitPos(state, attackerId), tp = getUnitPos(state, targetId);
       if (!ap || !tp) return socket.emit("log", "Position not found.");
       
@@ -1835,6 +2407,10 @@ io.on("connection", (socket) => {
       
       // Peasant diagonal_attack - can attack diagonally
       if (a.effectId === "diagonal_attack") {
+        validAttack = isAdjacent(ap.r, ap.c, tp.r, tp.c);
+      }
+      // Vampire Lord lifesteal_lord - can attack diagonally
+      else if (a.effectId === "lifesteal_lord") {
         validAttack = isAdjacent(ap.r, ap.c, tp.r, tp.c);
       }
       // Archer ranged - can attack 2 tiles away (cardinal only)
@@ -1857,11 +2433,6 @@ io.on("connection", (socket) => {
       }
       
       if (!validAttack) return socket.emit("log", "Target out of range.");
-      
-      // Check if unit has already attacked (considering double attack buff)
-      const attackCount = a.attackCountThisTurn || 0;
-      const maxAttacks = a.canDoubleAttack ? 2 : 1;
-      if (attackCount >= maxAttacks) return socket.emit("log", "Already attacked.");
       
       // Handle UFO Scraper absorb attack
       if (isAbsorbAttack) {
@@ -1906,10 +2477,51 @@ io.on("connection", (socket) => {
       
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name + (a.canDoubleAttack && a.attackCountThisTurn < maxAttacks ? " (can attack again)" : ""));
       
+      // === LIFESTEAL EFFECTS ===
+      // Check if attacker has lifesteal
+      const hasLifesteal = a.effectId === "lifesteal" || 
+                           a.effectId === "lifesteal_weaken" || 
+                           a.effectId === "lifesteal_grow" ||
+                           a.effectId === "lifesteal_lord" ||
+                           hasVampireLordBuff(state, role);
+      
+      if (hasLifesteal && dmg > 0) {
+        // Lifesteal heals the unit for 1 HP when attacking
+        const maxHp = a.maxHp || a.hp;
+        if (a.hp < maxHp) {
+          a.hp = Math.min(a.hp + 1, maxHp);
+          logToLobby(lobby, a.name + " drains life! +1 HP");
+        }
+      }
+      
+      // Check if target has lifesteal (heals when attacked)
+      const targetHasLifesteal = t.effectId === "lifesteal" || 
+                                  t.effectId === "lifesteal_weaken" || 
+                                  t.effectId === "lifesteal_grow" ||
+                                  t.effectId === "lifesteal_lord" ||
+                                  hasVampireLordBuff(state, t.owner);
+      
+      if (targetHasLifesteal && dmg > 0 && t.hp > 0) {
+        // Lifesteal heals the unit for 1 HP when attacked
+        const maxHp = t.maxHp || t.hp;
+        if (t.hp < maxHp) {
+          t.hp = Math.min(t.hp + 1, maxHp);
+          logToLobby(lobby, t.name + " drains life from attacker! +1 HP");
+        }
+      }
+      
       // Neural Harvester - gain energy if target survives
       if (a.effectId === "energy_on_hit" && t.hp > 0) {
         lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY);
         logToLobby(lobby, a.name + " harvests 1 energy!");
+      }
+      
+      // Blood Familiar blood_bite - attacks twice, second attack deals 1 damage
+      if (a.effectId === "blood_bite" && t.hp > 0) {
+        // Deal second attack for 1 damage
+        const secondDmg = applyDamageReduction(state, targetId, 1, attackerId);
+        t.hp -= secondDmg;
+        logToLobby(lobby, a.name + " bites again for " + secondDmg + "!");
       }
       
       // Royal Guard cleave - splash half damage to adjacent enemies of target
@@ -1969,25 +2581,33 @@ io.on("connection", (socket) => {
       }
       
       if (effectiveHp <= 0) {
-        if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
-        if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
-        // Process on-death effect for dying unit
-        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
-        processAllyDeathTriggers(lobby, t.owner);
-        // Process on-kill effect for attacker (pass killed unit position for spawn_drone)
-        processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c });
-        // Only remove unit if spawn_drone didn't place a drone there
-        if (!state.board[tp.r][tp.c]) {
-          // Position is empty, unit was removed
-        } else if (state.board[tp.r][tp.c] === targetId) {
-          // Drone wasn't spawned, remove the dead unit
-          state.board[tp.r][tp.c] = null;
+        // Elder Vampire immortal - heals to full instead of dying (once per game)
+        if (t.effectId === "immortal" && !t.immortalUsed) {
+          t.hp = t.maxHp || 6;
+          t.immortalUsed = true;
+          logToLobby(lobby, t.name + " refuses to die! Heals to full HP!");
+        } else {
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
+          // Process on-death effect for dying unit
+          processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+          processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
+          // Process on-kill effect for attacker (pass killed unit position and unit for steal_card)
+          processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
+          processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
+          // Only remove unit if spawn_drone didn't place a drone there
+          if (!state.board[tp.r][tp.c]) {
+            // Position is empty, unit was removed
+          } else if (state.board[tp.r][tp.c] === targetId) {
+            // Drone wasn't spawned, remove the dead unit
+            state.board[tp.r][tp.c] = null;
+          }
+          delete state.units[targetId];
+          logToLobby(lobby, t.name + " destroyed!");
+          const overflow = Math.max(0, dmg - before);
+          if (overflow > 0 && state.rowHP[tp.r] > 0) { state.rowHP[tp.r] = Math.max(0, state.rowHP[tp.r] - overflow); logToLobby(lobby, "Row takes " + overflow + " overflow"); }
+          recomputeOwners(state); // Recompute after unit destroyed
         }
-        delete state.units[targetId];
-        logToLobby(lobby, t.name + " destroyed!");
-        const overflow = Math.max(0, dmg - before);
-        if (overflow > 0 && state.rowHP[tp.r] > 0) { state.rowHP[tp.r] = Math.max(0, state.rowHP[tp.r] - overflow); logToLobby(lobby, "Row takes " + overflow + " overflow"); }
-        recomputeOwners(state); // Recompute after unit destroyed
       }
       recomputeOwners(state);
       return emitGameState(lobby);
@@ -2082,7 +2702,9 @@ io.on("connection", (socket) => {
       if (t.hp <= 0) {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
-        processOnKillEffect(lobby, attackerId, role);
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner);
+        processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
         state.board[tp.r][tp.c] = null; delete state.units[targetId];
         logToLobby(lobby, t.name + " destroyed!");
         recomputeOwners(state);
