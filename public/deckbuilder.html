@@ -30,9 +30,9 @@
     .card-preview { padding: 15px; display: flex; flex-direction: column; align-items: center; flex: 1; overflow-y: auto; }
     .preview-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #64748b; text-align: center; }
     .preview-placeholder-icon { font-size: 48px; margin-bottom: 10px; opacity: 0.5; }
-    .preview-card { width: 100%; max-width: 240px; }
-    .preview-art { width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: contain; background-position: center; background-repeat: no-repeat; border-radius: 10px; margin-bottom: 12px; }
-    .preview-art.void-alien { background: linear-gradient(135deg, #065f46, #059669); }
+    .preview-card { width: 100%; max-width: 280px; }
+    .preview-art { width: 100%; height: 220px; background-color: rgba(30, 30, 60, 0.5); background-size: contain; background-position: center; background-repeat: no-repeat; border-radius: 10px; margin-bottom: 12px; }
+    .preview-art.void-alien { background-color: rgba(6, 95, 70, 0.3); }
     .preview-name { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #fbbf24; text-align: center; margin-bottom: 8px; }
     .preview-type { font-size: 12px; color: #94a3b8; text-align: center; margin-bottom: 12px; }
     .preview-stats { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
@@ -72,8 +72,8 @@
     .collection-card.in-deck { border-color: rgba(16, 185, 129, 0.6); }
     .collection-card.not-owned { opacity: 0.4; filter: grayscale(0.5); }
     .collection-card.void-alien { border-color: rgba(16, 185, 129, 0.5); }
-    .card-art { width: 100%; height: 55%; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: contain; background-position: center; background-repeat: no-repeat; }
-    .card-art.void-alien { background: linear-gradient(135deg, #065f46, #059669); background-size: contain; background-position: center; background-repeat: no-repeat; }
+    .card-art { width: 100%; height: 55%; background-color: rgba(30, 30, 60, 0.5); background-size: cover; background-position: center top; }
+    .card-art.void-alien { background-color: rgba(6, 95, 70, 0.3); background-size: cover; background-position: center top; }
     .card-cost { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: white; }
     .card-count { position: absolute; top: 3px; left: 3px; background: rgba(0, 0, 0, 0.8); padding: 1px 5px; border-radius: 6px; font-size: 9px; font-weight: 600; color: #fbbf24; }
     .card-count.none { color: #ef4444; }
@@ -96,11 +96,13 @@
     .clear-btn { padding: 5px 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 5px; color: #f87171; font-size: 11px; cursor: pointer; }
     .clear-btn:hover { background: rgba(239, 68, 68, 0.3); }
     .energy-curve { padding: 10px 12px; background: rgba(30, 30, 60, 0.3); border-bottom: 1px solid rgba(138, 43, 226, 0.2); }
-    .curve-title { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
-    .curve-bars { display: flex; align-items: flex-end; gap: 3px; height: 40px; }
-    .curve-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-    .bar-fill { width: 100%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.3s; }
-    .bar-label { font-size: 8px; color: #64748b; } .bar-count { font-size: 8px; color: #94a3b8; }
+    .curve-title { font-size: 10px; color: #94a3b8; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .curve-container { display: flex; gap: 4px; }
+    .curve-bar { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .bar-wrapper { width: 100%; height: 50px; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(20, 20, 40, 0.5); border-radius: 3px; overflow: hidden; }
+    .bar-fill { width: 100%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius: 2px 2px 0 0; transition: height 0.3s; }
+    .bar-label { font-size: 9px; color: #64748b; margin-top: 3px; }
+    .bar-count { font-size: 9px; color: #94a3b8; font-weight: 600; }
     .deck-cards { flex: 1; overflow-y: auto; padding: 8px; }
     .deck-cards::-webkit-scrollbar { width: 5px; }
     .deck-cards::-webkit-scrollbar-thumb { background: rgba(138, 43, 226, 0.5); border-radius: 3px; }
@@ -134,6 +136,7 @@
         <h1 class="page-title">⚔️ Deck Builder</h1>
       </div>
       <div class="header-right">
+        <button class="fix-btn" id="fixCollectionBtn" style="padding: 8px 12px; background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251, 191, 36, 0.5); border-radius: 8px; color: #fbbf24; font-size: 11px; cursor: pointer;">🔧 Fix Collection</button>
         <span id="collectionCount" style="color: #94a3b8; font-size: 12px;">0/34 owned</span>
         <button class="save-btn" id="saveBtn" disabled>💾 Save Deck</button>
       </div>
@@ -171,13 +174,13 @@
         </div>
         <div class="energy-curve">
           <div class="curve-title">⚡ Energy Curve</div>
-          <div class="curve-bars" id="energyCurve">
-            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">1</div></div>
-            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">2</div></div>
-            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">3</div></div>
-            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">4</div></div>
-            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">5</div></div>
-            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">6+</div></div>
+          <div class="curve-container" id="energyCurve">
+            <div class="curve-bar"><div class="bar-wrapper"><div class="bar-fill" id="bar1"></div></div><div class="bar-count" id="count1">0</div><div class="bar-label">1</div></div>
+            <div class="curve-bar"><div class="bar-wrapper"><div class="bar-fill" id="bar2"></div></div><div class="bar-count" id="count2">0</div><div class="bar-label">2</div></div>
+            <div class="curve-bar"><div class="bar-wrapper"><div class="bar-fill" id="bar3"></div></div><div class="bar-count" id="count3">0</div><div class="bar-label">3</div></div>
+            <div class="curve-bar"><div class="bar-wrapper"><div class="bar-fill" id="bar4"></div></div><div class="bar-count" id="count4">0</div><div class="bar-label">4</div></div>
+            <div class="curve-bar"><div class="bar-wrapper"><div class="bar-fill" id="bar5"></div></div><div class="bar-count" id="count5">0</div><div class="bar-label">5</div></div>
+            <div class="curve-bar"><div class="bar-wrapper"><div class="bar-fill" id="bar6"></div></div><div class="bar-count" id="count6">0</div><div class="bar-label">6+</div></div>
           </div>
         </div>
         <div class="deck-cards" id="deckCards"><div class="deck-empty"><div class="deck-empty-icon">🃏</div><div>Click cards to add</div></div></div>
@@ -203,7 +206,7 @@
       shrine: { name: "Healing Shrine", cost: 3, atk: 0, hp: 5, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Heals allies in same row 1 HP per turn", art: "/images/Healing Shrine.png" },
       armory: { name: "Armory", cost: 3, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Units you deploy gain +1 HP", art: "/images/Armory.png" },
       castlewalls: { name: "Castle Walls", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Add +15 HP to target friendly row", art: "/images/Castle Walls.png" },
-      treasury: { name: "King's Treasury", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Draw 2 cards", art: "/images/King's Treasury.png" },
+      treasury: { name: "King's Treasury", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Draw 2 cards", art: "/images/Kings Treasury.png" },
       rally: { name: "Rallying Cry", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Target unit attacks twice this turn", art: "/images/Rallying Cry.png" },
       voiddrone: { name: "Void Drone", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Void Drone.png" },
       scavengerlarva: { name: "Scavenger Larva", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy when this unit dies", art: "/images/Scavenger Larva.png" },
@@ -229,6 +232,7 @@
     let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false;
     const cardGrid = document.getElementById('cardGrid'), deckCards = document.getElementById('deckCards'), deckCount = document.getElementById('deckCount');
     const collectionCount = document.getElementById('collectionCount'), saveBtn = document.getElementById('saveBtn'), clearBtn = document.getElementById('clearBtn');
+    const fixCollectionBtn = document.getElementById('fixCollectionBtn');
     const deckSelect = document.getElementById('deckSelect'), deckNameInput = document.getElementById('deckNameInput'), cardPreview = document.getElementById('cardPreview');
     const searchInput = document.getElementById('searchInput'), ownedFilter = document.getElementById('ownedFilter'), archetypeFilter = document.getElementById('archetypeFilter');
     const typeFilter = document.getElementById('typeFilter'), costFilter = document.getElementById('costFilter'), resetFiltersBtn = document.getElementById('resetFiltersBtn');
@@ -247,6 +251,7 @@
       saveBtn.addEventListener('click', saveDeck);
       deckSelect.addEventListener('change', switchDeckType);
       deckNameInput.addEventListener('input', function() { currentDeckName = deckNameInput.value; hasChanges = true; updateSaveButton(); });
+      fixCollectionBtn.addEventListener('click', fixCollection);
     }
     function showLoginPrompt() { cardGrid.innerHTML = '<div class="login-prompt" style="grid-column:1/-1"><div class="login-prompt-icon">🔒</div><h2>Login Required</h2><a href="/home.html" class="back-btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:#1a1a2e;font-weight:600">← Login</a></div>'; }
     function loadUserData() {
@@ -280,10 +285,11 @@
       const card = CARD_DATA[selectedCardKey]; if (!card) return;
       const owned = userCollection[selectedCardKey] || 0;
       const inDeck = currentDeck.filter(function(k) { return k === selectedCardKey; }).length;
-      const canAdd = owned > inDeck && currentDeck.length < 35;
+      const canAdd = owned > inDeck && inDeck < 3 && currentDeck.length < 35;
       const canRemove = inDeck > 0;
       const artUrl = encodeURI(card.art || '');
-      cardPreview.innerHTML = '<div class="preview-card"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div><div class="preview-name">' + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + (card.archetype === 'void-alien' ? 'Void Alien' : 'Medieval') + '</div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">In deck: <span>' + inDeck + '</span> / Owned: <span>' + owned + '</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || owned === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
+      const ownedCapped = Math.min(owned, 3);
+      cardPreview.innerHTML = '<div class="preview-card"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div><div class="preview-name">' + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + (card.archetype === 'void-alien' ? 'Void Alien' : 'Medieval') + '</div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">In deck: <span>' + inDeck + '</span> / Max: <span>3</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || ownedCapped === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
     }
     function renderCollection() {
       const search = searchInput.value.toLowerCase(), ownedVal = ownedFilter.value, archVal = archetypeFilter.value, typeVal = typeFilter.value, costVal = costFilter.value;
@@ -302,10 +308,10 @@
       if (cards.length === 0) { cardGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#64748b">No cards match</div>'; return; }
       cardGrid.innerHTML = cards.map(function(entry) {
         const key = entry[0], card = entry[1];
-        const owned = userCollection[key] || 0, inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+        const owned = Math.min(userCollection[key] || 0, 3), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
         const artUrl = encodeURI(card.art || '');
         let cls = 'collection-card'; if (key === selectedCardKey) cls += ' selected'; if (card.archetype === 'void-alien') cls += ' void-alien'; if (inDeck > 0) cls += ' in-deck'; if (owned === 0) cls += ' not-owned';
-        return '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + inDeck + '/' + owned + '</div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+        return '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + inDeck + '/' + owned + '</div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
       }).join('');
     }
     function renderDeck() {
@@ -319,21 +325,27 @@
         const key = entry[0], qty = entry[1];
         const card = CARD_DATA[key]; if (!card) return '';
         const artUrl = encodeURI(card.art || '');
-        return '<div class="deck-card-item ' + (key === selectedCardKey ? 'selected' : '') + '" onclick="selectCard(\'' + key + '\')"><div class="deck-card-art" style="background-image:url(\'' + artUrl + '\')"></div><div class="deck-card-info"><div class="deck-card-name">' + card.name + '</div><div class="deck-card-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + '</div></div><div class="deck-card-cost">' + card.cost + '</div><div class="deck-card-qty">×' + qty + '</div></div>';
+        return '<div class="deck-card-item ' + (key === selectedCardKey ? 'selected' : '') + '" onclick="selectCard(\'' + key + '\')"><div class="deck-card-art" style="background-image:url(\'' + artUrl + '\'); background-size: contain; background-position: center; background-repeat: no-repeat;"></div><div class="deck-card-info"><div class="deck-card-name">' + card.name + '</div><div class="deck-card-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + '</div></div><div class="deck-card-cost">' + card.cost + '</div><div class="deck-card-qty">×' + qty + '</div></div>';
       }).join('');
     }
     function updateEnergyCurve() {
       const counts = [0, 0, 0, 0, 0, 0];
       currentDeck.forEach(function(k) { const c = CARD_DATA[k]; if (c) { const idx = Math.min(c.cost, 6) - 1; counts[idx >= 0 ? idx : 5]++; } });
       const max = Math.max.apply(null, counts.concat([1]));
-      document.querySelectorAll('.curve-bar').forEach(function(bar, i) { bar.querySelector('.bar-fill').style.height = (counts[i] / max) * 100 + '%'; bar.querySelector('.bar-count').textContent = counts[i]; });
+      for (var i = 0; i < 6; i++) {
+        var barEl = document.getElementById('bar' + (i + 1));
+        var countEl = document.getElementById('count' + (i + 1));
+        if (barEl) barEl.style.height = (counts[i] / max) * 100 + '%';
+        if (countEl) countEl.textContent = counts[i];
+      }
     }
     function updateSaveButton() { const count = currentDeck.length; saveBtn.disabled = !(count >= 25 && count <= 35 && currentDeckName.trim() && hasChanges); }
     function addToDeck(key) {
       const card = CARD_DATA[key]; if (!card) return;
-      const owned = userCollection[key] || 0, inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+      const owned = Math.min(userCollection[key] || 0, 3), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
       if (owned === 0) { showToast("You don't own this card", true); return; }
-      if (inDeck >= owned) { showToast('No more copies', true); return; }
+      if (inDeck >= 3) { showToast('Max 3 copies per card', true); return; }
+      if (inDeck >= owned) { showToast('No more copies available', true); return; }
       if (currentDeck.length >= 35) { showToast('Deck full (35 max)', true); return; }
       currentDeck.push(key); hasChanges = true;
       renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview();
@@ -344,6 +356,32 @@
     }
     function clearDeck() { if (currentDeck.length === 0) return; if (confirm('Clear all cards?')) { currentDeck = []; hasChanges = true; renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview(); } }
     function resetFilters() { searchInput.value = ''; ownedFilter.value = 'all'; archetypeFilter.value = 'all'; typeFilter.value = 'all'; costFilter.value = 'all'; renderCollection(); }
+    
+    async function fixCollection() {
+      if (!currentUser || currentUser.id === 'admin') { showToast('Cannot fix admin account', true); return; }
+      if (!confirm('This will ensure you have 3 copies of each medieval card. Continue?')) return;
+      fixCollectionBtn.disabled = true;
+      fixCollectionBtn.textContent = '🔧 Fixing...';
+      try {
+        const res = await fetch('/api/fixCollection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.id }) });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem('gridCardUser', JSON.stringify(data.user));
+          currentUser = data.user;
+          userCollection = currentUser.cardCollection || {};
+          renderCollection();
+          renderDeck();
+          renderCardPreview();
+          const total = Object.keys(CARD_DATA).length;
+          const owned = Object.keys(CARD_DATA).filter(function(k) { return (userCollection[k] || 0) > 0; }).length;
+          collectionCount.textContent = owned + '/' + total + ' owned';
+          showToast('Collection fixed! You now have 3 of each medieval card.');
+        } else { throw new Error(data.error || 'Failed'); }
+      } catch (err) { showToast('Fix failed: ' + err.message, true); }
+      fixCollectionBtn.disabled = false;
+      fixCollectionBtn.textContent = '🔧 Fix Collection';
+    }
+    
     async function saveDeck() {
       if (currentDeck.length < 25 || currentDeck.length > 35) { showToast('Need 25-35 cards', true); return; }
       if (!currentDeckName.trim()) { showToast('Enter deck name', true); return; }

@@ -322,13 +322,21 @@ const authHelpers = {
       user.unlockedDecks.push(boss.deckId);
     }
     
-    // Random card rewards (3 cards)
+    // Random card rewards (3 cards) - max 3 copies of any card
     const rewardCards = [];
     for (let i = 0; i < 3; i++) {
-      const randomCard = boss.cardRewards[Math.floor(Math.random() * boss.cardRewards.length)];
-      rewardCards.push(randomCard);
-      const currentCount = user.cardCollection.get(randomCard) || 0;
-      user.cardCollection.set(randomCard, currentCount + 1);
+      // Find cards that aren't maxed out yet
+      const availableCards = boss.cardRewards.filter(card => {
+        const currentCount = user.cardCollection.get(card) || 0;
+        return currentCount < 3;
+      });
+      
+      if (availableCards.length > 0) {
+        const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+        rewardCards.push(randomCard);
+        const currentCount = user.cardCollection.get(randomCard) || 0;
+        user.cardCollection.set(randomCard, Math.min(currentCount + 1, 3));
+      }
     }
     
     // Update stats

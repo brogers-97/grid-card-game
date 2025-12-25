@@ -46,6 +46,47 @@ app.get("/api/campaign/bosses", (req, res) => {
   res.json({ bosses: CAMPAIGN_BOSSES });
 });
 
+// Fix medieval card collection - ensure user has 3 copies of each medieval card, cap all at 3
+app.post("/api/fixCollection", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId || userId === 'admin') {
+      return res.status(400).json({ success: false, error: 'Invalid user' });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // Medieval cards that every player should have 3 of
+    const medievalCards = [
+      'peasant', 'squire', 'archer', 'manatarms', 'shieldbearer', 
+      'warhound', 'battlefieldmedic', 'knight', 'crusader', 
+      'royalguard', 'paladin', 'siegeram', 'warbanner', 
+      'shrine', 'armory', 'castlewalls', 'treasury', 'rally'
+    ];
+    
+    // Set each medieval card to exactly 3
+    medievalCards.forEach(card => {
+      user.cardCollection.set(card, 3);
+    });
+    
+    // Cap all other cards at 3 max
+    for (const [card, count] of user.cardCollection.entries()) {
+      if (count > 3) {
+        user.cardCollection.set(card, 3);
+      }
+    }
+    
+    await user.save();
+    res.json({ success: true, user: user.toPublicJSON() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Save deck endpoint - saves to medieval or void-alien slot
 app.post("/api/saveDeck", async (req, res) => {
   try {
@@ -193,7 +234,7 @@ const DECKS = {
       { key: "shrine", name: "Healing Shrine", atk: 0, hp: 5, cost: 3, type: "spell", effect: "startOfTurn", effectId: "shrine_heal", effectDesc: "START: Heal row allies 1 HP.", art: "/images/Healing Shrine.png" },
       { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "spell", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: Deployed units +1 HP.", art: "/images/Armory.png" },
       { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_row", effectDesc: "INSTANT: This row +15 HP.", art: "/images/Castle Walls.png", requiresTarget: "row" },
-      { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/King's Treasury.png" },
+      { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/Kings Treasury.png" },
       { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "double_attack", effectDesc: "INSTANT: Target unit can attack twice.", art: "/images/Rallying Cry.png", requiresTarget: "unit" },
     ]
   },
@@ -442,10 +483,16 @@ function getEffectiveAtk(state, uid) {
   const u = state.units[uid]; if (!u) return 0; let atk = u.atk; const pos = getUnitPos(state, uid); if (!pos) return atk;
   // War Banner buff
   for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "attack_aura") atk += 1; }
-  // War Shrine buff tile (atk_row_buff)
-  const buffKey = `${pos.r}-${pos.c}`;
-  if (state.buffTiles[buffKey] && state.buffTiles[buffKey].id === "atk_row_buff") {
-    atk += 1;
+  // War Shrine buff tile (atk_row_buff) - applies to ALL units in that row if owner has unit on tile
+  for (const key in state.buffTiles) {
+    const buff = state.buffTiles[key];
+    if (buff.id === "atk_row_buff" && buff.row === pos.r) {
+      const unitOnTile = state.board[buff.row][buff.col];
+      if (unitOnTile && state.units[unitOnTile] && state.units[unitOnTile].owner === u.owner) {
+        atk += 1;
+        break;
+      }
+    }
   }
   return atk;
 }
@@ -457,6 +504,28 @@ function applyDamageReduction(state, tid, dmg) {
 }
 
 function getArmoryBonus(state, role) { for (const id in state.units) if (state.units[id].owner === role && state.units[id].effectId === "armory_buff") return 1; return 0; }
+
+// Check if player has hp_buff (Fortified Ground) - gives all units +1 HP
+function getHpBuffBonus(state, role) {
+  for (const key in state.buffTiles) {
+    const buff = state.buffTiles[key];
+    if (buff.id === "hp_buff") {
+      const unitOnTile = state.board[buff.row][buff.col];
+      if (unitOnTile && state.units[unitOnTile] && state.units[unitOnTile].owner === role) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+// Get effective max HP for a unit (includes hp_buff)
+function getEffectiveMaxHp(state, uid) {
+  const u = state.units[uid]; if (!u) return 0;
+  let maxHp = u.maxHp || u.hp;
+  maxHp += getHpBuffBonus(state, u.owner);
+  return maxHp;
+}
 
 function logToLobby(lobby, msg) { lobby.log = lobby.log || []; lobby.log.push(msg); if (lobby.hostSocket) lobby.hostSocket.emit("log", msg); if (lobby.guestSocket) lobby.guestSocket.emit("log", msg); }
 
@@ -685,12 +754,30 @@ function emitLobbyState(lobby) {
 function emitGameState(lobby) {
   if (!lobby.gameState) return;
   const { state, players } = lobby.gameState;
+  
+  // Calculate hp buffs for each player
+  const goldHpBuff = getHpBuffBonus(state, "gold");
+  const silverHpBuff = getHpBuffBonus(state, "silver");
+  
+  // Create units with effective stats
+  const unitsWithBuffs = {};
+  for (const uid in state.units) {
+    const u = state.units[uid];
+    const hpBuff = u.owner === "gold" ? goldHpBuff : silverHpBuff;
+    unitsWithBuffs[uid] = { 
+      ...u, 
+      displayHp: u.hp + hpBuff,
+      displayMaxHp: (u.maxHp || u.hp) + hpBuff,
+      hpBuffed: hpBuff > 0
+    };
+  }
+  
   const base = { 
     board: state.board, 
     rowHP: state.rowHP, 
     rowOwner: state.rowOwner, 
     heartHP: state.heartHP, 
-    units: state.units, 
+    units: unitsWithBuffs, 
     activeSide: state.activeSide, 
     turnNumber: state.turnNumber, 
     gameOver: state.gameOver, 
@@ -970,9 +1057,13 @@ io.on("connection", (socket) => {
 
   // Start campaign game against AI
   socket.on("startCampaign", async (data) => {
-    const { bossId, deckId, username, userId } = data;
+    const { bossId, deckId, username, userId, difficulty } = data;
     const boss = CAMPAIGN_BOSSES.find(b => b.id === bossId);
     if (!boss) return socket.emit("lobbyError", "Invalid boss.");
+
+    // Use client-selected difficulty (1=easy, 2=medium, 3=hard), default to medium
+    const aiLevel = difficulty || 2;
+    console.log('Starting campaign with AI difficulty:', aiLevel);
 
     // Look up user's custom deck if they have one
     let customDeckCards = null;
@@ -1011,9 +1102,9 @@ io.on("connection", (socket) => {
       hostUserId: userId || null,
       guestUserId: null,
       isAIGame: true,
-      aiLevel: boss.aiLevel,
+      aiLevel: aiLevel,
       bossId: bossId,
-      ai: new GameAI(boss.aiLevel)
+      ai: new GameAI(aiLevel)
     };
     
     socket.data.lobbyCode = code;
@@ -1486,6 +1577,10 @@ io.on("connection", (socket) => {
       const before = t.hp; 
       t.hp -= dmg;
       
+      // hp_buff gives virtual HP - unit survives at 0 HP if buff active
+      const hpBuffBonus = getHpBuffBonus(state, t.owner);
+      const effectiveHp = t.hp + hpBuffBonus;
+      
       // Send damage animation
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
       if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
@@ -1564,7 +1659,7 @@ io.on("connection", (socket) => {
         }
       }
       
-      if (t.hp <= 0) {
+      if (effectiveHp <= 0) {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         // Process on-death effect for dying unit
@@ -1600,9 +1695,16 @@ io.on("connection", (socket) => {
       if (!isEnemyHomeRow) return socket.emit("log", "Can only attack enemy home rows.");
       
       const ap = getUnitPos(state, attackerId); if (!ap) return;
-      // Check cardinal adjacency to any cell in the target row
-      let adj = false; for (let c = 0; c < COLS; c++) if (isCardinalAdjacent(ap.r, ap.c, row, c)) { adj = true; break; }
-      if (!adj) return socket.emit("log", "Not adjacent (no diagonal).");
+      
+      // Check range - archers can attack from 2 tiles away, others must be adjacent
+      const isRanged = a.effectId === "ranged";
+      const maxRange = isRanged ? 2 : 1;
+      const rowDistance = Math.abs(ap.r - row);
+      
+      if (rowDistance > maxRange) {
+        return socket.emit("log", isRanged ? "Too far (max 2 rows)." : "Not adjacent (no diagonal).");
+      }
+      
       let dmg = getEffectiveAtk(state, attackerId); if (a.effectId === "siege") dmg *= 2;
       state.attackedThisTurn.add(attackerId); state.rowHP[row] = Math.max(0, state.rowHP[row] - dmg);
       logToLobby(lobby, a.name + " hits row for " + dmg + " (HP: " + state.rowHP[row] + ")");
