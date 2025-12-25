@@ -152,8 +152,10 @@ function showTooltip(unitId, x, y, buff) {
   // Art section
   const icon = CARD_ICONS[u.key] || '⚔️';
   const hasArt = u.art;
-  const artStyle = hasArt ? `background-image: url('${u.art}')` : '';
+  const encodedArt = hasArt ? encodeURI(u.art) : '';
+  const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
   const artIconHtml = hasArt ? '' : `<div class="tooltip-art-icon">${icon}</div>`;
+  const costBadgeHtml = `<div class="tooltip-cost-badge">${u.cost || 0}</div>`;
   
   const effectHtml = u.effectDesc ? `
     <div class="tooltip-effect">
@@ -180,7 +182,10 @@ function showTooltip(unitId, x, y, buff) {
   
   tooltipEl.innerHTML = `
     <div class="tooltip-card ${typeClass}">
-      <div class="tooltip-art" style="${artStyle}">${artIconHtml}</div>
+      <div class="tooltip-art" style="${artStyle}">
+        ${costBadgeHtml}
+        ${artIconHtml}
+      </div>
       <div class="tooltip-content">
         <div class="tooltip-header">
           <span class="tooltip-name">${u.name}</span>
@@ -190,11 +195,11 @@ function showTooltip(unitId, x, y, buff) {
         <div class="tooltip-stats">
           <div class="tooltip-stat">
             <div class="tooltip-stat-value atk">${effectiveAtk}</div>
-            <div class="tooltip-stat-label">⚔ Attack${atkBuff > 0 ? ` (+${atkBuff})` : ''}</div>
+            <div class="tooltip-stat-label">⚔ ATK${atkBuff > 0 ? ` (+${atkBuff})` : ''}</div>
           </div>
           <div class="tooltip-stat">
             <div class="tooltip-stat-value hp">${hpDisplay}</div>
-            <div class="tooltip-stat-label">♥ Health</div>
+            <div class="tooltip-stat-label">♥ HP</div>
           </div>
         </div>
         ${statusHtml}
@@ -218,8 +223,10 @@ function showCardTooltip(card, x, y) {
   // Art section
   const icon = CARD_ICONS[card.key] || '⚔️';
   const hasArt = card.art;
-  const artStyle = hasArt ? `background-image: url('${card.art}')` : '';
+  const encodedArt = hasArt ? encodeURI(card.art) : '';
+  const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
   const artIconHtml = hasArt ? '' : `<div class="tooltip-art-icon">${icon}</div>`;
+  const costBadgeHtml = `<div class="tooltip-cost-badge">${card.cost}</div>`;
   
   const effectHtml = card.effectDesc ? `
     <div class="tooltip-effect">
@@ -232,27 +239,25 @@ function showCardTooltip(card, x, y) {
     <div class="tooltip-stats">
       <div class="tooltip-stat">
         <div class="tooltip-stat-value atk">${card.atk}</div>
-        <div class="tooltip-stat-label">⚔ Attack</div>
+        <div class="tooltip-stat-label">⚔ ATK</div>
       </div>
       <div class="tooltip-stat">
         <div class="tooltip-stat-value hp">${card.hp}</div>
-        <div class="tooltip-stat-label">♥ Health</div>
+        <div class="tooltip-stat-label">♥ HP</div>
       </div>
     </div>
   ` : '<div class="tooltip-instant-badge">⚡ INSTANT SPELL</div>';
   
   tooltipEl.innerHTML = `
     <div class="tooltip-card ${typeClass}">
-      <div class="tooltip-art ${card.type === 'spell' ? 'spell' : ''}" style="${artStyle}">${artIconHtml}</div>
+      <div class="tooltip-art ${card.type === 'spell' ? 'spell' : ''}" style="${artStyle}">
+        ${costBadgeHtml}
+        ${artIconHtml}
+      </div>
       <div class="tooltip-content">
         <div class="tooltip-header">
           <span class="tooltip-name">${card.name}</span>
           <span class="tooltip-type ${card.type || 'monster'}">${card.type || 'Monster'}</span>
-        </div>
-        <div class="tooltip-cost">
-          <span class="tooltip-cost-icon">💎</span>
-          <span class="tooltip-cost-value">${card.cost}</span>
-          <span class="tooltip-cost-label">Energy Cost</span>
         </div>
         ${statsHtml}
         ${effectHtml}
@@ -270,8 +275,8 @@ function positionTooltip(x, y) {
   let top = y + padding;
   
   // Keep tooltip on screen
-  if (left + 220 > window.innerWidth) left = x - 220 - padding;
-  if (top + 250 > window.innerHeight) top = y - 250 - padding;
+  if (left + 300 > window.innerWidth) left = x - 300 - padding;
+  if (top + 350 > window.innerHeight) top = y - 350 - padding;
   if (left < 0) left = padding;
   if (top < 0) top = padding;
   
@@ -1097,8 +1102,13 @@ function renderHand() {
     
     // Art style - use image or gradient with icon
     const hasArt = card.art;
-    const artStyle = hasArt ? `background-image: url('${card.art}')` : '';
     const artContent = hasArt ? '' : icon;
+    
+    // Encode URL to handle spaces and special characters
+    const encodedArt = hasArt ? encodeURI(card.art) : '';
+    
+    // Set background image directly in style if art exists
+    const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
 
     el.innerHTML = `
       <div class="cardArt ${card.type === 'spell' ? 'spell-art' : ''}" style="${artStyle}">${artContent}</div>
@@ -1331,12 +1341,15 @@ function renderAll() {
       // Art display
       const icon = CARD_ICONS[u.key] || '⚔️';
       const hasArt = u.art;
-      const artStyle = hasArt ? `background-image: url('${u.art}')` : '';
+      const encodedArt = hasArt ? encodeURI(u.art) : '';
+      const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
       const artContent = hasArt ? '' : icon;
       const effectBadge = u.effectId ? '<div class="unitEffectBadge">✨</div>' : '';
+      const unitCost = u.cost !== undefined ? u.cost : 0;
       
       wrap.innerHTML = `
         <div class="unitArt" style="${artStyle}">${artContent}</div>
+        <div class="unitCostBadge">${unitCost}</div>
         ${effectBadge}
         <div class="unitInfoOverlay">
           <div class="unitName">${u.name}</div>
@@ -2069,6 +2082,280 @@ socket.on("role", (role) => {
     restartBtn.style.display = "block";
   }
 });
+
+// Enemy info display
+socket.on("enemyInfo", (data) => {
+  const enemyNameEl = document.getElementById("enemyName");
+  if (enemyNameEl) {
+    enemyNameEl.textContent = data.username || "Enemy";
+    if (data.isAI) {
+      enemyNameEl.classList.add("ai-opponent");
+    }
+  }
+});
+
+// Campaign victory - show rewards popup
+socket.on("campaignVictory", (data) => {
+  // Update local storage with new user data
+  if (data.user) {
+    localStorage.setItem('gridCardUser', JSON.stringify(data.user));
+  }
+  
+  // Show victory popup
+  showCampaignVictoryPopup(data);
+});
+
+function showCampaignVictoryPopup(data) {
+  const popup = document.createElement("div");
+  popup.className = "victory-popup";
+  popup.innerHTML = `
+    <div class="victory-content">
+      <h2>🎉 Victory!</h2>
+      <div class="victory-stars">
+        ${[1,2,3].map(i => `<span class="victory-star ${i <= data.stars ? 'earned' : ''}">★</span>`).join('')}
+      </div>
+      <div class="victory-rewards">
+        <h3>Cards Won</h3>
+        <div class="slot-machine">
+          <div class="slot-card" id="slot1">
+            <div class="slot-spinner">?</div>
+          </div>
+          <div class="slot-card" id="slot2">
+            <div class="slot-spinner">?</div>
+          </div>
+          <div class="slot-card" id="slot3">
+            <div class="slot-spinner">?</div>
+          </div>
+        </div>
+        ${data.rewards.music ? `<div class="reward-unlock" id="musicUnlock" style="opacity: 0;">🎵 Unlocked: ${data.rewards.music} music!</div>` : ''}
+        ${data.rewards.background ? `<div class="reward-unlock" id="bgUnlock" style="opacity: 0;">🖼️ Unlocked: ${data.rewards.background} background!</div>` : ''}
+      </div>
+      <button class="victory-btn" id="victoryBtn" style="opacity: 0;" onclick="window.location.href='/home.html'">Continue</button>
+    </div>
+  `;
+  
+  // Add styles
+  const style = document.createElement("style");
+  style.textContent = `
+    .victory-popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .victory-content {
+      background: linear-gradient(145deg, rgba(30, 30, 60, 0.98), rgba(20, 20, 40, 0.98));
+      border: 3px solid #fbbf24;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      max-width: 500px;
+      animation: scaleIn 0.3s ease;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .victory-content h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 32px;
+      color: #fbbf24;
+      margin-bottom: 20px;
+    }
+    .victory-stars {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    .victory-star { color: #64748b; }
+    .victory-star.earned { color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.8); }
+    .victory-rewards h3 {
+      font-family: 'Cinzel', serif;
+      color: #a78bfa;
+      margin-bottom: 15px;
+    }
+    .slot-machine {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .slot-card {
+      width: 120px;
+      height: 160px;
+      background: linear-gradient(145deg, #1a1a2e, #16213e);
+      border: 3px solid #64748b;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .slot-spinner {
+      font-size: 48px;
+      color: #64748b;
+    }
+    .slot-card.spinning .slot-spinner {
+      animation: slotSpin 0.1s linear infinite;
+    }
+    @keyframes slotSpin {
+      0% { transform: translateY(-20px); opacity: 0.5; }
+      50% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(20px); opacity: 0.5; }
+    }
+    .slot-card.revealed {
+      border-color: #fbbf24;
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+      animation: slotReveal 0.5s ease;
+    }
+    @keyframes slotReveal {
+      0% { transform: scale(1.2); }
+      50% { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+    .slot-card .card-reveal {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      height: 100%;
+    }
+    .card-reveal .card-art {
+      flex: 1;
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(139, 92, 246, 0.3);
+    }
+    .card-reveal .card-info {
+      background: linear-gradient(to top, rgba(15, 15, 35, 1), rgba(15, 15, 35, 0.9));
+      padding: 8px;
+      text-align: center;
+    }
+    .card-reveal .card-name {
+      font-size: 10px;
+      color: #fbbf24;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: 'Cinzel', serif;
+    }
+    .reward-unlock {
+      color: #4ade80;
+      font-size: 14px;
+      margin-top: 10px;
+      transition: opacity 0.5s ease;
+    }
+    .victory-btn {
+      margin-top: 20px;
+      padding: 12px 30px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border: none;
+      border-radius: 10px;
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a2e;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .victory-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4); }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(popup);
+  
+  // Card name mapping
+  const cardNames = {
+    'voiddrone': 'Void Drone',
+    'scavengerlarva': 'Scavenger Larva', 
+    'spittercrawler': 'Spitter Crawler',
+    'phaseskirmisher': 'Phase Skirmisher',
+    'energyleech': 'Energy Leech',
+    'burrowerbeast': 'Burrower Beast',
+    'psionicoverseer': 'Psionic Overseer',
+    'neuralharvester': 'Neural Harvester',
+    'adaptivecolossus': 'Adaptive Colossus',
+    'sporetitan': 'Spore Titan',
+    'voidbroodmother': 'Void Broodmother',
+    'eclipsedevourer': 'Eclipse Devourer',
+    'ufoscraper': 'UFO Scraper',
+    'assimilation': 'Assimilation',
+    'voidcollapse': 'Void Collapse',
+    'hiveascension': 'Hive Ascension'
+  };
+  
+  // Slot machine reveal animation
+  const slots = [
+    document.getElementById('slot1'),
+    document.getElementById('slot2'),
+    document.getElementById('slot3')
+  ];
+  
+  // Start spinning all slots
+  slots.forEach(slot => slot.classList.add('spinning'));
+  
+  // Card art paths (matching server definitions)
+  const cardArtPaths = {
+    'voiddrone': '/images/Void Drone.png',
+    'scavengerlarva': '/images/Scavenger Larva.png', 
+    'spittercrawler': '/images/Spitter Crawler.png',
+    'phaseskirmisher': '/images/Phase Skirmisher.png',
+    'energyleech': '/images/Energy Leech.png',
+    'burrowerbeast': '/images/Burrower Beast.png',
+    'psionicoverseer': '/images/Psionic Overseer.png',
+    'neuralharvester': '/images/Neural Harvester.png',
+    'adaptivecolossus': '/images/Adaptive Colossus.png',
+    'sporetitan': '/images/Spore Titan.png',
+    'voidbroodmother': '/images/Void Broodmother.png',
+    'eclipsedevourer': '/images/Eclipse Devourer.png',
+    'ufoscraper': '/images/UFO Scraper.png',
+    'assimilation': '/images/Assimilation.png',
+    'voidcollapse': '/images/Void Collapse.png',
+    'hiveascension': '/images/Hive Ascension.png'
+  };
+  
+  // Reveal cards one by one with delays
+  data.rewards.cards.forEach((card, index) => {
+    setTimeout(() => {
+      const slot = slots[index];
+      slot.classList.remove('spinning');
+      slot.classList.add('revealed');
+      
+      // Use actual card art image - encode URL for spaces
+      const artPath = encodeURI(cardArtPaths[card] || `/images/${card}.png`);
+      
+      slot.innerHTML = `
+        <div class="card-reveal">
+          <div class="card-art" style="background-image: url('${artPath}')"></div>
+          <div class="card-info">
+            <div class="card-name">${cardNames[card] || card}</div>
+          </div>
+        </div>
+      `;
+      
+      // Play a sound effect (optional - just visual for now)
+    }, 1000 + (index * 800)); // 1s initial delay, then 0.8s between each
+  });
+  
+  // Show unlocks after cards
+  setTimeout(() => {
+    const musicUnlock = document.getElementById('musicUnlock');
+    const bgUnlock = document.getElementById('bgUnlock');
+    if (musicUnlock) musicUnlock.style.opacity = '1';
+    if (bgUnlock) bgUnlock.style.opacity = '1';
+  }, 3800);
+  
+  // Show continue button after everything
+  setTimeout(() => {
+    document.getElementById('victoryBtn').style.opacity = '1';
+  }, 4200);
+}
 
 // Handle errors (disconnection, etc)
 socket.on("lobbyError", (msg) => {

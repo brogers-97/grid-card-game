@@ -17,57 +17,234 @@
       align-items: center;
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
       color: #e2e8f0;
+      padding: 20px;
+      overflow-x: hidden;
     }
     
-    .container {
-      background: rgba(20, 20, 40, 0.95);
+    /* Animated background particles */
+    .bg-particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(251, 191, 36, 0.6);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    }
+    .particle.float-up {
+      animation: float-up linear infinite;
+    }
+    .particle.float-diagonal {
+      animation: float-diagonal linear infinite;
+    }
+    .particle.float-side {
+      animation: float-side linear infinite;
+    }
+    .particle.drift {
+      animation: drift ease-in-out infinite;
+    }
+    @keyframes float-up {
+      0% { transform: translateY(100vh) translateX(0) scale(0); opacity: 0; }
+      10% { opacity: 1; transform: scale(1); }
+      90% { opacity: 1; }
+      100% { transform: translateY(-20vh) translateX(50px) scale(0.5); opacity: 0; }
+    }
+    @keyframes float-diagonal {
+      0% { transform: translate(0, 100vh) scale(0); opacity: 0; }
+      10% { opacity: 1; transform: scale(1); }
+      90% { opacity: 1; }
+      100% { transform: translate(200px, -100vh) scale(0.5); opacity: 0; }
+    }
+    @keyframes float-side {
+      0% { transform: translateX(-50px) translateY(0) scale(0); opacity: 0; }
+      10% { opacity: 1; transform: scale(1); }
+      90% { opacity: 1; }
+      100% { transform: translateX(100vw) translateY(-100px) scale(0.5); opacity: 0; }
+    }
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+      25% { transform: translate(30px, -50px) scale(1.2); opacity: 0.8; }
+      50% { transform: translate(-20px, -100px) scale(1); opacity: 0.5; }
+      75% { transform: translate(40px, -150px) scale(0.8); opacity: 0.8; }
+      100% { transform: translate(0, -200px) scale(0.5); opacity: 0; }
+    }
+    
+    /* Glowing orbs in background */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.5;
+      animation: pulse-orb 2s ease-in-out infinite;
+      z-index: 0;
+    }
+    .bg-orb-1 { width: 400px; height: 400px; background: #a855f7; top: -100px; left: -100px; }
+    .bg-orb-2 { width: 300px; height: 300px; background: #fbbf24; bottom: -50px; right: -50px; animation-delay: -1s; }
+    .bg-orb-3 { width: 200px; height: 200px; background: #3b82f6; top: 50%; left: 50%; animation-delay: -0.5s; }
+    @keyframes pulse-orb {
+      0%, 100% { transform: scale(1); opacity: 0.4; filter: blur(60px); }
+      50% { transform: scale(1.3); opacity: 0.7; filter: blur(40px); }
+    }
+    
+    .main-container {
+      display: flex;
+      gap: 20px;
+      max-width: 900px;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .panel {
+      background: rgba(20, 20, 40, 0.9);
       border: 2px solid rgba(138, 43, 226, 0.4);
       border-radius: 20px;
-      padding: 40px;
-      max-width: 500px;
-      width: 90%;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 60px rgba(138, 43, 226, 0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
     }
+    .panel:hover {
+      border-color: rgba(138, 43, 226, 0.6);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 80px rgba(138, 43, 226, 0.2);
+    }
+    
+    .auth-panel { width: 280px; flex-shrink: 0; }
+    .game-panel { flex: 1; min-width: 400px; }
     
     h1 {
       font-family: 'Cinzel', serif;
-      font-size: 28px;
+      font-size: 32px;
       text-align: center;
       margin-bottom: 8px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      background: linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24);
+      background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      animation: shine 3s linear infinite;
+      text-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
+    }
+    @keyframes shine {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
     }
     
-    .subtitle {
+    h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      color: #a78bfa;
+      margin-bottom: 16px;
       text-align: center;
-      color: #94a3b8;
-      font-size: 14px;
-      margin-bottom: 30px;
     }
     
-    .section {
-      margin-bottom: 24px;
+    .subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+    
+    /* Music control button */
+    .music-control-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 100;
     }
+    .volume-slider-container {
+      background: rgba(30, 30, 60, 0.95);
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      border-radius: 20px;
+      padding: 15px 10px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .volume-slider-container.visible {
+      display: flex;
+    }
+    .volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 80px;
+      height: 6px;
+      background: rgba(100, 116, 139, 0.5);
+      border-radius: 3px;
+      transform: rotate(-90deg);
+      transform-origin: center;
+      margin: 30px 0;
+    }
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .volume-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+    .music-control {
+      width: 50px;
+      height: 50px;
+      background: rgba(30, 30, 60, 0.9);
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .music-control:hover {
+      transform: scale(1.1);
+      border-color: rgba(251, 191, 36, 0.8);
+      box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
+    }
+    .music-control.playing {
+      animation: pulse-music 1s ease-in-out infinite;
+    }
+    @keyframes pulse-music {
+      0%, 100% { box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3); }
+      50% { box-shadow: 0 4px 25px rgba(251, 191, 36, 0.6); }
+    }
+    
+    .section { margin-bottom: 20px; }
     
     .section-title {
       font-family: 'Cinzel', serif;
-      font-size: 14px;
+      font-size: 12px;
       color: #a78bfa;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     
-    select, input {
+    select, input[type="text"], input[type="password"] {
       width: 100%;
-      padding: 12px 16px;
+      padding: 10px 14px;
       background: rgba(30, 30, 60, 0.8);
       border: 2px solid rgba(138, 43, 226, 0.3);
-      border-radius: 10px;
+      border-radius: 8px;
       color: #e2e8f0;
-      font-size: 16px;
+      font-size: 14px;
       font-family: 'Inter', sans-serif;
       outline: none;
       transition: all 0.2s ease;
@@ -78,26 +255,9 @@
       box-shadow: 0 0 12px rgba(138, 43, 226, 0.3);
     }
     
-    input::placeholder {
-      color: #64748b;
-    }
-    
-    .deck-description {
-      font-size: 12px;
-      color: #94a3b8;
-      margin-top: 8px;
-      font-style: italic;
-    }
-    
-    .buttons {
-      display: flex;
-      gap: 12px;
-      margin-top: 30px;
-    }
-    
     button {
-      flex: 1;
-      padding: 14px 20px;
+      width: 100%;
+      padding: 12px 20px;
       border: none;
       border-radius: 10px;
       font-family: 'Cinzel', serif;
@@ -107,275 +267,604 @@
       transition: all 0.2s ease;
     }
     
-    .btn-create {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
     
-    .btn-create:hover {
+    .btn-primary { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4); }
+    
+    .btn-secondary { background: rgba(30, 30, 60, 0.8); border: 2px solid rgba(138, 43, 226, 0.4); color: #a78bfa; }
+    .btn-secondary:hover:not(:disabled) { border-color: rgba(138, 43, 226, 0.7); background: rgba(40, 40, 80, 0.8); }
+    
+    .btn-gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #1a1a2e; }
+    .btn-gold:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4); }
+    
+    .btn-green { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    
+    .btn-help {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      background: rgba(139, 92, 246, 0.2);
+      border: 2px solid rgba(139, 92, 246, 0.4);
+      border-radius: 10px;
+      color: #a78bfa;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-help:hover {
+      background: rgba(139, 92, 246, 0.3);
+      border-color: rgba(139, 92, 246, 0.6);
       transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
     }
     
-    .btn-join {
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      color: white;
+    /* How To Play Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-container {
+      background: linear-gradient(145deg, rgba(26, 26, 46, 0.98), rgba(15, 15, 35, 0.98));
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      border-radius: 20px;
+      width: 95%;
+      max-width: 950px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal-container {
+      transform: scale(1);
+    }
+    .modal-header {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.05));
+      padding: 18px 25px;
+      border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 22px;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-close {
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .modal-close:hover {
+      background: rgba(239, 68, 68, 0.4);
+      transform: rotate(90deg);
+    }
+    .modal-nav {
+      display: flex;
+      background: rgba(20, 20, 40, 0.95);
+      border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+      overflow-x: auto;
+      flex-shrink: 0;
+      padding: 0 10px;
+    }
+    .modal-nav::-webkit-scrollbar {
+      height: 4px;
+    }
+    .modal-nav::-webkit-scrollbar-track {
+      background: rgba(30, 30, 60, 0.5);
+    }
+    .modal-nav::-webkit-scrollbar-thumb {
+      background: rgba(138, 43, 226, 0.5);
+      border-radius: 2px;
+    }
+    .modal-nav-btn {
+      padding: 14px 18px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+    }
+    .modal-nav-btn:hover {
+      background: rgba(138, 43, 226, 0.1);
+      color: #a78bfa;
+    }
+    .modal-nav-btn.active {
+      color: #fbbf24;
+      border-bottom-color: #fbbf24;
+      background: rgba(251, 191, 36, 0.1);
+    }
+    .modal-body {
+      padding: 30px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-body::-webkit-scrollbar {
+      width: 8px;
+    }
+    .modal-body::-webkit-scrollbar-track {
+      background: rgba(30, 30, 60, 0.5);
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb {
+      background: rgba(138, 43, 226, 0.5);
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(138, 43, 226, 0.7);
+    }
+    .help-section {
+      display: none;
+    }
+    .help-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .help-title {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      color: #fbbf24;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .help-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      color: #a78bfa;
+      margin: 20px 0 10px 0;
+    }
+    .help-text {
+      color: #cbd5e1;
+      line-height: 1.7;
+      margin-bottom: 15px;
+    }
+    .help-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 15px 0;
+    }
+    .help-card {
+      background: rgba(30, 30, 60, 0.6);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 12px;
+      padding: 15px;
+      transition: all 0.2s ease;
+    }
+    .help-card:hover {
+      border-color: rgba(138, 43, 226, 0.6);
+      transform: translateY(-3px);
+    }
+    .help-card-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    .help-card-title {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      color: #fbbf24;
+      margin-bottom: 8px;
+    }
+    .help-card-text {
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .help-tip {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 15px 0;
+      display: flex;
+      gap: 12px;
+    }
+    .help-tip-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .help-tip-text {
+      color: #6ee7b7;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .help-warning {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.05));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 15px 0;
+      display: flex;
+      gap: 12px;
+    }
+    .help-warning-text {
+      color: #fcd34d;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .stat-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(30, 30, 60, 0.8);
+      border-radius: 6px;
+      padding: 4px 10px;
+      margin: 2px;
+      font-size: 13px;
+    }
+    .stat-atk { color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+    .stat-hp { color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+    .stat-cost { color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .board-visual {
+      background: rgba(20, 20, 40, 0.8);
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    .board-mini {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      max-width: 350px;
+      margin: 0 auto;
+    }
+    .board-cell {
+      aspect-ratio: 1;
+      background: rgba(50, 50, 80, 0.5);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .board-cell.gold-zone { background: rgba(251, 191, 36, 0.2); border-color: rgba(251, 191, 36, 0.4); }
+    .board-cell.silver-zone { background: rgba(148, 163, 184, 0.2); border-color: rgba(148, 163, 184, 0.4); }
+    .board-cell.heart { font-size: 16px; }
+    .board-cell.buff { background: rgba(59, 130, 246, 0.3); border-color: rgba(59, 130, 246, 0.6); font-size: 12px; }
+    .effect-list {
+      display: grid;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .effect-item {
+      background: rgba(30, 30, 60, 0.6);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 8px;
+      padding: 12px 15px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .effect-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .effect-name {
+      font-weight: 600;
+      color: #fbbf24;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .effect-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.5;
     }
     
-    .btn-join:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+    .error, .success {
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 15px;
+      display: none;
     }
+    .error { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #fca5a5; }
+    .success { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: #6ee7b7; }
+    .error.show, .success.show { display: block; }
     
     .divider {
       display: flex;
       align-items: center;
-      margin: 24px 0;
-    }
-    
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: rgba(138, 43, 226, 0.3);
-    }
-    
-    .divider span {
-      padding: 0 16px;
+      margin: 20px 0;
       color: #64748b;
       font-size: 12px;
-      text-transform: uppercase;
     }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(100, 116, 139, 0.3); }
+    .divider span { padding: 0 12px; }
     
-    .error {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid rgba(239, 68, 68, 0.5);
-      color: #f87171;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
+    .user-info {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      padding: 15px;
       text-align: center;
-      display: none;
+      margin-bottom: 20px;
     }
+    .user-name { font-family: 'Cinzel', serif; font-size: 18px; color: #4ade80; margin-bottom: 5px; }
+    .user-stats { font-size: 12px; color: #94a3b8; }
     
-    .error.show {
-      display: block;
+    .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      background: rgba(30, 30, 60, 0.5);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 8px;
+      color: #94a3b8;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
     }
+    .tab:hover { background: rgba(40, 40, 80, 0.5); }
+    .tab.active { background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.6); color: #a78bfa; }
     
-    /* Lobby Screen */
-    .lobby-screen {
-      display: none;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
     
-    .lobby-screen.active {
-      display: block;
+    .boss-list { display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; overflow-x: hidden; }
+    .boss-card {
+      background: rgba(30, 30, 60, 0.6);
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
     }
+    .boss-card:hover:not(.locked) { border-color: rgba(138, 43, 226, 0.6); background: rgba(40, 40, 80, 0.6); }
+    .boss-card.locked { opacity: 0.5; cursor: not-allowed; }
+    .boss-card.selected { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
     
-    .home-screen.hidden {
-      display: none;
-    }
+    .boss-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .boss-name { font-family: 'Cinzel', serif; font-size: 14px; color: #fbbf24; }
+    .boss-difficulty { font-size: 10px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+    .boss-difficulty.easy { background: #10b981; color: white; }
+    .boss-difficulty.medium { background: #f59e0b; color: white; }
+    .boss-difficulty.hard { background: #ef4444; color: white; }
+    .boss-difficulty.boss { background: #7c3aed; color: white; }
+    .boss-desc { font-size: 12px; color: #94a3b8; }
+    .boss-stars { margin-top: 5px; font-size: 14px; }
+    .star { color: #64748b; }
+    .star.earned { color: #fbbf24; }
     
     .lobby-code {
-      background: rgba(30, 30, 60, 0.8);
+      background: rgba(30, 30, 60, 0.6);
       border: 2px dashed rgba(251, 191, 36, 0.5);
       border-radius: 12px;
       padding: 20px;
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
-    
-    .lobby-code-label {
-      font-size: 12px;
-      color: #94a3b8;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    
-    .lobby-code-value {
-      font-family: 'Cinzel', serif;
-      font-size: 36px;
-      font-weight: 800;
-      color: #fbbf24;
-      letter-spacing: 4px;
-      text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
-    }
-    
-    .lobby-code-hint {
-      font-size: 11px;
-      color: #64748b;
-      margin-top: 8px;
-    }
+    .lobby-code-value { font-family: 'Cinzel', serif; font-size: 32px; font-weight: 800; color: #fbbf24; letter-spacing: 4px; }
     
     .player-status {
       background: rgba(30, 30, 60, 0.6);
       border: 1px solid rgba(138, 43, 226, 0.3);
       border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+    .player-info { display: flex; align-items: center; gap: 10px; }
+    .player-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .player-icon.gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+    .player-icon.silver { background: linear-gradient(135deg, #94a3b8, #64748b); }
+    .player-name { font-weight: 600; font-size: 14px; }
+    .player-deck { font-size: 11px; color: #94a3b8; }
+    .waiting { color: #64748b; font-style: italic; }
     
-    .player-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .player-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-    }
-    
-    .player-icon.gold {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    }
-    
-    .player-icon.silver {
-      background: linear-gradient(135deg, #94a3b8, #64748b);
-    }
-    
-    .player-name {
-      font-weight: 600;
-    }
-    
-    .player-deck {
-      font-size: 12px;
-      color: #94a3b8;
-    }
-    
-    .player-ready {
-      font-size: 24px;
-    }
-    
-    .waiting {
-      color: #64748b;
-      font-style: italic;
-    }
-    
-    .btn-start {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      margin-top: 20px;
-    }
-    
-    .btn-start:disabled {
-      background: #374151;
-      color: #6b7280;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-    
-    .btn-start:not(:disabled):hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
-    }
-    
-    .waiting-message {
-      text-align: center;
-      color: #94a3b8;
-      margin-top: 20px;
-      font-style: italic;
-    }
-    
-    .copy-btn {
-      background: rgba(138, 43, 226, 0.3);
-      border: 1px solid rgba(138, 43, 226, 0.5);
-      color: #a78bfa;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    
-    .copy-btn:hover {
-      background: rgba(138, 43, 226, 0.5);
+    .hidden { display: none !important; }
+    .deck-description { font-size: 12px; color: #94a3b8; margin-top: 8px; font-style: italic; }
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-group button { flex: 1; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; font-size: 12px; background: rgba(138, 43, 226, 0.3); border: 1px solid rgba(138, 43, 226, 0.5); color: #a78bfa; }
+
+    @media (max-width: 768px) {
+      .main-container { flex-direction: column; }
+      .auth-panel { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Home Screen -->
-    <div class="home-screen" id="homeScreen">
-      <h1>⚔️ Grid Card Game</h1>
-      <p class="subtitle">Medieval tactical card battles</p>
+  <!-- Animated Background -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+  <div class="bg-particles" id="particles"></div>
+  
+  <!-- Background Music -->
+  <audio id="bgMusic" loop>
+    <source src="/audio/music/music_home.mp3" type="audio/mpeg">
+  </audio>
+  
+  <!-- Music Control with Volume Slider -->
+  <div class="music-control-container">
+    <div class="volume-slider-container" id="volumeSliderContainer">
+      <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="40">
+    </div>
+    <button class="music-control playing" id="musicControl" title="Toggle Music">🔊</button>
+  </div>
+  
+  <div class="main-container">
+    <!-- Auth Panel -->
+    <div class="panel auth-panel">
+      <h2>👤 Account</h2>
       
-      <div class="error" id="errorMessage"></div>
-      
-      <div class="section">
-        <div class="section-title">Choose Your Deck</div>
-        <select id="deckSelect">
-          <option value="medieval">Medieval Kingdom</option>
-          <option value="void-alien">Void Alien</option>
-        </select>
-        <p class="deck-description" id="deckDescription">Classic knights, archers, and siege warfare</p>
+      <div id="loginSection">
+        <div class="error" id="authError"></div>
+        <div class="success" id="authSuccess"></div>
+        
+        <div class="section">
+          <div class="section-title">Username</div>
+          <input type="text" id="usernameInput" placeholder="Enter username" maxlength="20">
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Password</div>
+          <input type="password" id="passwordInput" placeholder="Enter password">
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn-primary" id="loginBtn">Login</button>
+          <button class="btn-secondary" id="registerBtn">Register</button>
+        </div>
+        
+        <div class="divider"><span>or</span></div>
+        <button class="btn-secondary" id="guestBtn">Play as Guest</button>
       </div>
       
-      <div class="buttons">
-        <button class="btn-create" id="createBtn">Create Game</button>
+      <div id="userSection" class="hidden">
+        <div class="user-info">
+          <div class="user-name" id="displayUsername">Player</div>
+          <div class="user-stats">
+            <span id="statsWins">0</span> wins • Level <span id="statsLevel">1</span>
+          </div>
+        </div>
+        <button class="btn-secondary" id="deckBuilderBtn" style="margin-bottom: 10px;">🛠️ Deck Builder</button>
+        <button class="btn-danger" id="logoutBtn">Logout</button>
       </div>
-      
-      <div class="divider"><span>or join a friend</span></div>
-      
-      <div class="section">
-        <input type="text" id="codeInput" placeholder="Enter invite code" maxlength="5" style="text-transform: uppercase; text-align: center; font-size: 20px; letter-spacing: 4px;">
-      </div>
-      
-      <button class="btn-join" id="joinBtn" style="width: 100%;">Join Game</button>
     </div>
     
-    <!-- Lobby Screen -->
-    <div class="lobby-screen" id="lobbyScreen">
-      <h1>⚔️ Game Lobby</h1>
-      <p class="subtitle" id="lobbySubtitle">Waiting for players...</p>
-      
-      <div class="error" id="lobbyError"></div>
-      
-      <div class="lobby-code" id="lobbyCodeSection">
-        <div class="lobby-code-label">Invite Code</div>
-        <div class="lobby-code-value" id="lobbyCodeDisplay">-----</div>
-        <div class="lobby-code-hint">Share this code with your friend</div>
-        <button class="copy-btn" id="copyCodeBtn">📋 Copy Code</button>
-      </div>
-      
-      <div class="player-status">
-        <div class="player-info">
-          <div class="player-icon gold">👑</div>
-          <div>
-            <div class="player-name">Player 1 (Host)</div>
-            <div class="player-deck" id="hostDeckName">Medieval Kingdom</div>
-          </div>
+    <!-- Game Panel -->
+    <div class="panel game-panel">
+      <div id="homeScreen">
+        <h1>⚔️ Grid Card Game</h1>
+        <p class="subtitle">Medieval tactical card battles</p>
+        
+        <button class="btn-help" id="howToPlayBtn">📖 How To Play</button>
+        
+        <div class="error" id="errorMessage"></div>
+        
+        <div class="tabs">
+          <div class="tab active" data-tab="multiplayer">⚔️ Multiplayer</div>
+          <div class="tab" data-tab="campaign">🏰 Campaign</div>
         </div>
-        <div class="player-ready" id="hostReady">✅</div>
-      </div>
-      
-      <div class="player-status">
-        <div class="player-info">
-          <div class="player-icon silver">⚔️</div>
-          <div>
-            <div class="player-name">Player 2</div>
-            <div class="player-deck" id="guestDeckName"><span class="waiting">Waiting to join...</span></div>
+        
+        <div class="tab-content active" id="multiplayerTab">
+          <div class="section">
+            <div class="section-title">Choose Your Deck</div>
+            <select id="deckSelect"></select>
+            <p class="deck-description" id="deckDescription"></p>
           </div>
+          
+          <button class="btn-gold" id="createBtn">Create Game</button>
+          
+          <div class="divider"><span>or join a friend</span></div>
+          
+          <div class="section">
+            <input type="text" id="codeInput" placeholder="Enter invite code" maxlength="5" style="text-transform: uppercase; text-align: center; font-size: 18px; letter-spacing: 4px;">
+          </div>
+          
+          <button class="btn-primary" id="joinBtn">Join Game</button>
         </div>
-        <div class="player-ready" id="guestReady">⏳</div>
+        
+        <div class="tab-content" id="campaignTab">
+          <div class="section">
+            <div class="section-title">Select Deck</div>
+            <select id="campaignDeckSelect"></select>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Select Boss</div>
+            <div class="boss-list" id="bossList"></div>
+          </div>
+          
+          <button class="btn-gold" id="startCampaignBtn" disabled>Start Battle</button>
+          <p id="campaignLoginHint" class="hidden" style="text-align: center; color: #f59e0b; font-size: 12px; margin-top: 10px;">
+            ⚠️ Login to save progress and earn rewards!
+          </p>
+        </div>
       </div>
       
-      <div id="hostControls" style="display: none;">
-        <button class="btn-start" id="startBtn" disabled>Start Game</button>
-      </div>
-      
-      <div id="guestControls" style="display: none;">
-        <p class="waiting-message">Waiting for host to start the game...</p>
+      <div id="lobbyScreen" class="hidden">
+        <h1>⚔️ Game Lobby</h1>
+        <p class="subtitle" id="lobbySubtitle">Waiting for opponent...</p>
+        
+        <div class="error" id="lobbyError"></div>
+        
+        <div class="lobby-code">
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 5px;">INVITE CODE</div>
+          <div class="lobby-code-value" id="lobbyCodeDisplay">-----</div>
+          <button class="copy-btn" id="copyCodeBtn">📋 Copy Code</button>
+        </div>
+        
+        <div class="player-status">
+          <div class="player-info">
+            <div class="player-icon gold">👑</div>
+            <div>
+              <div class="player-name" id="hostPlayerName">Host</div>
+              <div class="player-deck" id="hostDeckName">Medieval Kingdom</div>
+            </div>
+          </div>
+          <div id="hostReady">✅</div>
+        </div>
+        
+        <div class="player-status">
+          <div class="player-info">
+            <div class="player-icon silver">⚔️</div>
+            <div>
+              <div class="player-name" id="guestPlayerName">Opponent</div>
+              <div class="player-deck" id="guestDeckName"><span class="waiting">Waiting...</span></div>
+            </div>
+          </div>
+          <div id="guestReady">⏳</div>
+        </div>
+        
+        <div id="hostControls" class="hidden">
+          <button class="btn-green" id="startBtn" disabled>Start Game</button>
+        </div>
+        
+        <div id="guestControls" class="hidden">
+          <p class="waiting" style="text-align: center; margin-top: 15px;">Waiting for host to start...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -384,117 +873,377 @@
   <script>
     const socket = io();
     
+    // State
+    let currentUser = null;
+    let deckList = [];
+    let bossList = [];
+    let isHost = false;
+    let currentLobby = {};
+    let selectedBossId = null;
+    
     // Elements
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
     const homeScreen = document.getElementById('homeScreen');
     const lobbyScreen = document.getElementById('lobbyScreen');
-    const errorMessage = document.getElementById('errorMessage');
-    const lobbyError = document.getElementById('lobbyError');
+    const usernameInput = document.getElementById('usernameInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const guestBtn = document.getElementById('guestBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const deckBuilderBtn = document.getElementById('deckBuilderBtn');
+    const authError = document.getElementById('authError');
+    const authSuccess = document.getElementById('authSuccess');
+    const displayUsername = document.getElementById('displayUsername');
+    const statsWins = document.getElementById('statsWins');
+    const statsLevel = document.getElementById('statsLevel');
     const deckSelect = document.getElementById('deckSelect');
+    const campaignDeckSelect = document.getElementById('campaignDeckSelect');
     const deckDescription = document.getElementById('deckDescription');
-    const codeInput = document.getElementById('codeInput');
     const createBtn = document.getElementById('createBtn');
     const joinBtn = document.getElementById('joinBtn');
+    const codeInput = document.getElementById('codeInput');
+    const bossListEl = document.getElementById('bossList');
+    const startCampaignBtn = document.getElementById('startCampaignBtn');
+    const campaignLoginHint = document.getElementById('campaignLoginHint');
     const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
     const copyCodeBtn = document.getElementById('copyCodeBtn');
+    const hostPlayerName = document.getElementById('hostPlayerName');
+    const guestPlayerName = document.getElementById('guestPlayerName');
     const hostDeckName = document.getElementById('hostDeckName');
     const guestDeckName = document.getElementById('guestDeckName');
     const hostReady = document.getElementById('hostReady');
     const guestReady = document.getElementById('guestReady');
+    const startBtn = document.getElementById('startBtn');
     const hostControls = document.getElementById('hostControls');
     const guestControls = document.getElementById('guestControls');
-    const startBtn = document.getElementById('startBtn');
     const lobbySubtitle = document.getElementById('lobbySubtitle');
+    const errorMessage = document.getElementById('errorMessage');
+    const lobbyError = document.getElementById('lobbyError');
     
-    let deckList = [];
-    let isHost = false;
-    let currentLobby = {};
+    // Check for saved session
+    const savedUser = localStorage.getItem('gridCardUser');
+    if (savedUser) {
+      try {
+        currentUser = JSON.parse(savedUser);
+        showLoggedIn();
+      } catch (e) {
+        localStorage.removeItem('gridCardUser');
+      }
+    }
     
-    // Receive deck list
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+      });
+    });
+    
+    // Socket events
     socket.on('deckList', (decks) => {
       deckList = decks;
-      deckSelect.innerHTML = decks.map(d => 
-        `<option value="${d.id}">${d.name}</option>`
-      ).join('');
-      if (decks.length > 0) {
-        deckDescription.textContent = decks[0].description;
-      }
+      updateDeckSelects();
     });
+    
+    socket.on('campaignBosses', (bosses) => {
+      bossList = bosses;
+      renderBossList();
+    });
+    
+    function updateDeckSelects() {
+      const unlockedDecks = currentUser?.unlockedDecks || ['medieval'];
+      
+      // Filter decks based on unlocked status
+      const options = deckList.map(d => {
+        const isLocked = !unlockedDecks.includes(d.id);
+        if (isLocked) {
+          return `<option value="${d.id}" disabled>🔒 ${d.name} (Beat Campaign to Unlock)</option>`;
+        }
+        return `<option value="${d.id}">${d.name}</option>`;
+      }).join('');
+      
+      deckSelect.innerHTML = options;
+      campaignDeckSelect.innerHTML = options;
+      
+      // Make sure a valid deck is selected
+      const firstUnlocked = deckList.find(d => unlockedDecks.includes(d.id));
+      if (firstUnlocked) {
+        deckSelect.value = firstUnlocked.id;
+        campaignDeckSelect.value = firstUnlocked.id;
+        deckDescription.textContent = firstUnlocked.description;
+      }
+    }
     
     deckSelect.addEventListener('change', () => {
       const deck = deckList.find(d => d.id === deckSelect.value);
       if (deck) deckDescription.textContent = deck.description;
     });
     
-    // Create lobby
-    createBtn.addEventListener('click', () => {
-      socket.emit('createLobby', { deckId: deckSelect.value });
+    function renderBossList() {
+      const currentLevel = currentUser?.campaign?.currentLevel || 1;
+      const completedLevels = currentUser?.campaign?.completedLevels || [];
+      const stars = currentUser?.campaign?.stars || {};
+      
+      bossListEl.innerHTML = bossList.map(boss => {
+        const isLocked = boss.id > currentLevel;
+        const earnedStars = stars[String(boss.id)] || 0;
+        
+        return `
+          <div class="boss-card ${isLocked ? 'locked' : ''}" data-boss-id="${boss.id}">
+            <div class="boss-header">
+              <span class="boss-name">${isLocked ? '🔒 ' : ''}${boss.name}</span>
+              <span class="boss-difficulty ${boss.difficulty}">${boss.difficulty}</span>
+            </div>
+            <div class="boss-desc">${boss.description}</div>
+            <div class="boss-stars">
+              ${[1,2,3].map(i => `<span class="star ${i <= earnedStars ? 'earned' : ''}">★</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      document.querySelectorAll('.boss-card:not(.locked)').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.boss-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedBossId = parseInt(card.dataset.bossId);
+          startCampaignBtn.disabled = false;
+        });
+      });
+    }
+    
+    // Auth functions
+    async function login() {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      
+      if (!username || !password) {
+        showAuthError('Please enter username and password');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          currentUser = data.user;
+          localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+          showLoggedIn();
+          showAuthSuccess('Welcome back, ' + currentUser.username + '!');
+        } else {
+          showAuthError(data.error || 'Login failed');
+        }
+      } catch (err) {
+        showAuthError('Connection error');
+      }
+    }
+    
+    async function register() {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      
+      if (!username || username.length < 3) {
+        showAuthError('Username must be at least 3 characters');
+        return;
+      }
+      if (!password || password.length < 6) {
+        showAuthError('Password must be at least 6 characters');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          currentUser = data.user;
+          localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+          showLoggedIn();
+          showAuthSuccess('Account created! Welcome, ' + currentUser.username + '!');
+        } else {
+          showAuthError(data.error || 'Registration failed');
+        }
+      } catch (err) {
+        showAuthError('Connection error');
+      }
+    }
+    
+    function playAsGuest() {
+      currentUser = null;
+      loginSection.classList.add('hidden');
+      userSection.classList.remove('hidden');
+      displayUsername.textContent = 'Guest';
+      statsWins.textContent = '0';
+      statsLevel.textContent = '1';
+      deckBuilderBtn.classList.add('hidden');
+      campaignLoginHint.classList.remove('hidden');
+      renderBossList();
+    }
+    
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('gridCardUser');
+      loginSection.classList.remove('hidden');
+      userSection.classList.add('hidden');
+      deckBuilderBtn.classList.remove('hidden');
+      campaignLoginHint.classList.add('hidden');
+      usernameInput.value = '';
+      passwordInput.value = '';
+      renderBossList();
+    }
+    
+    function showLoggedIn() {
+      loginSection.classList.add('hidden');
+      userSection.classList.remove('hidden');
+      displayUsername.textContent = currentUser.username;
+      statsWins.textContent = currentUser.stats?.campaignWins || 0;
+      statsLevel.textContent = currentUser.campaign?.currentLevel || 1;
+      deckBuilderBtn.classList.remove('hidden');
+      campaignLoginHint.classList.add('hidden');
+      renderBossList();
+    }
+    
+    function showAuthError(msg) {
+      authError.textContent = msg;
+      authError.classList.add('show');
+      authSuccess.classList.remove('show');
+      setTimeout(() => authError.classList.remove('show'), 3000);
+    }
+    
+    function showAuthSuccess(msg) {
+      authSuccess.textContent = msg;
+      authSuccess.classList.add('show');
+      authError.classList.remove('show');
+      setTimeout(() => authSuccess.classList.remove('show'), 3000);
+    }
+    
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorMessage.classList.add('show');
+      setTimeout(() => errorMessage.classList.remove('show'), 3000);
+    }
+    
+    function getUsername() {
+      return currentUser?.username || 'Guest';
+    }
+    
+    function getUserId() {
+      return currentUser?.id || null;
+    }
+    
+    // Event listeners
+    loginBtn.addEventListener('click', login);
+    registerBtn.addEventListener('click', register);
+    guestBtn.addEventListener('click', playAsGuest);
+    logoutBtn.addEventListener('click', logout);
+    
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
     });
     
-    // Join lobby
+    deckBuilderBtn.addEventListener('click', () => {
+      alert('Deck Builder coming soon! You will be able to build custom decks with cards you\'ve unlocked from campaign.');
+    });
+    
+    // Multiplayer
+    createBtn.addEventListener('click', () => {
+      socket.emit('createLobby', { 
+        deckId: deckSelect.value,
+        username: getUsername(),
+        userId: getUserId()
+      });
+    });
+    
     joinBtn.addEventListener('click', () => {
       const code = codeInput.value.trim().toUpperCase();
       if (code.length < 5) {
         showError('Please enter a valid 5-character code');
         return;
       }
-      socket.emit('joinLobby', { code, deckId: deckSelect.value });
+      socket.emit('joinLobby', { 
+        code, 
+        deckId: deckSelect.value,
+        username: getUsername(),
+        userId: getUserId()
+      });
     });
     
-    // Enter key to join
     codeInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') joinBtn.click();
     });
     
-    // Copy code
     copyCodeBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(lobbyCodeDisplay.textContent);
       copyCodeBtn.textContent = '✓ Copied!';
       setTimeout(() => copyCodeBtn.textContent = '📋 Copy Code', 2000);
     });
     
-    // Start game
     startBtn.addEventListener('click', () => {
       socket.emit('startGame');
     });
     
-    // Lobby state update
+    // Campaign
+    startCampaignBtn.addEventListener('click', () => {
+      if (!selectedBossId) return;
+      socket.emit('startCampaign', {
+        bossId: selectedBossId,
+        deckId: campaignDeckSelect.value,
+        username: getUsername(),
+        userId: getUserId()
+      });
+    });
+    
+    // Lobby state
     socket.on('lobbyState', (lobby) => {
-      currentLobby = lobby; // Store for later use
+      currentLobby = lobby;
       homeScreen.classList.add('hidden');
-      lobbyScreen.classList.add('active');
+      lobbyScreen.classList.remove('hidden');
       
       isHost = lobby.isHost;
       lobbyCodeDisplay.textContent = lobby.code;
       
-      // Update deck names
       const hostDeck = deckList.find(d => d.id === lobby.hostDeck);
       hostDeckName.textContent = hostDeck ? hostDeck.name : lobby.hostDeck;
+      hostPlayerName.textContent = lobby.hostUsername || 'Host';
       
       if (lobby.guestJoined) {
         const guestDeck = deckList.find(d => d.id === lobby.guestDeck);
-        guestDeckName.innerHTML = guestDeck ? guestDeck.name : lobby.guestDeck;
+        guestDeckName.textContent = guestDeck ? guestDeck.name : lobby.guestDeck;
+        guestPlayerName.textContent = lobby.guestUsername || 'Opponent';
         guestReady.textContent = '✅';
         lobbySubtitle.textContent = 'Ready to battle!';
       } else {
-        guestDeckName.innerHTML = '<span class="waiting">Waiting to join...</span>';
+        guestDeckName.innerHTML = '<span class="waiting">Waiting...</span>';
+        guestPlayerName.textContent = 'Opponent';
         guestReady.textContent = '⏳';
         lobbySubtitle.textContent = 'Waiting for opponent...';
       }
       
-      // Show appropriate controls
       if (isHost) {
-        hostControls.style.display = 'block';
-        guestControls.style.display = 'none';
+        hostControls.classList.remove('hidden');
+        guestControls.classList.add('hidden');
         startBtn.disabled = !lobby.guestJoined;
       } else {
-        hostControls.style.display = 'none';
-        guestControls.style.display = 'block';
+        hostControls.classList.add('hidden');
+        guestControls.classList.remove('hidden');
       }
     });
     
-    // Error handling
     socket.on('lobbyError', (msg) => {
-      if (lobbyScreen.classList.contains('active')) {
+      if (!lobbyScreen.classList.contains('hidden')) {
         lobbyError.textContent = msg;
         lobbyError.classList.add('show');
       } else {
@@ -502,25 +1251,827 @@
       }
     });
     
-    // Role assigned - show game instead of redirect
-    socket.on('role', (data) => {
-      // Hide lobby, load game UI
-      document.querySelector('.container').innerHTML = '<p style="text-align:center; color: #94a3b8;">Loading game...</p>';
-      // Redirect with lobby info in URL including deck selections
+    socket.on('role', (role) => {
+      // Only handle role for multiplayer (campaign uses campaignStart)
+      if (!currentLobby.code) return;
+      
+      document.querySelector('.main-container').innerHTML = '<p style="text-align:center; color: #94a3b8; padding: 40px;">Loading game...</p>';
       const params = new URLSearchParams({
-        lobby: lobbyCodeDisplay.textContent,
+        lobby: lobbyCodeDisplay.textContent || currentLobby.code,
         host: isHost ? '1' : '0',
         myDeck: isHost ? currentLobby.hostDeck : currentLobby.guestDeck,
-        enemyDeck: isHost ? currentLobby.guestDeck : currentLobby.hostDeck
+        enemyDeck: isHost ? currentLobby.guestDeck : currentLobby.hostDeck,
+        username: getUsername()
       });
       window.location.href = '/game.html?' + params.toString();
     });
     
-    function showError(msg) {
-      errorMessage.textContent = msg;
-      errorMessage.classList.add('show');
-      setTimeout(() => errorMessage.classList.remove('show'), 3000);
+    // Campaign start - redirect to game with campaign info
+    socket.on('campaignStart', (data) => {
+      document.querySelector('.main-container').innerHTML = '<p style="text-align:center; color: #94a3b8; padding: 40px;">Loading campaign...</p>';
+      const params = new URLSearchParams({
+        lobby: data.code,
+        host: '1',
+        myDeck: data.myDeck,
+        enemyDeck: data.enemyDeck,
+        username: getUsername(),
+        campaign: '1',
+        boss: data.bossName
+      });
+      window.location.href = '/game.html?' + params.toString();
+    });
+    
+    // Campaign victory - update local user data
+    socket.on('campaignVictory', (data) => {
+      if (data.user) {
+        currentUser = data.user;
+        localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+      }
+    });
+  </script>
+  
+  <!-- How To Play Modal -->
+  <div class="modal-overlay" id="howToPlayModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">📖 How To Play</div>
+        <button class="modal-close" id="closeHowToPlay">✕</button>
+      </div>
+      
+      <nav class="modal-nav">
+        <button class="modal-nav-btn active" data-section="basics">🎯 Basics</button>
+        <button class="modal-nav-btn" data-section="board">🗺️ Board</button>
+        <button class="modal-nav-btn" data-section="cards">🃏 Cards</button>
+        <button class="modal-nav-btn" data-section="energy">⚡ Energy</button>
+        <button class="modal-nav-btn" data-section="combat">⚔️ Combat</button>
+        <button class="modal-nav-btn" data-section="effects">✨ Effects</button>
+        <button class="modal-nav-btn" data-section="tips">💡 Tips</button>
+      </nav>
+      
+      <div class="modal-body">
+        <!-- BASICS SECTION -->
+        <div class="help-section active" id="help-basics">
+          <h3 class="help-title">🎯 Game Objective</h3>
+          <p class="help-text">
+            Grid Card Game is a tactical card battle where two players face off on a grid battlefield. 
+            Your goal is simple: <strong style="color: #f87171;">destroy your opponent's heart</strong> before they destroy yours!
+          </p>
+          
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">❤️</div>
+              <div class="help-card-title">Protect Your Heart</div>
+              <div class="help-card-text">Your heart has 30 HP. If it reaches 0, you lose the game!</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">⚔️</div>
+              <div class="help-card-title">Attack the Enemy</div>
+              <div class="help-card-text">Move your units forward and attack the enemy heart to win!</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🃏</div>
+              <div class="help-card-title">Play Cards</div>
+              <div class="help-card-text">Summon units and cast spells using your energy each turn.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🧠</div>
+              <div class="help-card-title">Think Tactically</div>
+              <div class="help-card-text">Position matters! Use the grid wisely to outmaneuver your opponent.</div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Turn Structure</h3>
+          <p class="help-text">Each turn, you can perform these actions in any order:</p>
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon">🎴</div>
+              <div>
+                <div class="effect-name">Draw a Card</div>
+                <div class="effect-desc">Once per turn, draw a card from your deck to add to your hand.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">📤</div>
+              <div>
+                <div class="effect-name">Play Cards</div>
+                <div class="effect-desc">Spend energy to play unit cards or spell cards from your hand.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">👣</div>
+              <div>
+                <div class="effect-name">Move Units</div>
+                <div class="effect-desc">Each unit can move one space (up, down, left, or right) per turn.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">⚔️</div>
+              <div>
+                <div class="effect-name">Attack</div>
+                <div class="effect-desc">Each unit can attack once per turn if an enemy is in range.</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="help-tip">
+            <div class="help-tip-icon">💡</div>
+            <div class="help-tip-text">
+              <strong>Pro Tip:</strong> You don't have to use all your actions! Sometimes it's better to save energy or wait for a better position.
+            </div>
+          </div>
+        </div>
+        
+        <!-- BOARD SECTION -->
+        <div class="help-section" id="help-board">
+          <h3 class="help-title">🗺️ The Battlefield</h3>
+          <p class="help-text">
+            The game is played on a <strong style="color: #fbbf24;">6-column × 7-row</strong> grid. Each player controls one side of the board.
+          </p>
+          
+          <div class="board-visual">
+            <div style="text-align: center; margin-bottom: 15px;">
+              <span style="color: #94a3b8;">👤 Enemy Side</span>
+              <span style="margin: 0 10px;">•</span>
+              <span style="color: #94a3b8;">❤️ Enemy Heart (Row 1)</span>
+            </div>
+            <div class="board-mini" style="grid-template-columns: repeat(6, 1fr);">
+              <div class="board-cell silver-zone">🏠</div>
+              <div class="board-cell silver-zone heart">❤️</div>
+              <div class="board-cell silver-zone heart">❤️</div>
+              <div class="board-cell silver-zone heart">❤️</div>
+              <div class="board-cell silver-zone heart">❤️</div>
+              <div class="board-cell silver-zone"></div>
+              <div class="board-cell silver-zone"></div>
+              <div class="board-cell silver-zone"></div>
+              <div class="board-cell silver-zone"></div>
+              <div class="board-cell silver-zone"></div>
+              <div class="board-cell silver-zone"></div>
+              <div class="board-cell silver-zone"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell buff">⚡</div>
+              <div class="board-cell buff">⚡</div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell buff">⚡</div>
+              <div class="board-cell buff">⚡</div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell buff">⚡</div>
+              <div class="board-cell buff">⚡</div>
+              <div class="board-cell"></div>
+              <div class="board-cell"></div>
+              <div class="board-cell gold-zone"></div>
+              <div class="board-cell gold-zone"></div>
+              <div class="board-cell gold-zone"></div>
+              <div class="board-cell gold-zone"></div>
+              <div class="board-cell gold-zone"></div>
+              <div class="board-cell gold-zone"></div>
+              <div class="board-cell gold-zone"></div>
+              <div class="board-cell gold-zone heart">❤️</div>
+              <div class="board-cell gold-zone heart">❤️</div>
+              <div class="board-cell gold-zone heart">❤️</div>
+              <div class="board-cell gold-zone heart">❤️</div>
+              <div class="board-cell gold-zone">🏠</div>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+              <span style="color: #fbbf24;">👤 Your Side</span>
+              <span style="margin: 0 10px;">•</span>
+              <span style="color: #fbbf24;">❤️ Your Heart (Row 7)</span>
+            </div>
+          </div>
+          
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">🏠</div>
+              <div class="help-card-title">Home Zone (Spawn)</div>
+              <div class="help-card-text">Units are deployed here first. Move them onto the board on your next action.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">❤️</div>
+              <div class="help-card-title">Heart Row</div>
+              <div class="help-card-text">The 4 center cells of rows 1 and 7. Attack here to damage the enemy heart!</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🟡</div>
+              <div class="help-card-title">Your Territory</div>
+              <div class="help-card-text">Rows 6-7 (Gold) are your starting area. Defend your heart here!</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">⚪</div>
+              <div class="help-card-title">Enemy Territory</div>
+              <div class="help-card-text">Rows 1-2 (Silver) are the enemy's territory. Push forward to attack!</div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">⚡ Random Tile Buffs</h3>
+          <p class="help-text">
+            Each game, <strong style="color: #fbbf24;">random tiles</strong> on the board are marked with special buffs! When you move a unit onto a buff tile, that unit receives a powerful bonus.
+          </p>
+          
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">⚔️</div>
+              <div class="help-card-title">Attack Buff</div>
+              <div class="help-card-text">+2 ATK permanently added to the unit that lands on this tile.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">💚</div>
+              <div class="help-card-title">Health Buff</div>
+              <div class="help-card-text">+3 HP permanently added to the unit that lands on this tile.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🔋</div>
+              <div class="help-card-title">Energy Buff</div>
+              <div class="help-card-text">Gain +1 energy at the start of each turn while you control a unit that got this buff.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">👟</div>
+              <div class="help-card-title">Move Buff</div>
+              <div class="help-card-text">The unit can now move twice per turn instead of once!</div>
+            </div>
+          </div>
+          
+          <div class="help-tip">
+            <div class="help-tip-icon">💡</div>
+            <div class="help-tip-text">
+              <strong>Strategy Tip:</strong> Race to grab buff tiles early! A well-buffed unit can turn the tide of battle. The buffs stay with the unit even after it leaves the tile.
+            </div>
+          </div>
+          <div class="help-warning">
+            <div class="help-tip-icon">⚠️</div>
+            <div class="help-warning-text">
+              <strong>Important:</strong> Units can only attack the heart from the heart row (middle 3 columns of the enemy's back row).
+            </div>
+          </div>
+        </div>
+        
+        <!-- CARDS SECTION -->
+        <div class="help-section" id="help-cards">
+          <h3 class="help-title">🃏 Card Types</h3>
+          <p class="help-text">There are three types of cards you can play:</p>
+          
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">🗡️</div>
+              <div class="help-card-title">Unit Cards</div>
+              <div class="help-card-text">
+                Soldiers, creatures, and fighters that go onto the battlefield. They have ATK and HP stats.
+                <div style="margin-top: 8px;">
+                  <span class="stat-box stat-atk">⚔️ ATK = Damage dealt</span>
+                  <span class="stat-box stat-hp">♥ HP = Health points</span>
+                </div>
+              </div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🏰</div>
+              <div class="help-card-title">Structure Cards</div>
+              <div class="help-card-text">
+                Buildings and objects that provide ongoing effects. They have HP but usually can't attack. 
+                They stay on the board until destroyed.
+              </div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">✨</div>
+              <div class="help-card-title">Spell Cards</div>
+              <div class="help-card-text">
+                Instant effects that happen immediately. They don't go on the board - just cast them for their effect!
+              </div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Card Stats</h3>
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon" style="color: #3b82f6;">💎</div>
+              <div>
+                <div class="effect-name">Energy Cost</div>
+                <div class="effect-desc">The <strong style="color: #3b82f6;">blue number</strong> in the corner. You need this much energy to play the card.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon" style="color: #f87171;">⚔️</div>
+              <div>
+                <div class="effect-name">Attack (ATK)</div>
+                <div class="effect-desc">How much damage this unit deals when it attacks. Higher is better!</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon" style="color: #4ade80;">♥</div>
+              <div>
+                <div class="effect-name">Health Points (HP)</div>
+                <div class="effect-desc">How much damage this unit can take before being destroyed.</div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Hand Limit</h3>
+          <p class="help-text">
+            You can hold a maximum of <strong style="color: #fbbf24;">7 cards</strong> in your hand. 
+            If you already have 7 cards, <strong style="color: #f87171;">you cannot draw</strong> - you must play a card first to make room!
+          </p>
+        </div>
+        
+        <!-- ENERGY SECTION -->
+        <div class="help-section" id="help-energy">
+          <h3 class="help-title">⚡ Energy System</h3>
+          <p class="help-text">
+            Energy is your resource for playing cards. Managing it wisely is key to victory!
+          </p>
+          
+          <div class="board-visual" style="text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🔋</div>
+            <div style="font-family: 'Cinzel', serif; font-size: 24px; color: #3b82f6;">
+              <span id="energyDemo">3</span> / 10
+            </div>
+            <div style="color: #94a3b8; margin-top: 10px;">Current Energy / Maximum Energy</div>
+          </div>
+          
+          <h3 class="help-subtitle">Energy Growth</h3>
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon">🌱</div>
+              <div>
+                <div class="effect-name">Starting Energy</div>
+                <div class="effect-desc">Both players start with <strong>1 energy</strong> on turn 1.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">📈</div>
+              <div>
+                <div class="effect-name">Energy Gain</div>
+                <div class="effect-desc">Each turn, you gain energy: <strong>+1 base</strong>, plus <strong>+1 extra for every 3 turns</strong> that have passed.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🔝</div>
+              <div>
+                <div class="effect-name">Maximum Cap</div>
+                <div class="effect-desc">Energy caps at <strong>10 maximum</strong>. Any excess energy is lost.</div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Energy Gain Table</h3>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+              <tr style="background: rgba(138, 43, 226, 0.2);">
+                <th style="padding: 10px; text-align: left; color: #a78bfa;">Turn</th>
+                <th style="padding: 10px; text-align: center; color: #a78bfa;">1-3</th>
+                <th style="padding: 10px; text-align: center; color: #a78bfa;">4-6</th>
+                <th style="padding: 10px; text-align: center; color: #a78bfa;">7-9</th>
+                <th style="padding: 10px; text-align: center; color: #a78bfa;">10+</th>
+              </tr>
+              <tr style="background: rgba(30, 30, 60, 0.5);">
+                <td style="padding: 10px; color: #94a3b8;">Energy Gained</td>
+                <td style="padding: 10px; text-align: center; color: #4ade80;">+1</td>
+                <td style="padding: 10px; text-align: center; color: #4ade80;">+2</td>
+                <td style="padding: 10px; text-align: center; color: #4ade80;">+3</td>
+                <td style="padding: 10px; text-align: center; color: #4ade80;">+4</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="help-tip">
+            <div class="help-tip-icon">💡</div>
+            <div class="help-tip-text">
+              <strong>Strategy Tip:</strong> In early turns, you have limited energy. Play cheap units first! Save expensive cards for later when you have more energy.
+            </div>
+          </div>
+        </div>
+        
+        <!-- COMBAT SECTION -->
+        <div class="help-section" id="help-combat">
+          <h3 class="help-title">⚔️ Combat System</h3>
+          <p class="help-text">
+            Combat is straightforward but tactical. Understanding attack range is crucial!
+          </p>
+          
+          <h3 class="help-subtitle">Attack Range</h3>
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">🗡️</div>
+              <div class="help-card-title">Melee Units (Range 1)</div>
+              <div class="help-card-text">Most units attack adjacent enemies (1 square away in any direction including diagonals).</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🏹</div>
+              <div class="help-card-title">Ranged Units (Range 2+)</div>
+              <div class="help-card-text">Archers and some aliens can attack from 2 or more squares away!</div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">How Combat Works</h3>
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon">1️⃣</div>
+              <div>
+                <div class="effect-name">Select Your Unit</div>
+                <div class="effect-desc">Click on one of your units that hasn't attacked this turn.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">2️⃣</div>
+              <div>
+                <div class="effect-name">Choose Target</div>
+                <div class="effect-desc">Valid targets will be highlighted. Click an enemy unit or the heart row.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">3️⃣</div>
+              <div>
+                <div class="effect-name">Deal Damage</div>
+                <div class="effect-desc">Your unit's ATK is subtracted from the target's HP.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">4️⃣</div>
+              <div>
+                <div class="effect-name">Check for Death</div>
+                <div class="effect-desc">If HP reaches 0 or below, the unit is destroyed!</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="help-warning">
+            <div class="help-tip-icon">⚠️</div>
+            <div class="help-warning-text">
+              <strong>No Counter-Attacks!</strong> Unlike some card games, defending units do NOT automatically hit back. Combat is one-directional.
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Attacking the Heart</h3>
+          <p class="help-text">
+            To damage the enemy heart, your unit must be in <strong style="color: #fbbf24;">row 2</strong> 
+            (one row in front of the enemy's back row) and in <strong style="color: #fbbf24;">columns 2-5</strong> (the middle 4 columns). Then attack toward the heart! The heart has 30 HP - reduce it to 0 to win!
+          </p>
+          
+          <div class="help-tip">
+            <div class="help-tip-icon">💡</div>
+            <div class="help-tip-text">
+              <strong>Rush Strategy:</strong> Fast, cheap units can sometimes slip past defenses and chip away at the heart. Don't always focus on killing every enemy unit!
+            </div>
+          </div>
+        </div>
+        
+        <!-- EFFECTS SECTION -->
+        <div class="help-section" id="help-effects">
+          <h3 class="help-title">✨ Card Effects & Abilities</h3>
+          <p class="help-text">
+            Many cards have special effects that trigger at different times. Here are the common effect types:
+          </p>
+          
+          <h3 class="help-subtitle">Trigger Types</h3>
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon">📤</div>
+              <div>
+                <div class="effect-name">Deploy Effect</div>
+                <div class="effect-desc">Triggers when the card is first played onto the board.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">💀</div>
+              <div>
+                <div class="effect-name">Death Effect</div>
+                <div class="effect-desc">Triggers when this unit is destroyed.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🎯</div>
+              <div>
+                <div class="effect-name">On Kill Effect</div>
+                <div class="effect-desc">Triggers when this unit kills an enemy.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🔄</div>
+              <div>
+                <div class="effect-name">Start of Turn</div>
+                <div class="effect-desc">Triggers at the beginning of your turn.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">⏹️</div>
+              <div>
+                <div class="effect-name">End of Turn</div>
+                <div class="effect-desc">Triggers at the end of your turn.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">♾️</div>
+              <div>
+                <div class="effect-name">Passive / Aura</div>
+                <div class="effect-desc">Always active while this card is on the board.</div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Common Effects</h3>
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-icon">💚</div>
+              <div class="help-card-title">Heal</div>
+              <div class="help-card-text">Restore HP to a unit or your heart.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">💪</div>
+              <div class="help-card-title">Buff ATK</div>
+              <div class="help-card-text">Increase a unit's attack power.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🛡️</div>
+              <div class="help-card-title">Damage Reduction</div>
+              <div class="help-card-text">Reduce incoming damage by a set amount.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">👶</div>
+              <div class="help-card-title">Spawn</div>
+              <div class="help-card-text">Create a new unit on the board.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🏹</div>
+              <div class="help-card-title">Ranged</div>
+              <div class="help-card-text">Attack from 2+ squares away.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">👻</div>
+              <div class="help-card-title">Untargetable</div>
+              <div class="help-card-text">Cannot be targeted by attacks.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">🦵</div>
+              <div class="help-card-title">Double Move</div>
+              <div class="help-card-text">Can move twice per turn.</div>
+            </div>
+            <div class="help-card">
+              <div class="help-card-icon">⚡</div>
+              <div class="help-card-title">Energy Drain</div>
+              <div class="help-card-text">Steal or reduce enemy energy.</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- TIPS SECTION -->
+        <div class="help-section" id="help-tips">
+          <h3 class="help-title">💡 Strategy Tips</h3>
+          
+          <div class="effect-list">
+            <div class="effect-item">
+              <div class="effect-icon">🎯</div>
+              <div>
+                <div class="effect-name">Control the Center</div>
+                <div class="effect-desc">Units in the middle columns can respond to threats on either side. Don't bunch up on one side!</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">💰</div>
+              <div>
+                <div class="effect-name">Manage Your Energy</div>
+                <div class="effect-desc">Don't overspend early! Save some energy for responses. A 0-energy turn means you can't play anything.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🃏</div>
+              <div>
+                <div class="effect-name">Draw Every Turn</div>
+                <div class="effect-desc">Always draw a card if you can! Card advantage wins games. More options = better plays.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🏃</div>
+              <div>
+                <div class="effect-name">Advance with Purpose</div>
+                <div class="effect-desc">Move forward to threaten the heart, but don't leave your own heart undefended!</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🎭</div>
+              <div>
+                <div class="effect-name">Read Your Opponent</div>
+                <div class="effect-desc">Watch what deck they're playing. Anticipate their big cards and plan counters.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🧮</div>
+              <div>
+                <div class="effect-name">Count Lethal</div>
+                <div class="effect-desc">Always check if you can win this turn! Add up all your potential damage to the heart.</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🛡️</div>
+              <div>
+                <div class="effect-name">Trade Efficiently</div>
+                <div class="effect-desc">Use cheap units to kill expensive ones. A 2-cost unit killing a 5-cost unit is a great trade!</div>
+              </div>
+            </div>
+            <div class="effect-item">
+              <div class="effect-icon">🎪</div>
+              <div>
+                <div class="effect-name">Use Structures Wisely</div>
+                <div class="effect-desc">Structures provide ongoing value but can't attack. Place them where they won't block your units!</div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 class="help-subtitle">Beginner Mistakes to Avoid</h3>
+          <div class="help-warning">
+            <div class="help-tip-icon">❌</div>
+            <div class="help-warning-text">
+              <strong>Forgetting to draw</strong> - You miss out on cards and fall behind!
+            </div>
+          </div>
+          <div class="help-warning">
+            <div class="help-tip-icon">❌</div>
+            <div class="help-warning-text">
+              <strong>Playing everything immediately</strong> - Save some cards and energy for defense!
+            </div>
+          </div>
+          <div class="help-warning">
+            <div class="help-tip-icon">❌</div>
+            <div class="help-warning-text">
+              <strong>Ignoring the heart</strong> - You can lose while having board control if you don't defend!
+            </div>
+          </div>
+          
+          <div class="help-tip" style="margin-top: 20px;">
+            <div class="help-tip-icon">🏆</div>
+            <div class="help-tip-text">
+              <strong>Most importantly:</strong> Have fun and experiment! Try different strategies and learn from each game. Good luck, commander!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // How To Play Modal
+    const howToPlayBtn = document.getElementById('howToPlayBtn');
+    const howToPlayModal = document.getElementById('howToPlayModal');
+    const closeHowToPlay = document.getElementById('closeHowToPlay');
+    const helpNavBtns = document.querySelectorAll('.modal-nav-btn');
+    const helpSections = document.querySelectorAll('.help-section');
+    
+    howToPlayBtn.addEventListener('click', () => {
+      howToPlayModal.classList.add('active');
+    });
+    
+    closeHowToPlay.addEventListener('click', () => {
+      howToPlayModal.classList.remove('active');
+    });
+    
+    howToPlayModal.addEventListener('click', (e) => {
+      if (e.target === howToPlayModal) {
+        howToPlayModal.classList.remove('active');
+      }
+    });
+    
+    helpNavBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const section = btn.dataset.section;
+        helpNavBtns.forEach(b => b.classList.remove('active'));
+        helpSections.forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('help-' + section).classList.add('active');
+      });
+    });
+    
+    // Background Music
+    const bgMusic = document.getElementById('bgMusic');
+    const musicControl = document.getElementById('musicControl');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeSliderContainer = document.getElementById('volumeSliderContainer');
+    let musicPlaying = false;
+    
+    // Set initial volume
+    bgMusic.volume = 0.4;
+    
+    // Try to autoplay immediately
+    function tryAutoplay() {
+      bgMusic.play().then(() => {
+        musicPlaying = true;
+        musicControl.textContent = '🔊';
+        musicControl.classList.add('playing');
+      }).catch(e => {
+        // Autoplay blocked, wait for user interaction
+        console.log('Autoplay blocked, waiting for interaction');
+        musicControl.textContent = '🔇';
+        musicControl.classList.remove('playing');
+        
+        // Add one-time listener for user interaction
+        const startOnInteraction = () => {
+          if (!musicPlaying) {
+            bgMusic.play().then(() => {
+              musicPlaying = true;
+              musicControl.textContent = '🔊';
+              musicControl.classList.add('playing');
+            }).catch(() => {});
+          }
+          document.removeEventListener('click', startOnInteraction);
+          document.removeEventListener('keydown', startOnInteraction);
+        };
+        document.addEventListener('click', startOnInteraction);
+        document.addEventListener('keydown', startOnInteraction);
+      });
     }
+    
+    // Try autoplay on page load
+    tryAutoplay();
+    
+    // Toggle music and show/hide volume slider
+    musicControl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (musicPlaying) {
+        bgMusic.pause();
+        musicPlaying = false;
+        musicControl.textContent = '🔇';
+        musicControl.classList.remove('playing');
+      } else {
+        bgMusic.play().then(() => {
+          musicPlaying = true;
+          musicControl.textContent = '🔊';
+          musicControl.classList.add('playing');
+        });
+      }
+    });
+    
+    // Right-click or long press to show volume slider
+    musicControl.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      volumeSliderContainer.classList.toggle('visible');
+    });
+    
+    // Double-click to toggle volume slider
+    musicControl.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      volumeSliderContainer.classList.toggle('visible');
+    });
+    
+    // Volume slider control
+    volumeSlider.addEventListener('input', (e) => {
+      const volume = e.target.value / 100;
+      bgMusic.volume = volume;
+      if (volume === 0) {
+        musicControl.textContent = '🔇';
+      } else if (volume < 0.5) {
+        musicControl.textContent = '🔉';
+      } else {
+        musicControl.textContent = '🔊';
+      }
+    });
+    
+    // Hide volume slider when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.music-control-container')) {
+        volumeSliderContainer.classList.remove('visible');
+      }
+    });
+    
+    // Create floating particles
+    const particlesContainer = document.getElementById('particles');
+    const animationTypes = ['float-up', 'float-diagonal', 'float-side', 'drift'];
+    
+    function createParticle() {
+      const particle = document.createElement('div');
+      const animType = animationTypes[Math.floor(Math.random() * animationTypes.length)];
+      particle.className = 'particle ' + animType;
+      
+      // Position randomly across entire screen
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      
+      // Varying sizes
+      const size = 3 + Math.random() * 5;
+      particle.style.width = size + 'px';
+      particle.style.height = size + 'px';
+      
+      particle.style.animationDuration = (6 + Math.random() * 10) + 's';
+      particle.style.animationDelay = Math.random() * 2 + 's';
+      
+      // Random colors
+      const colors = ['rgba(251, 191, 36, 0.6)', 'rgba(139, 92, 246, 0.6)', 'rgba(59, 130, 246, 0.6)', 'rgba(16, 185, 129, 0.5)'];
+      particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+      particle.style.boxShadow = `0 0 ${5 + Math.random() * 10}px ${particle.style.background}`;
+      
+      particlesContainer.appendChild(particle);
+      
+      // Remove after animation
+      setTimeout(() => particle.remove(), 16000);
+    }
+    
+    // Create initial particles
+    for (let i = 0; i < 20; i++) {
+      setTimeout(createParticle, i * 200);
+    }
+    
+    // Keep creating particles
+    setInterval(createParticle, 800);
   </script>
 </body>
 </html>
