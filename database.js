@@ -45,16 +45,16 @@ const userSchema = new mongoose.Schema({
     type: Map,
     of: Number,
     default: () => {
-      // Start with full medieval deck
+      // Start with 3 of each medieval card
       const startingCollection = new Map();
       const medievalCards = [
-        'peasant', 'peasant', 'squire', 'squire', 'archer', 'archer',
-        'manatarms', 'manatarms', 'shieldbearer', 'warhound', 'battlefieldmedic',
-        'knight', 'knight', 'crusader', 'royalguard', 'paladin', 'siegeram',
-        'warbanner', 'shrine', 'armory', 'castlewalls', 'treasury', 'rally'
+        'peasant', 'squire', 'archer', 'manatarms', 'shieldbearer', 
+        'warhound', 'battlefieldmedic', 'knight', 'crusader', 
+        'royalguard', 'paladin', 'siegeram', 'warbanner', 
+        'shrine', 'armory', 'castlewalls', 'treasury', 'rally'
       ];
       medievalCards.forEach(card => {
-        startingCollection.set(card, (startingCollection.get(card) || 0) + 1);
+        startingCollection.set(card, 3); // 3 copies of each
       });
       return startingCollection;
     }
