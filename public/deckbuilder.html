@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deck Builder - Grid Card Game</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #e2e8f0; overflow-x: hidden; }
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(60px); opacity: 0.4; animation: pulse-orb 3s ease-in-out infinite; z-index: 0; pointer-events: none; }
+    .bg-orb-1 { width: 400px; height: 400px; background: #a855f7; top: -100px; left: -100px; }
+    .bg-orb-2 { width: 300px; height: 300px; background: #fbbf24; bottom: -50px; right: -50px; animation-delay: -1.5s; }
+    @keyframes pulse-orb { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.5; } }
+    .page-container { display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: rgba(20, 20, 40, 0.9); border-bottom: 2px solid rgba(138, 43, 226, 0.4); }
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .back-btn { padding: 8px 16px; background: rgba(100, 116, 139, 0.3); border: 1px solid rgba(100, 116, 139, 0.5); border-radius: 8px; color: #94a3b8; font-size: 13px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+    .back-btn:hover { background: rgba(100, 116, 139, 0.5); color: #e2e8f0; }
+    .page-title { font-family: 'Cinzel', serif; font-size: 24px; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .save-btn { padding: 8px 20px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 8px; color: white; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .save-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+    .save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .main-content { display: flex; flex: 1; gap: 15px; padding: 15px; overflow: hidden; }
+    .panel { background: rgba(20, 20, 40, 0.9); border: 2px solid rgba(138, 43, 226, 0.4); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(30, 30, 60, 0.5); border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
+    .panel-title { font-family: 'Cinzel', serif; font-size: 14px; color: #a78bfa; }
+    .card-details-panel { width: 320px; flex-shrink: 0; }
+    .card-preview { padding: 15px; display: flex; flex-direction: column; align-items: center; flex: 1; overflow-y: auto; }
+    .preview-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #64748b; text-align: center; }
+    .preview-placeholder-icon { font-size: 48px; margin-bottom: 10px; opacity: 0.5; }
+    .preview-card { width: 100%; max-width: 240px; }
+    .preview-art { width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: contain; background-position: center; background-repeat: no-repeat; border-radius: 10px; margin-bottom: 12px; }
+    .preview-art.void-alien { background: linear-gradient(135deg, #065f46, #059669); }
+    .preview-name { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #fbbf24; text-align: center; margin-bottom: 8px; }
+    .preview-type { font-size: 12px; color: #94a3b8; text-align: center; margin-bottom: 12px; }
+    .preview-stats { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
+    .preview-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 12px; background: rgba(30, 30, 60, 0.8); border-radius: 8px; }
+    .preview-stat-value { font-size: 22px; font-weight: 800; }
+    .preview-stat-label { font-size: 9px; color: #64748b; text-transform: uppercase; }
+    .stat-cost { color: #3b82f6; } .stat-atk { color: #f97316; } .stat-hp { color: #06b6d4; }
+    .preview-effect { background: rgba(30, 30, 60, 0.8); border: 1px solid rgba(138, 43, 226, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 15px; width: 100%; }
+    .preview-effect-label { font-size: 10px; color: #a78bfa; text-transform: uppercase; margin-bottom: 5px; }
+    .preview-effect-text { font-size: 12px; color: #e2e8f0; line-height: 1.4; }
+    .preview-no-effect { color: #64748b; font-style: italic; }
+    .preview-owned { font-size: 12px; color: #94a3b8; margin-bottom: 15px; text-align: center; }
+    .preview-owned span { color: #fbbf24; font-weight: 700; }
+    .preview-buttons { display: flex; gap: 10px; width: 100%; }
+    .preview-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .preview-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-add { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .btn-add:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn-remove { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .btn-remove:hover:not(:disabled) { transform: translateY(-2px); }
+    .collection-panel { flex: 1; min-width: 350px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; background: rgba(30, 30, 60, 0.3); border-bottom: 1px solid rgba(138, 43, 226, 0.2); align-items: center; }
+    .filter-group { display: flex; align-items: center; gap: 4px; }
+    .filter-group label { color: #94a3b8; font-size: 10px; }
+    .search-input { padding: 5px 8px; background: rgba(30, 30, 60, 0.8); border: 1px solid rgba(138, 43, 226, 0.3); border-radius: 5px; color: #e2e8f0; font-size: 11px; width: 90px; }
+    .search-input:focus { outline: none; border-color: rgba(138, 43, 226, 0.6); }
+    .filter-select { padding: 5px 6px; background: rgba(30, 30, 60, 0.8); border: 1px solid rgba(138, 43, 226, 0.3); border-radius: 5px; color: #e2e8f0; font-size: 11px; cursor: pointer; }
+    .filter-btn { padding: 5px 8px; background: rgba(30, 30, 60, 0.5); border: 1px solid rgba(138, 43, 226, 0.3); border-radius: 5px; color: #94a3b8; font-size: 10px; cursor: pointer; }
+    .filter-btn:hover { background: rgba(138, 43, 226, 0.3); color: #e2e8f0; }
+    .card-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; padding: 10px; overflow-y: auto; align-content: start; }
+    .card-grid::-webkit-scrollbar { width: 6px; }
+    .card-grid::-webkit-scrollbar-track { background: rgba(30, 30, 60, 0.5); }
+    .card-grid::-webkit-scrollbar-thumb { background: rgba(138, 43, 226, 0.5); border-radius: 3px; }
+    .collection-card { position: relative; aspect-ratio: 3/4; background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9)); border: 2px solid rgba(138, 43, 226, 0.4); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+    .collection-card:hover { transform: translateY(-3px); border-color: rgba(251, 191, 36, 0.6); }
+    .collection-card.selected { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
+    .collection-card.in-deck { border-color: rgba(16, 185, 129, 0.6); }
+    .collection-card.not-owned { opacity: 0.4; filter: grayscale(0.5); }
+    .collection-card.void-alien { border-color: rgba(16, 185, 129, 0.5); }
+    .card-art { width: 100%; height: 55%; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: contain; background-position: center; background-repeat: no-repeat; }
+    .card-art.void-alien { background: linear-gradient(135deg, #065f46, #059669); background-size: contain; background-position: center; background-repeat: no-repeat; }
+    .card-cost { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: white; }
+    .card-count { position: absolute; top: 3px; left: 3px; background: rgba(0, 0, 0, 0.8); padding: 1px 5px; border-radius: 6px; font-size: 9px; font-weight: 600; color: #fbbf24; }
+    .card-count.none { color: #ef4444; }
+    .card-info { padding: 5px; background: linear-gradient(to top, rgba(15, 15, 35, 1), rgba(15, 15, 35, 0.8)); height: 45%; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-name { font-family: 'Cinzel', serif; font-size: 8px; font-weight: 700; color: #e2e8f0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-stats { display: flex; justify-content: center; gap: 6px; font-size: 9px; font-weight: 600; }
+    .card-atk { color: #f97316; } .card-hp { color: #06b6d4; }
+    .deck-panel { width: 280px; flex-shrink: 0; }
+    .deck-selector-section { padding: 10px 12px; background: rgba(30, 30, 60, 0.5); border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
+    .deck-select { width: 100%; padding: 8px 10px; background: rgba(20, 20, 40, 0.8); border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 6px; color: #e2e8f0; font-size: 12px; cursor: pointer; }
+    .deck-name-section { padding: 10px 12px; background: rgba(30, 30, 60, 0.3); border-bottom: 1px solid rgba(138, 43, 226, 0.2); }
+    .deck-name-input { width: 100%; padding: 8px 10px; background: rgba(20, 20, 40, 0.8); border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 6px; color: #fbbf24; font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; text-align: center; }
+    .deck-name-input:focus { outline: none; border-color: rgba(251, 191, 36, 0.6); }
+    .deck-name-input::placeholder { color: #64748b; }
+    .deck-info { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(30, 30, 60, 0.3); border-bottom: 1px solid rgba(138, 43, 226, 0.2); }
+    .deck-count { font-size: 13px; color: #94a3b8; }
+    .deck-count span { font-weight: 700; color: #fbbf24; }
+    .deck-count.valid span { color: #10b981; }
+    .deck-count.invalid span { color: #ef4444; }
+    .clear-btn { padding: 5px 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 5px; color: #f87171; font-size: 11px; cursor: pointer; }
+    .clear-btn:hover { background: rgba(239, 68, 68, 0.3); }
+    .energy-curve { padding: 10px 12px; background: rgba(30, 30, 60, 0.3); border-bottom: 1px solid rgba(138, 43, 226, 0.2); }
+    .curve-title { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
+    .curve-bars { display: flex; align-items: flex-end; gap: 3px; height: 40px; }
+    .curve-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .bar-fill { width: 100%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.3s; }
+    .bar-label { font-size: 8px; color: #64748b; } .bar-count { font-size: 8px; color: #94a3b8; }
+    .deck-cards { flex: 1; overflow-y: auto; padding: 8px; }
+    .deck-cards::-webkit-scrollbar { width: 5px; }
+    .deck-cards::-webkit-scrollbar-thumb { background: rgba(138, 43, 226, 0.5); border-radius: 3px; }
+    .deck-card-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(30, 30, 60, 0.5); border: 1px solid rgba(138, 43, 226, 0.2); border-radius: 6px; margin-bottom: 4px; cursor: pointer; transition: all 0.2s; }
+    .deck-card-item:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+    .deck-card-item.selected { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+    .deck-card-art { width: 28px; height: 28px; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: cover; background-position: center; border-radius: 4px; }
+    .deck-card-info { flex: 1; min-width: 0; }
+    .deck-card-name { font-size: 11px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .deck-card-type { font-size: 8px; color: #64748b; }
+    .deck-card-cost { width: 20px; height: 20px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px; color: white; }
+    .deck-card-qty { font-size: 11px; color: #94a3b8; min-width: 24px; text-align: center; }
+    .deck-empty { text-align: center; padding: 30px 15px; color: #64748b; }
+    .deck-empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(30, 30, 60, 0.95); border: 2px solid rgba(16, 185, 129, 0.6); border-radius: 10px; padding: 12px 20px; color: #e2e8f0; font-size: 13px; display: flex; align-items: center; gap: 8px; z-index: 1000; opacity: 0; transition: all 0.3s; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.error { border-color: rgba(239, 68, 68, 0.6); }
+    .login-prompt { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 30px; }
+    .login-prompt-icon { font-size: 48px; margin-bottom: 15px; }
+    .login-prompt h2 { font-family: 'Cinzel', serif; color: #fbbf24; margin-bottom: 8px; }
+    @media (max-width: 1000px) { .main-content { flex-direction: column; } .card-details-panel, .deck-panel { width: 100%; } .collection-panel { min-width: unset; } }
+  </style>
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="page-container">
+    <header class="header">
+      <div class="header-left">
+        <a href="/home.html" class="back-btn">← Back</a>
+        <h1 class="page-title">⚔️ Deck Builder</h1>
+      </div>
+      <div class="header-right">
+        <span id="collectionCount" style="color: #94a3b8; font-size: 12px;">0/34 owned</span>
+        <button class="save-btn" id="saveBtn" disabled>💾 Save Deck</button>
+      </div>
+    </header>
+    <div class="main-content">
+      <div class="panel card-details-panel">
+        <div class="panel-header"><div class="panel-title">📋 Card Details</div></div>
+        <div class="card-preview" id="cardPreview">
+          <div class="preview-placeholder"><div class="preview-placeholder-icon">👆</div><div>Click a card to view details</div></div>
+        </div>
+      </div>
+      <div class="panel collection-panel">
+        <div class="panel-header"><div class="panel-title">📚 All Cards</div></div>
+        <div class="filters">
+          <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search">
+          <div class="filter-group"><label>Own:</label><select class="filter-select" id="ownedFilter"><option value="all">All</option><option value="owned">Owned</option><option value="not-owned">Not Owned</option></select></div>
+          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option></select></div>
+          <div class="filter-group"><label>Type:</label><select class="filter-select" id="typeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option></select></div>
+          <div class="filter-group"><label>Cost:</label><select class="filter-select" id="costFilter"><option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
+          <button class="filter-btn" id="resetFiltersBtn">Reset</button>
+        </div>
+        <div class="card-grid" id="cardGrid"></div>
+      </div>
+      <div class="panel deck-panel">
+        <div class="panel-header"><div class="panel-title">🃏 Current Deck</div></div>
+        <div class="deck-selector-section">
+          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option></select>
+        </div>
+        <div class="deck-name-section">
+          <input type="text" class="deck-name-input" id="deckNameInput" placeholder="Deck name..." maxlength="25">
+        </div>
+        <div class="deck-info">
+          <div class="deck-count" id="deckCount"><span>0</span> / 25-35</div>
+          <button class="clear-btn" id="clearBtn">Clear</button>
+        </div>
+        <div class="energy-curve">
+          <div class="curve-title">⚡ Energy Curve</div>
+          <div class="curve-bars" id="energyCurve">
+            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">1</div></div>
+            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">2</div></div>
+            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">3</div></div>
+            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">4</div></div>
+            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">5</div></div>
+            <div class="curve-bar"><div class="bar-fill"></div><div class="bar-count">0</div><div class="bar-label">6+</div></div>
+          </div>
+        </div>
+        <div class="deck-cards" id="deckCards"><div class="deck-empty"><div class="deck-empty-icon">🃏</div><div>Click cards to add</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"><span id="toastIcon">✅</span><span id="toastMessage">Saved!</span></div>
+  <script>
+    const CARD_DATA = {
+      peasant: { name: "Peasant", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack diagonally", art: "/images/Peasant.png" },
+      squire: { name: "Squire", cost: 1, atk: 2, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move to any Knight on the board", art: "/images/Squire.png" },
+      archer: { name: "Archer", cost: 2, atk: 3, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack units 2 tiles away", art: "/images/Archer.png" },
+      manatarms: { name: "Man-at-Arms", cost: 2, atk: 2, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Man-at-Arms.png" },
+      shieldbearer: { name: "Shield Bearer", cost: 2, atk: 1, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Adjacent allies take 1 less damage", art: "/images/Shield Bearer.png" },
+      warhound: { name: "War Hound", cost: 2, atk: 3, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move twice per turn", art: "/images/War Hound.png" },
+      battlefieldmedic: { name: "Battlefield Medic", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals adjacent allies 1 HP at end of turn", art: "/images/Battlefield Medic.png" },
+      knight: { name: "Knight", cost: 3, atk: 4, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Knight.png" },
+      crusader: { name: "Crusader", cost: 4, atk: 5, hp: 4, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals 2 HP when killing an enemy", art: "/images/Crusader.png" },
+      royalguard: { name: "Royal Guard", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Attacks deal cleave damage to adjacent enemies", art: "/images/Royal Guard.png" },
+      paladin: { name: "Paladin", cost: 4, atk: 6, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Gain 1 energy when killing an enemy", art: "/images/Paladin.png" },
+      siegeram: { name: "Battering Ram", cost: 3, atk: 2, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Deals double damage to row HP", art: "/images/Battering Ram.png" },
+      warbanner: { name: "War Banner", cost: 2, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Adjacent allies gain +1 ATK", art: "/images/War Banner.png" },
+      shrine: { name: "Healing Shrine", cost: 3, atk: 0, hp: 5, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Heals allies in same row 1 HP per turn", art: "/images/Healing Shrine.png" },
+      armory: { name: "Armory", cost: 3, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Units you deploy gain +1 HP", art: "/images/Armory.png" },
+      castlewalls: { name: "Castle Walls", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Add +15 HP to target friendly row", art: "/images/Castle Walls.png" },
+      treasury: { name: "King's Treasury", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Draw 2 cards", art: "/images/King's Treasury.png" },
+      rally: { name: "Rallying Cry", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Target unit attacks twice this turn", art: "/images/Rallying Cry.png" },
+      voiddrone: { name: "Void Drone", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Void Drone.png" },
+      scavengerlarva: { name: "Scavenger Larva", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy when this unit dies", art: "/images/Scavenger Larva.png" },
+      spittercrawler: { name: "Spitter Crawler", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Spitter Crawler.png" },
+      phaseskirmisher: { name: "Phase Skirmisher", cost: 2, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Cannot be targeted the turn it is deployed", art: "/images/Phase Skirmisher.png" },
+      energyleech: { name: "Energy Leech", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Drain 1 energy from opponent on kill", art: "/images/Energy Leech.png" },
+      burrowerbeast: { name: "Burrower Beast", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Untargetable next turn, can deploy adjacent to allies", art: "/images/Burrower Beast.png" },
+      psionicoverseer: { name: "Psionic Overseer", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Adjacent allies gain +1 ATK", art: "/images/Psionic Overseer.png" },
+      neuralharvester: { name: "Neural Harvester", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy if target survives attack", art: "/images/Neural Harvester.png" },
+      adaptivecolossus: { name: "Adaptive Colossus", cost: 4, atk: 4, hp: 5, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gains +1 max HP when surviving damage", art: "/images/Adaptive Colossus.png" },
+      sporetitan: { name: "Spore Titan", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Attacks deal 1 splash damage to adjacent enemies", art: "/images/Spore Titan.png" },
+      voidbroodmother: { name: "Void Broodmother", cost: 4, atk: 2, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Spawn a Void Drone when killing an enemy", art: "/images/Void Broodmother.png" },
+      eclipsedevourer: { name: "Eclipse Devourer", cost: 5, atk: 5, hp: 4, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy on kill", art: "/images/Eclipse Devourer.png" },
+      ufoscraper: { name: "UFO Scraper", cost: 4, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Can attack friendly Aliens to absorb their stats", art: "/images/UFO Scraper.png" },
+      assimilation: { name: "Assimilation", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: Destroy target enemy with 2 or less HP", art: "/images/Assimilation.png" },
+      voidcollapse: { name: "Void Collapse", cost: 5, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: Deal 1 damage to all enemies in target row", art: "/images/Void Collapse.png" },
+      hiveascension: { name: "Hive Ascension", cost: 7, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: All friendly units gain +1 ATK and +1 HP", art: "/images/Hive Ascension.png" }
+    };
+    const DEFAULT_DECKS = {
+      medieval: { name: "Medieval Kingdom", cards: ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','crusader','royalguard','royalguard','paladin','paladin','siegeram','siegeram','warbanner','warbanner','shrine','shrine','armory','treasury','rally'] },
+      'void-alien': { name: "Void Swarm", cards: ['voiddrone','voiddrone','voiddrone','scavengerlarva','scavengerlarva','scavengerlarva','spittercrawler','spittercrawler','spittercrawler','phaseskirmisher','phaseskirmisher','energyleech','energyleech','burrowerbeast','burrowerbeast','burrowerbeast','psionicoverseer','psionicoverseer','neuralharvester','neuralharvester','adaptivecolossus','adaptivecolossus','sporetitan','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','ufoscraper','assimilation','assimilation','voidcollapse','voidcollapse','hiveascension'] }
+    };
+    let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false;
+    const cardGrid = document.getElementById('cardGrid'), deckCards = document.getElementById('deckCards'), deckCount = document.getElementById('deckCount');
+    const collectionCount = document.getElementById('collectionCount'), saveBtn = document.getElementById('saveBtn'), clearBtn = document.getElementById('clearBtn');
+    const deckSelect = document.getElementById('deckSelect'), deckNameInput = document.getElementById('deckNameInput'), cardPreview = document.getElementById('cardPreview');
+    const searchInput = document.getElementById('searchInput'), ownedFilter = document.getElementById('ownedFilter'), archetypeFilter = document.getElementById('archetypeFilter');
+    const typeFilter = document.getElementById('typeFilter'), costFilter = document.getElementById('costFilter'), resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const toast = document.getElementById('toast'), toastIcon = document.getElementById('toastIcon'), toastMessage = document.getElementById('toastMessage');
+    function init() {
+      const storedUser = localStorage.getItem('gridCardUser');
+      if (storedUser) { try { currentUser = JSON.parse(storedUser); loadUserData(); } catch(e) { showLoginPrompt(); } }
+      else { showLoginPrompt(); }
+      searchInput.addEventListener('input', renderCollection);
+      ownedFilter.addEventListener('change', renderCollection);
+      archetypeFilter.addEventListener('change', renderCollection);
+      typeFilter.addEventListener('change', renderCollection);
+      costFilter.addEventListener('change', renderCollection);
+      resetFiltersBtn.addEventListener('click', resetFilters);
+      clearBtn.addEventListener('click', clearDeck);
+      saveBtn.addEventListener('click', saveDeck);
+      deckSelect.addEventListener('change', switchDeckType);
+      deckNameInput.addEventListener('input', function() { currentDeckName = deckNameInput.value; hasChanges = true; updateSaveButton(); });
+    }
+    function showLoginPrompt() { cardGrid.innerHTML = '<div class="login-prompt" style="grid-column:1/-1"><div class="login-prompt-icon">🔒</div><h2>Login Required</h2><a href="/home.html" class="back-btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:#1a1a2e;font-weight:600">← Login</a></div>'; }
+    function loadUserData() {
+      userCollection = currentUser.cardCollection || {};
+      const unlockedDecks = currentUser.unlockedDecks || ['medieval'];
+      const customDecks = currentUser.customDecks || [];
+      const medievalCustom = customDecks.find(function(d) { return d.id === 'medieval'; });
+      const voidCustom = customDecks.find(function(d) { return d.id === 'void-alien'; });
+      deckSelect.querySelector('option[value="medieval"]').textContent = medievalCustom ? medievalCustom.name : 'Medieval Deck';
+      const voidOption = deckSelect.querySelector('option[value="void-alien"]');
+      if (unlockedDecks.includes('void-alien')) { voidOption.disabled = false; voidOption.textContent = voidCustom ? voidCustom.name : 'Void Alien Deck'; }
+      else { voidOption.disabled = true; voidOption.textContent = 'Void Alien Deck 🔒'; }
+      loadDeckType('medieval');
+      renderCollection();
+      const total = Object.keys(CARD_DATA).length;
+      const owned = Object.keys(CARD_DATA).filter(function(k) { return (userCollection[k] || 0) > 0; }).length;
+      collectionCount.textContent = owned + '/' + total + ' owned';
+    }
+    function switchDeckType() { if (hasChanges && !confirm('Unsaved changes. Switch anyway?')) { deckSelect.value = currentDeckType; return; } loadDeckType(deckSelect.value); }
+    function loadDeckType(deckType) {
+      currentDeckType = deckType; deckSelect.value = deckType;
+      const customDeck = currentUser.customDecks ? currentUser.customDecks.find(function(d) { return d.id === deckType; }) : null;
+      if (customDeck) { currentDeckName = customDeck.name || DEFAULT_DECKS[deckType].name; currentDeck = customDeck.cards ? customDeck.cards.slice() : DEFAULT_DECKS[deckType].cards.slice(); }
+      else { currentDeckName = DEFAULT_DECKS[deckType].name; currentDeck = DEFAULT_DECKS[deckType].cards.slice(); }
+      deckNameInput.value = currentDeckName; hasChanges = false; selectedCardKey = null;
+      renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview();
+    }
+    function selectCard(key) { selectedCardKey = key; renderCollection(); renderDeck(); renderCardPreview(); }
+    function renderCardPreview() {
+      if (!selectedCardKey) { cardPreview.innerHTML = '<div class="preview-placeholder"><div class="preview-placeholder-icon">👆</div><div>Click a card to view details</div></div>'; return; }
+      const card = CARD_DATA[selectedCardKey]; if (!card) return;
+      const owned = userCollection[selectedCardKey] || 0;
+      const inDeck = currentDeck.filter(function(k) { return k === selectedCardKey; }).length;
+      const canAdd = owned > inDeck && currentDeck.length < 35;
+      const canRemove = inDeck > 0;
+      const artUrl = encodeURI(card.art || '');
+      cardPreview.innerHTML = '<div class="preview-card"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div><div class="preview-name">' + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + (card.archetype === 'void-alien' ? 'Void Alien' : 'Medieval') + '</div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">In deck: <span>' + inDeck + '</span> / Owned: <span>' + owned + '</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || owned === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
+    }
+    function renderCollection() {
+      const search = searchInput.value.toLowerCase(), ownedVal = ownedFilter.value, archVal = archetypeFilter.value, typeVal = typeFilter.value, costVal = costFilter.value;
+      let cards = Object.entries(CARD_DATA).filter(function(entry) {
+        const key = entry[0], card = entry[1];
+        const owned = userCollection[key] || 0;
+        if (search && !card.name.toLowerCase().includes(search)) return false;
+        if (ownedVal === 'owned' && owned === 0) return false;
+        if (ownedVal === 'not-owned' && owned > 0) return false;
+        if (archVal !== 'all' && card.archetype !== archVal) return false;
+        if (typeVal !== 'all' && card.type !== typeVal) return false;
+        if (costVal !== 'all') { if (costVal === '5+') { if (card.cost < 5) return false; } else { if (card.cost !== parseInt(costVal)) return false; } }
+        return true;
+      });
+      cards.sort(function(a, b) { if (a[1].archetype !== b[1].archetype) return a[1].archetype === 'medieval' ? -1 : 1; if (a[1].cost !== b[1].cost) return a[1].cost - b[1].cost; return a[1].name.localeCompare(b[1].name); });
+      if (cards.length === 0) { cardGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#64748b">No cards match</div>'; return; }
+      cardGrid.innerHTML = cards.map(function(entry) {
+        const key = entry[0], card = entry[1];
+        const owned = userCollection[key] || 0, inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+        const artUrl = encodeURI(card.art || '');
+        let cls = 'collection-card'; if (key === selectedCardKey) cls += ' selected'; if (card.archetype === 'void-alien') cls += ' void-alien'; if (inDeck > 0) cls += ' in-deck'; if (owned === 0) cls += ' not-owned';
+        return '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + inDeck + '/' + owned + '</div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+      }).join('');
+    }
+    function renderDeck() {
+      const count = currentDeck.length, isValid = count >= 25 && count <= 35;
+      deckCount.innerHTML = '<span>' + count + '</span> / 25-35';
+      deckCount.className = 'deck-count' + (isValid ? ' valid' : count > 0 ? ' invalid' : '');
+      if (count === 0) { deckCards.innerHTML = '<div class="deck-empty"><div class="deck-empty-icon">🃏</div><div>Click cards to add</div></div>'; return; }
+      const cardCounts = {}; currentDeck.forEach(function(k) { cardCounts[k] = (cardCounts[k] || 0) + 1; });
+      const sorted = Object.entries(cardCounts).sort(function(a, b) { const cA = CARD_DATA[a[0]], cB = CARD_DATA[b[0]]; if (!cA || !cB) return 0; if (cA.cost !== cB.cost) return cA.cost - cB.cost; return cA.name.localeCompare(cB.name); });
+      deckCards.innerHTML = sorted.map(function(entry) {
+        const key = entry[0], qty = entry[1];
+        const card = CARD_DATA[key]; if (!card) return '';
+        const artUrl = encodeURI(card.art || '');
+        return '<div class="deck-card-item ' + (key === selectedCardKey ? 'selected' : '') + '" onclick="selectCard(\'' + key + '\')"><div class="deck-card-art" style="background-image:url(\'' + artUrl + '\')"></div><div class="deck-card-info"><div class="deck-card-name">' + card.name + '</div><div class="deck-card-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + '</div></div><div class="deck-card-cost">' + card.cost + '</div><div class="deck-card-qty">×' + qty + '</div></div>';
+      }).join('');
+    }
+    function updateEnergyCurve() {
+      const counts = [0, 0, 0, 0, 0, 0];
+      currentDeck.forEach(function(k) { const c = CARD_DATA[k]; if (c) { const idx = Math.min(c.cost, 6) - 1; counts[idx >= 0 ? idx : 5]++; } });
+      const max = Math.max.apply(null, counts.concat([1]));
+      document.querySelectorAll('.curve-bar').forEach(function(bar, i) { bar.querySelector('.bar-fill').style.height = (counts[i] / max) * 100 + '%'; bar.querySelector('.bar-count').textContent = counts[i]; });
+    }
+    function updateSaveButton() { const count = currentDeck.length; saveBtn.disabled = !(count >= 25 && count <= 35 && currentDeckName.trim() && hasChanges); }
+    function addToDeck(key) {
+      const card = CARD_DATA[key]; if (!card) return;
+      const owned = userCollection[key] || 0, inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+      if (owned === 0) { showToast("You don't own this card", true); return; }
+      if (inDeck >= owned) { showToast('No more copies', true); return; }
+      if (currentDeck.length >= 35) { showToast('Deck full (35 max)', true); return; }
+      currentDeck.push(key); hasChanges = true;
+      renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview();
+    }
+    function removeFromDeck(key) {
+      const idx = currentDeck.indexOf(key);
+      if (idx > -1) { currentDeck.splice(idx, 1); hasChanges = true; renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview(); }
+    }
+    function clearDeck() { if (currentDeck.length === 0) return; if (confirm('Clear all cards?')) { currentDeck = []; hasChanges = true; renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview(); } }
+    function resetFilters() { searchInput.value = ''; ownedFilter.value = 'all'; archetypeFilter.value = 'all'; typeFilter.value = 'all'; costFilter.value = 'all'; renderCollection(); }
+    async function saveDeck() {
+      if (currentDeck.length < 25 || currentDeck.length > 35) { showToast('Need 25-35 cards', true); return; }
+      if (!currentDeckName.trim()) { showToast('Enter deck name', true); return; }
+      if (!currentUser || currentUser.id === 'admin') { showToast('Cannot save', true); return; }
+      saveBtn.disabled = true; saveBtn.textContent = '💾 Saving...';
+      try {
+        const res = await fetch('/api/saveDeck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.id, deckType: currentDeckType, deckName: currentDeckName.trim(), cards: currentDeck }) });
+        const data = await res.json();
+        if (data.success) {
+          if (data.user) { localStorage.setItem('gridCardUser', JSON.stringify(data.user)); currentUser = data.user; }
+          hasChanges = false; updateSaveButton();
+          const opt = deckSelect.querySelector('option[value="' + currentDeckType + '"]');
+          if (opt) opt.textContent = currentDeckName;
+          showToast('Deck saved!');
+        } else { throw new Error(data.error || 'Failed'); }
+      } catch (err) { showToast('Save failed: ' + err.message, true); }
+      saveBtn.textContent = '💾 Save Deck'; updateSaveButton();
+    }
+    function showToast(msg, isError) {
+      toastIcon.textContent = isError ? '❌' : '✅';
+      toastMessage.textContent = msg;
+      toast.className = 'toast' + (isError ? ' error' : '');
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 2500);
+    }
+    init();
+  </script>
+</body>
+</html>

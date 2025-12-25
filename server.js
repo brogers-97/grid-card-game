@@ -46,6 +46,106 @@ app.get("/api/campaign/bosses", (req, res) => {
   res.json({ bosses: CAMPAIGN_BOSSES });
 });
 
+// Save deck endpoint - saves to medieval or void-alien slot
+app.post("/api/saveDeck", async (req, res) => {
+  try {
+    const { userId, deckType, deckName, cards } = req.body;
+    
+    if (!userId || userId === 'admin') {
+      return res.status(400).json({ success: false, error: 'Invalid user' });
+    }
+    
+    if (!deckType || !['medieval', 'void-alien'].includes(deckType)) {
+      return res.status(400).json({ success: false, error: 'Invalid deck type' });
+    }
+    
+    if (!cards || !Array.isArray(cards) || cards.length < 25 || cards.length > 35) {
+      return res.status(400).json({ success: false, error: 'Deck must have 25-35 cards' });
+    }
+    
+    if (!deckName || deckName.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Deck name is required' });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // Check if void-alien is unlocked
+    if (deckType === 'void-alien' && !user.unlockedDecks.includes('void-alien')) {
+      return res.status(400).json({ success: false, error: 'Void Alien deck not unlocked' });
+    }
+    
+    // Validate that user owns all cards in deck
+    const cardCounts = {};
+    cards.forEach(key => {
+      cardCounts[key] = (cardCounts[key] || 0) + 1;
+    });
+    
+    for (const [key, count] of Object.entries(cardCounts)) {
+      const owned = user.cardCollection.get(key) || 0;
+      if (count > owned) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `You don't own enough copies of ${key}` 
+        });
+      }
+    }
+    
+    // Find or create custom deck for this type
+    const existingDeckIndex = user.customDecks.findIndex(d => d.id === deckType);
+    
+    if (existingDeckIndex >= 0) {
+      user.customDecks[existingDeckIndex].name = deckName.trim();
+      user.customDecks[existingDeckIndex].cards = cards;
+      user.customDecks[existingDeckIndex].updatedAt = new Date();
+    } else {
+      user.customDecks.push({
+        id: deckType,
+        name: deckName.trim(),
+        cards: cards,
+        createdAt: new Date()
+      });
+    }
+    
+    await user.save();
+    
+    res.json({ success: true, user: user.toPublicJSON() });
+  } catch (err) {
+    console.error('Save deck error:', err);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
+// Delete deck endpoint - resets to default
+app.post("/api/deleteDeck", async (req, res) => {
+  try {
+    const { userId, deckType } = req.body;
+    
+    if (!userId || userId === 'admin') {
+      return res.status(400).json({ success: false, error: 'Invalid user' });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // Remove custom deck for this type (will revert to default)
+    const deckIndex = user.customDecks.findIndex(d => d.id === deckType);
+    if (deckIndex >= 0) {
+      user.customDecks.splice(deckIndex, 1);
+      await user.save();
+    }
+    
+    res.json({ success: true, user: user.toPublicJSON() });
+  } catch (err) {
+    console.error('Delete deck error:', err);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 const ROWS = 7;
 const COLS = 6;
@@ -161,7 +261,38 @@ function generateLobbyCode() {
 
 function genId() { return Math.random().toString(36).slice(2, 10); }
 function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
-function createDeck(deckId) { const d = DECKS[deckId]; return d ? d.cards.map(c => ({ ...c, id: genId(), maxHp: c.hp })) : null; }
+
+// Get card template by key from any deck
+function getCardTemplate(cardKey) {
+  for (const deckId in DECKS) {
+    const card = DECKS[deckId].cards.find(c => c.key === cardKey);
+    if (card) return card;
+  }
+  return null;
+}
+
+// Create deck from array of card keys (for custom decks)
+function createDeckFromKeys(cardKeys) {
+  console.log('createDeckFromKeys called with', cardKeys.length, 'cards');
+  const result = cardKeys.map(key => {
+    const template = getCardTemplate(key);
+    if (!template) {
+      console.warn(`Unknown card key: ${key}`);
+      return null;
+    }
+    return { ...template, id: genId(), maxHp: template.hp };
+  }).filter(c => c !== null);
+  console.log('createDeckFromKeys returning', result.length, 'cards');
+  console.log('First 3 cards:', result.slice(0, 3).map(c => c.name));
+  return result;
+}
+
+// Create deck from deck ID (default decks)
+function createDeck(deckId) { 
+  const d = DECKS[deckId]; 
+  return d ? d.cards.map(c => ({ ...c, id: genId(), maxHp: c.hp })) : null; 
+}
+
 function enemyOf(o) { return o === "gold" ? "silver" : "gold"; }
 function getUnitPos(state, uid) { for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (state.board[r][c] === uid) return { r, c }; return null; }
 function isAdjacent(r1, c1, r2, c2) { return Math.abs(r1-r2) <= 1 && Math.abs(c1-c2) <= 1 && !(r1===r2 && c1===c2); }
@@ -189,7 +320,7 @@ function generateBuffTiles() {
   return buffTiles;
 }
 
-function createGameState(hostDeck, guestDeck) {
+function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCustomCards = null) {
   const buffTiles = generateBuffTiles();
   const state = { 
     board: Array.from({length:ROWS}, () => Array(COLS).fill(null)), 
@@ -207,8 +338,29 @@ function createGameState(hostDeck, guestDeck) {
     buffTiles: buffTiles,
     moveCountThisTurn: {} // Track moves per unit for double_move
   };
-  const players = { gold: {deck:shuffle(createDeck(hostDeck)),hand:[],discard:[],energy:START_ENERGY,maxEnergy:START_ENERGY,hasDrawn:false}, silver: {deck:shuffle(createDeck(guestDeck)),hand:[],discard:[],energy:START_ENERGY,maxEnergy:START_ENERGY,hasDrawn:false} };
-  for (let i = 0; i < START_HAND_SIZE; i++) { if (players.gold.deck.length) players.gold.hand.push(players.gold.deck.pop()); if (players.silver.deck.length) players.silver.hand.push(players.silver.deck.pop()); }
+  
+  // Create decks - use custom cards if provided, otherwise default deck
+  console.log('createGameState - hostCustomCards:', hostCustomCards ? hostCustomCards.length : 'null');
+  console.log('createGameState - guestCustomCards:', guestCustomCards ? guestCustomCards.length : 'null');
+  
+  const goldDeckCards = hostCustomCards && hostCustomCards.length >= 25 
+    ? shuffle(createDeckFromKeys(hostCustomCards)) 
+    : shuffle(createDeck(hostDeck));
+  const silverDeckCards = guestCustomCards && guestCustomCards.length >= 25 
+    ? shuffle(createDeckFromKeys(guestCustomCards)) 
+    : shuffle(createDeck(guestDeck));
+  
+  console.log('Gold deck size:', goldDeckCards.length);
+  console.log('Silver deck size:', silverDeckCards.length);
+  
+  const players = { 
+    gold: {deck: goldDeckCards, hand:[], discard:[], energy:START_ENERGY, maxEnergy:START_ENERGY, hasDrawn:false}, 
+    silver: {deck: silverDeckCards, hand:[], discard:[], energy:START_ENERGY, maxEnergy:START_ENERGY, hasDrawn:false} 
+  };
+  for (let i = 0; i < START_HAND_SIZE; i++) { 
+    if (players.gold.deck.length) players.gold.hand.push(players.gold.deck.pop()); 
+    if (players.silver.deck.length) players.silver.hand.push(players.silver.deck.pop()); 
+  }
   return { state, players };
 }
 
@@ -822,6 +974,26 @@ io.on("connection", (socket) => {
     const boss = CAMPAIGN_BOSSES.find(b => b.id === bossId);
     if (!boss) return socket.emit("lobbyError", "Invalid boss.");
 
+    // Look up user's custom deck if they have one
+    let customDeckCards = null;
+    if (userId) {
+      try {
+        const user = await User.findById(userId);
+        console.log('Looking up custom deck for user:', userId, 'deckId:', deckId);
+        if (user) {
+          console.log('User customDecks:', JSON.stringify(user.customDecks));
+          const customDeck = user.customDecks.find(d => d.id === deckId);
+          console.log('Found custom deck:', customDeck ? 'yes' : 'no');
+          if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
+            customDeckCards = customDeck.cards;
+            console.log('Using custom deck with', customDeckCards.length, 'cards');
+          }
+        }
+      } catch (err) {
+        console.error('Error loading custom deck:', err);
+      }
+    }
+
     const code = generateLobbyCode();
     lobbies[code] = {
       code,
@@ -848,7 +1020,8 @@ io.on("connection", (socket) => {
     socket.data.isHost = true;
     socket.data.username = username || "Guest";
     
-    lobbies[code].gameState = createGameState(deckId || "medieval", boss.deckId);
+    // Pass custom deck cards if available
+    lobbies[code].gameState = createGameState(deckId || "medieval", boss.deckId, customDeckCards, null);
     socket.emit("role", "gold");
     socket.emit("campaignStart", { 
       code: code, 
@@ -886,11 +1059,40 @@ io.on("connection", (socket) => {
     emitLobbyState(lobby);
   });
 
-  socket.on("startGame", () => {
+  socket.on("startGame", async () => {
     const lobby = lobbies[socket.data.lobbyCode];
     if (!lobby || !socket.data.isHost || !lobby.guestSocket || !lobby.guestReady) return;
+    
+    // Look up custom decks for both players
+    let hostCustomCards = null;
+    let guestCustomCards = null;
+    
+    if (lobby.hostUserId) {
+      try {
+        const hostUser = await User.findById(lobby.hostUserId);
+        if (hostUser) {
+          const customDeck = hostUser.customDecks.find(d => d.id === lobby.hostDeck);
+          if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
+            hostCustomCards = customDeck.cards;
+          }
+        }
+      } catch (err) { console.error('Error loading host custom deck:', err); }
+    }
+    
+    if (lobby.guestUserId) {
+      try {
+        const guestUser = await User.findById(lobby.guestUserId);
+        if (guestUser) {
+          const customDeck = guestUser.customDecks.find(d => d.id === lobby.guestDeck);
+          if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
+            guestCustomCards = customDeck.cards;
+          }
+        }
+      } catch (err) { console.error('Error loading guest custom deck:', err); }
+    }
+    
     lobby.gameStarted = true;
-    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck);
+    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck, hostCustomCards, guestCustomCards);
     lobby.hostSocket.emit("role", "gold");
     lobby.hostSocket.emit("enemyInfo", { username: lobby.guestUsername, isAI: false });
     lobby.guestSocket.emit("role", "silver");

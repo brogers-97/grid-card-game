@@ -956,14 +956,20 @@
     
     function updateDeckSelects() {
       const unlockedDecks = currentUser?.unlockedDecks || ['medieval'];
+      const customDecks = currentUser?.customDecks || [];
       
-      // Filter decks based on unlocked status
+      // Filter decks based on unlocked status and show custom names if available
       const options = deckList.map(d => {
         const isLocked = !unlockedDecks.includes(d.id);
+        
+        // Check if user has a custom deck for this type
+        const customDeck = customDecks.find(cd => cd.id === d.id);
+        const displayName = customDeck ? customDeck.name : d.name;
+        
         if (isLocked) {
           return `<option value="${d.id}" disabled>🔒 ${d.name} (Beat Campaign to Unlock)</option>`;
         }
-        return `<option value="${d.id}">${d.name}</option>`;
+        return `<option value="${d.id}">${displayName}</option>`;
       }).join('');
       
       deckSelect.innerHTML = options;
@@ -1155,7 +1161,7 @@
     });
     
     deckBuilderBtn.addEventListener('click', () => {
-      alert('Deck Builder coming soon! You will be able to build custom decks with cards you\'ve unlocked from campaign.');
+      window.location.href = '/deckbuilder.html';
     });
     
     // Multiplayer
@@ -1198,12 +1204,14 @@
     // Campaign
     startCampaignBtn.addEventListener('click', () => {
       if (!selectedBossId) return;
-      socket.emit('startCampaign', {
+      const campaignData = {
         bossId: selectedBossId,
         deckId: campaignDeckSelect.value,
         username: getUsername(),
         userId: getUserId()
-      });
+      };
+      console.log('Starting campaign with:', campaignData);
+      socket.emit('startCampaign', campaignData);
     });
     
     // Lobby state
