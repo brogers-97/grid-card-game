@@ -30,10 +30,26 @@
     .card-preview { padding: 15px; display: flex; flex-direction: column; align-items: center; flex: 1; overflow-y: auto; }
     .preview-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #64748b; text-align: center; }
     .preview-placeholder-icon { font-size: 48px; margin-bottom: 10px; opacity: 0.5; }
-    .preview-card { width: 100%; max-width: 280px; }
-    .preview-art { width: 100%; height: 220px; background-color: rgba(30, 30, 60, 0.5); background-size: contain; background-position: center; background-repeat: no-repeat; border-radius: 10px; margin-bottom: 12px; }
+    .preview-card { width: 100%; max-width: 280px; position: relative; }
+    /* Rarity glow container */
+    .preview-card-glow { position: relative; padding: 15px; border-radius: 12px; margin-bottom: 12px; }
+    .preview-card-glow.rarity-common { background: rgba(30, 30, 60, 0.5); border: 2px solid rgba(148, 163, 184, 0.5); }
+    /* Rare - blue glow */
+    .preview-card-glow.rarity-rare { background: rgba(20, 30, 80, 0.6); border: 3px solid rgba(59, 130, 246, 0.9); box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), 0 0 50px rgba(59, 130, 246, 0.3), inset 0 0 30px rgba(59, 130, 246, 0.15); }
+    .preview-card-glow.rarity-rare::before { content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; background: conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.6), transparent, rgba(59, 130, 246, 0.4), transparent, rgba(59, 130, 246, 0.6), transparent); border-radius: 14px; z-index: -1; animation: spin-rays 6s linear infinite; }
+    .preview-card-glow.rarity-rare::after { content: ''; position: absolute; top: 50%; left: 50%; width: 120%; height: 120%; background: radial-gradient(ellipse, rgba(59, 130, 246, 0.2) 0%, transparent 60%); transform: translate(-50%, -50%); z-index: -2; animation: pulse-glow-rare 3s ease-in-out infinite; }
+    /* Legendary - intense gold glow */
+    .preview-card-glow.rarity-legendary { background: rgba(60, 50, 20, 0.6); border: 3px solid rgba(251, 191, 36, 1); box-shadow: 0 0 30px rgba(251, 191, 36, 0.7), 0 0 60px rgba(251, 191, 36, 0.5), 0 0 90px rgba(251, 191, 36, 0.3), inset 0 0 40px rgba(251, 191, 36, 0.2); }
+    .preview-card-glow.rarity-legendary::before { content: ''; position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px; background: conic-gradient(from 0deg, rgba(251, 191, 36, 0.9), rgba(245, 158, 11, 0.4), rgba(251, 191, 36, 0.9), rgba(245, 158, 11, 0.4), rgba(251, 191, 36, 0.9), rgba(245, 158, 11, 0.4), rgba(251, 191, 36, 0.9)); border-radius: 16px; z-index: -1; animation: spin-rays 3s linear infinite; filter: blur(2px); }
+    .preview-card-glow.rarity-legendary::after { content: ''; position: absolute; top: 50%; left: 50%; width: 180%; height: 180%; background: radial-gradient(ellipse, rgba(251, 191, 36, 0.4) 0%, rgba(245, 158, 11, 0.2) 30%, transparent 60%); transform: translate(-50%, -50%); z-index: -2; animation: pulse-glow-legendary 1.5s ease-in-out infinite; }
+    /* Extra light rays for legendary */
+    .preview-card-glow.rarity-legendary .preview-art { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+    @keyframes spin-rays { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse-glow-rare { 0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } }
+    @keyframes pulse-glow-legendary { 0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } }
+    .preview-art { width: 100%; height: 200px; background-color: rgba(30, 30, 60, 0.5); background-size: cover; background-position: center top; border-radius: 8px; }
     .preview-art.void-alien { background-color: rgba(6, 95, 70, 0.3); }
-    .preview-name { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #fbbf24; text-align: center; margin-bottom: 8px; }
+    .preview-name { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #fbbf24; text-align: center; margin-bottom: 8px; margin-top: 10px; }
     .preview-type { font-size: 12px; color: #94a3b8; text-align: center; margin-bottom: 12px; }
     .preview-stats { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
     .preview-stat { display: flex; flex-direction: column; align-items: center; padding: 8px 12px; background: rgba(30, 30, 60, 0.8); border-radius: 8px; }
@@ -67,11 +83,33 @@
     .card-grid::-webkit-scrollbar-track { background: rgba(30, 30, 60, 0.5); }
     .card-grid::-webkit-scrollbar-thumb { background: rgba(138, 43, 226, 0.5); border-radius: 3px; }
     .collection-card { position: relative; aspect-ratio: 3/4; background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9)); border: 2px solid rgba(138, 43, 226, 0.4); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
-    .collection-card:hover { transform: translateY(-3px); border-color: rgba(251, 191, 36, 0.6); }
-    .collection-card.selected { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
-    .collection-card.in-deck { border-color: rgba(16, 185, 129, 0.6); }
+    .collection-card:hover { transform: translateY(-3px); }
+    .collection-card.selected { border-color: #fbbf24 !important; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
+    .collection-card.in-deck { box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.4); }
     .collection-card.not-owned { opacity: 0.4; filter: grayscale(0.5); }
-    .collection-card.void-alien { border-color: rgba(16, 185, 129, 0.5); }
+    .collection-card.locked { cursor: not-allowed; }
+    .collection-card.locked:hover { transform: none; }
+    .collection-card.locked .card-art { display: none; }
+    .collection-card.locked .card-cost { display: none; }
+    .collection-card.locked .card-count { display: none; }
+    .collection-card.locked .rarity-gem { display: none; }
+    .collection-card.locked .card-info { display: none; }
+    .locked-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(145deg, rgba(40, 40, 60, 0.95), rgba(30, 30, 50, 0.95)); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .locked-icon { font-size: 28px; margin-bottom: 5px; opacity: 0.6; }
+    .locked-text { font-size: 9px; color: #64748b; text-align: center; padding: 0 5px; }
+    /* Rarity borders */
+    .collection-card.rarity-common { border-color: rgba(148, 163, 184, 0.6); }
+    .collection-card.rarity-common:hover { border-color: rgba(148, 163, 184, 0.9); }
+    .collection-card.rarity-rare { border-color: rgba(59, 130, 246, 0.7); box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+    .collection-card.rarity-rare:hover { border-color: rgba(59, 130, 246, 1); box-shadow: 0 0 12px rgba(59, 130, 246, 0.5); }
+    .collection-card.rarity-legendary { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
+    .collection-card.rarity-legendary:hover { border-color: rgba(251, 191, 36, 1); box-shadow: 0 0 15px rgba(251, 191, 36, 0.6); }
+    .collection-card.locked { border-color: rgba(100, 100, 120, 0.4) !important; box-shadow: none !important; }
+    /* Rarity gem indicator */
+    .rarity-gem { position: absolute; bottom: 3px; right: 3px; width: 10px; height: 10px; border-radius: 50%; }
+    .rarity-gem.common { background: linear-gradient(135deg, #94a3b8, #64748b); }
+    .rarity-gem.rare { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+    .rarity-gem.legendary { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 0 5px rgba(251, 191, 36, 0.6); }
     .card-art { width: 100%; height: 55%; background-color: rgba(30, 30, 60, 0.5); background-size: cover; background-position: center top; }
     .card-art.void-alien { background-color: rgba(6, 95, 70, 0.3); background-size: cover; background-position: center top; }
     .card-cost { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: white; }
@@ -153,9 +191,10 @@
         <div class="filters">
           <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search">
           <div class="filter-group"><label>Own:</label><select class="filter-select" id="ownedFilter"><option value="all">All</option><option value="owned">Owned</option><option value="not-owned">Not Owned</option></select></div>
-          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option></select></div>
+          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option></select></div>
           <div class="filter-group"><label>Type:</label><select class="filter-select" id="typeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option></select></div>
           <div class="filter-group"><label>Cost:</label><select class="filter-select" id="costFilter"><option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
+          <div class="filter-group"><label>Rarity:</label><select class="filter-select" id="rarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
           <button class="filter-btn" id="resetFiltersBtn">Reset</button>
         </div>
         <div class="card-grid" id="cardGrid"></div>
@@ -163,7 +202,7 @@
       <div class="panel deck-panel">
         <div class="panel-header"><div class="panel-title">🃏 Current Deck</div></div>
         <div class="deck-selector-section">
-          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option></select>
+          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option></select>
         </div>
         <div class="deck-name-section">
           <input type="text" class="deck-name-input" id="deckNameInput" placeholder="Deck name..." maxlength="25">
@@ -192,50 +231,69 @@
     const CARD_DATA = {
       peasant: { name: "Peasant", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack diagonally", art: "/images/Peasant.png" },
       squire: { name: "Squire", cost: 1, atk: 2, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move to any Knight on the board", art: "/images/Squire.png" },
-      archer: { name: "Archer", cost: 2, atk: 3, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack units 2 tiles away", art: "/images/Archer.png" },
-      manatarms: { name: "Man-at-Arms", cost: 2, atk: 2, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Man-at-Arms.png" },
-      shieldbearer: { name: "Shield Bearer", cost: 2, atk: 1, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Adjacent allies take 1 less damage", art: "/images/Shield Bearer.png" },
-      warhound: { name: "War Hound", cost: 2, atk: 3, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move twice per turn", art: "/images/War Hound.png" },
-      battlefieldmedic: { name: "Battlefield Medic", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals adjacent allies 1 HP at end of turn", art: "/images/Battlefield Medic.png" },
-      knight: { name: "Knight", cost: 3, atk: 4, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Knight.png" },
-      crusader: { name: "Crusader", cost: 4, atk: 5, hp: 4, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals 2 HP when killing an enemy", art: "/images/Crusader.png" },
-      royalguard: { name: "Royal Guard", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Attacks deal cleave damage to adjacent enemies", art: "/images/Royal Guard.png" },
-      paladin: { name: "Paladin", cost: 4, atk: 6, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Gain 1 energy when killing an enemy", art: "/images/Paladin.png" },
-      siegeram: { name: "Battering Ram", cost: 3, atk: 2, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Deals double damage to row HP", art: "/images/Battering Ram.png" },
-      warbanner: { name: "War Banner", cost: 2, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Adjacent allies gain +1 ATK", art: "/images/War Banner.png" },
-      shrine: { name: "Healing Shrine", cost: 3, atk: 0, hp: 5, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Heals allies in same row 1 HP per turn", art: "/images/Healing Shrine.png" },
-      armory: { name: "Armory", cost: 3, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Units you deploy gain +1 HP", art: "/images/Armory.png" },
-      castlewalls: { name: "Castle Walls", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Add +15 HP to target friendly row", art: "/images/Castle Walls.png" },
-      treasury: { name: "King's Treasury", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Draw 2 cards", art: "/images/Kings Treasury.png" },
-      rally: { name: "Rallying Cry", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Target unit attacks twice this turn", art: "/images/Rallying Cry.png" },
-      voiddrone: { name: "Void Drone", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Void Drone.png" },
-      scavengerlarva: { name: "Scavenger Larva", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy when this unit dies", art: "/images/Scavenger Larva.png" },
-      spittercrawler: { name: "Spitter Crawler", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Spitter Crawler.png" },
-      phaseskirmisher: { name: "Phase Skirmisher", cost: 2, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Cannot be targeted the turn it is deployed", art: "/images/Phase Skirmisher.png" },
-      energyleech: { name: "Energy Leech", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Drain 1 energy from opponent on kill", art: "/images/Energy Leech.png" },
-      burrowerbeast: { name: "Burrower Beast", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Untargetable next turn, can deploy adjacent to allies", art: "/images/Burrower Beast.png" },
-      psionicoverseer: { name: "Psionic Overseer", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Adjacent allies gain +1 ATK", art: "/images/Psionic Overseer.png" },
-      neuralharvester: { name: "Neural Harvester", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy if target survives attack", art: "/images/Neural Harvester.png" },
-      adaptivecolossus: { name: "Adaptive Colossus", cost: 4, atk: 4, hp: 5, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gains +1 max HP when surviving damage", art: "/images/Adaptive Colossus.png" },
-      sporetitan: { name: "Spore Titan", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Attacks deal 1 splash damage to adjacent enemies", art: "/images/Spore Titan.png" },
-      voidbroodmother: { name: "Void Broodmother", cost: 4, atk: 2, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Spawn a Void Drone when killing an enemy", art: "/images/Void Broodmother.png" },
-      eclipsedevourer: { name: "Eclipse Devourer", cost: 5, atk: 5, hp: 4, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy on kill", art: "/images/Eclipse Devourer.png" },
-      ufoscraper: { name: "UFO Scraper", cost: 4, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Can attack friendly Aliens to absorb their stats", art: "/images/UFO Scraper.png" },
-      assimilation: { name: "Assimilation", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: Destroy target enemy with 2 or less HP", art: "/images/Assimilation.png" },
-      voidcollapse: { name: "Void Collapse", cost: 5, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: Deal 1 damage to all enemies in target row", art: "/images/Void Collapse.png" },
-      hiveascension: { name: "Hive Ascension", cost: 7, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: All friendly units gain +1 ATK and +1 HP", art: "/images/Hive Ascension.png" }
+      peasant: { name: "Peasant", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack diagonally", art: "/images/Peasant.png", rarity: "common" },
+      squire: { name: "Squire", cost: 1, atk: 2, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move to any friendly Knight", art: "/images/Squire.png", rarity: "common" },
+      archer: { name: "Archer", cost: 2, atk: 3, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack units 2 tiles away", art: "/images/Archer.png", rarity: "common" },
+      manatarms: { name: "Man-at-Arms", cost: 2, atk: 2, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Man-at-Arms.png", rarity: "common" },
+      shieldbearer: { name: "Shield Bearer", cost: 2, atk: 1, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Adjacent allies take 1 less damage", art: "/images/Shield Bearer.png", rarity: "rare" },
+      warhound: { name: "War Hound", cost: 2, atk: 3, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move twice per turn", art: "/images/War Hound.png", rarity: "rare" },
+      battlefieldmedic: { name: "Battlefield Medic", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals adjacent allies 1 HP at end of turn", art: "/images/Battlefield Medic.png", rarity: "common" },
+      knight: { name: "Knight", cost: 3, atk: 4, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Knight.png", rarity: "common" },
+      crusader: { name: "Crusader", cost: 4, atk: 5, hp: 4, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals 2 HP when killing an enemy", art: "/images/Crusader.png", rarity: "legendary" },
+      royalguard: { name: "Royal Guard", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Attacks deal cleave damage to adjacent enemies", art: "/images/Royal Guard.png", rarity: "rare" },
+      paladin: { name: "Paladin", cost: 4, atk: 6, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Gain 1 energy when killing an enemy", art: "/images/Paladin.png", rarity: "legendary" },
+      siegeram: { name: "Battering Ram", cost: 3, atk: 2, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Deals double damage to row HP", art: "/images/Battering Ram.png", rarity: "rare" },
+      warbanner: { name: "War Banner", cost: 2, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Adjacent allies gain +1 ATK", art: "/images/War Banner.png", rarity: "rare" },
+      shrine: { name: "Healing Shrine", cost: 3, atk: 0, hp: 5, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Heals allies in same row 1 HP per turn", art: "/images/Healing Shrine.png", rarity: "rare" },
+      armory: { name: "Armory", cost: 3, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Units you deploy gain +1 HP", art: "/images/Armory.png", rarity: "rare" },
+      castlewalls: { name: "Castle Walls", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Add +15 HP to target friendly row", art: "/images/Castle Walls.png", rarity: "common" },
+      treasury: { name: "King's Treasury", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Draw 2 cards", art: "/images/Kings Treasury.png", rarity: "common" },
+      rally: { name: "Rallying Cry", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Target unit attacks twice this turn", art: "/images/Rallying Cry.png", rarity: "common" },
+      voiddrone: { name: "Void Drone", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Void Drone.png", rarity: "common" },
+      scavengerlarva: { name: "Scavenger Larva", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy when this unit dies", art: "/images/Scavenger Larva.png", rarity: "common" },
+      spittercrawler: { name: "Spitter Crawler", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Spitter Crawler.png", rarity: "common" },
+      phaseskirmisher: { name: "Phase Skirmisher", cost: 2, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Can move twice per turn", art: "/images/Phase Skirmisher.png", rarity: "rare" },
+      energyleech: { name: "Energy Leech", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Drain 1 energy from opponent on kill", art: "/images/Energy Leech.png", rarity: "common" },
+      burrowerbeast: { name: "Burrower Beast", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Untargetable next turn, can deploy adjacent to allies", art: "/images/Burrower Beast.png", rarity: "rare" },
+      psionicoverseer: { name: "Psionic Overseer", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Adjacent allies gain +1 ATK", art: "/images/Psionic Overseer.png", rarity: "rare" },
+      neuralharvester: { name: "Neural Harvester", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy if target survives attack", art: "/images/Neural Harvester.png", rarity: "common" },
+      adaptivecolossus: { name: "Adaptive Colossus", cost: 4, atk: 4, hp: 5, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gains +1 max HP when surviving damage", art: "/images/Adaptive Colossus.png", rarity: "legendary" },
+      sporetitan: { name: "Spore Titan", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Attacks deal 1 splash damage to adjacent enemies", art: "/images/Spore Titan.png", rarity: "rare" },
+      voidbroodmother: { name: "Void Broodmother", cost: 4, atk: 2, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Spawn a Void Drone when killing an enemy", art: "/images/Void Broodmother.png", rarity: "legendary" },
+      eclipsedevourer: { name: "Eclipse Devourer", cost: 5, atk: 5, hp: 4, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy on kill", art: "/images/Eclipse Devourer.png", rarity: "legendary" },
+      ufoscraper: { name: "UFO Scraper", cost: 4, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Can attack friendly Aliens to absorb their stats", art: "/images/UFO Scraper.png", rarity: "legendary" },
+      assimilation: { name: "Assimilation", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: Destroy target enemy with 2 or less HP", art: "/images/Assimilation.png", rarity: "rare" },
+      voidcollapse: { name: "Void Collapse", cost: 5, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: Deal 1 damage to all enemies in target row", art: "/images/Void Collapse.png", rarity: "rare" },
+      hiveascension: { name: "Hive Ascension", cost: 7, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Instant: All friendly units gain +1 ATK and +1 HP", art: "/images/Hive Ascension.png", rarity: "legendary" },
+      // Western Skeleton cards
+      bonedeputy: { name: "Bone Deputy", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "On death: Summon a 1/1 Bone Pile", art: "/images/Bone Deputy.png", rarity: "common" },
+      dustyrattler: { name: "Dusty Rattler", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Can attack diagonally", art: "/images/Dusty Rattler.png", rarity: "common" },
+      graverobber: { name: "Grave Robber", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Draw 1 card when killing an enemy", art: "/images/Grave Robber.png", rarity: "rare" },
+      phantomscout: { name: "Phantom Scout", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Untargetable on opponent's first turn after deploy", art: "/images/Phantom Scout.png", rarity: "common" },
+      bonerevolver: { name: "Bone Revolver", cost: 3, atk: 3, hp: 2, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Ranged (2 tiles). Ignores shield effects", art: "/images/Bone Revolver.png", rarity: "rare" },
+      undeadsheriff: { name: "Undead Sheriff", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Adjacent enemies deal -1 damage", art: "/images/Undead Sheriff.png", rarity: "rare" },
+      coffintrapper: { name: "Coffin Trapper", cost: 3, atk: 1, hp: 5, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Adjacent enemies cannot move", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      undertaker: { name: "Undertaker", cost: 4, atk: 3, hp: 3, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Gains +1/+1 when a friendly unit dies", art: "/images/Undertaker.png", rarity: "rare" },
+      thehangedman: { name: "The Hanged Man", cost: 5, atk: 4, hp: 5, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "On death: Deal 2 damage to all adjacent enemies", art: "/images/The Hanged Man.png", rarity: "legendary" },
+      ghostlystampede: { name: "Ghostly Stampede", cost: 5, atk: 5, hp: 4, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Can move twice. +2 damage to structures", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
+      bonecolossus: { name: "Bone Colossus", cost: 6, atk: 6, hp: 7, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Takes 1 less damage from all sources", art: "/images/Bone Colossus.png", rarity: "legendary" },
+      deadmanshand: { name: "Dead Man's Hand", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Draw 2 cards, then discard 1", art: "/images/Dead Mans Hand.png", rarity: "common" },
+      mostwanted: { name: "Most Wanted", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Target enemy takes +2 damage from all attacks", art: "/images/Most Wanted.png", rarity: "rare" },
+      shallowgrave: { name: "Shallow Grave", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Return a random friendly unit from discard to hand", art: "/images/Shallow Grave.png", rarity: "legendary" },
+      highnoon: { name: "High Noon", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Instant: Deal 2 damage to all enemies in target row", art: "/images/High Noon.png", rarity: "legendary" }
     };
     const DEFAULT_DECKS = {
-      medieval: { name: "Medieval Kingdom", cards: ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','crusader','royalguard','royalguard','paladin','paladin','siegeram','siegeram','warbanner','warbanner','shrine','shrine','armory','treasury','rally'] },
-      'void-alien': { name: "Void Swarm", cards: ['voiddrone','voiddrone','voiddrone','scavengerlarva','scavengerlarva','scavengerlarva','spittercrawler','spittercrawler','spittercrawler','phaseskirmisher','phaseskirmisher','energyleech','energyleech','burrowerbeast','burrowerbeast','burrowerbeast','psionicoverseer','psionicoverseer','neuralharvester','neuralharvester','adaptivecolossus','adaptivecolossus','sporetitan','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','ufoscraper','assimilation','assimilation','voidcollapse','voidcollapse','hiveascension'] }
+      medieval: { name: "Medieval Kingdom", cards: ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','royalguard','royalguard','paladin','siegeram','siegeram','warbanner','warbanner','shrine','shrine','armory','castlewalls','treasury','rally'] },
+      'void-alien': { name: "Void Swarm", cards: ['voiddrone','voiddrone','voiddrone','scavengerlarva','scavengerlarva','scavengerlarva','spittercrawler','spittercrawler','spittercrawler','phaseskirmisher','phaseskirmisher','energyleech','energyleech','burrowerbeast','burrowerbeast','psionicoverseer','psionicoverseer','neuralharvester','neuralharvester','adaptivecolossus','sporetitan','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','assimilation','assimilation','voidcollapse','voidcollapse','hiveascension'] },
+      'western-skeleton': { name: "Boot Hill Outlaws", cards: ['bonedeputy','bonedeputy','bonedeputy','dustyrattler','dustyrattler','dustyrattler','graverobber','graverobber','phantomscout','phantomscout','phantomscout','bonerevolver','bonerevolver','undeadsheriff','undeadsheriff','coffintrapper','coffintrapper','undertaker','undertaker','thehangedman','ghostlystampede','bonecolossus','deadmanshand','deadmanshand','deadmanshand','mostwanted','mostwanted','shallowgrave','highnoon'] }
     };
-    let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false;
+    let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
     const cardGrid = document.getElementById('cardGrid'), deckCards = document.getElementById('deckCards'), deckCount = document.getElementById('deckCount');
     const collectionCount = document.getElementById('collectionCount'), saveBtn = document.getElementById('saveBtn'), clearBtn = document.getElementById('clearBtn');
     const fixCollectionBtn = document.getElementById('fixCollectionBtn');
     const deckSelect = document.getElementById('deckSelect'), deckNameInput = document.getElementById('deckNameInput'), cardPreview = document.getElementById('cardPreview');
     const searchInput = document.getElementById('searchInput'), ownedFilter = document.getElementById('ownedFilter'), archetypeFilter = document.getElementById('archetypeFilter');
-    const typeFilter = document.getElementById('typeFilter'), costFilter = document.getElementById('costFilter'), resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const typeFilter = document.getElementById('typeFilter'), costFilter = document.getElementById('costFilter'), rarityFilter = document.getElementById('rarityFilter'), resetFiltersBtn = document.getElementById('resetFiltersBtn');
     const toast = document.getElementById('toast'), toastIcon = document.getElementById('toastIcon'), toastMessage = document.getElementById('toastMessage');
     function init() {
       const storedUser = localStorage.getItem('gridCardUser');
@@ -246,6 +304,7 @@
       archetypeFilter.addEventListener('change', renderCollection);
       typeFilter.addEventListener('change', renderCollection);
       costFilter.addEventListener('change', renderCollection);
+      rarityFilter.addEventListener('change', renderCollection);
       resetFiltersBtn.addEventListener('click', resetFilters);
       clearBtn.addEventListener('click', clearDeck);
       saveBtn.addEventListener('click', saveDeck);
@@ -256,18 +315,22 @@
     function showLoginPrompt() { cardGrid.innerHTML = '<div class="login-prompt" style="grid-column:1/-1"><div class="login-prompt-icon">🔒</div><h2>Login Required</h2><a href="/home.html" class="back-btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:#1a1a2e;font-weight:600">← Login</a></div>'; }
     function loadUserData() {
       userCollection = currentUser.cardCollection || {};
-      const unlockedDecks = currentUser.unlockedDecks || ['medieval'];
+      unlockedDecks = currentUser.unlockedDecks || ['medieval'];
       const customDecks = currentUser.customDecks || [];
       const medievalCustom = customDecks.find(function(d) { return d.id === 'medieval'; });
       const voidCustom = customDecks.find(function(d) { return d.id === 'void-alien'; });
+      const skeletonCustom = customDecks.find(function(d) { return d.id === 'western-skeleton'; });
       deckSelect.querySelector('option[value="medieval"]').textContent = medievalCustom ? medievalCustom.name : 'Medieval Deck';
       const voidOption = deckSelect.querySelector('option[value="void-alien"]');
       if (unlockedDecks.includes('void-alien')) { voidOption.disabled = false; voidOption.textContent = voidCustom ? voidCustom.name : 'Void Alien Deck'; }
       else { voidOption.disabled = true; voidOption.textContent = 'Void Alien Deck 🔒'; }
+      const skeletonOption = deckSelect.querySelector('option[value="western-skeleton"]');
+      if (unlockedDecks.includes('western-skeleton')) { skeletonOption.disabled = false; skeletonOption.textContent = skeletonCustom ? skeletonCustom.name : 'Western Skeleton Deck'; }
+      else { skeletonOption.disabled = true; skeletonOption.textContent = 'Western Skeleton Deck 🔒'; }
       loadDeckType('medieval');
       renderCollection();
-      const total = Object.keys(CARD_DATA).length;
-      const owned = Object.keys(CARD_DATA).filter(function(k) { return (userCollection[k] || 0) > 0; }).length;
+      const total = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k); }).length;
+      const owned = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k) && (userCollection[k] || 0) > 0; }).length;
       collectionCount.textContent = owned + '/' + total + ' owned';
     }
     function switchDeckType() { if (hasChanges && !confirm('Unsaved changes. Switch anyway?')) { deckSelect.value = currentDeckType; return; } loadDeckType(deckSelect.value); }
@@ -280,6 +343,11 @@
       renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview();
     }
     function selectCard(key) { selectedCardKey = key; renderCollection(); renderDeck(); renderCardPreview(); }
+    function getArchetypeName(archetype) {
+      if (archetype === 'void-alien') return 'Void Alien';
+      if (archetype === 'western-skeleton') return 'Western Skeleton';
+      return 'Medieval';
+    }
     function renderCardPreview() {
       if (!selectedCardKey) { cardPreview.innerHTML = '<div class="preview-placeholder"><div class="preview-placeholder-icon">👆</div><div>Click a card to view details</div></div>'; return; }
       const card = CARD_DATA[selectedCardKey]; if (!card) return;
@@ -288,30 +356,64 @@
       const canAdd = owned > inDeck && inDeck < 3 && currentDeck.length < 35;
       const canRemove = inDeck > 0;
       const artUrl = encodeURI(card.art || '');
-      const ownedCapped = Math.min(owned, 3);
-      cardPreview.innerHTML = '<div class="preview-card"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div><div class="preview-name">' + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + (card.archetype === 'void-alien' ? 'Void Alien' : 'Medieval') + '</div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">In deck: <span>' + inDeck + '</span> / Max: <span>3</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || ownedCapped === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
+      const rarity = card.rarity || 'common';
+      const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
+      const ownedCapped = Math.min(owned, maxCopies);
+      const rarityLabel = rarity.charAt(0).toUpperCase() + rarity.slice(1);
+      const rarityColor = rarity === 'legendary' ? '#fbbf24' : (rarity === 'rare' ? '#3b82f6' : '#94a3b8');
+      const archetypeName = getArchetypeName(card.archetype);
+      cardPreview.innerHTML = '<div class="preview-card"><div class="preview-card-glow rarity-' + rarity + '"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div></div><div class="preview-name">' + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + archetypeName + ' • <span style="color:' + rarityColor + '">' + rarityLabel + '</span></div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">In deck: <span>' + inDeck + '</span> / Max: <span>' + maxCopies + '</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || ownedCapped === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
+    }
+    function isCardUnlocked(cardKey) {
+      const card = CARD_DATA[cardKey];
+      if (!card) return false;
+      if (card.archetype === 'medieval') return true;
+      return unlockedDecks.includes(card.archetype);
+    }
+    function getLockedBossName(archetype) {
+      if (archetype === 'void-alien') return 'The Void Scout';
+      if (archetype === 'western-skeleton') return 'The Dead Sheriff';
+      return 'Unknown Boss';
     }
     function renderCollection() {
-      const search = searchInput.value.toLowerCase(), ownedVal = ownedFilter.value, archVal = archetypeFilter.value, typeVal = typeFilter.value, costVal = costFilter.value;
+      const search = searchInput.value.toLowerCase(), ownedVal = ownedFilter.value, archVal = archetypeFilter.value, typeVal = typeFilter.value, costVal = costFilter.value, rarityVal = rarityFilter.value;
       let cards = Object.entries(CARD_DATA).filter(function(entry) {
         const key = entry[0], card = entry[1];
         const owned = userCollection[key] || 0;
+        const unlocked = isCardUnlocked(key);
+        if (search && !unlocked) return false; // Don't search locked cards
         if (search && !card.name.toLowerCase().includes(search)) return false;
-        if (ownedVal === 'owned' && owned === 0) return false;
-        if (ownedVal === 'not-owned' && owned > 0) return false;
+        if (ownedVal === 'owned' && (owned === 0 || !unlocked)) return false;
+        if (ownedVal === 'not-owned' && (owned > 0 || !unlocked)) return false;
         if (archVal !== 'all' && card.archetype !== archVal) return false;
         if (typeVal !== 'all' && card.type !== typeVal) return false;
         if (costVal !== 'all') { if (costVal === '5+') { if (card.cost < 5) return false; } else { if (card.cost !== parseInt(costVal)) return false; } }
+        if (rarityVal !== 'all' && (card.rarity || 'common') !== rarityVal) return false;
         return true;
       });
-      cards.sort(function(a, b) { if (a[1].archetype !== b[1].archetype) return a[1].archetype === 'medieval' ? -1 : 1; if (a[1].cost !== b[1].cost) return a[1].cost - b[1].cost; return a[1].name.localeCompare(b[1].name); });
+      cards.sort(function(a, b) { 
+        // Sort order: medieval first, then void-alien, then western-skeleton
+        const archOrder = { 'medieval': 0, 'void-alien': 1, 'western-skeleton': 2 };
+        if (a[1].archetype !== b[1].archetype) return (archOrder[a[1].archetype] || 99) - (archOrder[b[1].archetype] || 99);
+        if (a[1].cost !== b[1].cost) return a[1].cost - b[1].cost;
+        return a[1].name.localeCompare(b[1].name);
+      });
       if (cards.length === 0) { cardGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#64748b">No cards match</div>'; return; }
       cardGrid.innerHTML = cards.map(function(entry) {
         const key = entry[0], card = entry[1];
-        const owned = Math.min(userCollection[key] || 0, 3), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+        const unlocked = isCardUnlocked(key);
+        const rarity = card.rarity || 'common';
+        const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
+        const owned = Math.min(userCollection[key] || 0, maxCopies), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
         const artUrl = encodeURI(card.art || '');
-        let cls = 'collection-card'; if (key === selectedCardKey) cls += ' selected'; if (card.archetype === 'void-alien') cls += ' void-alien'; if (inDeck > 0) cls += ' in-deck'; if (owned === 0) cls += ' not-owned';
-        return '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + inDeck + '/' + owned + '</div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+        
+        if (!unlocked) {
+          // Render locked card
+          return '<div class="collection-card locked"><div class="locked-overlay"><div class="locked-icon">❓</div><div class="locked-text">Defeat ' + getLockedBossName(card.archetype) + '</div></div></div>';
+        }
+        
+        let cls = 'collection-card rarity-' + rarity; if (key === selectedCardKey) cls += ' selected'; if (inDeck > 0) cls += ' in-deck'; if (owned === 0) cls += ' not-owned';
+        return '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + inDeck + '/' + maxCopies + '</div><div class="rarity-gem ' + rarity + '"></div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
       }).join('');
     }
     function renderDeck() {
@@ -340,11 +442,22 @@
       }
     }
     function updateSaveButton() { const count = currentDeck.length; saveBtn.disabled = !(count >= 25 && count <= 35 && currentDeckName.trim() && hasChanges); }
+    function getMaxCopies(card) {
+      const rarity = card.rarity || 'common';
+      if (rarity === 'legendary') return 1;
+      if (rarity === 'rare') return 2;
+      return 3;
+    }
     function addToDeck(key) {
       const card = CARD_DATA[key]; if (!card) return;
-      const owned = Math.min(userCollection[key] || 0, 3), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+      const maxCopies = getMaxCopies(card);
+      const owned = Math.min(userCollection[key] || 0, maxCopies), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
       if (owned === 0) { showToast("You don't own this card", true); return; }
-      if (inDeck >= 3) { showToast('Max 3 copies per card', true); return; }
+      if (inDeck >= maxCopies) { 
+        const rarityName = card.rarity || 'common';
+        showToast('Max ' + maxCopies + ' ' + (rarityName === 'legendary' ? '(Legendary)' : rarityName === 'rare' ? '(Rare)' : '') , true); 
+        return; 
+      }
       if (inDeck >= owned) { showToast('No more copies available', true); return; }
       if (currentDeck.length >= 35) { showToast('Deck full (35 max)', true); return; }
       currentDeck.push(key); hasChanges = true;
@@ -355,7 +468,7 @@
       if (idx > -1) { currentDeck.splice(idx, 1); hasChanges = true; renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview(); }
     }
     function clearDeck() { if (currentDeck.length === 0) return; if (confirm('Clear all cards?')) { currentDeck = []; hasChanges = true; renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview(); } }
-    function resetFilters() { searchInput.value = ''; ownedFilter.value = 'all'; archetypeFilter.value = 'all'; typeFilter.value = 'all'; costFilter.value = 'all'; renderCollection(); }
+    function resetFilters() { searchInput.value = ''; ownedFilter.value = 'all'; archetypeFilter.value = 'all'; typeFilter.value = 'all'; costFilter.value = 'all'; rarityFilter.value = 'all'; renderCollection(); }
     
     async function fixCollection() {
       if (!currentUser || currentUser.id === 'admin') { showToast('Cannot fix admin account', true); return; }
