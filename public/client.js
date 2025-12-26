@@ -1,6 +1,7 @@
 const socket = io();
 const boardEl = document.getElementById("board");
 const logEl = document.getElementById("log");
+const combatLogEl = document.getElementById("combatLog");
 
 const endTurnBtn = document.getElementById("endTurnBtn");
 const turnLabelEl = document.getElementById("turnLabel");
@@ -384,6 +385,44 @@ function log(msg, type = "system") {
   logEl.appendChild(entry);
   logEl.scrollTop = logEl.scrollHeight;
 }
+
+// Combat log for detailed damage calculations
+function combatLog(msg, type = "combat-step") {
+  if (!combatLogEl) return;
+  
+  const entry = document.createElement("div");
+  entry.className = `combat-entry ${type}`;
+  
+  // Apply color coding
+  let html = msg
+    .replace(/(\d+) ATK/g, '<span class="combat-atk">$1 ATK</span>')
+    .replace(/(\d+) HP/g, '<span class="combat-hp">$1 HP</span>')
+    .replace(/(\d+) damage/g, '<span class="combat-dmg">$1 damage</span>')
+    .replace(/heals? (\d+)/g, 'heals <span class="combat-heal">$1</span>')
+    .replace(/Lifesteal/g, '<span class="combat-heal">Lifesteal</span>');
+  
+  entry.innerHTML = html;
+  combatLogEl.appendChild(entry);
+  combatLogEl.scrollTop = combatLogEl.scrollHeight;
+}
+
+// Tab switching for battle log
+document.querySelectorAll('.logTab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Remove active from all tabs and contents
+    document.querySelectorAll('.logTab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.logContent').forEach(c => c.classList.remove('active'));
+    
+    // Activate clicked tab
+    tab.classList.add('active');
+    const tabName = tab.dataset.tab;
+    if (tabName === 'events') {
+      logEl?.classList.add('active');
+    } else if (tabName === 'combat') {
+      combatLogEl?.classList.add('active');
+    }
+  });
+});
 
 function parseLogType(msg) {
   if (msg.includes("Turn ended") || msg.includes("'s turn")) return "turn";
@@ -1182,6 +1221,30 @@ function renderHand() {
     cardElements[card.id] = el;
   });
 
+  // Calculate dynamic overlap based on card count - always fit in single row
+  const cardCount = myHand.length;
+  const containerWidth = 280; // usable width inside handSection
+  const cardWidth = 68;
+  
+  const cards = handEl.querySelectorAll('.handCard');
+  
+  if (cardCount > 1) {
+    // Calculate exact overlap needed to fit all cards in container
+    // Formula: cardWidth + (cardCount - 1) * (cardWidth + marginLeft) = containerWidth
+    // Solving for marginLeft: marginLeft = (containerWidth - cardWidth * cardCount) / (cardCount - 1)
+    const marginLeft = (containerWidth - (cardWidth * cardCount)) / (cardCount - 1);
+    
+    cards.forEach((card, index) => {
+      card.style.marginLeft = index === 0 ? '0px' : `${marginLeft}px`;
+      // Each subsequent card has higher z-index so it overlaps the previous
+      card.style.zIndex = index + 1;
+    });
+  } else {
+    cards.forEach((card, index) => {
+      card.style.zIndex = 1;
+    });
+  }
+
   const deckBadge = document.getElementById("deckCountBadge");
   if (deckCountEl) deckCountEl.textContent = myDeckCount;
   if (deckBadge) deckBadge.textContent = myDeckCount;
@@ -1194,6 +1257,58 @@ function renderHand() {
       drawBtn.classList.add("must-draw");
     } else {
       drawBtn.classList.remove("must-draw");
+    }
+  }
+}
+
+// Render opponent's hand (face-down cards), deck, and energy
+function renderOpponentInfo(handCount, deckCount, energy, maxEnergy) {
+  const opponentHandEl = document.getElementById("opponentHand");
+  const opponentDeckCountEl = document.getElementById("opponentDeckCount");
+  const opponentEnergyEl = document.getElementById("opponentEnergyLabel");
+  const opponentNameEl = document.getElementById("opponentNameLabel");
+  
+  // Update opponent name from the existing enemy name element
+  const enemyNameEl = document.getElementById("enemyName");
+  if (opponentNameEl && enemyNameEl) {
+    opponentNameEl.textContent = enemyNameEl.textContent || "Opponent";
+  }
+  
+  // Update deck count
+  if (opponentDeckCountEl) {
+    opponentDeckCountEl.textContent = deckCount || 0;
+  }
+  
+  // Update energy
+  if (opponentEnergyEl) {
+    opponentEnergyEl.textContent = `${energy || 0}/${maxEnergy || 10}`;
+  }
+  
+  // Render face-down cards
+  if (opponentHandEl) {
+    opponentHandEl.innerHTML = "";
+    
+    // Calculate overlap for opponent cards (similar to player hand)
+    const containerWidth = 250; // width of opponentHandSection minus padding
+    const cardWidth = 40;
+    let marginLeft = 0;
+    
+    if (handCount > 1) {
+      const totalNeeded = handCount * cardWidth;
+      if (totalNeeded > containerWidth) {
+        marginLeft = (containerWidth - totalNeeded) / (handCount - 1);
+      }
+    }
+    
+    for (let i = 0; i < handCount; i++) {
+      const card = document.createElement("div");
+      card.className = "opponentCard";
+      if (i > 0) {
+        card.style.marginLeft = `${marginLeft}px`;
+      }
+      // Each subsequent card has higher z-index so it overlaps the previous
+      card.style.zIndex = i + 1;
+      opponentHandEl.appendChild(card);
     }
   }
 }
@@ -1756,6 +1871,7 @@ function onCellClick(viewRow, col) {
 socket.on("connect", () => log("Connected: " + socket.id, "system"));
 socket.on("disconnect", () => log("Disconnected", "system"));
 socket.on("log", (msg) => log(msg, parseLogType(msg)));
+socket.on("combatLog", (data) => combatLog(data.msg, data.type));
 
 // Handle animation events
 socket.on("animate", (data) => {
@@ -2013,6 +2129,10 @@ socket.on("state", (st) => {
   // Store previous values before updating
   prevRowHP = [...S.rowHP];
   prevHeartHP = { ...S.heartHP };
+  
+  // Track previous hand counts for draw animation
+  const prevMyHandCount = myHand ? myHand.length : 0;
+  const prevEnemyHandCount = window.prevEnemyHandCount || 0;
 
   activeSide = st.activeSide;
   S.rowHP = st.rowHP;
@@ -2030,6 +2150,13 @@ socket.on("state", (st) => {
 
   // Handle private state (hand, energy, etc) - now included in state
   if (st.hand !== undefined) {
+    const newHandCount = Array.isArray(st.hand) ? st.hand.length : 0;
+    
+    // Detect player draw (hand count increased)
+    if (newHandCount > prevMyHandCount && prevMyHandCount > 0) {
+      animatePlayerDraw(newHandCount - prevMyHandCount);
+    }
+    
     myHand = Array.isArray(st.hand) ? st.hand : [];
     myDeckCount = st.deckCount ?? 0;
     myDiscardCount = st.discardCount ?? 0;
@@ -2037,6 +2164,17 @@ socket.on("state", (st) => {
     myMaxEnergy = st.maxEnergy ?? 0;
     canDraw = !!st.canDraw;
     renderHand();
+  }
+
+  // Handle opponent info
+  if (st.enemyHandCount !== undefined) {
+    // Detect opponent draw (hand count increased)
+    if (st.enemyHandCount > prevEnemyHandCount && prevEnemyHandCount > 0) {
+      animateOpponentDraw(st.enemyHandCount - prevEnemyHandCount);
+    }
+    window.prevEnemyHandCount = st.enemyHandCount;
+    
+    renderOpponentInfo(st.enemyHandCount, st.enemyDeckCount, st.enemyEnergy, st.enemyMaxEnergy);
   }
 
   // Animate heart damage
@@ -2068,6 +2206,78 @@ function animateHeartDamage() {
     yourHpEl.classList.remove("damaged");
     void yourHpEl.offsetWidth;
     yourHpEl.classList.add("damaged");
+  }
+}
+
+// Animate player drawing a card from deck to hand
+function animatePlayerDraw(cardCount = 1) {
+  const deckEl = document.getElementById("deckTile");
+  const handEl = document.getElementById("handSection");
+  const animationLayer = document.getElementById("cardAnimationLayer");
+  
+  if (!deckEl || !handEl || !animationLayer) return;
+  
+  const deckRect = deckEl.getBoundingClientRect();
+  const handRect = handEl.getBoundingClientRect();
+  
+  for (let i = 0; i < cardCount; i++) {
+    setTimeout(() => {
+      const card = document.createElement("div");
+      card.className = "draw-anim-card player-draw";
+      card.innerHTML = '<div class="draw-card-back">?</div>';
+      
+      // Start at deck position
+      card.style.left = deckRect.left + deckRect.width / 2 - 34 + 'px';
+      card.style.top = deckRect.top + deckRect.height / 2 - 47 + 'px';
+      
+      animationLayer.appendChild(card);
+      
+      // Animate to hand
+      requestAnimationFrame(() => {
+        card.style.left = handRect.left + handRect.width / 2 - 34 + 'px';
+        card.style.top = handRect.top + handRect.height / 2 - 47 + 'px';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => card.remove(), 400);
+      });
+    }, i * 100);
+  }
+}
+
+// Animate opponent drawing a card from deck to hand
+function animateOpponentDraw(cardCount = 1) {
+  const deckEl = document.getElementById("opponentDeckTile");
+  const handEl = document.getElementById("opponentHandSection");
+  const animationLayer = document.getElementById("cardAnimationLayer");
+  
+  if (!deckEl || !handEl || !animationLayer) return;
+  
+  const deckRect = deckEl.getBoundingClientRect();
+  const handRect = handEl.getBoundingClientRect();
+  
+  for (let i = 0; i < cardCount; i++) {
+    setTimeout(() => {
+      const card = document.createElement("div");
+      card.className = "draw-anim-card opponent-draw";
+      card.innerHTML = '<div class="draw-card-back">?</div>';
+      
+      // Start at deck position
+      card.style.left = deckRect.left + deckRect.width / 2 - 20 + 'px';
+      card.style.top = deckRect.top + deckRect.height / 2 - 28 + 'px';
+      
+      animationLayer.appendChild(card);
+      
+      // Animate to hand
+      requestAnimationFrame(() => {
+        card.style.left = handRect.left + handRect.width / 2 - 20 + 'px';
+        card.style.top = handRect.top + handRect.height / 2 - 28 + 'px';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => card.remove(), 400);
+      });
+    }, i * 100);
   }
 }
 
