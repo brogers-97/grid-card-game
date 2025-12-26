@@ -541,6 +541,31 @@ function highlightDeployTiles(){
     return;
   }
 
+  if (card.effect === "instant" && card.requiresTarget === "any_unit") {
+    // Blood Transfusion - highlight ALL units (friendly and enemy)
+    for (let vr = 0; vr < ROWS; vr++) {
+      const sr = toServerRow(vr);
+      for (let c = 0; c < COLS; c++) {
+        const unitId = S.board[sr][c];
+        if (unitId && S.units[unitId]) {
+          const u = S.units[unitId];
+          if (!u.untargetable) {
+            const el = document.getElementById(cellId(vr, c));
+            if (el) {
+              // Use different color based on owner
+              if (u.owner === myRole) {
+                el.classList.add("deploy-valid");
+              } else {
+                el.classList.add("attack-valid");
+              }
+            }
+          }
+        }
+      }
+    }
+    return;
+  }
+
   if (card.effect === "instant" && card.requiresTarget === "row") {
     // Castle Walls / Void Collapse - highlight rows
     // Castle Walls targets your rows, Void Collapse can target any row
@@ -667,14 +692,15 @@ function highlightUnitMoves(unitId) {
   const enemy = enemyOf(myRole);
   const moveCount = S.moveCountThisTurn[unitId] || 0;
   const canDoubleMove = u.effectId === "double_move" || hasBuffTile("move_buff");
+  const canLongMove = u.effectId === "stampede"; // Can move 2 tiles in one move
   const maxMoves = canDoubleMove ? 2 : 1;
   const canStillMove = moveCount < maxMoves;
   const hasAttacked = S.attackedThisTurn.includes(unitId);
   const isFirstTurn = S.firstTurn;
   
   // Unit ability checks
-  const canDiagonalAttack = u.effectId === "diagonal_attack";
-  const isRanged = u.effectId === "ranged";
+  const canDiagonalAttack = u.effectId === "diagonal_attack" || u.effectId === "lifesteal_lord";
+  const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce";
   const canKnightLeap = u.effectId === "knight_leap";
   const canAbsorbAlly = u.effectId === "absorb_ally";
   
@@ -683,6 +709,33 @@ function highlightUnitMoves(unitId) {
     if (enemy === "gold" && row <= 1 && S.rowHP[row] > 0) return true;
     if (enemy === "silver" && row >= 5 && S.rowHP[row] > 0) return true;
     return false;
+  }
+  
+  // Stampede 2-tile move (cardinal only, path must be clear)
+  if (canLongMove && canStillMove) {
+    const longMoveOffsets = [
+      { dr: -2, dc: 0, midDr: -1, midDc: 0 },
+      { dr: 2, dc: 0, midDr: 1, midDc: 0 },
+      { dr: 0, dc: -2, midDr: 0, midDc: -1 },
+      { dr: 0, dc: 2, midDr: 0, midDc: 1 }
+    ];
+    for (const offset of longMoveOffsets) {
+      const nr = pos.r + offset.dr;
+      const nc = pos.c + offset.dc;
+      const midR = pos.r + offset.midDr;
+      const midC = pos.c + offset.midDc;
+      
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      if (S.board[nr][nc]) continue; // Destination occupied
+      if (S.board[midR][midC]) continue; // Path blocked
+      if (isBlockedEnemyRow(nr)) continue; // Can't move into enemy row with HP
+      
+      const viewRow = viewFlipped ? (ROWS - 1 - nr) : nr;
+      const el = document.getElementById(cellId(viewRow, nc));
+      if (el && !el.classList.contains("move-valid")) {
+        el.classList.add("move-valid");
+      }
+    }
   }
   
   // Check all adjacent cells (diagonal for movement)
@@ -754,11 +807,12 @@ function highlightUnitMoves(unitId) {
       if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
       
       const targetId = S.board[nr][nc];
+      const viewRow = viewFlipped ? (ROWS - 1 - nr) : nr;
+      const el = document.getElementById(cellId(viewRow, nc));
+      
       if (targetId) {
         const target = S.units[targetId];
         if (target && target.owner === enemy) {
-          const viewRow = viewFlipped ? (ROWS - 1 - nr) : nr;
-          const el = document.getElementById(cellId(viewRow, nc));
           if (el && !el.classList.contains("attack-valid")) {
             el.classList.add("attack-valid");
             const icon = document.createElement("div");
@@ -766,6 +820,16 @@ function highlightUnitMoves(unitId) {
             icon.innerHTML = "🏹";
             el.appendChild(icon);
           }
+        }
+      } else {
+        // Empty cell - check if enemy home row with HP (can attack the row at range)
+        const isEnemyHomeRow = (enemy === "gold" && nr <= 1) || (enemy === "silver" && nr >= 5);
+        if (isEnemyHomeRow && S.rowHP[nr] > 0 && el && !el.classList.contains("row-attack-valid")) {
+          el.classList.add("row-attack-valid");
+          const icon = document.createElement("div");
+          icon.className = "attack-icon row-attack";
+          icon.innerHTML = "🏹";
+          el.appendChild(icon);
         }
       }
     }
@@ -1678,6 +1742,24 @@ function onCellClick(viewRow, col) {
       if (target.hp > 2) {
         return log("Target must have 2 or less HP.");
       }
+      if (target.untargetable) {
+        return log("That unit is untargetable.");
+      }
+      const cardIdToPlay = deployCardId;
+      deployCardId = null;
+      selectedCardId = null;
+      clearHighlights();
+      sendAction({ type: "playCard", cardId: cardIdToPlay, targetUnitId: occId });
+      renderHand();
+      return;
+    }
+    
+    if (card.effect === "instant" && card.requiresTarget === "any_unit") {
+      // Blood Transfusion - target any unit
+      if (!occId || !S.units[occId]) {
+        return log("Select a unit.");
+      }
+      const target = S.units[occId];
       if (target.untargetable) {
         return log("That unit is untargetable.");
       }

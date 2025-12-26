@@ -381,8 +381,8 @@ const DECKS = {
       { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
       // The Hanged Man x1 (deathrattle: damage adjacent enemies)
       { key: "thehangedman", name: "The Hanged Man", atk: 4, hp: 5, cost: 5, type: "monster", effect: "onDeath", effectId: "death_explosion", effectDesc: "ON DEATH: Deal 2 damage to all adjacent enemies.", art: "/images/The Hanged Man.png", rarity: "legendary" },
-      // Ghostly Stampede x1 (double move + siege)
-      { key: "ghostlystampede", name: "Ghostly Stampede", atk: 5, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "stampede", effectDesc: "PASSIVE: Can move twice. +2 damage to structures.", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
+      // Ghostly Stampede x1 (long move + siege)
+      { key: "ghostlystampede", name: "Ghostly Stampede", atk: 5, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "stampede", effectDesc: "PASSIVE: Can move up to 2 tiles. +2 damage to structures.", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
       // Bone Colossus x1 (damage reduction)
       { key: "bonecolossus", name: "Bone Colossus", atk: 6, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "thick_bones", effectDesc: "PASSIVE: Takes 1 less damage from all sources.", art: "/images/Bone Colossus.png", rarity: "legendary" },
       // Dead Man's Hand x2 (draw 2, discard 1)
@@ -786,7 +786,19 @@ function drawCards(lobby, role, count) {
 
 function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
   const state = lobby.gameState.state;
-  const a = state.units[aid]; if (!a || a.effect !== "onKill") return;
+  const a = state.units[aid]; if (!a) return;
+  
+  // Blood Countess lifesteal_grow - gains +1/+1 on kill (has passive effect type but also on-kill)
+  if (a.effectId === "lifesteal_grow") {
+    a.atk += 1;
+    a.hp += 1;
+    a.maxHp = (a.maxHp || a.hp) + 1;
+    logToLobby(lobby, a.name + " grows stronger! Now " + a.atk + "/" + a.hp);
+  }
+  
+  // Other on-kill effects require effect === "onKill"
+  if (a.effect !== "onKill") return;
+  
   if (a.effectId === "heal_on_kill") { 
     // Crusader heals 2 HP on kill, even past max HP
     a.hp += 2;
@@ -913,7 +925,9 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos) {
     }
     for (const item of toRemove) {
       const deadTarget = state.units[item.id];
-      // Don't recursively trigger death effects to avoid infinite loops
+      // Process death effects for the killed unit (enemy's ally death triggers)
+      processOnDeathEffect(lobby, deadTarget, deadTarget.owner, { r: item.r, c: item.c });
+      processAllyDeathTriggers(lobby, deadTarget.owner, deadTarget, { r: item.r, c: item.c });
       state.board[item.r][item.c] = null;
       delete state.units[item.id];
       logToLobby(lobby, deadTarget.name + " destroyed by " + deadUnit.name + "'s death explosion!");
@@ -1123,7 +1137,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
           }
           // Process on-death effect before removing
           processOnDeathEffect(lobby, target, target.owner, pos);
-          processAllyDeathTriggers(lobby, target.owner);
+          processAllyDeathTriggers(lobby, target.owner, target, pos);
           state.board[pos.r][pos.c] = null;
           delete state.units[targetUnitId];
           logToLobby(lobby, "Assimilation destroys " + target.name + "!");
@@ -1154,8 +1168,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       // Remove dead units
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
-        processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
-        processAllyDeathTriggers(lobby, deadUnit.owner);
+        const deadPos = { r: targetRow, c: item.col };
+        processOnDeathEffect(lobby, deadUnit, deadUnit.owner, deadPos);
+        processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, deadPos);
         state.board[targetRow][item.col] = null;
         delete state.units[item.id];
       }
@@ -1246,7 +1261,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
-        processAllyDeathTriggers(lobby, deadUnit.owner);
+        processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, { r: targetRow, c: item.col });
         state.board[targetRow][item.col] = null;
         delete state.units[item.id];
       }
@@ -1267,7 +1282,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
         if (target.hp <= 0) {
           const pos = getUnitPos(state, targetUnitId);
           processOnDeathEffect(lobby, target, target.owner, pos);
-          processAllyDeathTriggers(lobby, target.owner);
+          processAllyDeathTriggers(lobby, target.owner, target, pos);
           if (pos) state.board[pos.r][pos.c] = null;
           delete state.units[targetUnitId];
           logToLobby(lobby, target.name + " destroyed!");
@@ -1294,7 +1309,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       if (target.hp <= 0) {
         const pos = getUnitPos(state, targetUnitId);
         processOnDeathEffect(lobby, target, target.owner, pos);
-        processAllyDeathTriggers(lobby, target.owner);
+        processAllyDeathTriggers(lobby, target.owner, target, pos);
         if (pos) state.board[pos.r][pos.c] = null;
         delete state.units[targetUnitId];
         logToLobby(lobby, target.name + " destroyed!");
@@ -1342,7 +1357,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
-        processAllyDeathTriggers(lobby, deadUnit.owner);
+        processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, { r: targetRow, c: item.col });
         state.board[targetRow][item.col] = null;
         delete state.units[item.id];
       }
@@ -1685,19 +1700,41 @@ async function executeAction(lobby, role, action) {
       const u = state.units[action.unitId];
       if (!u || u.owner !== role) return;
       const moveCount = state.moveCountThisTurn[action.unitId] || 0;
-      const canDoubleMove = u.effectId === "double_move" || u.effectId === "stampede" || playerHasBuff(state, role, "move_buff");
-      if (moveCount >= (canDoubleMove ? 2 : 1)) return;
+      const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
+      const canLongMove = u.effectId === "stampede"; // 2 tiles cardinal, 1 move per turn
+      const maxMoves = canDoubleMove ? 2 : 1;
+      if (moveCount >= maxMoves) return;
       
       const from = getUnitPos(state, action.unitId);
       if (!from) return;
       if (state.board[action.toRow][action.toCol]) return;
       
-      // Validate move is adjacent (or within 2 for double move)
+      // Validate move distance
       const rowDist = Math.abs(from.r - action.toRow);
       const colDist = Math.abs(from.c - action.toCol);
-      const maxDist = canDoubleMove ? 2 : 1;
-      if (rowDist > maxDist || colDist > maxDist) return; // Too far
-      if (rowDist === 0 && colDist === 0) return; // Same tile
+      
+      let validMove = false;
+      // Adjacent move (all units can do this)
+      if (rowDist <= 1 && colDist <= 1 && !(rowDist === 0 && colDist === 0)) {
+        validMove = true;
+      }
+      // Stampede: 2 tiles cardinal, path must be clear
+      if (canLongMove && !validMove) {
+        const isStraightLine = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
+        if (isStraightLine) {
+          let pathClear = true;
+          if (rowDist === 2 && colDist === 0) {
+            const midRow = from.r + (action.toRow > from.r ? 1 : -1);
+            if (state.board[midRow][from.c]) pathClear = false;
+          } else if (colDist === 2 && rowDist === 0) {
+            const midCol = from.c + (action.toCol > from.c ? 1 : -1);
+            if (state.board[from.r][midCol]) pathClear = false;
+          }
+          if (pathClear) validMove = true;
+        }
+      }
+      
+      if (!validMove) return;
       
       // Can't move into enemy home rows with HP
       const enemy = enemyOf(role);
@@ -1708,7 +1745,7 @@ async function executeAction(lobby, role, action) {
       state.board[from.r][from.c] = null;
       state.board[action.toRow][action.toCol] = action.unitId;
       state.moveCountThisTurn[action.unitId] = moveCount + 1;
-      if (state.moveCountThisTurn[action.unitId] >= (canDoubleMove ? 2 : 1)) {
+      if (state.moveCountThisTurn[action.unitId] >= maxMoves) {
         state.movedThisTurn.add(action.unitId);
       }
       recomputeOwners(state);
@@ -1768,7 +1805,7 @@ async function executeAction(lobby, role, action) {
         combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
-        processAllyDeathTriggers(lobby, t.owner);
+        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         processOnKillEffect(lobby, action.attackerId, role, { r: tp.r, c: tp.c }, t);
         if (!state.board[tp.r][tp.c] || state.board[tp.r][tp.c] === action.targetId) {
           state.board[tp.r][tp.c] = null;
@@ -1870,7 +1907,7 @@ async function executeAction(lobby, role, action) {
         combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
-        processAllyDeathTriggers(lobby, t.owner);
+        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
         state.board[tp.r][tp.c] = null;
         delete state.units[action.targetId];
@@ -1898,7 +1935,7 @@ async function executeAction(lobby, role, action) {
       // Check range - must be in heart row or ranged 1 row away
       const heartRow = target === "gold" ? 0 : 6;
       const distance = Math.abs(pos.r - heartRow);
-      const isRanged = a.effectId === "ranged";
+      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce";
       const maxRange = isRanged ? 1 : 0;
       if (distance > maxRange) return;
       
@@ -2304,6 +2341,9 @@ io.on("connection", (socket) => {
           if (!targetUnitId || !state.units[targetUnitId]) return socket.emit("log", "Select a target unit.");
           if (state.units[targetUnitId].owner === role) return socket.emit("log", "Must target an enemy unit.");
         }
+        if (card.requiresTarget === "any_unit") {
+          if (!targetUnitId || !state.units[targetUnitId]) return socket.emit("log", "Select a target unit.");
+        }
         if (card.requiresTarget === "row") {
           if (row === undefined || row === null || row < 0 || row >= ROWS) return socket.emit("log", "Select a target row.");
           // Only fortify_row (Castle Walls) requires your own rows
@@ -2427,14 +2467,37 @@ io.on("connection", (socket) => {
       
       // Check move limits based on unit abilities
       const moveCount = state.moveCountThisTurn[unitId] || 0;
-      const canDoubleMove = u.effectId === "double_move" || u.effectId === "stampede" || playerHasBuff(state, role, "move_buff");
+      const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
+      const canLongMove = u.effectId === "stampede"; // Can move 2 tiles but only once
       const maxMoves = canDoubleMove ? 2 : 1;
       
       if (moveCount >= maxMoves) return socket.emit("log", "No more moves for this unit.");
       if (toRow < 0 || toRow >= ROWS || toCol < 0 || toCol >= COLS || state.board[toRow][toCol]) return socket.emit("log", "Invalid.");
       
+      // Calculate distance
+      const rowDist = Math.abs(from.r - toRow);
+      const colDist = Math.abs(from.c - toCol);
+      
       // Squire knight_leap ability - can move to adjacent tile of any Knight
       let validMove = isAdjacent(from.r, from.c, toRow, toCol);
+      
+      // Stampede can move up to 2 tiles in a straight line (cardinal)
+      if (canLongMove && !validMove) {
+        const isStraightLine = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
+        if (isStraightLine) {
+          // Check path is clear for 2-tile move
+          let pathClear = true;
+          if (rowDist === 2 && colDist === 0) {
+            const midRow = from.r + (toRow > from.r ? 1 : -1);
+            if (state.board[midRow][from.c]) pathClear = false;
+          } else if (colDist === 2 && rowDist === 0) {
+            const midCol = from.c + (toCol > from.c ? 1 : -1);
+            if (state.board[from.r][midCol]) pathClear = false;
+          }
+          if (pathClear) validMove = true;
+        }
+      }
+      
       if (u.effectId === "knight_leap" && !validMove) {
         // Check if destination is adjacent to any knight
         for (const id in state.units) {
@@ -2535,6 +2598,11 @@ io.on("connection", (socket) => {
         a.hp += t.hp;
         a.maxHp = (a.maxHp || 1) + (t.maxHp || t.hp);
         logToLobby(lobby, a.name + " absorbs " + t.name + "! Now " + a.atk + "/" + a.hp);
+        
+        // Process death effects (Coffin resurrect, Undertaker growth, etc.)
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
+        
         state.board[tp.r][tp.c] = null;
         delete state.units[targetId];
         state.attackedThisTurn.add(attackerId);
@@ -2638,7 +2706,11 @@ io.on("connection", (socket) => {
         const secondDmg = applyDamageReduction(state, targetId, 1, attackerId);
         t.hp -= secondDmg;
         logToLobby(lobby, a.name + " bites again for " + secondDmg + "!");
+        combatLogToLobby(lobby, `Second bite: ${t.name} takes ${secondDmg} damage, now ${t.hp} HP`, "combat-step");
       }
+      
+      // Recalculate effective HP after all damage (including blood_bite)
+      const finalEffectiveHp = t.hp + hpBuffBonus;
       
       // Royal Guard cleave - splash half damage to adjacent enemies of target
       if (a.effectId === "cleave") {
@@ -2659,7 +2731,7 @@ io.on("connection", (socket) => {
               logToLobby(lobby, a.name + " cleaves " + splashTarget.name + " for " + reducedSplash);
               if (splashTarget.hp <= 0) {
                 processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
-                processAllyDeathTriggers(lobby, splashTarget.owner);
+                processAllyDeathTriggers(lobby, splashTarget.owner, splashTarget, { r: sp.r, c: sp.c });
                 state.board[sp.r][sp.c] = null; 
                 delete state.units[splashId];
                 logToLobby(lobby, splashTarget.name + " destroyed by cleave!");
@@ -2687,7 +2759,7 @@ io.on("connection", (socket) => {
             logToLobby(lobby, a.name + " spore damages " + splashTarget.name + " for 1");
             if (splashTarget.hp <= 0) {
               processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
-              processAllyDeathTriggers(lobby, splashTarget.owner);
+              processAllyDeathTriggers(lobby, splashTarget.owner, splashTarget, { r: sp.r, c: sp.c });
               state.board[sp.r][sp.c] = null; 
               delete state.units[splashId];
               logToLobby(lobby, splashTarget.name + " destroyed by spores!");
@@ -2696,7 +2768,7 @@ io.on("connection", (socket) => {
         }
       }
       
-      if (effectiveHp <= 0) {
+      if (finalEffectiveHp <= 0) {
         // Elder Vampire immortal - heals to full instead of dying (once per game)
         if (t.effectId === "immortal" && !t.immortalUsed) {
           t.hp = t.maxHp || 6;
@@ -2711,7 +2783,6 @@ io.on("connection", (socket) => {
           processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
           processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
           // Process on-kill effect for attacker (pass killed unit position and unit for steal_card)
-          processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
           processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
           // Only remove unit if spawn_drone didn't place a drone there
           if (!state.board[tp.r][tp.c]) {
@@ -2745,7 +2816,7 @@ io.on("connection", (socket) => {
       const ap = getUnitPos(state, attackerId); if (!ap) return;
       
       // Check range - archers can attack from 2 tiles away, others must be adjacent
-      const isRanged = a.effectId === "ranged";
+      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce";
       const maxRange = isRanged ? 2 : 1;
       const rowDistance = Math.abs(ap.r - row);
       
@@ -2775,7 +2846,7 @@ io.on("connection", (socket) => {
       // - Archers (ranged): can attack from 1 additional row away (so rows 0-1 for gold heart, rows 5-6 for silver heart)
       const heartRow = target === "gold" ? 0 : 6; 
       const distance = Math.abs(pos.r - heartRow);
-      const isRanged = u.effectId === "ranged";
+      const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce";
       const maxRange = isRanged ? 1 : 0;
       
       if (distance > maxRange) {
@@ -2821,7 +2892,7 @@ io.on("connection", (socket) => {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
-        processAllyDeathTriggers(lobby, t.owner);
+        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
         state.board[tp.r][tp.c] = null; delete state.units[targetId];
         logToLobby(lobby, t.name + " destroyed!");
