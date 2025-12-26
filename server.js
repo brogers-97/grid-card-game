@@ -60,7 +60,45 @@ app.post("/api/fixCollection", async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
     
-    // Medieval cards that every player should have 3 of
+    // Card rarity definitions
+    const cardRarity = {
+      // Medieval - Common
+      peasant: 'common', squire: 'common', archer: 'common', manatarms: 'common',
+      battlefieldmedic: 'common', knight: 'common', castlewalls: 'common', 
+      treasury: 'common', rally: 'common',
+      // Medieval - Rare
+      shieldbearer: 'rare', warhound: 'rare', royalguard: 'rare', siegeram: 'rare',
+      warbanner: 'rare', shrine: 'rare', armory: 'rare',
+      // Medieval - Legendary
+      crusader: 'legendary', paladin: 'legendary',
+      // Void Alien - Common
+      voiddrone: 'common', scavengerlarva: 'common', spittercrawler: 'common',
+      energyleech: 'common', neuralharvester: 'common',
+      // Void Alien - Rare
+      phaseskirmisher: 'rare', burrowerbeast: 'rare', psionicoverseer: 'rare',
+      sporetitan: 'rare', assimilation: 'rare', voidcollapse: 'rare',
+      // Void Alien - Legendary
+      adaptivecolossus: 'legendary', voidbroodmother: 'legendary', 
+      eclipsedevourer: 'legendary', ufoscraper: 'legendary', hiveascension: 'legendary',
+      // Western Skeleton - Common
+      bonedeputy: 'common', dustyrattler: 'common', phantomscout: 'common', deadmanshand: 'common',
+      // Western Skeleton - Rare
+      graverobber: 'rare', bonerevolver: 'rare', undeadsheriff: 'rare', 
+      coffintrapper: 'rare', undertaker: 'rare', mostwanted: 'rare',
+      // Western Skeleton - Legendary
+      thehangedman: 'legendary', ghostlystampede: 'legendary', 
+      bonecolossus: 'legendary', shallowgrave: 'legendary', highnoon: 'legendary'
+    };
+    
+    // Get max copies based on rarity
+    const getMaxCopies = (card) => {
+      const rarity = cardRarity[card] || 'common';
+      if (rarity === 'legendary') return 1;
+      if (rarity === 'rare') return 2;
+      return 3;
+    };
+    
+    // Medieval cards that every player should have (set to max based on rarity)
     const medievalCards = [
       'peasant', 'squire', 'archer', 'manatarms', 'shieldbearer', 
       'warhound', 'battlefieldmedic', 'knight', 'crusader', 
@@ -68,15 +106,16 @@ app.post("/api/fixCollection", async (req, res) => {
       'shrine', 'armory', 'castlewalls', 'treasury', 'rally'
     ];
     
-    // Set each medieval card to exactly 3
+    // Set each medieval card to max based on rarity
     medievalCards.forEach(card => {
-      user.cardCollection.set(card, 3);
+      user.cardCollection.set(card, getMaxCopies(card));
     });
     
-    // Cap all other cards at 3 max
+    // Cap all other cards based on rarity
     for (const [card, count] of user.cardCollection.entries()) {
-      if (count > 3) {
-        user.cardCollection.set(card, 3);
+      const maxCopies = getMaxCopies(card);
+      if (count > maxCopies) {
+        user.cardCollection.set(card, maxCopies);
       }
     }
     
@@ -96,7 +135,7 @@ app.post("/api/saveDeck", async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
     
-    if (!deckType || !['medieval', 'void-alien'].includes(deckType)) {
+    if (!deckType || !['medieval', 'void-alien', 'western-skeleton'].includes(deckType)) {
       return res.status(400).json({ success: false, error: 'Invalid deck type' });
     }
     
@@ -213,29 +252,29 @@ const DECKS = {
     description: "Classic knights, archers, and siege warfare",
     archetype: "medieval",
     cards: [
-      { key: "peasant", name: "Peasant", atk: 1, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Peasant.png" },
-      { key: "peasant", name: "Peasant", atk: 1, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Peasant.png" },
-      { key: "squire", name: "Squire", atk: 2, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "knight_leap", effectDesc: "PASSIVE: Can move to any Knight.", art: "/images/Squire.png" },
-      { key: "squire", name: "Squire", atk: 2, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "knight_leap", effectDesc: "PASSIVE: Can move to any Knight.", art: "/images/Squire.png" },
-      { key: "archer", name: "Archer", atk: 3, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "ranged", effectDesc: "PASSIVE: Can attack 2 tiles away.", art: "/images/Archer.png" },
-      { key: "archer", name: "Archer", atk: 3, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "ranged", effectDesc: "PASSIVE: Can attack 2 tiles away.", art: "/images/Archer.png" },
-      { key: "manatarms", name: "Man-at-Arms", atk: 2, hp: 4, cost: 2, type: "monster", art: "/images/Man-at-Arms.png" },
-      { key: "manatarms", name: "Man-at-Arms", atk: 2, hp: 4, cost: 2, type: "monster", art: "/images/Man-at-Arms.png" },
-      { key: "shieldbearer", name: "Shield Bearer", atk: 1, hp: 5, cost: 2, type: "monster", effect: "passive", effectId: "shield_aura", effectDesc: "PASSIVE: Adjacent allies take -1 damage.", art: "/images/Shield Bearer.png" },
-      { key: "warhound", name: "War Hound", atk: 3, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/War Hound.png" },
-      { key: "battlefieldmedic", name: "Battlefield Medic", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies 1 HP.", art: "/images/Battlefield Medic.png" },
-      { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png" },
-      { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png" },
-      { key: "crusader", name: "Crusader", atk: 5, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "heal_on_kill", effectDesc: "ON KILL: Heal self 2 HP.", art: "/images/Crusader.png" },
-      { key: "royalguard", name: "Royal Guard", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "cleave", effectDesc: "PASSIVE: Deals half damage to adjacent enemies.", art: "/images/Royal Guard.png" },
-      { key: "paladin", name: "Paladin", atk: 6, hp: 5, cost: 4, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 energy.", art: "/images/Paladin.png" },
-      { key: "siegeram", name: "Battering Ram", atk: 2, hp: 6, cost: 3, type: "monster", effect: "passive", effectId: "siege", effectDesc: "PASSIVE: 2x damage to rows.", art: "/images/Battering Ram.png" },
-      { key: "warbanner", name: "War Banner", atk: 0, hp: 4, cost: 2, type: "spell", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies +1 ATK.", art: "/images/War Banner.png" },
-      { key: "shrine", name: "Healing Shrine", atk: 0, hp: 5, cost: 3, type: "spell", effect: "startOfTurn", effectId: "shrine_heal", effectDesc: "START: Heal row allies 1 HP.", art: "/images/Healing Shrine.png" },
-      { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "spell", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: Deployed units +1 HP.", art: "/images/Armory.png" },
-      { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_row", effectDesc: "INSTANT: This row +15 HP.", art: "/images/Castle Walls.png", requiresTarget: "row" },
-      { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/Kings Treasury.png" },
-      { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "double_attack", effectDesc: "INSTANT: Target unit can attack twice.", art: "/images/Rallying Cry.png", requiresTarget: "unit" },
+      { key: "peasant", name: "Peasant", atk: 1, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Peasant.png", rarity: "common" },
+      { key: "peasant", name: "Peasant", atk: 1, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Peasant.png", rarity: "common" },
+      { key: "squire", name: "Squire", atk: 2, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "knight_leap", effectDesc: "PASSIVE: Can move to any Knight.", art: "/images/Squire.png", rarity: "common" },
+      { key: "squire", name: "Squire", atk: 2, hp: 2, cost: 1, type: "monster", effect: "passive", effectId: "knight_leap", effectDesc: "PASSIVE: Can move to any Knight.", art: "/images/Squire.png", rarity: "common" },
+      { key: "archer", name: "Archer", atk: 3, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "ranged", effectDesc: "PASSIVE: Can attack 2 tiles away.", art: "/images/Archer.png", rarity: "common" },
+      { key: "archer", name: "Archer", atk: 3, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "ranged", effectDesc: "PASSIVE: Can attack 2 tiles away.", art: "/images/Archer.png", rarity: "common" },
+      { key: "manatarms", name: "Man-at-Arms", atk: 2, hp: 4, cost: 2, type: "monster", art: "/images/Man-at-Arms.png", rarity: "common" },
+      { key: "manatarms", name: "Man-at-Arms", atk: 2, hp: 4, cost: 2, type: "monster", art: "/images/Man-at-Arms.png", rarity: "common" },
+      { key: "shieldbearer", name: "Shield Bearer", atk: 1, hp: 5, cost: 2, type: "monster", effect: "passive", effectId: "shield_aura", effectDesc: "PASSIVE: Adjacent allies take -1 damage.", art: "/images/Shield Bearer.png", rarity: "rare" },
+      { key: "warhound", name: "War Hound", atk: 3, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/War Hound.png", rarity: "rare" },
+      { key: "battlefieldmedic", name: "Battlefield Medic", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies 1 HP.", art: "/images/Battlefield Medic.png", rarity: "common" },
+      { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png", rarity: "common" },
+      { key: "knight", name: "Knight", atk: 4, hp: 4, cost: 3, type: "monster", art: "/images/Knight.png", rarity: "common" },
+      { key: "crusader", name: "Crusader", atk: 5, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "heal_on_kill", effectDesc: "ON KILL: Heal self 2 HP.", art: "/images/Crusader.png", rarity: "legendary" },
+      { key: "royalguard", name: "Royal Guard", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "cleave", effectDesc: "PASSIVE: Deals half damage to adjacent enemies.", art: "/images/Royal Guard.png", rarity: "rare" },
+      { key: "paladin", name: "Paladin", atk: 6, hp: 5, cost: 4, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 energy.", art: "/images/Paladin.png", rarity: "legendary" },
+      { key: "siegeram", name: "Battering Ram", atk: 2, hp: 6, cost: 3, type: "monster", effect: "passive", effectId: "siege", effectDesc: "PASSIVE: 2x damage to rows.", art: "/images/Battering Ram.png", rarity: "rare" },
+      { key: "warbanner", name: "War Banner", atk: 0, hp: 4, cost: 2, type: "spell", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies +1 ATK.", art: "/images/War Banner.png", rarity: "rare" },
+      { key: "shrine", name: "Healing Shrine", atk: 0, hp: 5, cost: 3, type: "spell", effect: "startOfTurn", effectId: "shrine_heal", effectDesc: "START: Heal row allies 1 HP.", art: "/images/Healing Shrine.png", rarity: "rare" },
+      { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "spell", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: Deployed units +1 HP.", art: "/images/Armory.png", rarity: "rare" },
+      { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_row", effectDesc: "INSTANT: This row +15 HP.", art: "/images/Castle Walls.png", requiresTarget: "row", rarity: "common" },
+      { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/Kings Treasury.png", rarity: "common" },
+      { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "double_attack", effectDesc: "INSTANT: Target unit can attack twice.", art: "/images/Rallying Cry.png", requiresTarget: "unit", rarity: "common" },
     ]
   },
   "void-alien": {
@@ -244,49 +283,98 @@ const DECKS = {
     archetype: "alien",
     cards: [
       // Void Drone x3 (1 cost filler)
-      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png" },
-      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png" },
-      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png" },
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png", rarity: "common" },
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png", rarity: "common" },
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png", rarity: "common" },
       // Scavenger Larva x3 (energy on death)
-      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png" },
-      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png" },
-      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png" },
+      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
+      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
+      { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
       // Spitter Crawler x3 (vanilla 2 cost)
-      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png" },
-      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png" },
-      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png", rarity: "common" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png", rarity: "common" },
+      { key: "spittercrawler", name: "Spitter Crawler", atk: 2, hp: 2, cost: 2, type: "monster", art: "/images/Spitter Crawler.png", rarity: "common" },
       // Phase Skirmisher x2 (double move)
-      { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png" },
-      { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png" },
+      { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png", rarity: "rare" },
+      { key: "phaseskirmisher", name: "Phase Skirmisher", atk: 2, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "double_move", effectDesc: "PASSIVE: Can move twice per turn.", art: "/images/Phase Skirmisher.png", rarity: "rare" },
       // Energy Leech x2 (drain energy on kill)
-      { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png" },
-      { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png" },
+      { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png", rarity: "common" },
+      { key: "energyleech", name: "Energy Leech", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "drain_energy", effectDesc: "ON KILL: Drain 1 Energy from opponent.", art: "/images/Energy Leech.png", rarity: "common" },
       // Burrower Beast x2 (untargetable next turn, can deploy adjacent to allies)
-      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png" },
-      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png" },
+      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png", rarity: "rare" },
+      { key: "burrowerbeast", name: "Burrower Beast", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "burrow", effectDesc: "PASSIVE: Untargetable next turn. Can deploy adjacent to allies.", art: "/images/Burrower Beast.png", rarity: "rare" },
       // Psionic Overseer x2 (attack aura)
-      { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png" },
-      { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png" },
+      { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png", rarity: "rare" },
+      { key: "psionicoverseer", name: "Psionic Overseer", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK.", art: "/images/Psionic Overseer.png", rarity: "rare" },
       // Neural Harvester x2 (energy on attack if target survives)
-      { key: "neuralharvester", name: "Neural Harvester", atk: 3, hp: 3, cost: 3, type: "monster", effect: "onAttack", effectId: "energy_on_hit", effectDesc: "ON ATTACK: If target survives, gain 1 Energy.", art: "/images/Neural Harvester.png" },
-      { key: "neuralharvester", name: "Neural Harvester", atk: 3, hp: 3, cost: 3, type: "monster", effect: "onAttack", effectId: "energy_on_hit", effectDesc: "ON ATTACK: If target survives, gain 1 Energy.", art: "/images/Neural Harvester.png" },
+      { key: "neuralharvester", name: "Neural Harvester", atk: 3, hp: 3, cost: 3, type: "monster", effect: "onAttack", effectId: "energy_on_hit", effectDesc: "ON ATTACK: If target survives, gain 1 Energy.", art: "/images/Neural Harvester.png", rarity: "common" },
+      { key: "neuralharvester", name: "Neural Harvester", atk: 3, hp: 3, cost: 3, type: "monster", effect: "onAttack", effectId: "energy_on_hit", effectDesc: "ON ATTACK: If target survives, gain 1 Energy.", art: "/images/Neural Harvester.png", rarity: "common" },
       // Adaptive Colossus x1 (gains max HP when damaged)
-      { key: "adaptivecolossus", name: "Adaptive Colossus", atk: 4, hp: 5, cost: 4, type: "monster", effect: "passive", effectId: "adapt_hp", effectDesc: "PASSIVE: Gains +1 Max HP when surviving damage.", art: "/images/Adaptive Colossus.png" },
+      { key: "adaptivecolossus", name: "Adaptive Colossus", atk: 4, hp: 5, cost: 4, type: "monster", effect: "passive", effectId: "adapt_hp", effectDesc: "PASSIVE: Gains +1 Max HP when surviving damage.", art: "/images/Adaptive Colossus.png", rarity: "legendary" },
       // Spore Titan x1 (1 damage splash to enemies adjacent to target)
-      { key: "sporetitan", name: "Spore Titan", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "half_damage_aura", effectDesc: "PASSIVE: Attacks deal 1 splash damage to enemies adjacent to target.", art: "/images/Spore Titan.png" },
+      { key: "sporetitan", name: "Spore Titan", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "half_damage_aura", effectDesc: "PASSIVE: Attacks deal 1 splash damage to enemies adjacent to target.", art: "/images/Spore Titan.png", rarity: "rare" },
       // Void Broodmother x1 (spawn drone on kill)
-      { key: "voidbroodmother", name: "Void Broodmother", atk: 2, hp: 6, cost: 4, type: "monster", effect: "onKill", effectId: "spawn_drone", effectDesc: "ON KILL: Spawn a Void Drone in the killed unit's tile.", art: "/images/Void Broodmother.png" },
+      { key: "voidbroodmother", name: "Void Broodmother", atk: 2, hp: 6, cost: 4, type: "monster", effect: "onKill", effectId: "spawn_drone", effectDesc: "ON KILL: Spawn a Void Drone in the killed unit's tile.", art: "/images/Void Broodmother.png", rarity: "legendary" },
       // Eclipse Devourer x1 (energy on kill)
-      { key: "eclipsedevourer", name: "Eclipse Devourer", atk: 5, hp: 4, cost: 5, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 Energy.", art: "/images/Eclipse Devourer.png" },
+      { key: "eclipsedevourer", name: "Eclipse Devourer", atk: 5, hp: 4, cost: 5, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 Energy.", art: "/images/Eclipse Devourer.png", rarity: "legendary" },
       // UFO Scraper x1 (absorb friendly alien stats)
-      { key: "ufoscraper", name: "UFO Scraper", atk: 1, hp: 1, cost: 4, type: "monster", effect: "passive", effectId: "absorb_ally", effectDesc: "PASSIVE: Can attack friendly Aliens to absorb their stats.", art: "/images/UFO Scraper.png" },
+      { key: "ufoscraper", name: "UFO Scraper", atk: 1, hp: 1, cost: 4, type: "monster", effect: "passive", effectId: "absorb_ally", effectDesc: "PASSIVE: Can attack friendly Aliens to absorb their stats.", art: "/images/UFO Scraper.png", rarity: "legendary" },
       // Assimilation x2 (destroy enemy with <=2 HP)
-      { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit" },
-      { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit" },
+      { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit", rarity: "rare" },
       // Void Collapse x1 (damage all enemies in row)
-      { key: "voidcollapse", name: "Void Collapse", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "row_damage", effectDesc: "INSTANT: Deal 1 damage to all enemies in target row.", art: "/images/Void Collapse.png", requiresTarget: "row" },
+      { key: "voidcollapse", name: "Void Collapse", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "row_damage", effectDesc: "INSTANT: Deal 1 damage to all enemies in target row.", art: "/images/Void Collapse.png", requiresTarget: "row", rarity: "rare" },
       // Hive Ascension x1 (buff all friendly units)
-      { key: "hiveascension", name: "Hive Ascension", atk: 0, hp: 0, cost: 7, type: "spell", effect: "instant", effectId: "mass_buff", effectDesc: "INSTANT: All friendly units gain +1 ATK and +1 HP permanently.", art: "/images/Hive Ascension.png" },
+      { key: "hiveascension", name: "Hive Ascension", atk: 0, hp: 0, cost: 7, type: "spell", effect: "instant", effectId: "mass_buff", effectDesc: "INSTANT: All friendly units gain +1 ATK and +1 HP permanently.", art: "/images/Hive Ascension.png", rarity: "legendary" },
+    ]
+  },
+  "western-skeleton": {
+    name: "Western Skeleton",
+    description: "Undead gunslingers from the ghost town of Boot Hill",
+    archetype: "skeleton",
+    cards: [
+      // Bone Deputy x3 (deathrattle: spawn 1/1)
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      // Dusty Rattler x3 (diagonal attack)
+      { key: "dustyrattler", name: "Dusty Rattler", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Dusty Rattler.png", rarity: "common" },
+      { key: "dustyrattler", name: "Dusty Rattler", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Dusty Rattler.png", rarity: "common" },
+      { key: "dustyrattler", name: "Dusty Rattler", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "diagonal_attack", effectDesc: "PASSIVE: Can attack diagonally.", art: "/images/Dusty Rattler.png", rarity: "common" },
+      // Grave Robber x2 (draw on kill)
+      { key: "graverobber", name: "Grave Robber", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "draw_on_kill", effectDesc: "ON KILL: Draw 1 card.", art: "/images/Grave Robber.png", rarity: "rare" },
+      { key: "graverobber", name: "Grave Robber", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onKill", effectId: "draw_on_kill", effectDesc: "ON KILL: Draw 1 card.", art: "/images/Grave Robber.png", rarity: "rare" },
+      // Phantom Scout x2 (untargetable first turn)
+      { key: "phantomscout", name: "Phantom Scout", atk: 1, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "phantom", effectDesc: "PASSIVE: Untargetable on opponent's first turn after deploy.", art: "/images/Phantom Scout.png", rarity: "common" },
+      { key: "phantomscout", name: "Phantom Scout", atk: 1, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "phantom", effectDesc: "PASSIVE: Untargetable on opponent's first turn after deploy.", art: "/images/Phantom Scout.png", rarity: "common" },
+      // Bone Revolver x2 (ranged, ignores shields)
+      { key: "bonerevolver", name: "Bone Revolver", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "ranged_pierce", effectDesc: "PASSIVE: Ranged (2 tiles). Ignores shield effects.", art: "/images/Bone Revolver.png", rarity: "rare" },
+      { key: "bonerevolver", name: "Bone Revolver", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "ranged_pierce", effectDesc: "PASSIVE: Ranged (2 tiles). Ignores shield effects.", art: "/images/Bone Revolver.png", rarity: "rare" },
+      // Undead Sheriff x2 (weaken aura)
+      { key: "undeadsheriff", name: "Undead Sheriff", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "weaken_aura", effectDesc: "PASSIVE: Adjacent enemies deal -1 damage.", art: "/images/Undead Sheriff.png", rarity: "rare" },
+      { key: "undeadsheriff", name: "Undead Sheriff", atk: 3, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "weaken_aura", effectDesc: "PASSIVE: Adjacent enemies deal -1 damage.", art: "/images/Undead Sheriff.png", rarity: "rare" },
+      // Coffin Trapper x2 (root adjacent enemies)
+      { key: "coffintrapper", name: "Coffin Trapper", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "root_aura", effectDesc: "PASSIVE: Adjacent enemies cannot move.", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      { key: "coffintrapper", name: "Coffin Trapper", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "root_aura", effectDesc: "PASSIVE: Adjacent enemies cannot move.", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      // Undertaker x2 (grows when allies die)
+      { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
+      { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
+      // The Hanged Man x1 (deathrattle: damage adjacent enemies)
+      { key: "thehangedman", name: "The Hanged Man", atk: 4, hp: 5, cost: 5, type: "monster", effect: "onDeath", effectId: "death_explosion", effectDesc: "ON DEATH: Deal 2 damage to all adjacent enemies.", art: "/images/The Hanged Man.png", rarity: "legendary" },
+      // Ghostly Stampede x1 (double move + siege)
+      { key: "ghostlystampede", name: "Ghostly Stampede", atk: 5, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "stampede", effectDesc: "PASSIVE: Can move twice. +2 damage to structures.", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
+      // Bone Colossus x1 (damage reduction)
+      { key: "bonecolossus", name: "Bone Colossus", atk: 6, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "thick_bones", effectDesc: "PASSIVE: Takes 1 less damage from all sources.", art: "/images/Bone Colossus.png", rarity: "legendary" },
+      // Dead Man's Hand x2 (draw 2, discard 1)
+      { key: "deadmanshand", name: "Dead Man's Hand", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_discard", effectDesc: "INSTANT: Draw 2 cards, then discard 1.", art: "/images/Dead Mans Hand.png", rarity: "common" },
+      { key: "deadmanshand", name: "Dead Man's Hand", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_discard", effectDesc: "INSTANT: Draw 2 cards, then discard 1.", art: "/images/Dead Mans Hand.png", rarity: "common" },
+      // Most Wanted x2 (mark enemy for +2 damage)
+      { key: "mostwanted", name: "Most Wanted", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "mark_target", effectDesc: "INSTANT: Target enemy takes +2 damage from all attacks.", art: "/images/Most Wanted.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "mostwanted", name: "Most Wanted", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "mark_target", effectDesc: "INSTANT: Target enemy takes +2 damage from all attacks.", art: "/images/Most Wanted.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      // Shallow Grave x1 (return unit from discard)
+      { key: "shallowgrave", name: "Shallow Grave", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "resurrect", effectDesc: "INSTANT: Return a random friendly unit from discard to hand.", art: "/images/Shallow Grave.png", rarity: "legendary" },
+      // High Noon x1 (row damage)
+      { key: "highnoon", name: "High Noon", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "high_noon", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row.", art: "/images/High Noon.png", requiresTarget: "row", rarity: "legendary" },
     ]
   }
 };
@@ -479,7 +567,7 @@ function getAdjacentAllies(state, uid) {
   return allies;
 }
 
-function getEffectiveAtk(state, uid) {
+function getEffectiveAtk(state, uid, targetId) {
   const u = state.units[uid]; if (!u) return 0; let atk = u.atk; const pos = getUnitPos(state, uid); if (!pos) return atk;
   // War Banner buff
   for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "attack_aura") atk += 1; }
@@ -494,12 +582,53 @@ function getEffectiveAtk(state, uid) {
       }
     }
   }
+  // Weaken aura - attacker deals -1 damage if adjacent to Undead Sheriff
+  const tp = targetId ? getUnitPos(state, targetId) : null;
+  if (tp) {
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
+      if (dr === 0 && dc === 0) continue; 
+      const nr = pos.r + dr, nc = pos.c + dc; 
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
+      const aid = state.board[nr][nc]; 
+      if (aid && state.units[aid] && state.units[aid].owner !== u.owner && state.units[aid].effectId === "weaken_aura") {
+        atk = Math.max(0, atk - 1);
+        break;
+      }
+    }
+  }
+  // Most Wanted mark - target takes +2 damage
+  if (targetId && state.units[targetId] && state.units[targetId].marked) {
+    atk += 2;
+  }
   return atk;
 }
 
-function applyDamageReduction(state, tid, dmg) {
+function applyDamageReduction(state, tid, dmg, attackerId) {
   const t = state.units[tid]; if (!t) return dmg; const pos = getUnitPos(state, tid); if (!pos) return dmg;
-  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === t.owner && state.units[aid].effectId === "shield_aura") return Math.max(0, dmg - 1); }
+  const attacker = attackerId ? state.units[attackerId] : null;
+  
+  // Bone Revolver - ranged_pierce ignores shield effects
+  const ignoresShields = attacker && attacker.effectId === "ranged_pierce";
+  
+  // Shield Bearer shield_aura
+  if (!ignoresShields) {
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
+      if (dr === 0 && dc === 0) continue; 
+      const nr = pos.r + dr, nc = pos.c + dc; 
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
+      const aid = state.board[nr][nc]; 
+      if (aid && state.units[aid] && state.units[aid].owner === t.owner && state.units[aid].effectId === "shield_aura") {
+        dmg = Math.max(0, dmg - 1);
+        break;
+      }
+    }
+  }
+  
+  // Bone Colossus - thick_bones takes 1 less damage from all sources
+  if (t.effectId === "thick_bones") {
+    dmg = Math.max(0, dmg - 1);
+  }
+  
   return dmg;
 }
 
@@ -570,14 +699,88 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos) {
     state.board[killedUnitPos.r][killedUnitPos.c] = droneId;
     logToLobby(lobby, a.name + " spawns a Void Drone!");
   }
+  // Grave Robber - draw a card on kill
+  if (a.effectId === "draw_on_kill") {
+    drawCards(lobby, role, 1);
+    logToLobby(lobby, a.name + " draws a card!");
+  }
 }
 
 // Process on-death effects (for the dying unit's owner)
-function processOnDeathEffect(lobby, deadUnit, deadUnitOwner) {
+function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos) {
   if (!deadUnit || deadUnit.effect !== "onDeath") return;
+  const state = lobby.gameState.state;
+  
   if (deadUnit.effectId === "energy_on_death") {
     lobby.gameState.players[deadUnitOwner].energy = Math.min(lobby.gameState.players[deadUnitOwner].energy + 1, MAX_ENERGY);
     logToLobby(lobby, deadUnit.name + " grants " + deadUnitOwner.toUpperCase() + " 1 energy on death");
+  }
+  
+  // Bone Deputy - spawn a 1/1 Bone Pile
+  if (deadUnit.effectId === "spawn_bone_pile" && deadPos) {
+    const pileId = genId();
+    state.units[pileId] = {
+      id: pileId,
+      owner: deadUnitOwner,
+      key: "bonepile",
+      name: "Bone Pile",
+      atk: 1,
+      hp: 1,
+      maxHp: 1,
+      type: "monster",
+      art: "/images/Bone Pile.png"
+    };
+    state.board[deadPos.r][deadPos.c] = pileId;
+    logToLobby(lobby, deadUnit.name + " leaves behind a Bone Pile!");
+  }
+  
+  // The Hanged Man - deal 2 damage to all adjacent enemies
+  if (deadUnit.effectId === "death_explosion" && deadPos) {
+    const adjacentPositions = [
+      { r: deadPos.r - 1, c: deadPos.c },
+      { r: deadPos.r + 1, c: deadPos.c },
+      { r: deadPos.r, c: deadPos.c - 1 },
+      { r: deadPos.r, c: deadPos.c + 1 }
+    ];
+    let damaged = 0;
+    const toRemove = [];
+    for (const pos of adjacentPositions) {
+      if (pos.r < 0 || pos.r >= ROWS || pos.c < 0 || pos.c >= COLS) continue;
+      const targetId = state.board[pos.r][pos.c];
+      if (targetId && state.units[targetId] && state.units[targetId].owner !== deadUnitOwner) {
+        const target = state.units[targetId];
+        if (target.untargetable) continue;
+        target.hp -= 2;
+        damaged++;
+        if (target.hp <= 0) {
+          toRemove.push({ id: targetId, r: pos.r, c: pos.c });
+        }
+      }
+    }
+    for (const item of toRemove) {
+      const deadTarget = state.units[item.id];
+      // Don't recursively trigger death effects to avoid infinite loops
+      state.board[item.r][item.c] = null;
+      delete state.units[item.id];
+      logToLobby(lobby, deadTarget.name + " destroyed by " + deadUnit.name + "'s death explosion!");
+    }
+    if (damaged > 0) {
+      logToLobby(lobby, deadUnit.name + " explodes, dealing 2 damage to " + damaged + " enemies!");
+    }
+  }
+}
+
+// Process friendly unit death for Undertaker
+function processAllyDeathTriggers(lobby, deadUnitOwner) {
+  const state = lobby.gameState.state;
+  for (const uid in state.units) {
+    const u = state.units[uid];
+    if (u.owner === deadUnitOwner && u.effectId === "grow_on_ally_death") {
+      u.atk += 1;
+      u.hp += 1;
+      u.maxHp = (u.maxHp || u.hp) + 1;
+      logToLobby(lobby, u.name + " grows from ally death! Now " + u.atk + "/" + u.hp);
+    }
   }
 }
 
@@ -654,7 +857,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
             return false;
           }
           // Process on-death effect before removing
-          processOnDeathEffect(lobby, target, target.owner);
+          processOnDeathEffect(lobby, target, target.owner, pos);
+          processAllyDeathTriggers(lobby, target.owner);
           state.board[pos.r][pos.c] = null;
           delete state.units[targetUnitId];
           logToLobby(lobby, "Assimilation destroys " + target.name + "!");
@@ -685,7 +889,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       // Remove dead units
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
-        processOnDeathEffect(lobby, deadUnit, deadUnit.owner);
+        processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
+        processAllyDeathTriggers(lobby, deadUnit.owner);
         state.board[targetRow][item.col] = null;
         delete state.units[item.id];
       }
@@ -705,6 +910,83 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       }
     }
     logToLobby(lobby, "Hive Ascension buffs " + buffed + " units with +1 ATK and +1 HP!");
+  }
+  
+  // Western Skeleton spells
+  if (effectId === "draw_discard") {
+    // Dead Man's Hand - draw 2 cards, then discard 1 (for now, just draw 2 - discard happens client-side)
+    drawCards(lobby, role, 2);
+    // TODO: implement discard selection - for now just draw 2 as net +1
+    logToLobby(lobby, role.toUpperCase() + " plays Dead Man's Hand - draws 2 cards!");
+  }
+  
+  if (effectId === "mark_target") {
+    // Most Wanted - target enemy takes +2 damage from all attacks
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner !== role) {
+        if (target.untargetable) {
+          logToLobby(lobby, target.name + " is untargetable!");
+          return false;
+        }
+        target.marked = true;
+        logToLobby(lobby, target.name + " is Most Wanted! Takes +2 damage from attacks.");
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  if (effectId === "resurrect") {
+    // Shallow Grave - return a random friendly unit from discard to hand
+    const p = lobby.gameState.players[role];
+    if (p.discard.length > 0) {
+      // Filter for unit cards only
+      const unitCards = p.discard.filter(c => c.type === "monster");
+      if (unitCards.length > 0) {
+        const randomIdx = Math.floor(Math.random() * unitCards.length);
+        const card = unitCards[randomIdx];
+        // Remove from discard
+        const discardIdx = p.discard.findIndex(c => c === card);
+        if (discardIdx !== -1) {
+          p.discard.splice(discardIdx, 1);
+          p.hand.push(card);
+          logToLobby(lobby, "Shallow Grave returns " + card.name + " to hand!");
+        }
+      } else {
+        logToLobby(lobby, "No units in discard pile!");
+      }
+    } else {
+      logToLobby(lobby, "Discard pile is empty!");
+    }
+  }
+  
+  if (effectId === "high_noon") {
+    // High Noon - deal 2 damage to all enemies in target row
+    if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
+      let damaged = 0;
+      const toRemove = [];
+      for (let c = 0; c < COLS; c++) {
+        const uid = state.board[targetRow][c];
+        if (uid && state.units[uid] && state.units[uid].owner !== role) {
+          const target = state.units[uid];
+          if (target.untargetable) continue;
+          target.hp -= 2;
+          damaged++;
+          if (target.hp <= 0) {
+            toRemove.push({ id: uid, col: c });
+          }
+        }
+      }
+      for (const item of toRemove) {
+        const deadUnit = state.units[item.id];
+        processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
+        processAllyDeathTriggers(lobby, deadUnit.owner);
+        state.board[targetRow][item.col] = null;
+        delete state.units[item.id];
+      }
+      logToLobby(lobby, "High Noon! " + damaged + " enemies hit for 2 damage in row " + String.fromCharCode(65 + targetRow) + "!");
+    }
   }
 }
 
@@ -969,8 +1251,8 @@ async function executeAction(lobby, role, action) {
       const tp = getUnitPos(state, action.targetId);
       if (!ap || !tp) return;
       
-      let dmg = getEffectiveAtk(state, action.attackerId);
-      dmg = applyDamageReduction(state, action.targetId, dmg);
+      let dmg = getEffectiveAtk(state, action.attackerId, action.targetId);
+      dmg = applyDamageReduction(state, action.targetId, dmg, action.attackerId);
       const before = t.hp;
       t.hp -= dmg;
       
@@ -981,7 +1263,8 @@ async function executeAction(lobby, role, action) {
       
       if (t.hp <= 0) {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
-        processOnDeathEffect(lobby, t, t.owner);
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner);
         processOnKillEffect(lobby, action.attackerId, role, { r: tp.r, c: tp.c });
         if (!state.board[tp.r][tp.c] || state.board[tp.r][tp.c] === action.targetId) {
           state.board[tp.r][tp.c] = null;
@@ -1436,6 +1719,10 @@ io.on("connection", (socket) => {
       if (card.effectId === "burrow") {
         unitData.burrowPending = true;
       }
+      // Phantom Scout - untargetable immediately (until your next turn starts)
+      if (card.effectId === "phantom") {
+        unitData.untargetable = true;
+      }
       state.units[id] = unitData;
       state.board[row][col] = id;
       recomputeOwners(state); // Update row ownership after placing unit
@@ -1461,16 +1748,29 @@ io.on("connection", (socket) => {
       const { unitId, toRow, toCol } = payload; const u = state.units[unitId];
       if (!u || u.owner !== role) return;
       
+      // Check if unit is rooted by Coffin Trapper's root_aura
+      const from = getUnitPos(state, unitId); 
+      if (!from) return socket.emit("log", "Unit not found.");
+      
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = from.r + dr, nc = from.c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const adjId = state.board[nr][nc];
+          if (adjId && state.units[adjId] && state.units[adjId].owner !== role && state.units[adjId].effectId === "root_aura") {
+            return socket.emit("log", "Can't move - rooted by " + state.units[adjId].name + "!");
+          }
+        }
+      }
+      
       // Check move limits based on unit abilities
       const moveCount = state.moveCountThisTurn[unitId] || 0;
-      const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
+      const canDoubleMove = u.effectId === "double_move" || u.effectId === "stampede" || playerHasBuff(state, role, "move_buff");
       const maxMoves = canDoubleMove ? 2 : 1;
       
       if (moveCount >= maxMoves) return socket.emit("log", "No more moves for this unit.");
       if (toRow < 0 || toRow >= ROWS || toCol < 0 || toCol >= COLS || state.board[toRow][toCol]) return socket.emit("log", "Invalid.");
-      
-      const from = getUnitPos(state, unitId); 
-      if (!from) return socket.emit("log", "Unit not found.");
       
       // Squire knight_leap ability - can move to adjacent tile of any Knight
       let validMove = isAdjacent(from.r, from.c, toRow, toCol);
@@ -1544,6 +1844,13 @@ io.on("connection", (socket) => {
         // Cardinal attack up to 2 tiles
         validAttack = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
       }
+      // Bone Revolver ranged_pierce - ranged that ignores shields
+      else if (a.effectId === "ranged_pierce") {
+        const rowDist = Math.abs(ap.r - tp.r);
+        const colDist = Math.abs(ap.c - tp.c);
+        // Cardinal attack up to 2 tiles
+        validAttack = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
+      }
       // Default: cardinal adjacent only
       else {
         validAttack = isCardinalAdjacent(ap.r, ap.c, tp.r, tp.c);
@@ -1571,9 +1878,9 @@ io.on("connection", (socket) => {
       }
       
       // Calculate damage
-      let dmg = getEffectiveAtk(state, attackerId);
+      let dmg = getEffectiveAtk(state, attackerId, targetId);
       
-      dmg = applyDamageReduction(state, targetId, dmg);
+      dmg = applyDamageReduction(state, targetId, dmg, attackerId);
       const before = t.hp; 
       t.hp -= dmg;
       
@@ -1619,11 +1926,12 @@ io.on("connection", (socket) => {
             if (splashId && state.units[splashId] && state.units[splashId].owner !== role) {
               const splashTarget = state.units[splashId];
               if (splashTarget.untargetable) continue;
-              const reducedSplash = applyDamageReduction(state, splashId, splashDmg);
+              const reducedSplash = applyDamageReduction(state, splashId, splashDmg, attackerId);
               splashTarget.hp -= reducedSplash;
               logToLobby(lobby, a.name + " cleaves " + splashTarget.name + " for " + reducedSplash);
               if (splashTarget.hp <= 0) {
-                processOnDeathEffect(lobby, splashTarget, splashTarget.owner);
+                processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
+                processAllyDeathTriggers(lobby, splashTarget.owner);
                 state.board[sp.r][sp.c] = null; 
                 delete state.units[splashId];
                 logToLobby(lobby, splashTarget.name + " destroyed by cleave!");
@@ -1650,7 +1958,8 @@ io.on("connection", (socket) => {
             splashTarget.hp -= 1;
             logToLobby(lobby, a.name + " spore damages " + splashTarget.name + " for 1");
             if (splashTarget.hp <= 0) {
-              processOnDeathEffect(lobby, splashTarget, splashTarget.owner);
+              processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
+              processAllyDeathTriggers(lobby, splashTarget.owner);
               state.board[sp.r][sp.c] = null; 
               delete state.units[splashId];
               logToLobby(lobby, splashTarget.name + " destroyed by spores!");
@@ -1663,7 +1972,8 @@ io.on("connection", (socket) => {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         // Process on-death effect for dying unit
-        processOnDeathEffect(lobby, t, t.owner);
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner);
         // Process on-kill effect for attacker (pass killed unit position for spawn_drone)
         processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c });
         // Only remove unit if spawn_drone didn't place a drone there
@@ -1705,7 +2015,11 @@ io.on("connection", (socket) => {
         return socket.emit("log", isRanged ? "Too far (max 2 rows)." : "Not adjacent (no diagonal).");
       }
       
-      let dmg = getEffectiveAtk(state, attackerId); if (a.effectId === "siege") dmg *= 2;
+      let dmg = getEffectiveAtk(state, attackerId); 
+      // Siege Ram deals double damage to structures
+      if (a.effectId === "siege") dmg *= 2;
+      // Ghostly Stampede deals +2 to structures
+      if (a.effectId === "stampede") dmg += 2;
       state.attackedThisTurn.add(attackerId); state.rowHP[row] = Math.max(0, state.rowHP[row] - dmg);
       logToLobby(lobby, a.name + " hits row for " + dmg + " (HP: " + state.rowHP[row] + ")");
       return emitGameState(lobby);
@@ -1730,7 +2044,10 @@ io.on("connection", (socket) => {
         return socket.emit("log", isRanged ? "Archer must be within 1 row of the heart." : "Must be in the heart's row to attack.");
       }
       
-      const dmg = getEffectiveAtk(state, attackerId); state.attackedThisTurn.add(attackerId);
+      let dmg = getEffectiveAtk(state, attackerId); 
+      // Ghostly Stampede deals +2 to structures (including heart)
+      if (u.effectId === "stampede") dmg += 2;
+      state.attackedThisTurn.add(attackerId);
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
       logToLobby(lobby, role.toUpperCase() + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
       if (state.heartHP[target] <= 0) { 
@@ -1759,7 +2076,7 @@ io.on("connection", (socket) => {
       // Spawn can attack units in adjacent row (row 0 for gold, row 6 for silver)
       const adjRow = role === "gold" ? 0 : 6;
       if (tp.r !== adjRow) return socket.emit("log", "Can only attack units in adjacent row.");
-      let dmg = getEffectiveAtk(state, attackerId); dmg = applyDamageReduction(state, targetId, dmg);
+      let dmg = getEffectiveAtk(state, attackerId, targetId); dmg = applyDamageReduction(state, targetId, dmg, attackerId);
       const before = t.hp; t.hp -= dmg; state.attackedThisTurn.add(attackerId);
       logToLobby(lobby, a.name + " (from spawn) deals " + dmg + " to " + t.name);
       if (t.hp <= 0) {

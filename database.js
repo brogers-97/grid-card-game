@@ -144,6 +144,20 @@ const CAMPAIGN_BOSSES = [
       music: 'void-alien',
       background: 'void-alien'
     }
+  },
+  {
+    id: 2,
+    name: "The Dead Sheriff",
+    description: "An undead lawman risen from Boot Hill to enforce his own twisted justice",
+    deckId: "western-skeleton",
+    difficulty: "medium",
+    aiLevel: 2,
+    requiresBoss: 1,
+    cardRewards: ['bonedeputy', 'dustyrattler', 'graverobber', 'phantomscout', 'bonerevolver', 'undeadsheriff', 'coffintrapper', 'undertaker', 'thehangedman', 'ghostlystampede', 'bonecolossus', 'deadmanshand', 'mostwanted', 'shallowgrave', 'highnoon'],
+    unlocks: {
+      music: 'western-skeleton',
+      background: 'western-skeleton'
+    }
   }
 ];
 
