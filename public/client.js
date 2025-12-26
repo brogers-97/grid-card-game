@@ -175,7 +175,7 @@ function showTooltip(unitId, x, y, buff) {
   const icon = CARD_ICONS[u.key] || '⚔️';
   const hasArt = u.art;
   const encodedArt = hasArt ? encodeURI(u.art) : '';
-  const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
+  const artStyle = hasArt ? `background: url('${encodedArt}') center/cover no-repeat` : '';
   const artIconHtml = hasArt ? '' : `<div class="tooltip-art-icon">${icon}</div>`;
   const costBadgeHtml = `<div class="tooltip-cost-badge">${u.cost || 0}</div>`;
   
@@ -244,7 +244,7 @@ function showCardTooltip(card, x, y) {
   const icon = CARD_ICONS[card.key] || '⚔️';
   const hasArt = card.art;
   const encodedArt = hasArt ? encodeURI(card.art) : '';
-  const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
+  const artStyle = hasArt ? `background: url('${encodedArt}') center/cover no-repeat` : '';
   const artIconHtml = hasArt ? '' : `<div class="tooltip-art-icon">${icon}</div>`;
   const costBadgeHtml = `<div class="tooltip-cost-badge">${card.cost}</div>`;
   
@@ -1166,8 +1166,8 @@ function renderHand() {
     // Encode URL to handle spaces and special characters
     const encodedArt = hasArt ? encodeURI(card.art) : '';
     
-    // Set background image directly in style if art exists
-    const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
+    // Set background directly in style if art exists (use shorthand to override CSS)
+    const artStyle = hasArt ? `background: url('${encodedArt}') center/cover no-repeat` : '';
 
     el.innerHTML = `
       <div class="cardArt ${card.type === 'spell' ? 'spell-art' : ''}" style="${artStyle}">${artContent}</div>
@@ -1485,7 +1485,7 @@ function renderAll() {
       const icon = CARD_ICONS[u.key] || '⚔️';
       const hasArt = u.art;
       const encodedArt = hasArt ? encodeURI(u.art) : '';
-      const artStyle = hasArt ? `background-image: url('${encodedArt}')` : '';
+      const artStyle = hasArt ? `background: url('${encodedArt}') center/cover no-repeat` : '';
       const artContent = hasArt ? '' : icon;
       const effectBadge = ''; // Removed star badge
       
@@ -1923,7 +1923,7 @@ function animateUnitMove(unitId, fromRow, fromCol, toRow, toCol) {
   
   const icon = CARD_ICONS[unit.key] || '⚔️';
   const hasArt = unit.art;
-  const artStyle = hasArt ? `background-image: url('${unit.art}'); background-size: cover; background-position: center;` : '';
+  const artStyle = hasArt ? `background: url('${unit.art}') center/cover no-repeat` : '';
   
   animUnit.innerHTML = `
     <div class="cardArt" style="${artStyle}">${hasArt ? '' : icon}</div>
@@ -2015,7 +2015,7 @@ function showDiscardModal() {
     
     const icon = CARD_ICONS[card.key] || '⚔️';
     const hasArt = card.art;
-    const artStyle = hasArt ? `background-image: url('${card.art}')` : '';
+    const artStyle = hasArt ? `background: url('${card.art}') center/cover no-repeat` : '';
     const artContent = hasArt ? '' : icon;
     const isInstant = card.effect === "instant";
     
@@ -2079,7 +2079,7 @@ function animateCardPlay(card, targetEl, callback) {
   
   const icon = CARD_ICONS[card.key] || '⚔️';
   const hasArt = card.art;
-  const artStyle = hasArt ? `background-image: url('${card.art}'); background-size: cover; background-position: center;` : '';
+  const artStyle = hasArt ? `background: url('${card.art}') center/cover no-repeat` : '';
   
   animCard.innerHTML = `
     <div class="cardArt ${card.type === 'spell' ? 'spell-art' : ''}" style="${artStyle}">${hasArt ? '' : icon}</div>

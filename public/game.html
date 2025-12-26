@@ -1936,8 +1936,8 @@
       opacity: 0.8;
     }
 
-    .spell-art {
-      background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc) !important;
+    .spell-art:not([style*="background"]) {
+      background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc);
     }
 
     /* Unit effect indicator on board */
@@ -2580,7 +2580,7 @@
     }
 
     .handCard.spell-card { border-color: rgba(168, 85, 247, 0.6); }
-    .spell-art { background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc) !important; }
+    .spell-art:not([style*="background"]) { background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc); }
     .cardInfo { display: none; }
 
     /* ===== DESTRUCTION EFFECT ===== */
