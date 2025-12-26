@@ -773,6 +773,12 @@ function getEffectiveMaxHp(state, uid) {
 
 function logToLobby(lobby, msg) { lobby.log = lobby.log || []; lobby.log.push(msg); if (lobby.hostSocket) lobby.hostSocket.emit("log", msg); if (lobby.guestSocket) lobby.guestSocket.emit("log", msg); }
 
+// Combat log for detailed damage calculations
+function combatLogToLobby(lobby, msg, type = "combat-step") { 
+  if (lobby.hostSocket) lobby.hostSocket.emit("combatLog", { msg, type }); 
+  if (lobby.guestSocket) lobby.guestSocket.emit("combatLog", { msg, type }); 
+}
+
 function drawCards(lobby, role, count) {
   const p = lobby.gameState.players[role];
   for (let i = 0; i < count; i++) { if (p.hand.length >= MAX_HAND_SIZE) break; if (p.deck.length === 0) { if (p.discard.length === 0) break; p.deck = shuffle([...p.discard]); p.discard = []; logToLobby(lobby, role.toUpperCase() + " reshuffles"); } if (p.deck.length > 0) p.hand.push(p.deck.pop()); }
@@ -1432,8 +1438,34 @@ function emitGameState(lobby) {
     buffTiles: state.buffTiles,
     moveCountThisTurn: state.moveCountThisTurn
   };
-  if (lobby.hostSocket) lobby.hostSocket.emit("state", { ...base, hand: players.gold.hand, deckCount: players.gold.deck.length, discardCount: players.gold.discard.length, energy: players.gold.energy, maxEnergy: players.gold.maxEnergy, canDraw: !players.gold.hasDrawn && players.gold.hand.length < MAX_HAND_SIZE });
-  if (lobby.guestSocket) lobby.guestSocket.emit("state", { ...base, hand: players.silver.hand, deckCount: players.silver.deck.length, discardCount: players.silver.discard.length, energy: players.silver.energy, maxEnergy: players.silver.maxEnergy, canDraw: !players.silver.hasDrawn && players.silver.hand.length < MAX_HAND_SIZE });
+  if (lobby.hostSocket) lobby.hostSocket.emit("state", { 
+    ...base, 
+    hand: players.gold.hand, 
+    deckCount: players.gold.deck.length, 
+    discardCount: players.gold.discard.length, 
+    energy: players.gold.energy, 
+    maxEnergy: players.gold.maxEnergy, 
+    canDraw: !players.gold.hasDrawn && players.gold.hand.length < MAX_HAND_SIZE,
+    // Opponent info (silver)
+    enemyHandCount: players.silver.hand.length,
+    enemyDeckCount: players.silver.deck.length,
+    enemyEnergy: players.silver.energy,
+    enemyMaxEnergy: players.silver.maxEnergy
+  });
+  if (lobby.guestSocket) lobby.guestSocket.emit("state", { 
+    ...base, 
+    hand: players.silver.hand, 
+    deckCount: players.silver.deck.length, 
+    discardCount: players.silver.discard.length, 
+    energy: players.silver.energy, 
+    maxEnergy: players.silver.maxEnergy, 
+    canDraw: !players.silver.hasDrawn && players.silver.hand.length < MAX_HAND_SIZE,
+    // Opponent info (gold)
+    enemyHandCount: players.gold.hand.length,
+    enemyDeckCount: players.gold.deck.length,
+    enemyEnergy: players.gold.energy,
+    enemyMaxEnergy: players.gold.maxEnergy
+  });
 }
 
 // Process AI turn for campaign mode
@@ -1707,10 +1739,25 @@ async function executeAction(lobby, role, action) {
       const tp = getUnitPos(state, action.targetId);
       if (!ap || !tp) return;
       
+      // Combat log header
+      combatLogToLobby(lobby, `⚔️ ${a.name} attacks ${t.name}`, "combat-header");
+      combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
+      
       let dmg = getEffectiveAtk(state, action.attackerId, action.targetId);
+      if (dmg !== a.atk) {
+        combatLogToLobby(lobby, `Modified ATK: ${dmg} (buffs/debuffs applied)`, "combat-step");
+      }
+      
+      const dmgBeforeReduction = dmg;
       dmg = applyDamageReduction(state, action.targetId, dmg, action.attackerId);
+      if (dmg !== dmgBeforeReduction) {
+        combatLogToLobby(lobby, `Damage reduced: ${dmgBeforeReduction} → ${dmg} (Shield Bearer/armor)`, "combat-step");
+      }
+      
       const before = t.hp;
       t.hp -= dmg;
+      
+      combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
       
@@ -1718,6 +1765,7 @@ async function executeAction(lobby, role, action) {
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name);
       
       if (t.hp <= 0) {
+        combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
         processAllyDeathTriggers(lobby, t.owner);
@@ -1739,15 +1787,32 @@ async function executeAction(lobby, role, action) {
       if (state.rowHP[action.row] <= 0) return;
       
       let dmg = getEffectiveAtk(state, action.attackerId);
-      if (a.effectId === "siege") dmg *= 2;
+      const rowLetter = String.fromCharCode(65 + action.row);
+      
+      // Combat log for row attack
+      combatLogToLobby(lobby, `⚔️ ${a.name} attacks Row ${rowLetter}`, "combat-header");
+      combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
+      
+      if (a.effectId === "siege") {
+        combatLogToLobby(lobby, `Siege bonus: ${dmg} × 2 = ${dmg * 2}`, "combat-step");
+        dmg *= 2;
+      }
+      
+      const beforeRowHP = state.rowHP[action.row];
       state.rowHP[action.row] = Math.max(0, state.rowHP[action.row] - dmg);
       state.attackedThisTurn.add(action.attackerId);
+      
+      combatLogToLobby(lobby, `Row ${rowLetter}: ${beforeRowHP} HP - ${dmg} damage = ${state.rowHP[action.row]} HP`, "combat-result");
       logToLobby(lobby, a.name + " attacks row for " + dmg);
       
       if (state.rowHP[action.row] <= 0) {
-        logToLobby(lobby, "Row " + String.fromCharCode(65 + action.row) + " destroyed!");
+        combatLogToLobby(lobby, `💀 Row ${rowLetter} DESTROYED!`, "combat-death");
+        logToLobby(lobby, "Row " + rowLetter + " destroyed!");
         // Deal overflow to heart
-        const overflow = Math.max(0, dmg - state.rowHP[action.row]);
+        const overflow = Math.max(0, dmg - beforeRowHP);
+        if (overflow > 0) {
+          combatLogToLobby(lobby, `Overflow damage: ${overflow} to Heart`, "combat-step");
+        }
         if (action.row <= 1) {
           state.heartHP.gold = Math.max(0, state.heartHP.gold - overflow);
           if (state.heartHP.gold <= 0) {
@@ -1776,16 +1841,33 @@ async function executeAction(lobby, role, action) {
       const adjRow = role === "gold" ? 0 : 6;
       if (tp.r !== adjRow) return;
       
+      // Combat log header
+      combatLogToLobby(lobby, `⚔️ ${a.name} (spawn) attacks ${t.name}`, "combat-header");
+      combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
+      
       let dmg = getEffectiveAtk(state, attackerId, action.targetId);
+      if (dmg !== a.atk) {
+        combatLogToLobby(lobby, `Modified ATK: ${dmg} (buffs/debuffs applied)`, "combat-step");
+      }
+      
+      const dmgBeforeReduction = dmg;
       dmg = applyDamageReduction(state, action.targetId, dmg, attackerId);
+      if (dmg !== dmgBeforeReduction) {
+        combatLogToLobby(lobby, `Damage reduced: ${dmgBeforeReduction} → ${dmg} (Shield Bearer/armor)`, "combat-step");
+      }
+      
+      const before = t.hp;
       t.hp -= dmg;
       state.attackedThisTurn.add(attackerId);
+      
+      combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
       
       logToLobby(lobby, a.name + " (from spawn) deals " + dmg + " to " + t.name);
       
       if (t.hp <= 0) {
+        combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
         processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
         processAllyDeathTriggers(lobby, t.owner);
@@ -1820,14 +1902,25 @@ async function executeAction(lobby, role, action) {
       const maxRange = isRanged ? 1 : 0;
       if (distance > maxRange) return;
       
-      let dmg = getEffectiveAtk(state, action.attackerId);
-      if (a.effectId === "stampede") dmg += 2; // Structure bonus
+      // Combat log header
+      combatLogToLobby(lobby, `⚔️ ${a.name} attacks ${target.toUpperCase()} HEART`, "combat-header");
+      combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
       
+      let dmg = getEffectiveAtk(state, action.attackerId);
+      if (a.effectId === "stampede") {
+        combatLogToLobby(lobby, `Stampede bonus: +2 vs structures`, "combat-step");
+        dmg += 2;
+      }
+      
+      const beforeHP = state.heartHP[target];
       state.attackedThisTurn.add(action.attackerId);
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
+      
+      combatLogToLobby(lobby, `${target.toUpperCase()} Heart: ${beforeHP} HP - ${dmg} damage = ${state.heartHP[target]} HP`, "combat-result");
       logToLobby(lobby, a.name + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
       
       if (state.heartHP[target] <= 0) {
+        combatLogToLobby(lobby, `💀 ${target.toUpperCase()} HEART DESTROYED!`, "combat-death");
         state.gameOver = true;
         state.winner = role;
         logToLobby(lobby, "=== " + target.toUpperCase() + " DESTROYED! " + role.toUpperCase() + " WINS! ===");
@@ -2163,6 +2256,7 @@ io.on("connection", (socket) => {
       processStartOfTurnEffects(lobby, state.activeSide);
       state.turnNumber++; // Increment every turn
       logToLobby(lobby, "--- " + state.activeSide.toUpperCase() + "'s turn (+" + energyGain + " energy) ---");
+      combatLogToLobby(lobby, `─── Turn ${state.turnNumber}: ${state.activeSide.toUpperCase()} ───`, "turn-separator");
       emitGameState(lobby);
       
       // If it's now AI's turn, process AI actions
@@ -2451,9 +2545,23 @@ io.on("connection", (socket) => {
       // Calculate damage
       let dmg = getEffectiveAtk(state, attackerId, targetId);
       
+      // Combat log header
+      combatLogToLobby(lobby, `⚔️ ${a.name} attacks ${t.name}`, "combat-header");
+      combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
+      if (dmg !== a.atk) {
+        combatLogToLobby(lobby, `Modified ATK: ${dmg} (buffs/debuffs applied)`, "combat-step");
+      }
+      
+      const dmgBeforeReduction = dmg;
       dmg = applyDamageReduction(state, targetId, dmg, attackerId);
+      if (dmg !== dmgBeforeReduction) {
+        combatLogToLobby(lobby, `Damage reduced: ${dmgBeforeReduction} → ${dmg} (Shield Bearer/armor)`, "combat-step");
+      }
+      
       const before = t.hp; 
       t.hp -= dmg;
+      
+      combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
       // hp_buff gives virtual HP - unit survives at 0 HP if buff active
       const hpBuffBonus = getHpBuffBonus(state, t.owner);
@@ -2489,8 +2597,12 @@ io.on("connection", (socket) => {
         // Lifesteal heals the unit for 1 HP when attacking
         const maxHp = a.maxHp || a.hp;
         if (a.hp < maxHp) {
+          const hpBefore = a.hp;
           a.hp = Math.min(a.hp + 1, maxHp);
           logToLobby(lobby, a.name + " drains life! +1 HP");
+          combatLogToLobby(lobby, `Lifesteal (attacker): ${a.name} heals ${hpBefore} → ${a.hp} HP`, "combat-lifesteal");
+        } else {
+          combatLogToLobby(lobby, `Lifesteal (attacker): ${a.name} already at max HP`, "combat-step");
         }
       }
       
@@ -2505,8 +2617,12 @@ io.on("connection", (socket) => {
         // Lifesteal heals the unit for 1 HP when attacked
         const maxHp = t.maxHp || t.hp;
         if (t.hp < maxHp) {
+          const hpBefore = t.hp;
           t.hp = Math.min(t.hp + 1, maxHp);
           logToLobby(lobby, t.name + " drains life from attacker! +1 HP");
+          combatLogToLobby(lobby, `Lifesteal (defender): ${t.name} heals ${hpBefore} → ${t.hp} HP`, "combat-lifesteal");
+        } else {
+          combatLogToLobby(lobby, `Lifesteal (defender): ${t.name} already at max HP`, "combat-step");
         }
       }
       
@@ -2586,7 +2702,9 @@ io.on("connection", (socket) => {
           t.hp = t.maxHp || 6;
           t.immortalUsed = true;
           logToLobby(lobby, t.name + " refuses to die! Heals to full HP!");
+          combatLogToLobby(lobby, `☠️ ${t.name} would die but IMMORTAL triggers! Heals to full`, "combat-lifesteal");
         } else {
+          combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
           if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
           if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
           // Process on-death effect for dying unit
