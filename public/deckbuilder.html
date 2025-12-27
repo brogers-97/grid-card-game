@@ -199,7 +199,7 @@
         <div class="filters">
           <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search">
           <div class="filter-group"><label>Own:</label><select class="filter-select" id="ownedFilter"><option value="all">All</option><option value="owned">Owned</option><option value="not-owned">Not Owned</option></select></div>
-          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option></select></div>
+          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option><option value="elunes-chosen">Elune's Chosen</option></select></div>
           <div class="filter-group"><label>Type:</label><select class="filter-select" id="typeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option></select></div>
           <div class="filter-group"><label>Cost:</label><select class="filter-select" id="costFilter"><option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
           <div class="filter-group"><label>Rarity:</label><select class="filter-select" id="rarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
@@ -210,7 +210,7 @@
       <div class="panel deck-panel">
         <div class="panel-header"><div class="panel-title">🃏 Current Deck</div></div>
         <div class="deck-selector-section">
-          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option><option value="crimson-court">Crimson Court Deck 🔒</option><option value="jeweled-court">Jeweled Court Deck 🔒</option></select>
+          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option><option value="crimson-court">Crimson Court Deck 🔒</option><option value="jeweled-court">Jeweled Court Deck 🔒</option><option value="elunes-chosen">Elune's Chosen Deck 🔒</option></select>
         </div>
         <div class="deck-name-section">
           <input type="text" class="deck-name-input" id="deckNameInput" placeholder="Deck name..." maxlength="25">
@@ -334,14 +334,34 @@
       prismaticfairy: { name: "Prismatic Fairy", cost: 5, atk: 3, hp: 4, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "When friendly Gem Shard dies, all enemies take 1 damage", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
       gemstonecurse: { name: "Gemstone Curse", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "Halve target enemy's ATK (minimum 1)", art: "/images/Gemstone Curse.png", rarity: "legendary" },
       fairyring: { name: "Fairy Ring", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "Summon two 1/1 Gem Shards in your home rows", art: "/images/Fairy Ring.png", rarity: "legendary" },
-      gemshard: { name: "Gem Shard", cost: 0, atk: 1, hp: 1, type: "spell", archetype: "jeweled-court", effect: false, effectDesc: "Structure: Synergizes with fairy abilities", art: "/images/Gem Shard.png", rarity: "common" }
+      gemshard: { name: "Gem Shard", cost: 0, atk: 1, hp: 1, type: "spell", archetype: "jeweled-court", effect: false, effectDesc: "Structure: Synergizes with fairy abilities", art: "/images/Gem Shard.png", rarity: "common" },
+      // Elune's Chosen - Common Units
+      moonsentinel: { name: "Moon Sentinel", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Gain +1 HP at start of turn if adjacent to 2+ allies", art: "/images/Moon Sentinel.png", rarity: "common" },
+      starweavearcher: { name: "Star Weave Archer", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Range 2. Gains +1 ATK per adjacent ally", art: "/images/Star Weave Archer.png", rarity: "common" },
+      moonlitbladedancer: { name: "Moonlit Blade Dancer", cost: 2, atk: 3, hp: 1, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "On kill, can move again this turn", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      lunarpriestess: { name: "Lunar Priestess", cost: 3, atk: 3, hp: 2, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Can attack allies to heal them for ATK", art: "/images/Lunar Priestess.png", rarity: "common" },
+      twilightsrespite: { name: "Twilight's Respite", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Your units take -1 damage until next turn", art: "/images/Twilights Respite.png", rarity: "common" },
+      huntinggodsblessing: { name: "Hunting God's Blessing", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Target ally gains +1 ATK and +1 range this turn", art: "/images/Hunting Gods Blessing.png", rarity: "common" },
+      // Elune's Chosen - Rare
+      stonegiant: { name: "Stone Giant", cost: 5, atk: 3, hp: 8, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Takes all damage for adjacent allies", art: "/images/Stone Giant.png", rarity: "rare" },
+      nightshadeambusher: { name: "Night Shade Ambusher", cost: 4, atk: 4, hp: 2, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Can deploy in neutral zones (rows 2-4)", art: "/images/Night Shade Ambusher.png", rarity: "rare" },
+      moonshadowwarden: { name: "Moon Shadow Warden", cost: 3, atk: 4, hp: 2, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "On attack, target cannot move next turn", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
+      moonflaresorceress: { name: "Moon Flare Sorceress", cost: 4, atk: 2, hp: 6, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Adjacent allies gain +1 ATK and +1 HP", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      elunesmoonwell: { name: "Elune's Moonwell", cost: 2, atk: 0, hp: 4, type: "structure", archetype: "elunes-chosen", effect: true, effectDesc: "If adjacent to 2+ allies, gain 1 energy and draw a card", art: "/images/Elunes Moonwell.png", rarity: "rare" },
+      lunarprayer: { name: "Lunar Prayer", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Target ally survives lethal damage once with 1 HP", art: "/images/Lunar Prayer.png", rarity: "rare" },
+      // Elune's Chosen - Legendary
+      starlitchampion: { name: "Starlit Champion", cost: 6, atk: 4, hp: 6, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "On kill, gain 1 energy and +1 ATK permanently", art: "/images/Starlit Champion.png", rarity: "legendary" },
+      starinvoker: { name: "Star Invoker", cost: 6, atk: 2, hp: 5, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "At start of turn, deal 2 damage to a random enemy", art: "/images/Star Invoker.png", rarity: "legendary" },
+      templeofthemoon: { name: "Temple of the Moon", cost: 4, atk: 0, hp: 4, type: "structure", archetype: "elunes-chosen", effect: true, effectDesc: "If adjacent to 2+ allies, give them +1 ATK permanently", art: "/images/Temple of the Moon.png", rarity: "legendary" },
+      lunarbarrage: { name: "Lunar Barrage", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Deal 2 damage to all enemies in and adjacent to target tile", art: "/images/Lunar Barrage.png", rarity: "legendary" }
     };
     const DEFAULT_DECKS = {
       medieval: { name: "Medieval Kingdom", cards: ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','royalguard','royalguard','paladin','siegeram','siegeram','warbanner','warbanner','shrine','shrine','armory','castlewalls','treasury','rally'] },
       'void-alien': { name: "Void Swarm", cards: ['voiddrone','voiddrone','voiddrone','scavengerlarva','scavengerlarva','scavengerlarva','spittercrawler','spittercrawler','spittercrawler','phaseskirmisher','phaseskirmisher','energyleech','energyleech','burrowerbeast','burrowerbeast','psionicoverseer','psionicoverseer','neuralharvester','neuralharvester','adaptivecolossus','sporetitan','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','assimilation','assimilation','voidcollapse','voidcollapse','hiveascension'] },
       'western-skeleton': { name: "Boot Hill Outlaws", cards: ['bonedeputy','bonedeputy','bonedeputy','dustyrattler','dustyrattler','dustyrattler','graverobber','graverobber','phantomscout','phantomscout','phantomscout','bonerevolver','bonerevolver','undeadsheriff','undeadsheriff','coffintrapper','coffintrapper','undertaker','undertaker','thehangedman','ghostlystampede','bonecolossus','deadmanshand','deadmanshand','deadmanshand','mostwanted','mostwanted','shallowgrave','highnoon'] },
       'crimson-court': { name: "Crimson Court", cards: ['thrall','thrall','thrall','bloodfamiliar','bloodfamiliar','bloodfamiliar','nightstalker','nightstalker','nightstalker','cryptkeeper','cryptkeeper','vampirespawn','vampirespawn','vampirespawn','bloodpriest','bloodpriest','soulcollector','soulcollector','nosferatu','nosferatu','coffin','coffin','bloodcountess','eldervampire','vampirelord','bloodpact','bloodpact','bloodtransfusion','bloodtransfusion','crimsonrevival','sanguinefeast'] },
-      'jeweled-court': { name: "Jeweled Court", cards: ['rubysprite','rubysprite','rubysprite','emeraldforager','emeraldforager','emeraldforager','sapphiredancer','sapphiredancer','sapphiredancer','topazminer','topazminer','topazminer','amethystenchanter','amethystenchanter','diamondguardian','diamondguardian','opaldevourer','opaldevourer','pearlblessing','pearlblessing','garnetqueen','moonstonewitch','prismaticfairy','gemstonecurse','fairyring'] }
+      'jeweled-court': { name: "Jeweled Court", cards: ['rubysprite','rubysprite','rubysprite','emeraldforager','emeraldforager','emeraldforager','sapphiredancer','sapphiredancer','sapphiredancer','topazminer','topazminer','topazminer','amethystenchanter','amethystenchanter','diamondguardian','diamondguardian','opaldevourer','opaldevourer','pearlblessing','pearlblessing','garnetqueen','moonstonewitch','prismaticfairy','gemstonecurse','fairyring'] },
+      'elunes-chosen': { name: "Elune's Chosen", cards: ['moonsentinel','moonsentinel','moonsentinel','starweavearcher','starweavearcher','starweavearcher','moonlitbladedancer','moonlitbladedancer','moonlitbladedancer','lunarpriestess','lunarpriestess','lunarpriestess','twilightsrespite','twilightsrespite','huntinggodsblessing','huntinggodsblessing','stonegiant','stonegiant','nightshadeambusher','nightshadeambusher','moonshadowwarden','moonshadowwarden','elunesmoonwell','elunesmoonwell','lunarprayer','lunarprayer','moonflaresorceress','moonflaresorceress','starlitchampion','starinvoker','templeofthemoon','lunarbarrage'] }
     };
     let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
     let currentMusic = 'default', currentBackground = 'default';
@@ -351,7 +371,8 @@
       'void-alien': 'Void Alien Swarm',
       'western-skeleton': 'Western Skeleton',
       'crimson-court': 'Crimson Court',
-      'jeweled-court': 'Jeweled Court'
+      'jeweled-court': 'Jeweled Court',
+      'elunes-chosen': "Elune's Chosen"
     };
     const BACKGROUND_OPTIONS = {
       'default': 'Default (Match Theme)',
@@ -359,7 +380,8 @@
       'void-alien': 'Alien Hive',
       'western-skeleton': 'Ghost Town',
       'crimson-court': 'Vampire Manor',
-      'jeweled-court': 'Crystal Cavern'
+      'jeweled-court': 'Crystal Cavern',
+      'elunes-chosen': 'Moon Temple'
     };
     const cardGrid = document.getElementById('cardGrid'), deckCards = document.getElementById('deckCards'), deckCount = document.getElementById('deckCount');
     const collectionCount = document.getElementById('collectionCount'), saveBtn = document.getElementById('saveBtn'), clearBtn = document.getElementById('clearBtn');
@@ -442,6 +464,10 @@
       const fairyOption = deckSelect.querySelector('option[value="jeweled-court"]');
       if (unlockedDecks.includes('jeweled-court')) { fairyOption.disabled = false; fairyOption.textContent = fairyCustom ? fairyCustom.name : 'Jeweled Court Deck'; }
       else { fairyOption.disabled = true; fairyOption.textContent = 'Jeweled Court Deck 🔒'; }
+      const eluneCustom = customDecks.find(function(d) { return d.id === 'elunes-chosen'; });
+      const eluneOption = deckSelect.querySelector('option[value="elunes-chosen"]');
+      if (unlockedDecks.includes('elunes-chosen')) { eluneOption.disabled = false; eluneOption.textContent = eluneCustom ? eluneCustom.name : "Elune's Chosen Deck"; }
+      else { eluneOption.disabled = true; eluneOption.textContent = "Elune's Chosen Deck 🔒"; }
       loadDeckType('medieval');
       renderCollection();
       const total = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k); }).length;
@@ -476,6 +502,7 @@
       if (archetype === 'western-skeleton') return 'Western Skeleton';
       if (archetype === 'crimson-court') return 'Crimson Court';
       if (archetype === 'jeweled-court') return 'Jeweled Court';
+      if (archetype === 'elunes-chosen') return "Elune's Chosen";
       return 'Medieval';
     }
     function renderCardPreview() {
@@ -505,6 +532,7 @@
       if (archetype === 'western-skeleton') return 'The Dead Sheriff';
       if (archetype === 'crimson-court') return 'The Blood Countess';
       if (archetype === 'jeweled-court') return 'The Garnet Queen';
+      if (archetype === 'elunes-chosen') return 'Moon Shadow Sentinel';
       return 'Unknown Boss';
     }
     function renderCollection() {

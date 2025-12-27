@@ -102,6 +102,14 @@ app.post("/api/fixCollection", async (req, res) => {
       // Jeweled Court - Legendary
       garnetqueen: 'legendary', moonstonewitch: 'legendary', prismaticfairy: 'legendary',
       gemstonecurse: 'legendary', fairyring: 'legendary',
+      // Elune's Chosen - Common
+      moonsentinel: 'common', starweavearcher: 'common', moonlitbladedancer: 'common', 
+      lunarpriestess: 'common', twilightsrespite: 'common', huntinggodsblessing: 'common',
+      // Elune's Chosen - Rare
+      stonegiant: 'rare', nightshadeambusher: 'rare', moonshadowwarden: 'rare',
+      elunesmoonwell: 'rare', lunarprayer: 'rare', moonflaresorceress: 'rare',
+      // Elune's Chosen - Legendary
+      starlitchampion: 'legendary', starinvoker: 'legendary', templeofthemoon: 'legendary', lunarbarrage: 'legendary',
       // Token/Spawnable
       gemshard: 'common'
     };
@@ -151,7 +159,7 @@ app.post("/api/saveDeck", async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
     
-    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court'].includes(deckType)) {
+    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen'].includes(deckType)) {
       return res.status(400).json({ success: false, error: 'Invalid deck type' });
     }
     
@@ -511,6 +519,70 @@ const DECKS = {
       // Fairy Ring x1 (summon gems spell)
       { key: "fairyring", name: "Fairy Ring", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "summon_gems", effectDesc: "INSTANT: Summon two 1/1 Gem Shards in your home rows.", art: "/images/Fairy Ring.png", rarity: "legendary" },
     ]
+  },
+  
+  'elunes-chosen': {
+    name: "Elune's Chosen",
+    archetype: "night-elf",
+    cards: [
+      // === COMMON UNITS (12) ===
+      // Moon Sentinel x3 (gains HP if adjacent to 2 allies)
+      { key: "moonsentinel", name: "Moon Sentinel", atk: 2, hp: 1, cost: 1, type: "monster", effect: "startOfTurn", effectId: "sentinel_growth", effectDesc: "START OF TURN: Gain +1 HP if adjacent to 2+ allies.", art: "/images/Moon Sentinel.png", rarity: "common" },
+      { key: "moonsentinel", name: "Moon Sentinel", atk: 2, hp: 1, cost: 1, type: "monster", effect: "startOfTurn", effectId: "sentinel_growth", effectDesc: "START OF TURN: Gain +1 HP if adjacent to 2+ allies.", art: "/images/Moon Sentinel.png", rarity: "common" },
+      { key: "moonsentinel", name: "Moon Sentinel", atk: 2, hp: 1, cost: 1, type: "monster", effect: "startOfTurn", effectId: "sentinel_growth", effectDesc: "START OF TURN: Gain +1 HP if adjacent to 2+ allies.", art: "/images/Moon Sentinel.png", rarity: "common" },
+      // Star Weave Archer x3 (ranged, gains ATK from adjacent allies)
+      { key: "starweavearcher", name: "Star Weave Archer", atk: 1, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "starweave_ranged", effectDesc: "PASSIVE: Range 2. Gains +1 ATK for each adjacent ally.", art: "/images/Star Weave Archer.png", rarity: "common" },
+      { key: "starweavearcher", name: "Star Weave Archer", atk: 1, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "starweave_ranged", effectDesc: "PASSIVE: Range 2. Gains +1 ATK for each adjacent ally.", art: "/images/Star Weave Archer.png", rarity: "common" },
+      { key: "starweavearcher", name: "Star Weave Archer", atk: 1, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "starweave_ranged", effectDesc: "PASSIVE: Range 2. Gains +1 ATK for each adjacent ally.", art: "/images/Star Weave Archer.png", rarity: "common" },
+      // Moonlit Blade Dancer x3 (move again on kill)
+      { key: "moonlitbladedancer", name: "Moonlit Blade Dancer", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onKill", effectId: "blade_dance", effectDesc: "ON KILL: Can move again this turn.", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      { key: "moonlitbladedancer", name: "Moonlit Blade Dancer", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onKill", effectId: "blade_dance", effectDesc: "ON KILL: Can move again this turn.", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      { key: "moonlitbladedancer", name: "Moonlit Blade Dancer", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onKill", effectId: "blade_dance", effectDesc: "ON KILL: Can move again this turn.", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      // Lunar Priestess x3 (heal allies by attacking them)
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      // === COMMON SPELLS (4) ===
+      // Twilight's Respite x2 (damage reduction)
+      { key: "twilightsrespite", name: "Twilight's Respite", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "damage_reduction", effectDesc: "INSTANT: Your units take -1 damage from all sources until your next turn.", art: "/images/Twilights Respite.png", rarity: "common" },
+      { key: "twilightsrespite", name: "Twilight's Respite", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "damage_reduction", effectDesc: "INSTANT: Your units take -1 damage from all sources until your next turn.", art: "/images/Twilights Respite.png", rarity: "common" },
+      // Hunting God's Blessing x2 (+1 ATK and range)
+      { key: "huntinggodsblessing", name: "Hunting God's Blessing", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "hunter_blessing", effectDesc: "INSTANT: Target ally gains +1 ATK and +1 range this turn.", art: "/images/Hunting Gods Blessing.png", requiresTarget: "unit", rarity: "common" },
+      { key: "huntinggodsblessing", name: "Hunting God's Blessing", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "hunter_blessing", effectDesc: "INSTANT: Target ally gains +1 ATK and +1 range this turn.", art: "/images/Hunting Gods Blessing.png", requiresTarget: "unit", rarity: "common" },
+      // === RARE UNITS (6) ===
+      // Stone Giant x2 (takes damage for adjacent allies)
+      { key: "stonegiant", name: "Stone Giant", atk: 3, hp: 8, cost: 5, type: "monster", effect: "passive", effectId: "stone_shield", effectDesc: "PASSIVE: When an adjacent ally would take damage, this unit takes it instead.", art: "/images/Stone Giant.png", rarity: "rare" },
+      { key: "stonegiant", name: "Stone Giant", atk: 3, hp: 8, cost: 5, type: "monster", effect: "passive", effectId: "stone_shield", effectDesc: "PASSIVE: When an adjacent ally would take damage, this unit takes it instead.", art: "/images/Stone Giant.png", rarity: "rare" },
+      // Night Shade Ambusher x2 (deploy in neutral zones)
+      { key: "nightshadeambusher", name: "Night Shade Ambusher", atk: 4, hp: 2, cost: 4, type: "monster", effect: "passive", effectId: "ambush_deploy", effectDesc: "PASSIVE: Can be deployed in neutral zones (rows 2-4).", art: "/images/Night Shade Ambusher.png", rarity: "rare" },
+      { key: "nightshadeambusher", name: "Night Shade Ambusher", atk: 4, hp: 2, cost: 4, type: "monster", effect: "passive", effectId: "ambush_deploy", effectDesc: "PASSIVE: Can be deployed in neutral zones (rows 2-4).", art: "/images/Night Shade Ambusher.png", rarity: "rare" },
+      // Moon Shadow Warden x2 (root enemies on attack)
+      { key: "moonshadowwarden", name: "Moon Shadow Warden", atk: 4, hp: 2, cost: 3, type: "monster", effect: "onAttack", effectId: "shadow_root", effectDesc: "ON ATTACK: Target cannot move next turn.", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
+      { key: "moonshadowwarden", name: "Moon Shadow Warden", atk: 4, hp: 2, cost: 3, type: "monster", effect: "onAttack", effectId: "shadow_root", effectDesc: "ON ATTACK: Target cannot move next turn.", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
+      // === RARE STRUCTURES (2) ===
+      // Elune's Moonwell x2 (energy + draw if adjacent to 2 allies)
+      { key: "elunesmoonwell", name: "Elune's Moonwell", atk: 0, hp: 4, cost: 2, type: "structure", effect: "startOfTurn", effectId: "moonwell_power", effectDesc: "START OF TURN: If adjacent to 2+ allies, gain 1 energy and draw a card.", art: "/images/Elunes Moonwell.png", rarity: "rare" },
+      { key: "elunesmoonwell", name: "Elune's Moonwell", atk: 0, hp: 4, cost: 2, type: "structure", effect: "startOfTurn", effectId: "moonwell_power", effectDesc: "START OF TURN: If adjacent to 2+ allies, gain 1 energy and draw a card.", art: "/images/Elunes Moonwell.png", rarity: "rare" },
+      // === RARE SPELLS (2) ===
+      // Lunar Prayer x2 (death ward)
+      { key: "lunarprayer", name: "Lunar Prayer", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "death_ward", effectDesc: "INSTANT: Target ally gains Death Ward - the next time it would die, it survives with 1 HP instead.", art: "/images/Lunar Prayer.png", requiresTarget: "unit", rarity: "rare" },
+      { key: "lunarprayer", name: "Lunar Prayer", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "death_ward", effectDesc: "INSTANT: Target ally gains Death Ward - the next time it would die, it survives with 1 HP instead.", art: "/images/Lunar Prayer.png", requiresTarget: "unit", rarity: "rare" },
+      // === RARE UNITS (2 more) ===
+      // Moon Flare Sorceress x2 (buff adjacent allies)
+      { key: "moonflaresorceress", name: "Moon Flare Sorceress", atk: 2, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "moonflare_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK and +1 HP.", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      { key: "moonflaresorceress", name: "Moon Flare Sorceress", atk: 2, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "moonflare_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK and +1 HP.", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      // === LEGENDARY UNITS (3) ===
+      // Starlit Champion x1 (energy + ATK on kill)
+      { key: "starlitchampion", name: "Starlit Champion", atk: 4, hp: 6, cost: 6, type: "monster", effect: "onKill", effectId: "starlit_slayer", effectDesc: "ON KILL: Gain 1 energy and +1 ATK permanently.", art: "/images/Starlit Champion.png", rarity: "legendary" },
+      // Star Invoker x1 (random damage at start of turn)
+      { key: "starinvoker", name: "Star Invoker", atk: 2, hp: 5, cost: 6, type: "monster", effect: "startOfTurn", effectId: "star_strike", effectDesc: "START OF TURN: Deal 2 damage to a random enemy.", art: "/images/Star Invoker.png", rarity: "legendary" },
+      // === LEGENDARY STRUCTURE (1) ===
+      // Temple of the Moon x1 (permanent ATK buff to adjacent allies)
+      { key: "templeofthemoon", name: "Temple of the Moon", atk: 0, hp: 4, cost: 4, type: "structure", effect: "startOfTurn", effectId: "temple_blessing", effectDesc: "START OF TURN: If adjacent to 2+ allies, give them +1 ATK permanently.", art: "/images/Temple of the Moon.png", rarity: "legendary" },
+      // === LEGENDARY SPELL (1) ===
+      // Lunar Barrage x1 (AOE damage)
+      { key: "lunarbarrage", name: "Lunar Barrage", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lunar_aoe", effectDesc: "INSTANT: Deal 2 damage to all enemies in and adjacent to target tile (not home rows).", art: "/images/Lunar Barrage.png", requiresTarget: "tile", rarity: "legendary" },
+    ]
   }
 };
 
@@ -709,6 +781,18 @@ function getEffectiveAtk(state, uid, targetId) {
   for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "attack_aura") atk += 1; }
   // Garnet Queen - adjacent friendlies gain +1 ATK
   for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "garnet_aura") atk += 1; }
+  // Moon Flare Sorceress - adjacent allies gain +1 ATK
+  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "moonflare_aura") atk += 1; }
+  // Star Weave Archer - gains +1 ATK per adjacent ally
+  if (u.effectId === "starweave_ranged") {
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
+      if (dr === 0 && dc === 0) continue; 
+      const nr = pos.r + dr, nc = pos.c + dc; 
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
+      const aid = state.board[nr][nc]; 
+      if (aid && state.units[aid] && state.units[aid].owner === u.owner) atk += 1; 
+    }
+  }
   // Moonstone Witch - gains +1 ATK per Gem Shard on field
   if (u.effectId === "gem_transform") {
     for (const gid in state.units) {
@@ -766,6 +850,11 @@ function applyDamageReduction(state, tid, dmg, attackerId) {
   // Bone Revolver - ranged_pierce ignores shield effects
   const ignoresShields = attacker && attacker.effectId === "ranged_pierce";
   
+  // Twilight's Respite - all player's units take -1 damage
+  if (state.damageReduction && state.damageReduction[t.owner]) {
+    dmg = Math.max(0, dmg - 1);
+  }
+  
   // Shield Bearer shield_aura
   if (!ignoresShields) {
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
@@ -776,6 +865,23 @@ function applyDamageReduction(state, tid, dmg, attackerId) {
       if (aid && state.units[aid] && state.units[aid].owner === t.owner && state.units[aid].effectId === "shield_aura") {
         dmg = Math.max(0, dmg - 1);
         break;
+      }
+    }
+  }
+  
+  // Stone Giant - stone_shield takes ALL damage for adjacent allies
+  if (!ignoresShields) {
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
+      if (dr === 0 && dc === 0) continue; 
+      const nr = pos.r + dr, nc = pos.c + dc; 
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
+      const aid = state.board[nr][nc]; 
+      if (aid && state.units[aid] && state.units[aid].owner === t.owner && state.units[aid].effectId === "stone_shield" && aid !== tid) {
+        // Stone Giant takes the damage instead
+        const stoneGiant = state.units[aid];
+        stoneGiant.hp -= dmg;
+        // Don't remove here - let the caller handle death
+        return 0; // Target takes no damage
       }
     }
   }
@@ -843,11 +949,29 @@ function getHpBuffBonus(state, role) {
   return 0;
 }
 
-// Get effective max HP for a unit (includes hp_buff)
+// Get effective max HP for a unit (includes hp_buff and adjacent auras)
 function getEffectiveMaxHp(state, uid) {
   const u = state.units[uid]; if (!u) return 0;
   let maxHp = u.maxHp || u.hp;
   maxHp += getHpBuffBonus(state, u.owner);
+  
+  // Moon Flare Sorceress aura - adjacent allies get +1 HP
+  const pos = getUnitPos(state, uid);
+  if (pos) {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = pos.r + dr, nc = pos.c + dc;
+        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+        const aid = state.board[nr][nc];
+        if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "moonflare_aura") {
+          maxHp += 1;
+          break; // Only count once even if multiple sorceresses
+        }
+      }
+    }
+  }
+  
   return maxHp;
 }
 
@@ -959,6 +1083,20 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     };
     state.board[killedUnitPos.r][killedUnitPos.c] = gemId;
     logToLobby(lobby, a.name + " transforms " + killedUnit.name + " into a Gem Shard!");
+  }
+  
+  // Moonlit Blade Dancer - can move again this turn after kill
+  if (a.effectId === "blade_dance") {
+    state.movedThisTurn.delete(aid);
+    state.moveCountThisTurn[aid] = 0;
+    logToLobby(lobby, a.name + " dances through the battle! Can move again.");
+  }
+  
+  // Starlit Champion - gains 1 energy and +1 ATK permanently on kill
+  if (a.effectId === "starlit_slayer") {
+    a.atk += 1;
+    lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY);
+    logToLobby(lobby, a.name + " is empowered by the stars! +1 ATK, +1 energy (now " + a.atk + " ATK)");
   }
 }
 
@@ -1160,6 +1298,26 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
 
 function processEndOfTurnEffects(lobby, role) {
   const state = lobby.gameState.state;
+  
+  // Clear Twilight's Respite damage reduction at end of turn
+  if (state.damageReduction && state.damageReduction[role]) {
+    delete state.damageReduction[role];
+    logToLobby(lobby, role.toUpperCase() + "'s Twilight's Respite fades.");
+  }
+  
+  // Clear Hunter's Blessing bonus range at end of turn
+  for (const id in state.units) {
+    const u = state.units[id];
+    if (u.owner === role && u.hunterBlessed) {
+      u.bonusRange = 0;
+      delete u.hunterBlessed;
+    }
+    // Clear rooted status for enemy units (it was applied on their turn, wears off on our turn)
+    if (u.owner !== role && u.rooted) {
+      delete u.rooted;
+    }
+  }
+  
   for (const id in state.units) { 
     const u = state.units[id]; 
     if (u.owner !== role || u.effect !== "endOfTurn") continue; 
@@ -1291,11 +1449,102 @@ function processStartOfTurnEffects(lobby, role) {
         } 
       } 
       if (healed > 0) logToLobby(lobby, "Shrine heals " + healed + " units"); 
-    } 
+    }
+    
+    // Moon Sentinel - gain +1 HP if adjacent to 2+ allies
+    if (u.effectId === "sentinel_growth") {
+      const pos = getUnitPos(state, id);
+      if (!pos) continue;
+      let adjacentAllies = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = pos.r + dr, nc = pos.c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const adjId = state.board[nr][nc];
+          if (adjId && state.units[adjId] && state.units[adjId].owner === role) adjacentAllies++;
+        }
+      }
+      if (adjacentAllies >= 2) {
+        u.hp += 1;
+        u.maxHp = (u.maxHp || u.hp) + 1;
+        logToLobby(lobby, u.name + " grows stronger from allies! (+1 HP)");
+      }
+    }
+    
+    // Elune's Moonwell - if adjacent to 2+ allies, gain 1 energy and draw a card
+    if (u.effectId === "moonwell_power") {
+      const pos = getUnitPos(state, id);
+      if (!pos) continue;
+      let adjacentAllies = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = pos.r + dr, nc = pos.c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const adjId = state.board[nr][nc];
+          if (adjId && state.units[adjId] && state.units[adjId].owner === role) adjacentAllies++;
+        }
+      }
+      if (adjacentAllies >= 2) {
+        const player = lobby.gameState.players[role];
+        player.energy = Math.min(player.energy + 1, MAX_ENERGY);
+        drawCards(lobby, role, 1);
+        logToLobby(lobby, u.name + " channels lunar energy! (+1 energy, +1 card)");
+      }
+    }
+    
+    // Temple of the Moon - if adjacent to 2+ allies, give them +1 ATK permanently
+    if (u.effectId === "temple_blessing") {
+      const pos = getUnitPos(state, id);
+      if (!pos) continue;
+      const adjacentAllies = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = pos.r + dr, nc = pos.c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const adjId = state.board[nr][nc];
+          if (adjId && state.units[adjId] && state.units[adjId].owner === role && state.units[adjId].type !== "structure") {
+            adjacentAllies.push(adjId);
+          }
+        }
+      }
+      if (adjacentAllies.length >= 2) {
+        for (const allyId of adjacentAllies) {
+          state.units[allyId].atk += 1;
+        }
+        logToLobby(lobby, u.name + " blesses " + adjacentAllies.length + " allies with +1 ATK!");
+      }
+    }
+    
+    // Star Invoker - deal 2 damage to a random enemy
+    if (u.effectId === "star_strike") {
+      const enemies = [];
+      for (const uid in state.units) {
+        if (state.units[uid].owner !== role && !state.units[uid].untargetable) {
+          enemies.push(uid);
+        }
+      }
+      if (enemies.length > 0) {
+        const targetId = enemies[Math.floor(Math.random() * enemies.length)];
+        const target = state.units[targetId];
+        target.hp -= 2;
+        logToLobby(lobby, u.name + " calls down starfire on " + target.name + "! (2 damage)");
+        if (target.hp <= 0) {
+          const targetPos = getUnitPos(state, targetId);
+          processOnDeathEffect(lobby, target, target.owner, targetPos);
+          processAllyDeathTriggers(lobby, target.owner, target, targetPos);
+          if (targetPos) state.board[targetPos.r][targetPos.c] = null;
+          delete state.units[targetId];
+          logToLobby(lobby, target.name + " is destroyed by starfire!");
+        }
+      }
+    }
   }
 }
 
-function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
+function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, targetCol) {
   const state = lobby.gameState.state;
   if (effectId === "fortify_row") { 
     if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
@@ -1623,6 +1872,79 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       }
     }
     logToLobby(lobby, "Fairy Ring summons " + spawned + " Gem Shards!");
+  }
+  
+  // === ELUNE'S CHOSEN SPELLS ===
+  
+  if (effectId === "damage_reduction") {
+    // Twilight's Respite - all allies take -1 damage from all sources until next turn
+    if (!state.damageReduction) state.damageReduction = {};
+    state.damageReduction[role] = true;
+    logToLobby(lobby, "Twilight's Respite shields all " + role.toUpperCase() + " units! (-1 damage until next turn)");
+  }
+  
+  if (effectId === "hunter_blessing") {
+    // Hunting God's Blessing - target ally gains +1 ATK and +1 range this turn
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        target.atk += 1;
+        target.bonusRange = (target.bonusRange || 0) + 1;
+        target.hunterBlessed = true; // Mark for end of turn cleanup
+        logToLobby(lobby, target.name + " receives Hunting God's Blessing! (+1 ATK, +1 range this turn)");
+      }
+    }
+  }
+  
+  if (effectId === "death_ward") {
+    // Lunar Prayer - target ally gains death ward (survives lethal once)
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        target.deathWard = true;
+        logToLobby(lobby, target.name + " is blessed with Lunar Prayer! (Survives lethal damage once)");
+      }
+    }
+  }
+  
+  if (effectId === "lunar_aoe") {
+    // Lunar Barrage - deal 2 damage to all enemies in and adjacent to target tile
+    if (targetRow !== undefined && targetCol !== undefined) {
+      const hitPositions = [];
+      // Center tile and all 8 adjacent tiles
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = targetRow + dr;
+          const nc = targetCol + dc;
+          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+            hitPositions.push({ r: nr, c: nc });
+          }
+        }
+      }
+      
+      let hitCount = 0;
+      const toRemove = [];
+      for (const pos of hitPositions) {
+        const uid = state.board[pos.r][pos.c];
+        if (uid && state.units[uid] && state.units[uid].owner !== role) {
+          const target = state.units[uid];
+          if (target.untargetable) continue;
+          target.hp -= 2;
+          hitCount++;
+          if (target.hp <= 0) {
+            toRemove.push({ id: uid, pos: pos });
+          }
+        }
+      }
+      for (const item of toRemove) {
+        const deadUnit = state.units[item.id];
+        processOnDeathEffect(lobby, deadUnit, deadUnit.owner, item.pos);
+        processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, item.pos);
+        state.board[item.pos.r][item.pos.c] = null;
+        delete state.units[item.id];
+      }
+      logToLobby(lobby, "Lunar Barrage hits " + hitCount + " enemies for 2 damage!");
+    }
   }
 }
 
@@ -2662,9 +2984,18 @@ io.on("connection", (socket) => {
             return socket.emit("log", "Can only fortify your own rows.");
           }
         }
+        if (card.requiresTarget === "tile") {
+          if (row === undefined || row === null || row < 0 || row >= ROWS) return socket.emit("log", "Select a target tile.");
+          if (col === undefined || col === null || col < 0 || col >= COLS) return socket.emit("log", "Select a target tile.");
+          // Lunar Barrage cannot target home rows
+          if (card.effectId === "lunar_aoe") {
+            const isHomeRow = row <= 1 || row >= 5;
+            if (isHomeRow) return socket.emit("log", "Cannot target home rows.");
+          }
+        }
         
         p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
-        processInstantSpell(lobby, role, card.effectId, row, targetUnitId);
+        processInstantSpell(lobby, role, card.effectId, row, targetUnitId, col);
         logToLobby(lobby, role.toUpperCase() + " cast " + card.name);
         return emitGameState(lobby);
       }
@@ -2715,6 +3046,13 @@ io.on("connection", (socket) => {
               break;
             }
           }
+        }
+      }
+      
+      // Night Shade Ambusher can deploy in neutral zones (rows 2-4)
+      if (!canDeploy && card.effectId === "ambush_deploy") {
+        if (row >= 2 && row <= 4) {
+          canDeploy = true;
         }
       }
       
@@ -2826,6 +3164,11 @@ io.on("connection", (socket) => {
     if (payload.type === "move") {
       const { unitId, toRow, toCol } = payload; const u = state.units[unitId];
       if (!u || u.owner !== role) return;
+      
+      // Check if unit is rooted by Moon Shadow Warden's shadow_root
+      if (u.rooted) {
+        return socket.emit("log", "Can't move - rooted by shadow magic!");
+      }
       
       // Check if unit is rooted by Coffin Trapper's root_aura
       const from = getUnitPos(state, unitId); 
@@ -2947,8 +3290,11 @@ io.on("connection", (socket) => {
       // Opal Devourer can attack friendly Gem Shards to gain +2/+2
       const isConsumeGem = a.effectId === "consume_gem" && t.owner === role && t.key === "gemshard";
       
-      // Normal attacks can't target own units (unless UFO Scraper or Opal Devourer)
-      if (t.owner === role && !isAbsorbAttack && !isConsumeGem) return;
+      // Lunar Priestess can attack allies to heal them
+      const isHealAttack = a.effectId === "heal_attack" && t.owner === role;
+      
+      // Normal attacks can't target own units (unless special ability)
+      if (t.owner === role && !isAbsorbAttack && !isConsumeGem && !isHealAttack) return;
       
       // Check if target is untargetable (Burrower Beast on deploy turn)
       if (t.untargetable && !isAbsorbAttack && !isConsumeGem) return socket.emit("log", t.name + " is untargetable this turn.");
@@ -2965,6 +3311,9 @@ io.on("connection", (socket) => {
       // Check attack range based on unit abilities
       let validAttack = false;
       
+      // Calculate bonus range from Hunting God's Blessing
+      const bonusRange = a.bonusRange || 0;
+      
       // Peasant diagonal_attack - can attack diagonally
       if (a.effectId === "diagonal_attack") {
         validAttack = isAdjacent(ap.r, ap.c, tp.r, tp.c);
@@ -2977,8 +3326,16 @@ io.on("connection", (socket) => {
       else if (a.effectId === "ranged") {
         const rowDist = Math.abs(ap.r - tp.r);
         const colDist = Math.abs(ap.c - tp.c);
-        // Cardinal attack up to 2 tiles
-        validAttack = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
+        // Cardinal attack up to 2 tiles (+ bonus range)
+        const maxRange = 2 + bonusRange;
+        validAttack = (rowDist <= maxRange && colDist === 0) || (colDist <= maxRange && rowDist === 0);
+      }
+      // Star Weave Archer - ranged 2
+      else if (a.effectId === "starweave_ranged") {
+        const rowDist = Math.abs(ap.r - tp.r);
+        const colDist = Math.abs(ap.c - tp.c);
+        const maxRange = 2 + bonusRange;
+        validAttack = (rowDist <= maxRange && colDist === 0) || (colDist <= maxRange && rowDist === 0);
       }
       // Bone Revolver ranged_pierce - ranged that ignores shields
       else if (a.effectId === "ranged_pierce") {
@@ -2987,9 +3344,16 @@ io.on("connection", (socket) => {
         // Cardinal attack up to 2 tiles
         validAttack = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
       }
-      // Default: cardinal adjacent only
+      // Default: cardinal adjacent only (+ bonus range)
       else {
-        validAttack = isCardinalAdjacent(ap.r, ap.c, tp.r, tp.c);
+        if (bonusRange > 0) {
+          const rowDist = Math.abs(ap.r - tp.r);
+          const colDist = Math.abs(ap.c - tp.c);
+          const maxRange = 1 + bonusRange;
+          validAttack = (rowDist <= maxRange && colDist === 0) || (colDist <= maxRange && rowDist === 0);
+        } else {
+          validAttack = isCardinalAdjacent(ap.r, ap.c, tp.r, tp.c);
+        }
       }
       
       if (!validAttack) return socket.emit("log", "Target out of range.");
@@ -3046,6 +3410,19 @@ io.on("connection", (socket) => {
         
         state.board[tp.r][tp.c] = null;
         delete state.units[targetId];
+        state.attackedThisTurn.add(attackerId);
+        a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
+        return emitGameState(lobby);
+      }
+      
+      // Handle Lunar Priestess heal attack
+      if (isHealAttack) {
+        // Heal ally for ATK amount
+        const healAmount = a.atk;
+        const oldHp = t.hp;
+        t.hp = Math.min(t.hp + healAmount, t.maxHp || t.hp + healAmount);
+        const actualHeal = t.hp - oldHp;
+        logToLobby(lobby, a.name + " blesses " + t.name + " with lunar light! +" + actualHeal + " HP (now " + t.hp + ")");
         state.attackedThisTurn.add(attackerId);
         a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
         return emitGameState(lobby);
@@ -3259,8 +3636,15 @@ io.on("connection", (socket) => {
       }
       
       if (finalEffectiveHp <= 0) {
+        // Death Ward (Lunar Prayer) - survives lethal damage once with 1 HP
+        if (t.deathWard) {
+          t.hp = 1;
+          t.deathWard = false;
+          logToLobby(lobby, t.name + "'s Lunar Prayer activates! Survives with 1 HP!");
+          combatLogToLobby(lobby, `✨ ${t.name} would die but DEATH WARD triggers! Survives with 1 HP`, "combat-lifesteal");
+        }
         // Elder Vampire immortal - heals to full instead of dying (once per game)
-        if (t.effectId === "immortal" && !t.immortalUsed) {
+        else if (t.effectId === "immortal" && !t.immortalUsed) {
           t.hp = t.maxHp || 6;
           t.immortalUsed = true;
           logToLobby(lobby, t.name + " refuses to die! Heals to full HP!");
@@ -3287,6 +3671,12 @@ io.on("connection", (socket) => {
           if (overflow > 0 && state.rowHP[tp.r] > 0) { state.rowHP[tp.r] = Math.max(0, state.rowHP[tp.r] - overflow); logToLobby(lobby, "Row takes " + overflow + " overflow"); }
           recomputeOwners(state); // Recompute after unit destroyed
         }
+      }
+      
+      // Moon Shadow Warden - shadow_root prevents target from moving next turn
+      if (a.effectId === "shadow_root" && t.hp > 0) {
+        t.rooted = true;
+        logToLobby(lobby, t.name + " is rooted by shadow magic! Cannot move next turn.");
       }
       recomputeOwners(state);
       return emitGameState(lobby);
