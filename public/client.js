@@ -2883,7 +2883,24 @@ function showCampaignVictoryPopup(data) {
     'prismaticfairy': 'Prismatic Fairy',
     'gemstonecurse': 'Gemstone Curse',
     'fairyring': 'Fairy Ring',
-    'gemshard': 'Gem Shard'
+    'gemshard': 'Gem Shard',
+    // Elune's Chosen cards
+    'moonsentinel': 'Moon Sentinel',
+    'starweavearcher': 'Star Weave Archer',
+    'moonlitbladedancer': 'Moonlit Blade Dancer',
+    'lunarpriestess': 'Lunar Priestess',
+    'twilightsrespite': 'Twilights Respite',
+    'huntinggodsblessing': 'Hunting Gods Blessing',
+    'stonegiant': 'Stone Giant',
+    'nightshadeambusher': 'Night Shade Ambusher',
+    'moonshadowwarden': 'Moon Shadow Warden',
+    'moonflaresorceress': 'Moon Flare Sorceress',
+    'elunesmoonwell': 'Elunes Moonwell',
+    'lunarprayer': 'Lunar Prayer',
+    'starlitchampion': 'Starlit Champion',
+    'starinvoker': 'Star Invoker',
+    'templeofthemoon': 'Temple of the Moon',
+    'lunarbarrage': 'Lunar Barrage'
   };
   
   // Slot machine reveal animation
@@ -2961,7 +2978,24 @@ function showCampaignVictoryPopup(data) {
     'prismaticfairy': '/images/Prismatic Fairy.png',
     'gemstonecurse': '/images/Gemstone Curse.png',
     'fairyring': '/images/Fairy Ring.png',
-    'gemshard': '/images/Gem Shard.png'
+    'gemshard': '/images/Gem Shard.png',
+    // Elune's Chosen cards
+    'moonsentinel': '/images/Moon Sentinel.png',
+    'starweavearcher': '/images/Star Weave Archer.png',
+    'moonlitbladedancer': '/images/Moonlit Blade Dancer.png',
+    'lunarpriestess': '/images/Lunar Priestess.png',
+    'twilightsrespite': '/images/Twilights Respite.png',
+    'huntinggodsblessing': '/images/Hunting Gods Blessing.png',
+    'stonegiant': '/images/Stone Giant.png',
+    'nightshadeambusher': '/images/Night Shade Ambusher.png',
+    'moonshadowwarden': '/images/Moon Shadow Warden.png',
+    'moonflaresorceress': '/images/Moon Flare Sorceress.png',
+    'elunesmoonwell': '/images/Elunes Moonwell.png',
+    'lunarprayer': '/images/Lunar Prayer.png',
+    'starlitchampion': '/images/Starlit Champion.png',
+    'starinvoker': '/images/Star Invoker.png',
+    'templeofthemoon': '/images/Temple of the Moon.png',
+    'lunarbarrage': '/images/Lunar Barrage.png'
   };
   
   // Card rarities for visual effects
@@ -3030,7 +3064,24 @@ function showCampaignVictoryPopup(data) {
     'prismaticfairy': 'legendary',
     'gemstonecurse': 'legendary',
     'fairyring': 'legendary',
-    'gemshard': 'common'
+    'gemshard': 'common',
+    // Elune's Chosen
+    'moonsentinel': 'common',
+    'starweavearcher': 'common',
+    'moonlitbladedancer': 'common',
+    'lunarpriestess': 'common',
+    'twilightsrespite': 'common',
+    'huntinggodsblessing': 'common',
+    'stonegiant': 'rare',
+    'nightshadeambusher': 'rare',
+    'moonshadowwarden': 'rare',
+    'moonflaresorceress': 'rare',
+    'elunesmoonwell': 'rare',
+    'lunarprayer': 'rare',
+    'starlitchampion': 'legendary',
+    'starinvoker': 'legendary',
+    'templeofthemoon': 'legendary',
+    'lunarbarrage': 'legendary'
   };
   
   // Reveal cards one by one with delays

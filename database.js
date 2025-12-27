@@ -240,6 +240,20 @@ const CAMPAIGN_BOSSES = [
       music: 'jeweled-court',
       background: 'jeweled-court'
     }
+  },
+  {
+    id: 5,
+    name: "Moon Shadow Sentinel",
+    description: "An ancient guardian empowered by Elune's blessing, commanding the forces of the night",
+    deckId: "elunes-chosen",
+    difficulty: "hard",
+    aiLevel: 3,
+    requiresBoss: 4,
+    cardRewards: ['moonsentinel', 'starweavearcher', 'moonlitbladedancer', 'lunarpriestess', 'twilightsrespite', 'huntinggodsblessing', 'stonegiant', 'nightshadeambusher', 'moonshadowwarden', 'elunesmoonwell', 'lunarprayer', 'moonflaresorceress', 'starlitchampion', 'starinvoker', 'templeofthemoon', 'lunarbarrage'],
+    unlocks: {
+      music: 'elunes-chosen',
+      background: 'elunes-chosen'
+    }
   }
 ];
 
