@@ -199,7 +199,7 @@
         <div class="filters">
           <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search">
           <div class="filter-group"><label>Own:</label><select class="filter-select" id="ownedFilter"><option value="all">All</option><option value="owned">Owned</option><option value="not-owned">Not Owned</option></select></div>
-          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option></select></div>
+          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option></select></div>
           <div class="filter-group"><label>Type:</label><select class="filter-select" id="typeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option></select></div>
           <div class="filter-group"><label>Cost:</label><select class="filter-select" id="costFilter"><option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
           <div class="filter-group"><label>Rarity:</label><select class="filter-select" id="rarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
@@ -210,7 +210,7 @@
       <div class="panel deck-panel">
         <div class="panel-header"><div class="panel-title">🃏 Current Deck</div></div>
         <div class="deck-selector-section">
-          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option><option value="crimson-court">Crimson Court Deck 🔒</option></select>
+          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option><option value="crimson-court">Crimson Court Deck 🔒</option><option value="jeweled-court">Jeweled Court Deck 🔒</option></select>
         </div>
         <div class="deck-name-section">
           <input type="text" class="deck-name-input" id="deckNameInput" placeholder="Deck name..." maxlength="25">
@@ -319,13 +319,29 @@
       bloodpact: { name: "Blood Pact", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Deal 2 to friendly unit. Draw 2 cards", art: "/images/Blood Pact.png", rarity: "rare" },
       bloodtransfusion: { name: "Blood Transfusion", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Swap target unit's ATK and HP", art: "/images/Blood Transfusion.png", rarity: "rare" },
       crimsonrevival: { name: "Crimson Revival", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Return the last 2 units that died to your hand", art: "/images/Crimson Revival.png", rarity: "rare" },
-      sanguinefeast: { name: "Sanguine Feast", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Deal 2 to all enemies in row. Heal heart for each hit", art: "/images/Sanguine Feast.png", rarity: "legendary" }
+      sanguinefeast: { name: "Sanguine Feast", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Instant: Deal 2 to all enemies in row. Heal heart for each hit", art: "/images/Sanguine Feast.png", rarity: "legendary" },
+      // Jeweled Court - Fairy Cards
+      rubysprite: { name: "Ruby Sprite", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "On death, add a Gem Shard card to your hand", art: "/images/Ruby Sprite.png", rarity: "common" },
+      emeraldforager: { name: "Emerald Forager", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "On deploy: Summon a 1/1 Gem Shard in adjacent empty tile", art: "/images/Emerald Forager.png", rarity: "common" },
+      sapphiredancer: { name: "Sapphire Dancer", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Can swap positions with a friendly Fairy", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      topazminer: { name: "Topaz Miner", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "End of turn: If adjacent to Gem Shard, gain +1 ATK", art: "/images/Topaz Miner.png", rarity: "common" },
+      amethystenchanter: { name: "Amethyst Enchanter", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Reflects 1 damage back to attackers", art: "/images/Amethyst Enchanter.png", rarity: "rare" },
+      diamondguardian: { name: "Diamond Guardian", cost: 3, atk: 1, hp: 5, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "When adjacent friendly takes damage, takes 1 instead", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      opaldevourer: { name: "Opal Devourer", cost: 3, atk: 2, hp: 2, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Can attack friendly Gem Shards to gain +2/+2", art: "/images/Opal Devourer.png", rarity: "rare" },
+      pearlblessing: { name: "Pearl Blessing", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "All friendly units +1 HP. Fairies also +1 ATK", art: "/images/Pearl Blessing.png", rarity: "rare" },
+      garnetqueen: { name: "Garnet Queen", cost: 5, atk: 3, hp: 5, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Adjacent enemies ATK=1. Adjacent friendlies +1 ATK", art: "/images/Garnet Queen.png", rarity: "legendary" },
+      moonstonewitch: { name: "Moonstone Witch", cost: 4, atk: 2, hp: 4, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "On kill: spawn Gem Shard. +1 ATK per Gem on field", art: "/images/Moonstone Witch.png", rarity: "legendary" },
+      prismaticfairy: { name: "Prismatic Fairy", cost: 5, atk: 3, hp: 4, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "When friendly Gem Shard dies, all enemies take 1 damage", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
+      gemstonecurse: { name: "Gemstone Curse", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "Halve target enemy's ATK (minimum 1)", art: "/images/Gemstone Curse.png", rarity: "legendary" },
+      fairyring: { name: "Fairy Ring", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "Summon two 1/1 Gem Shards in your home rows", art: "/images/Fairy Ring.png", rarity: "legendary" },
+      gemshard: { name: "Gem Shard", cost: 0, atk: 1, hp: 1, type: "spell", archetype: "jeweled-court", effect: false, effectDesc: "Structure: Synergizes with fairy abilities", art: "/images/Gem Shard.png", rarity: "common" }
     };
     const DEFAULT_DECKS = {
       medieval: { name: "Medieval Kingdom", cards: ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','royalguard','royalguard','paladin','siegeram','siegeram','warbanner','warbanner','shrine','shrine','armory','castlewalls','treasury','rally'] },
       'void-alien': { name: "Void Swarm", cards: ['voiddrone','voiddrone','voiddrone','scavengerlarva','scavengerlarva','scavengerlarva','spittercrawler','spittercrawler','spittercrawler','phaseskirmisher','phaseskirmisher','energyleech','energyleech','burrowerbeast','burrowerbeast','psionicoverseer','psionicoverseer','neuralharvester','neuralharvester','adaptivecolossus','sporetitan','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','assimilation','assimilation','voidcollapse','voidcollapse','hiveascension'] },
       'western-skeleton': { name: "Boot Hill Outlaws", cards: ['bonedeputy','bonedeputy','bonedeputy','dustyrattler','dustyrattler','dustyrattler','graverobber','graverobber','phantomscout','phantomscout','phantomscout','bonerevolver','bonerevolver','undeadsheriff','undeadsheriff','coffintrapper','coffintrapper','undertaker','undertaker','thehangedman','ghostlystampede','bonecolossus','deadmanshand','deadmanshand','deadmanshand','mostwanted','mostwanted','shallowgrave','highnoon'] },
-      'crimson-court': { name: "Crimson Court", cards: ['thrall','thrall','thrall','bloodfamiliar','bloodfamiliar','bloodfamiliar','nightstalker','nightstalker','nightstalker','cryptkeeper','cryptkeeper','vampirespawn','vampirespawn','vampirespawn','bloodpriest','bloodpriest','soulcollector','soulcollector','nosferatu','nosferatu','coffin','coffin','bloodcountess','eldervampire','vampirelord','bloodpact','bloodpact','bloodtransfusion','bloodtransfusion','crimsonrevival','sanguinefeast'] }
+      'crimson-court': { name: "Crimson Court", cards: ['thrall','thrall','thrall','bloodfamiliar','bloodfamiliar','bloodfamiliar','nightstalker','nightstalker','nightstalker','cryptkeeper','cryptkeeper','vampirespawn','vampirespawn','vampirespawn','bloodpriest','bloodpriest','soulcollector','soulcollector','nosferatu','nosferatu','coffin','coffin','bloodcountess','eldervampire','vampirelord','bloodpact','bloodpact','bloodtransfusion','bloodtransfusion','crimsonrevival','sanguinefeast'] },
+      'jeweled-court': { name: "Jeweled Court", cards: ['rubysprite','rubysprite','rubysprite','emeraldforager','emeraldforager','emeraldforager','sapphiredancer','sapphiredancer','sapphiredancer','topazminer','topazminer','topazminer','amethystenchanter','amethystenchanter','diamondguardian','diamondguardian','opaldevourer','opaldevourer','pearlblessing','pearlblessing','garnetqueen','moonstonewitch','prismaticfairy','gemstonecurse','fairyring'] }
     };
     let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
     let currentMusic = 'default', currentBackground = 'default';
@@ -334,14 +350,16 @@
       'medieval': 'Medieval Kingdom',
       'void-alien': 'Void Alien Swarm',
       'western-skeleton': 'Western Skeleton',
-      'crimson-court': 'Crimson Court'
+      'crimson-court': 'Crimson Court',
+      'jeweled-court': 'Jeweled Court'
     };
     const BACKGROUND_OPTIONS = {
       'default': 'Default (Match Theme)',
       'medieval': 'Medieval Castle',
       'void-alien': 'Alien Hive',
       'western-skeleton': 'Ghost Town',
-      'crimson-court': 'Vampire Manor'
+      'crimson-court': 'Vampire Manor',
+      'jeweled-court': 'Crystal Cavern'
     };
     const cardGrid = document.getElementById('cardGrid'), deckCards = document.getElementById('deckCards'), deckCount = document.getElementById('deckCount');
     const collectionCount = document.getElementById('collectionCount'), saveBtn = document.getElementById('saveBtn'), clearBtn = document.getElementById('clearBtn');
@@ -410,6 +428,7 @@
       const voidCustom = customDecks.find(function(d) { return d.id === 'void-alien'; });
       const skeletonCustom = customDecks.find(function(d) { return d.id === 'western-skeleton'; });
       const vampireCustom = customDecks.find(function(d) { return d.id === 'crimson-court'; });
+      const fairyCustom = customDecks.find(function(d) { return d.id === 'jeweled-court'; });
       deckSelect.querySelector('option[value="medieval"]').textContent = medievalCustom ? medievalCustom.name : 'Medieval Deck';
       const voidOption = deckSelect.querySelector('option[value="void-alien"]');
       if (unlockedDecks.includes('void-alien')) { voidOption.disabled = false; voidOption.textContent = voidCustom ? voidCustom.name : 'Void Alien Deck'; }
@@ -420,6 +439,9 @@
       const vampireOption = deckSelect.querySelector('option[value="crimson-court"]');
       if (unlockedDecks.includes('crimson-court')) { vampireOption.disabled = false; vampireOption.textContent = vampireCustom ? vampireCustom.name : 'Crimson Court Deck'; }
       else { vampireOption.disabled = true; vampireOption.textContent = 'Crimson Court Deck 🔒'; }
+      const fairyOption = deckSelect.querySelector('option[value="jeweled-court"]');
+      if (unlockedDecks.includes('jeweled-court')) { fairyOption.disabled = false; fairyOption.textContent = fairyCustom ? fairyCustom.name : 'Jeweled Court Deck'; }
+      else { fairyOption.disabled = true; fairyOption.textContent = 'Jeweled Court Deck 🔒'; }
       loadDeckType('medieval');
       renderCollection();
       const total = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k); }).length;
@@ -453,6 +475,7 @@
       if (archetype === 'void-alien') return 'Void Alien';
       if (archetype === 'western-skeleton') return 'Western Skeleton';
       if (archetype === 'crimson-court') return 'Crimson Court';
+      if (archetype === 'jeweled-court') return 'Jeweled Court';
       return 'Medieval';
     }
     function renderCardPreview() {
@@ -481,6 +504,7 @@
       if (archetype === 'void-alien') return 'The Void Scout';
       if (archetype === 'western-skeleton') return 'The Dead Sheriff';
       if (archetype === 'crimson-court') return 'The Blood Countess';
+      if (archetype === 'jeweled-court') return 'The Garnet Queen';
       return 'Unknown Boss';
     }
     function renderCollection() {

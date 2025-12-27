@@ -167,6 +167,35 @@ class GameAI {
             priority: 7
           });
         });
+        
+        // Sapphire Dancer fairy_swap - can swap with friendly fairies
+        if (unit.effectId === 'fairy_swap') {
+          const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
+                             'amethystenchanter', 'diamondguardian', 'opaldevourer',
+                             'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
+          Object.keys(units).forEach(targetUid => {
+            if (targetUid === uid) return; // Can't swap with self
+            const targetUnit = units[targetUid];
+            if (targetUnit.owner !== 'silver') return;
+            if (!fairyKeys.includes(targetUnit.key)) return;
+            const targetPos = this.findUnitPos(board, targetUid);
+            if (!targetPos) return;
+            
+            actions.push({
+              type: 'move',
+              unitId: uid,
+              unit: unit,
+              fromRow: pos.r,
+              fromCol: pos.c,
+              toRow: targetPos.r,
+              toCol: targetPos.c,
+              isFairySwap: true,
+              swapTargetId: targetUid,
+              swapTarget: targetUnit,
+              priority: 12 // Higher than normal moves
+            });
+          });
+        }
       }
 
       // Attack actions
@@ -443,6 +472,99 @@ class GameAI {
         if (action.row <= 2) score -= 10; // Too forward
       }
     }
+    
+    // === JEWELED COURT CARD-SPECIFIC AI ===
+    
+    // EMERALD FORAGER - Spawns gem shards, prioritize playing early
+    if (card.effectId === 'gem_spawn') {
+      score += 15; // Good value - spawns a free unit
+      // Better early game to get gem engine going
+      const gemCount = Object.values(units).filter(u => u.key === 'gemshard').length;
+      if (gemCount < 3) score += 10;
+    }
+    
+    // MOONSTONE WITCH - Gets stronger with more gems
+    if (card.effectId === 'gem_transform') {
+      const gemCount = Object.values(units).filter(u => u.key === 'gemshard').length;
+      score += gemCount * 8; // More valuable with more gems
+      // Keep in back to stay safe and farm kills
+      if (action.row !== undefined && action.row >= 4) score += 15;
+      if (action.row !== undefined && action.row <= 2) score -= 15;
+    }
+    
+    // OPAL DEVOURER - Eats gems to grow
+    if (card.effectId === 'consume_gem') {
+      const gemCount = Object.values(units).filter(u => u.key === 'gemshard').length;
+      if (gemCount >= 2) {
+        score += 25; // Great if we have gems to eat
+      } else if (gemCount === 0) {
+        score -= 15; // Not as good without gems
+      }
+    }
+    
+    // GARNET QUEEN - Place where she can debuff enemies and buff allies
+    if (card.effectId === 'garnet_aura') {
+      if (action.row !== undefined && action.col !== undefined) {
+        const nearbyAllies = this.countNearbyAlliesAt(gameState, action.row, action.col, 'silver');
+        const nearbyEnemies = this.countNearbyEnemiesAt(gameState, action.row, action.col, 'silver');
+        score += nearbyAllies * 15; // Buff allies
+        score += nearbyEnemies * 20; // Debuff enemies is even better
+      }
+      // Middle rows are best for her aura
+      if (action.row !== undefined && action.row >= 3 && action.row <= 4) score += 15;
+    }
+    
+    // DIAMOND GUARDIAN - Place next to valuable allies to protect them
+    if (card.effectId === 'bodyguard') {
+      if (action.row !== undefined && action.col !== undefined) {
+        const nearbyAllies = this.countNearbyAlliesAt(gameState, action.row, action.col, 'silver');
+        score += nearbyAllies * 12;
+        // Extra value if protecting high-value units
+        const nearbyHighValue = this.countNearbyHighValueAllies(gameState, action.row, action.col, 'silver');
+        score += nearbyHighValue * 10;
+      }
+    }
+    
+    // PRISMATIC FAIRY - More valuable with gems on field (triggers AOE when gems die)
+    if (card.effectId === 'gem_death_aoe') {
+      const gemCount = Object.values(units).filter(u => u.key === 'gemshard').length;
+      score += gemCount * 10;
+      // Extra valuable if we have Opal Devourer to eat gems and trigger AOE
+      const hasOpalDevourer = Object.values(units).some(u => u.effectId === 'consume_gem');
+      if (hasOpalDevourer) score += 20;
+    }
+    
+    // FAIRY RING SPELL - Spawns 2 gems, great for gem engine
+    if (card.effectId === 'summon_gems') {
+      score += 20; // Always good value
+      // Even better if we have gem synergy cards
+      const hasGemSynergy = Object.values(units).some(u => 
+        u.effectId === 'gem_transform' || u.effectId === 'consume_gem' || u.effectId === 'gem_death_aoe'
+      );
+      if (hasGemSynergy) score += 25;
+    }
+    
+    // PEARL BLESSING - Better with more units on field
+    if (card.effectId === 'fairy_blessing') {
+      const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
+                         'amethystenchanter', 'diamondguardian', 'opaldevourer',
+                         'garnetqueen', 'moonstonewitch', 'prismaticfairy'];
+      const allyCount = Object.values(units).filter(u => u.owner === 'silver').length;
+      const fairyCount = Object.values(units).filter(u => 
+        u.owner === 'silver' && fairyKeys.includes(u.key)
+      ).length;
+      score += allyCount * 5; // +1 HP to all
+      score += fairyCount * 8; // +1 ATK to fairies too
+    }
+    
+    // GEMSTONE CURSE - Target high ATK enemies
+    if (card.effectId === 'halve_atk' && action.targetUnitId) {
+      const target = units[action.targetUnitId];
+      if (target) {
+        score += target.atk * 5; // More valuable against high ATK
+        if (target.atk >= 5) score += 25; // Huge value against big threats
+      }
+    }
 
     // Effect bonuses (general)
     if (card.effectId) {
@@ -696,6 +818,45 @@ class GameAI {
     // Move to contest rows we don't own
     const rowOwner = gameState.rowOwner ? gameState.rowOwner[action.toRow] : null;
     if (rowOwner === 'gold') score += 5;
+    
+    // === SAPPHIRE DANCER FAIRY SWAP ===
+    if (action.isFairySwap && action.swapTarget) {
+      score = 0; // Reset score for swap-specific evaluation
+      const swapTarget = action.swapTarget;
+      
+      // Goal: Bring strong units from back to front, send weak units back
+      const targetCurrentRow = action.toRow; // Where the swap target currently is
+      const dancerCurrentRow = action.fromRow; // Where the dancer currently is
+      
+      // Is the swap target a high-value attacker? Bring them forward!
+      const isHighValue = swapTarget.atk >= 3 || swapTarget.effectId === 'gem_transform' || 
+                          swapTarget.effectId === 'garnet_aura' || swapTarget.effectId === 'consume_gem';
+      
+      if (isHighValue && targetCurrentRow > dancerCurrentRow) {
+        // Swap target is behind dancer - bring them forward!
+        const rowsAdvanced = targetCurrentRow - dancerCurrentRow;
+        score += rowsAdvanced * 25;
+        
+        // Extra bonus for bringing attackers to the front line
+        if (dancerCurrentRow <= 3) {
+          score += 30; // Dancer is near front - great swap position
+        }
+        
+        // Huge bonus for enabling attacks
+        const enemiesNearDancer = this.countEnemiesInAttackRange(gameState, dancerCurrentRow, action.fromCol, swapTarget);
+        score += enemiesNearDancer * 20;
+      }
+      
+      // Swap a low HP unit to safety
+      if (swapTarget.hp <= 2 && targetCurrentRow <= 3 && dancerCurrentRow >= 4) {
+        score += 25; // Save the wounded unit
+      }
+      
+      // Don't swap for no reason
+      if (Math.abs(targetCurrentRow - dancerCurrentRow) <= 1) {
+        score -= 10; // Pointless swap
+      }
+    }
 
     return score;
   }
@@ -811,6 +972,8 @@ class GameAI {
     if (target.effectId === 'adapt_hp') score += 12; // Adaptive Colossus
     if (target.effectId === 'absorb_ally') score += 10; // UFO Scraper
     if (target.effectId === 'spawn_drone') score += 15; // Broodmother creates value
+    if (target.effectId === 'gem_transform') score += 15; // Moonstone Witch snowballs
+    if (target.effectId === 'consume_gem') score += 12; // Opal Devourer can grow
     
     // 9. IDENTIFY WIN CONDITION UNITS
     // If opponent has few units, each one is more valuable to kill
@@ -820,6 +983,35 @@ class GameAI {
     }
     if (enemyUnitCount === 1 && willKill) {
       score += 30; // Wipe their board!
+    }
+    
+    // === JEWELED COURT: OPAL DEVOURER GEM CONSUMING ===
+    if (action.isGemConsume) {
+      // Opal Devourer eating a Gem Shard - gains +2/+2
+      score = 80; // High priority - it's free stats!
+      
+      // Even higher if Opal Devourer is low on stats
+      if (attacker.atk <= 3) score += 20;
+      if (attacker.hp <= 3) score += 20;
+      
+      // Check if there's a Prismatic Fairy - eating gems triggers AOE damage to enemies!
+      const hasPrismaticFairy = Object.values(units).some(u => 
+        u.owner === 'silver' && u.effectId === 'gem_death_aoe'
+      );
+      if (hasPrismaticFairy) {
+        score += 40; // Eating gems also damages all enemies!
+      }
+      
+      // But don't eat all gems if Moonstone Witch needs them for ATK buff
+      const hasMoonstoneWitch = Object.values(units).some(u => 
+        u.owner === 'silver' && u.effectId === 'gem_transform'
+      );
+      const gemCount = Object.values(units).filter(u => u.key === 'gemshard').length;
+      if (hasMoonstoneWitch && gemCount <= 2) {
+        score -= 30; // Keep some gems for Moonstone Witch's ATK buff
+      }
+      
+      return score; // Skip normal trade evaluation for gem consuming
     }
     
     // === TRADE EVALUATION ===
@@ -1082,13 +1274,28 @@ class GameAI {
 
     const isRanged = unit.effectId === 'ranged';
     const isDiagonal = unit.effectId === 'diagonal_attack';
+    const canConsumeGem = unit.effectId === 'consume_gem';
 
     for (let r = 0; r < 7; r++) {
       for (let c = 0; c < 6; c++) {
         const targetId = board[r][c];
         if (!targetId) continue;
         const target = units[targetId];
-        if (!target || target.owner === 'silver') continue;
+        if (!target) continue;
+        
+        // Normal attacks can't target own units, unless Opal Devourer eating Gem Shards
+        if (target.owner === 'silver') {
+          // Opal Devourer can attack friendly Gem Shards
+          if (canConsumeGem && target.key === 'gemshard') {
+            const rowDist = Math.abs(pos.r - r);
+            const colDist = Math.abs(pos.c - c);
+            const canAttack = (rowDist === 1 && colDist === 0) || (rowDist === 0 && colDist === 1);
+            if (canAttack) {
+              targets.push({ id: targetId, unit: target, pos: { r, c }, isGemConsume: true });
+            }
+          }
+          continue;
+        }
         if (target.untargetable) continue;
 
         const rowDist = Math.abs(pos.r - r);
@@ -1314,6 +1521,45 @@ class GameAI {
         if (nr < 0 || nr >= 7 || nc < 0 || nc >= 6) continue;
         const uid = board[nr][nc];
         if (uid && units[uid] && units[uid].owner === owner) count++;
+      }
+    }
+    
+    return count;
+  }
+  
+  countNearbyEnemiesAt(gameState, row, col, owner) {
+    let count = 0;
+    const { board, units } = gameState;
+    const enemyOwner = owner === 'silver' ? 'gold' : 'silver';
+    
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = row + dr, nc = col + dc;
+        if (nr < 0 || nr >= 7 || nc < 0 || nc >= 6) continue;
+        const uid = board[nr][nc];
+        if (uid && units[uid] && units[uid].owner === enemyOwner) count++;
+      }
+    }
+    
+    return count;
+  }
+  
+  countNearbyHighValueAllies(gameState, row, col, owner) {
+    let count = 0;
+    const { board, units } = gameState;
+    
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = row + dr, nc = col + dc;
+        if (nr < 0 || nr >= 7 || nc < 0 || nc >= 6) continue;
+        const uid = board[nr][nc];
+        if (uid && units[uid] && units[uid].owner === owner) {
+          const u = units[uid];
+          // High value = has effect, high ATK, or high stats overall
+          if (u.effectId || u.atk >= 4 || (u.atk + u.hp) >= 7) count++;
+        }
       }
     }
     

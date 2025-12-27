@@ -226,6 +226,20 @@ const CAMPAIGN_BOSSES = [
       music: 'crimson-court',
       background: 'crimson-court'
     }
+  },
+  {
+    id: 4,
+    name: "The Garnet Queen",
+    description: "A dazzling fairy monarch who commands the power of precious gems",
+    deckId: "jeweled-court",
+    difficulty: "hard",
+    aiLevel: 3,
+    requiresBoss: 3,
+    cardRewards: ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 'amethystenchanter', 'diamondguardian', 'opaldevourer', 'pearlblessing', 'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemstonecurse', 'fairyring'],
+    unlocks: {
+      music: 'jeweled-court',
+      background: 'jeweled-court'
+    }
   }
 ];
 

@@ -87,7 +87,23 @@ app.post("/api/fixCollection", async (req, res) => {
       coffintrapper: 'rare', undertaker: 'rare', mostwanted: 'rare',
       // Western Skeleton - Legendary
       thehangedman: 'legendary', ghostlystampede: 'legendary', 
-      bonecolossus: 'legendary', shallowgrave: 'legendary', highnoon: 'legendary'
+      bonecolossus: 'legendary', shallowgrave: 'legendary', highnoon: 'legendary',
+      // Crimson Court - Common
+      bloodfamiliar: 'common', nightstalker: 'common', vampirespawn: 'common',
+      // Crimson Court - Rare
+      nosferatu: 'rare', coffin: 'rare', bloodpact: 'rare', bloodtransfusion: 'rare', soulcollector: 'rare',
+      // Crimson Court - Legendary
+      eldervampire: 'legendary', bloodcountess: 'legendary', vampirelord: 'legendary',
+      crimsonrevival: 'legendary', sanguinefeast: 'legendary',
+      // Jeweled Court - Common
+      rubysprite: 'common', emeraldforager: 'common', sapphiredancer: 'common', topazminer: 'common',
+      // Jeweled Court - Rare
+      amethystenchanter: 'rare', diamondguardian: 'rare', opaldevourer: 'rare', pearlblessing: 'rare',
+      // Jeweled Court - Legendary
+      garnetqueen: 'legendary', moonstonewitch: 'legendary', prismaticfairy: 'legendary',
+      gemstonecurse: 'legendary', fairyring: 'legendary',
+      // Token/Spawnable
+      gemshard: 'common'
     };
     
     // Get max copies based on rarity
@@ -135,7 +151,7 @@ app.post("/api/saveDeck", async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
     
-    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court'].includes(deckType)) {
+    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court'].includes(deckType)) {
       return res.status(400).json({ success: false, error: 'Invalid deck type' });
     }
     
@@ -450,6 +466,51 @@ const DECKS = {
       // Sanguine Feast x1 (row damage + heal)
       { key: "sanguinefeast", name: "Sanguine Feast", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "sanguine_feast", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row. Heal your Heart for each hit.", art: "/images/Sanguine Feast.png", requiresTarget: "row", rarity: "legendary" },
     ]
+  },
+  "jeweled-court": {
+    name: "Jeweled Court",
+    description: "Elegant fairies with gem magic - debuff enemies and swarm with sparkle",
+    archetype: "fairy",
+    cards: [
+      // Ruby Sprite x3 (death retaliation)
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      // Emerald Forager x3 (spawn gem on deploy)
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      // Sapphire Dancer x3 (swap with fairy)
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      // Topaz Miner x3 (buff from adjacent gems)
+      { key: "topazminer", name: "Topaz Miner", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "gem_adjacent_buff", effectDesc: "END OF TURN: If adjacent to a Gem Shard, gain +1 ATK.", art: "/images/Topaz Miner.png", rarity: "common" },
+      { key: "topazminer", name: "Topaz Miner", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "gem_adjacent_buff", effectDesc: "END OF TURN: If adjacent to a Gem Shard, gain +1 ATK.", art: "/images/Topaz Miner.png", rarity: "common" },
+      { key: "topazminer", name: "Topaz Miner", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "gem_adjacent_buff", effectDesc: "END OF TURN: If adjacent to a Gem Shard, gain +1 ATK.", art: "/images/Topaz Miner.png", rarity: "common" },
+      // Amethyst Enchanter x2 (reflect damage)
+      { key: "amethystenchanter", name: "Amethyst Enchanter", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "reflect_damage", effectDesc: "PASSIVE: Reflects 1 damage back to attackers.", art: "/images/Amethyst Enchanter.png", rarity: "rare" },
+      { key: "amethystenchanter", name: "Amethyst Enchanter", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "reflect_damage", effectDesc: "PASSIVE: Reflects 1 damage back to attackers.", art: "/images/Amethyst Enchanter.png", rarity: "rare" },
+      // Diamond Guardian x2 (bodyguard)
+      { key: "diamondguardian", name: "Diamond Guardian", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "bodyguard", effectDesc: "PASSIVE: When an adjacent friendly takes damage, this unit takes 1 of that damage instead.", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      { key: "diamondguardian", name: "Diamond Guardian", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "bodyguard", effectDesc: "PASSIVE: When an adjacent friendly takes damage, this unit takes 1 of that damage instead.", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      // Opal Devourer x2 (consume gems)
+      { key: "opaldevourer", name: "Opal Devourer", atk: 2, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "consume_gem", effectDesc: "PASSIVE: Can attack friendly Gem Shards to gain +2/+2.", art: "/images/Opal Devourer.png", rarity: "rare" },
+      { key: "opaldevourer", name: "Opal Devourer", atk: 2, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "consume_gem", effectDesc: "PASSIVE: Can attack friendly Gem Shards to gain +2/+2.", art: "/images/Opal Devourer.png", rarity: "rare" },
+      // Pearl Blessing x2 (mass buff spell)
+      { key: "pearlblessing", name: "Pearl Blessing", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "fairy_blessing", effectDesc: "INSTANT: All friendly units gain +1 HP. Fairies also gain +1 ATK.", art: "/images/Pearl Blessing.png", rarity: "rare" },
+      { key: "pearlblessing", name: "Pearl Blessing", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "fairy_blessing", effectDesc: "INSTANT: All friendly units gain +1 HP. Fairies also gain +1 ATK.", art: "/images/Pearl Blessing.png", rarity: "rare" },
+      // Garnet Queen x1 (ATK suppress + ally buff)
+      { key: "garnetqueen", name: "Garnet Queen", atk: 3, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "garnet_aura", effectDesc: "PASSIVE: Adjacent enemies have ATK set to 1. Adjacent friendlies gain +1 ATK.", art: "/images/Garnet Queen.png", rarity: "legendary" },
+      // Moonstone Witch x1 (transform kills + gem buff)
+      { key: "moonstonewitch", name: "Moonstone Witch", atk: 2, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "gem_transform", effectDesc: "ON KILL: Transform killed unit into a 1/1 Gem Shard. PASSIVE: +1 ATK per Gem Shard on field.", art: "/images/Moonstone Witch.png", rarity: "legendary" },
+      // Prismatic Fairy x1 (gem death AOE)
+      { key: "prismaticfairy", name: "Prismatic Fairy", atk: 3, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "gem_death_aoe", effectDesc: "PASSIVE: When a friendly Gem Shard dies, all enemies take 1 damage.", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
+      // Gemstone Curse x1 (halve ATK spell)
+      { key: "gemstonecurse", name: "Gemstone Curse", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "halve_atk", effectDesc: "INSTANT: Reduce target enemy's ATK by half (rounded down, minimum 1).", art: "/images/Gemstone Curse.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      // Fairy Ring x1 (summon gems spell)
+      { key: "fairyring", name: "Fairy Ring", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "summon_gems", effectDesc: "INSTANT: Summon two 1/1 Gem Shards in your home rows.", art: "/images/Fairy Ring.png", rarity: "legendary" },
+    ]
   }
 };
 
@@ -646,6 +707,14 @@ function getEffectiveAtk(state, uid, targetId) {
   const u = state.units[uid]; if (!u) return 0; let atk = u.atk; const pos = getUnitPos(state, uid); if (!pos) return atk;
   // War Banner buff
   for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "attack_aura") atk += 1; }
+  // Garnet Queen - adjacent friendlies gain +1 ATK
+  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = pos.r + dr, nc = pos.c + dc; if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; const aid = state.board[nr][nc]; if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "garnet_aura") atk += 1; }
+  // Moonstone Witch - gains +1 ATK per Gem Shard on field
+  if (u.effectId === "gem_transform") {
+    for (const gid in state.units) {
+      if (state.units[gid].key === "gemshard") atk += 1;
+    }
+  }
   // War Shrine buff tile (atk_row_buff) - applies to ALL units in that row if owner has unit on tile
   for (const key in state.buffTiles) {
     const buff = state.buffTiles[key];
@@ -670,6 +739,17 @@ function getEffectiveAtk(state, uid, targetId) {
         atk = Math.max(0, atk - 1);
         break;
       }
+    }
+  }
+  // Garnet Queen - adjacent enemies have ATK set to 1
+  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
+    if (dr === 0 && dc === 0) continue; 
+    const nr = pos.r + dr, nc = pos.c + dc; 
+    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
+    const aid = state.board[nr][nc]; 
+    if (aid && state.units[aid] && state.units[aid].owner !== u.owner && state.units[aid].effectId === "garnet_aura") {
+      atk = 1; // Set ATK to 1, overrides everything
+      break;
     }
   }
   // Most Wanted mark - target takes +2 damage
@@ -863,19 +943,49 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
       logToLobby(lobby, a.name + "'s hand is full - soul escapes!");
     }
   }
-  // Blood Countess / lifesteal_grow - gain +1/+1 on kill
-  if (a.effectId === "lifesteal_grow") {
-    a.atk += 1;
-    a.hp += 1;
-    a.maxHp = (a.maxHp || a.hp) + 1;
-    logToLobby(lobby, a.name + " grows stronger! Now " + a.atk + "/" + a.hp);
+  // Moonstone Witch - transform killed unit into a Gem Shard
+  if (a.effectId === "gem_transform" && killedUnitPos) {
+    const gemId = genId();
+    state.units[gemId] = {
+      id: gemId,
+      owner: role,
+      key: "gemshard",
+      name: "Gem Shard",
+      atk: 1,
+      hp: 1,
+      maxHp: 1,
+      type: "structure",
+      art: "/images/Gem Shard.png"
+    };
+    state.board[killedUnitPos.r][killedUnitPos.c] = gemId;
+    logToLobby(lobby, a.name + " transforms " + killedUnit.name + " into a Gem Shard!");
   }
 }
 
 // Process on-death effects (for the dying unit's owner)
-function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos) {
-  if (!deadUnit || deadUnit.effect !== "onDeath") return;
+// attackerId is optional - used for death_retaliate to damage the killer
+function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerId = null) {
+  if (!deadUnit) return;
   const state = lobby.gameState.state;
+  
+  // Ruby Sprite - deal 1 damage to attacker on death
+  if (deadUnit.effectId === "death_retaliate" && attackerId && state.units[attackerId]) {
+    const attacker = state.units[attackerId];
+    attacker.hp -= 1;
+    logToLobby(lobby, deadUnit.name + " retaliates! " + attacker.name + " takes 1 damage!");
+    if (attacker.hp <= 0) {
+      const attackerPos = getUnitPos(state, attackerId);
+      if (attackerPos) {
+        processOnDeathEffect(lobby, attacker, attacker.owner, attackerPos);
+        processAllyDeathTriggers(lobby, attacker.owner, attacker, attackerPos);
+        state.board[attackerPos.r][attackerPos.c] = null;
+      }
+      delete state.units[attackerId];
+      logToLobby(lobby, attacker.name + " destroyed by retaliation!");
+    }
+  }
+  
+  if (deadUnit.effect !== "onDeath") return;
   
   if (deadUnit.effectId === "energy_on_death") {
     lobby.gameState.players[deadUnitOwner].energy = Math.min(lobby.gameState.players[deadUnitOwner].energy + 1, MAX_ENERGY);
@@ -936,6 +1046,32 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos) {
       logToLobby(lobby, deadUnit.name + " explodes, dealing 2 damage to " + damaged + " enemies!");
     }
   }
+  
+  // Ruby Sprite - add a Gem Shard card to hand
+  if (deadUnit.effectId === "death_gem_card") {
+    const player = lobby.gameState.players[deadUnitOwner];
+    if (player.hand.length < MAX_HAND_SIZE) {
+      const gemShardCard = {
+        id: genId(),
+        key: "gemshard",
+        name: "Gem Shard",
+        atk: 1,
+        hp: 1,
+        maxHp: 1,
+        cost: 0,
+        type: "structure",
+        effect: null,
+        effectId: null,
+        effectDesc: "A crystallized shard of magical energy.",
+        art: "/images/Gem Shard.png",
+        rarity: "common"
+      };
+      player.hand.push(gemShardCard);
+      logToLobby(lobby, deadUnit.name + " adds a Gem Shard to " + deadUnitOwner.toUpperCase() + "'s hand!");
+    } else {
+      logToLobby(lobby, deadUnit.name + "'s Gem Shard is lost - hand is full!");
+    }
+  }
 }
 
 // Check if dying unit is a Coffin - queue for resurrection
@@ -973,6 +1109,37 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
     processCoffinDeath(lobby, deadUnit, deadUnitOwner, deadPos);
   }
   
+  // Prismatic Fairy - when a friendly Gem Shard dies, all enemies take 1 damage
+  if (deadUnit && deadUnit.key === "gemshard") {
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      if (u.owner === deadUnitOwner && u.effectId === "gem_death_aoe") {
+        // Deal 1 damage to all enemies
+        const toRemove = [];
+        for (const eid in state.units) {
+          const enemy = state.units[eid];
+          if (enemy.owner !== deadUnitOwner && !enemy.untargetable) {
+            enemy.hp -= 1;
+            if (enemy.hp <= 0) {
+              const enemyPos = getUnitPos(state, eid);
+              toRemove.push({ id: eid, pos: enemyPos });
+            }
+          }
+        }
+        logToLobby(lobby, u.name + "'s gem shatters! All enemies take 1 damage!");
+        for (const item of toRemove) {
+          const deadEnemy = state.units[item.id];
+          processOnDeathEffect(lobby, deadEnemy, deadEnemy.owner, item.pos);
+          processAllyDeathTriggers(lobby, deadEnemy.owner, deadEnemy, item.pos);
+          if (item.pos) state.board[item.pos.r][item.pos.c] = null;
+          delete state.units[item.id];
+          logToLobby(lobby, deadEnemy.name + " destroyed by gem shatter!");
+        }
+        break; // Only trigger once even if multiple Prismatic Fairies
+      }
+    }
+  }
+  
   for (const uid in state.units) {
     const u = state.units[uid];
     // Undertaker - gains +1/+1 on ally death
@@ -1007,7 +1174,31 @@ function processEndOfTurnEffects(lobby, role) {
         }
       }); 
       if (healedCount > 0) logToLobby(lobby, u.name + " heals " + healedCount + " allies"); 
-    } 
+    }
+    // Topaz Miner - gains +1 ATK if adjacent to a Gem Shard
+    if (u.effectId === "gem_adjacent_buff") {
+      const pos = getUnitPos(state, id);
+      if (pos) {
+        let adjacentToGem = false;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = pos.r + dr, nc = pos.c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            const aid = state.board[nr][nc];
+            if (aid && state.units[aid] && state.units[aid].key === "gemshard") {
+              adjacentToGem = true;
+              break;
+            }
+          }
+          if (adjacentToGem) break;
+        }
+        if (adjacentToGem) {
+          u.atk += 1;
+          logToLobby(lobby, u.name + " mines gem energy! +1 ATK (now " + u.atk + ")");
+        }
+      }
+    }
   }
 }
 
@@ -1370,6 +1561,69 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId) {
       }
     }
   }
+  
+  // === JEWELED COURT FAIRY SPELLS ===
+  
+  if (effectId === "fairy_blessing") {
+    // Pearl Blessing - all friendly units +1 HP, fairies also +1 ATK
+    let buffed = 0;
+    const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
+                       'amethystenchanter', 'diamondguardian', 'opaldevourer',
+                       'garnetqueen', 'moonstonewitch', 'prismaticfairy'];
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      if (u.owner === role) {
+        u.hp += 1;
+        u.maxHp = (u.maxHp || u.hp) + 1;
+        if (fairyKeys.includes(u.key)) {
+          u.atk += 1;
+        }
+        buffed++;
+      }
+    }
+    logToLobby(lobby, "Pearl Blessing buffs " + buffed + " units!");
+  }
+  
+  if (effectId === "halve_atk") {
+    // Gemstone Curse - halve target enemy's ATK (min 1)
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner !== role) {
+        const oldAtk = target.atk;
+        target.atk = Math.max(1, Math.floor(target.atk / 2));
+        logToLobby(lobby, "Gemstone Curse reduces " + target.name + "'s ATK from " + oldAtk + " to " + target.atk + "!");
+      }
+    }
+  }
+  
+  if (effectId === "summon_gems") {
+    // Fairy Ring - summon 2 Gem Shards in home rows
+    const homeRows = role === "gold" ? [0, 1] : [5, 6];
+    let spawned = 0;
+    for (const row of homeRows) {
+      if (spawned >= 2) break;
+      for (let c = 0; c < COLS; c++) {
+        if (spawned >= 2) break;
+        if (!state.board[row][c]) {
+          const gemId = genId();
+          state.units[gemId] = {
+            id: gemId,
+            owner: role,
+            key: "gemshard",
+            name: "Gem Shard",
+            atk: 1,
+            hp: 1,
+            maxHp: 1,
+            type: "structure",
+            art: "/images/Gem Shard.png"
+          };
+          state.board[row][c] = gemId;
+          spawned++;
+        }
+      }
+    }
+    logToLobby(lobby, "Fairy Ring summons " + spawned + " Gem Shards!");
+  }
 }
 
 // Handle campaign victory rewards
@@ -1691,6 +1945,34 @@ async function executeAction(lobby, role, action) {
         state.units[id] = unitData;
         state.board[action.row][action.col] = id;
         recomputeOwners(state);
+        
+        // Process on-deploy effects (gem_spawn for Emerald Forager)
+        if (card.effectId === "gem_spawn") {
+          const adjacentTiles = [
+            { r: action.row - 1, c: action.col }, { r: action.row + 1, c: action.col },
+            { r: action.row, c: action.col - 1 }, { r: action.row, c: action.col + 1 }
+          ];
+          for (const tile of adjacentTiles) {
+            if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
+            if (state.board[tile.r][tile.c]) continue;
+            const gemId = genId();
+            state.units[gemId] = {
+              id: gemId,
+              owner: role,
+              key: "gemshard",
+              name: "Gem Shard",
+              atk: 1,
+              hp: 1,
+              maxHp: 1,
+              type: "structure",
+              art: "/images/Gem Shard.png"
+            };
+            state.board[tile.r][tile.c] = gemId;
+            logToLobby(lobby, card.name + " summons a Gem Shard!");
+            break;
+          }
+        }
+        
         logToLobby(lobby, role.toUpperCase() + " played " + card.name);
       }
       break;
@@ -1762,6 +2044,34 @@ async function executeAction(lobby, role, action) {
       state.board[action.toRow][action.toCol] = action.unitId;
       state.movedThisTurn.add(action.unitId);
       recomputeOwners(state);
+      
+      // Process on-deploy effects when unit enters board from spawn
+      if (u.effectId === "gem_spawn") {
+        const adjacentTiles = [
+          { r: action.toRow - 1, c: action.toCol }, { r: action.toRow + 1, c: action.toCol },
+          { r: action.toRow, c: action.toCol - 1 }, { r: action.toRow, c: action.toCol + 1 }
+        ];
+        for (const tile of adjacentTiles) {
+          if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
+          if (state.board[tile.r][tile.c]) continue;
+          const gemId = genId();
+          state.units[gemId] = {
+            id: gemId,
+            owner: role,
+            key: "gemshard",
+            name: "Gem Shard",
+            atk: 1,
+            hp: 1,
+            maxHp: 1,
+            type: "structure",
+            art: "/images/Gem Shard.png"
+          };
+          state.board[tile.r][tile.c] = gemId;
+          logToLobby(lobby, u.name + " summons a Gem Shard!");
+          break;
+        }
+      }
+      
       logToLobby(lobby, role.toUpperCase() + "'s " + u.name + " entered board");
       break;
     }
@@ -1804,7 +2114,7 @@ async function executeAction(lobby, role, action) {
       if (t.hp <= 0) {
         combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
-        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c }, action.attackerId);
         processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         processOnKillEffect(lobby, action.attackerId, role, { r: tp.r, c: tp.c }, t);
         if (!state.board[tp.r][tp.c] || state.board[tp.r][tp.c] === action.targetId) {
@@ -2427,6 +2737,44 @@ io.on("connection", (socket) => {
       state.units[id] = unitData;
       state.board[row][col] = id;
       recomputeOwners(state); // Update row ownership after placing unit
+      
+      // Process on-deploy effects
+      console.log("Processing deploy for card:", card.name, "effectId:", card.effectId);
+      if (card.effectId === "gem_spawn") {
+        console.log("gem_spawn triggered for", card.name);
+        // Emerald Forager - spawn a Gem Shard in adjacent empty tile
+        const adjacentTiles = [
+          { r: row - 1, c: col }, { r: row + 1, c: col },
+          { r: row, c: col - 1 }, { r: row, c: col + 1 }
+        ];
+        let spawned = false;
+        for (const tile of adjacentTiles) {
+          if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
+          if (state.board[tile.r][tile.c]) continue; // Skip occupied
+          // Found empty tile, spawn gem
+          const gemId = genId();
+          state.units[gemId] = {
+            id: gemId,
+            owner: role,
+            key: "gemshard",
+            name: "Gem Shard",
+            atk: 1,
+            hp: 1,
+            maxHp: 1,
+            type: "structure",
+            art: "/images/Gem Shard.png"
+          };
+          state.board[tile.r][tile.c] = gemId;
+          logToLobby(lobby, card.name + " summons a Gem Shard!");
+          spawned = true;
+          console.log("Gem Shard spawned at", tile.r, tile.c);
+          break;
+        }
+        if (!spawned) {
+          console.log("No empty adjacent tile for gem spawn");
+        }
+      }
+      
       logToLobby(lobby, role.toUpperCase() + " played " + card.name);
       return emitGameState(lobby);
     }
@@ -2441,6 +2789,36 @@ io.on("connection", (socket) => {
       state.spawn[role] = null; state.board[toRow][toCol] = unitId; state.movedThisTurn.add(unitId);
       state.moveCountThisTurn[unitId] = 1;
       recomputeOwners(state); // Update row ownership
+      
+      // Process on-deploy effects when unit enters board from spawn
+      if (u.effectId === "gem_spawn") {
+        // Emerald Forager - spawn a Gem Shard in adjacent empty tile
+        const adjacentTiles = [
+          { r: toRow - 1, c: toCol }, { r: toRow + 1, c: toCol },
+          { r: toRow, c: toCol - 1 }, { r: toRow, c: toCol + 1 }
+        ];
+        for (const tile of adjacentTiles) {
+          if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
+          if (state.board[tile.r][tile.c]) continue; // Skip occupied
+          // Found empty tile, spawn gem
+          const gemId = genId();
+          state.units[gemId] = {
+            id: gemId,
+            owner: role,
+            key: "gemshard",
+            name: "Gem Shard",
+            atk: 1,
+            hp: 1,
+            maxHp: 1,
+            type: "structure",
+            art: "/images/Gem Shard.png"
+          };
+          state.board[tile.r][tile.c] = gemId;
+          logToLobby(lobby, u.name + " summons a Gem Shard!");
+          break;
+        }
+      }
+      
       logToLobby(lobby, role.toUpperCase() + "'s " + u.name + " entered board");
       return emitGameState(lobby);
     }
@@ -2512,7 +2890,29 @@ io.on("connection", (socket) => {
         }
       }
       
-      if (!validMove) return socket.emit("log", "Must be adjacent (or next to a Knight for Squire).");
+      // Sapphire Dancer fairy_swap - can swap positions with a friendly Fairy
+      const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
+                         'amethystenchanter', 'diamondguardian', 'opaldevourer',
+                         'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
+      if (u.effectId === "fairy_swap" && !validMove) {
+        // Check if destination has a friendly fairy
+        const targetUnitId = state.board[toRow][toCol];
+        if (targetUnitId && state.units[targetUnitId]) {
+          const targetUnit = state.units[targetUnitId];
+          if (targetUnit.owner === role && fairyKeys.includes(targetUnit.key) && targetUnitId !== unitId) {
+            // Valid swap target - perform the swap
+            state.board[from.r][from.c] = targetUnitId;
+            state.board[toRow][toCol] = unitId;
+            state.movedThisTurn.add(unitId);
+            state.moveCountThisTurn[unitId] = maxMoves; // Use up all moves
+            recomputeOwners(state);
+            logToLobby(lobby, u.name + " swaps with " + targetUnit.name + "!");
+            return emitGameState(lobby);
+          }
+        }
+      }
+      
+      if (!validMove) return socket.emit("log", "Must be adjacent (or use special movement ability).");
       
       // Check if trying to move into enemy home row
       const enemy = enemyOf(role);
@@ -2544,11 +2944,14 @@ io.on("connection", (socket) => {
       // UFO Scraper can attack friendly aliens to absorb stats
       const isAbsorbAttack = a.effectId === "absorb_ally" && t.owner === role;
       
-      // Normal attacks can't target own units (unless UFO Scraper)
-      if (t.owner === role && !isAbsorbAttack) return;
+      // Opal Devourer can attack friendly Gem Shards to gain +2/+2
+      const isConsumeGem = a.effectId === "consume_gem" && t.owner === role && t.key === "gemshard";
+      
+      // Normal attacks can't target own units (unless UFO Scraper or Opal Devourer)
+      if (t.owner === role && !isAbsorbAttack && !isConsumeGem) return;
       
       // Check if target is untargetable (Burrower Beast on deploy turn)
-      if (t.untargetable && !isAbsorbAttack) return socket.emit("log", t.name + " is untargetable this turn.");
+      if (t.untargetable && !isAbsorbAttack && !isConsumeGem) return socket.emit("log", t.name + " is untargetable this turn.");
       
       // Check if unit has already attacked (considering double attack buff)
       // Must check this BEFORE the attackedThisTurn set, since Rally Cry can be cast after first attack
@@ -2610,6 +3013,44 @@ io.on("connection", (socket) => {
         return emitGameState(lobby);
       }
       
+      // Handle Opal Devourer consume gem attack
+      if (isConsumeGem) {
+        // Opal Devourer consumes friendly Gem Shard for +2/+2
+        a.atk += 2;
+        a.hp += 2;
+        a.maxHp = (a.maxHp || a.hp) + 2;
+        logToLobby(lobby, a.name + " devours " + t.name + "! +2/+2 (now " + a.atk + "/" + a.hp + ")");
+        
+        // Process death effects (Prismatic Fairy triggers)
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
+        
+        state.board[tp.r][tp.c] = null;
+        delete state.units[targetId];
+        state.attackedThisTurn.add(attackerId);
+        a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
+        return emitGameState(lobby);
+      }
+      
+      // Handle Opal Devourer consuming a Gem Shard
+      if (isConsumeGem) {
+        // Opal Devourer gains +2/+2 from consuming gem
+        a.atk += 2;
+        a.hp += 2;
+        a.maxHp = (a.maxHp || a.hp) + 2;
+        logToLobby(lobby, a.name + " devours " + t.name + "! Now " + a.atk + "/" + a.hp);
+        
+        // Process death effects (Prismatic Fairy gem death AOE, etc.)
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
+        
+        state.board[tp.r][tp.c] = null;
+        delete state.units[targetId];
+        state.attackedThisTurn.add(attackerId);
+        a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
+        return emitGameState(lobby);
+      }
+      
       // Calculate damage
       let dmg = getEffectiveAtk(state, attackerId, targetId);
       
@@ -2627,9 +3068,58 @@ io.on("connection", (socket) => {
       }
       
       const before = t.hp; 
+      
+      // Diamond Guardian bodyguard - redirects 1 damage from adjacent allies to self
+      let bodyguardId = null;
+      if (dmg > 0) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = tp.r + dr, nc = tp.c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            const aid = state.board[nr][nc];
+            if (aid && state.units[aid] && state.units[aid].owner === t.owner && 
+                state.units[aid].effectId === "bodyguard" && aid !== targetId) {
+              bodyguardId = aid;
+              break;
+            }
+          }
+          if (bodyguardId) break;
+        }
+      }
+      
+      if (bodyguardId && dmg > 0) {
+        const bodyguard = state.units[bodyguardId];
+        bodyguard.hp -= 1;
+        dmg -= 1;
+        logToLobby(lobby, bodyguard.name + " intercepts 1 damage!");
+        if (bodyguard.hp <= 0) {
+          const bgPos = getUnitPos(state, bodyguardId);
+          processOnDeathEffect(lobby, bodyguard, bodyguard.owner, bgPos, attackerId);
+          processAllyDeathTriggers(lobby, bodyguard.owner, bodyguard, bgPos);
+          if (bgPos) state.board[bgPos.r][bgPos.c] = null;
+          delete state.units[bodyguardId];
+          logToLobby(lobby, bodyguard.name + " destroyed protecting ally!");
+        }
+      }
+      
       t.hp -= dmg;
       
       combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
+      
+      // Amethyst Enchanter reflect_damage - reflects 1 damage back to attacker
+      if (t.effectId === "reflect_damage" && dmg > 0 && state.units[attackerId]) {
+        a.hp -= 1;
+        logToLobby(lobby, t.name + " reflects 1 damage back to " + a.name + "!");
+        if (a.hp <= 0) {
+          const attackerPos = getUnitPos(state, attackerId);
+          processOnDeathEffect(lobby, a, a.owner, attackerPos);
+          processAllyDeathTriggers(lobby, a.owner, a, attackerPos);
+          if (attackerPos) state.board[attackerPos.r][attackerPos.c] = null;
+          delete state.units[attackerId];
+          logToLobby(lobby, a.name + " destroyed by reflected damage!");
+        }
+      }
       
       // hp_buff gives virtual HP - unit survives at 0 HP if buff active
       const hpBuffBonus = getHpBuffBonus(state, t.owner);
@@ -2779,8 +3269,8 @@ io.on("connection", (socket) => {
           combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
           if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
           if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
-          // Process on-death effect for dying unit
-          processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+          // Process on-death effect for dying unit (pass attackerId for retaliation)
+          processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c }, attackerId);
           processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
           // Process on-kill effect for attacker (pass killed unit position and unit for steal_card)
           processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
