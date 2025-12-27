@@ -703,12 +703,41 @@ function highlightUnitMoves(unitId) {
   const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce";
   const canKnightLeap = u.effectId === "knight_leap";
   const canAbsorbAlly = u.effectId === "absorb_ally";
+  const canConsumeGem = u.effectId === "consume_gem";
+  const canFairySwap = u.effectId === "fairy_swap";
+  const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
+                     'amethystenchanter', 'diamondguardian', 'opaldevourer',
+                     'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
   
   // Helper to check if a row is an enemy home row with HP remaining
   function isBlockedEnemyRow(row) {
     if (enemy === "gold" && row <= 1 && S.rowHP[row] > 0) return true;
     if (enemy === "silver" && row >= 5 && S.rowHP[row] > 0) return true;
     return false;
+  }
+  
+  // Sapphire Dancer fairy_swap - can swap with any friendly Fairy on the board
+  if (canFairySwap && canStillMove) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const targetId = S.board[r][c];
+        if (!targetId) continue;
+        const target = S.units[targetId];
+        if (!target || target.owner !== myRole) continue;
+        if (!fairyKeys.includes(target.key)) continue;
+        if (targetId === selectedUnitId) continue; // Can't swap with self
+        
+        const viewRow = viewFlipped ? (ROWS - 1 - r) : r;
+        const el = document.getElementById(cellId(viewRow, c));
+        if (el && !el.classList.contains("move-valid")) {
+          el.classList.add("swap-valid");
+          const icon = document.createElement("div");
+          icon.className = "attack-icon";
+          icon.innerHTML = "🔄";
+          el.appendChild(icon);
+        }
+      }
+    }
   }
   
   // Stampede 2-tile move (cardinal only, path must be clear)
@@ -767,6 +796,14 @@ function highlightUnitMoves(unitId) {
           const icon = document.createElement("div");
           icon.className = "attack-icon";
           icon.innerHTML = "🛸";
+          el.appendChild(icon);
+        }
+        // Opal Devourer can attack friendly Gem Shards (cardinal only)
+        else if (target && target.owner === myRole && canConsumeGem && target.key === "gemshard" && !hasAttacked && isCardinal) {
+          el.classList.add("deploy-valid"); // Green highlight for consume
+          const icon = document.createElement("div");
+          icon.className = "attack-icon";
+          icon.innerHTML = "💎";
           el.appendChild(icon);
         }
         // Normal attack on enemies
@@ -861,6 +898,29 @@ function highlightUnitMoves(unitId) {
               el.classList.add("move-valid");
             }
           }
+        }
+      }
+    }
+  }
+  
+  // Sapphire Dancer fairy_swap - can swap with friendly fairies
+  if (u.effectId === "fairy_swap" && canStillMove) {
+    const fairyKeysForSwap = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
+                              'amethystenchanter', 'diamondguardian', 'opaldevourer',
+                              'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const targetId = S.board[r][c];
+        if (!targetId) continue;
+        const target = S.units[targetId];
+        if (!target || target.owner !== myRole) continue;
+        if (!fairyKeysForSwap.includes(target.key)) continue;
+        if (targetId === selectedUnitId) continue;
+        
+        const viewRow = viewFlipped ? (ROWS - 1 - r) : r;
+        const el = document.getElementById(cellId(viewRow, c));
+        if (el && !el.classList.contains("swap-valid")) {
+          el.classList.add("swap-valid");
         }
       }
     }
@@ -1058,6 +1118,18 @@ function getEffectiveAtk(unitId) {
   if (getAdjacentUnitsWithEffect(unitId, "attack_aura").length > 0) {
     atk += 1;
   }
+  // Garnet Queen - adjacent friendlies gain +1 ATK
+  if (getAdjacentUnitsWithEffect(unitId, "garnet_aura").length > 0) {
+    atk += 1;
+  }
+  // Moonstone Witch - gains +1 ATK per Gem Shard on field
+  if (u.effectId === "gem_transform") {
+    for (const uid in S.units) {
+      if (S.units[uid].key === "gemshard") {
+        atk += 1;
+      }
+    }
+  }
   return atk;
 }
 
@@ -1069,6 +1141,18 @@ function getAtkBuff(unitId) {
   let buff = 0;
   if (getAdjacentUnitsWithEffect(unitId, "attack_aura").length > 0) {
     buff += 1;
+  }
+  // Garnet Queen - adjacent friendlies gain +1 ATK
+  if (getAdjacentUnitsWithEffect(unitId, "garnet_aura").length > 0) {
+    buff += 1;
+  }
+  // Moonstone Witch - gains +1 ATK per Gem Shard on field
+  if (u.effectId === "gem_transform") {
+    for (const uid in S.units) {
+      if (S.units[uid].key === "gemshard") {
+        buff += 1;
+      }
+    }
   }
   return buff;
 }
@@ -1819,7 +1903,26 @@ function onCellClick(viewRow, col) {
       // UFO Scraper can attack friendly units to absorb them
       const isAbsorbAttack = a && a.owner === myRole && a.effectId === "absorb_ally" && clickedUnit.owner === myRole;
       
-      if (a && a.owner === myRole && (clickedUnit.owner !== myRole || isAbsorbAttack)) {
+      // Opal Devourer can attack friendly Gem Shards to consume them
+      const isConsumeGem = a && a.owner === myRole && a.effectId === "consume_gem" && clickedUnit.owner === myRole && clickedUnit.key === "gemshard";
+      
+      // Sapphire Dancer can swap with friendly fairies
+      const fairyKeysForSwap = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
+                                'amethystenchanter', 'diamondguardian', 'opaldevourer',
+                                'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
+      const isFairySwap = a && a.owner === myRole && a.effectId === "fairy_swap" && 
+                          clickedUnit.owner === myRole && fairyKeysForSwap.includes(clickedUnit.key);
+      
+      // Handle fairy swap as a move action (server handles the swap logic)
+      if (isFairySwap) {
+        sendAction({ type: "move", unitId: selectedUnitId, toRow: row, toCol: col });
+        selectedUnitId = null;
+        clearHighlights();
+        renderAll();
+        return;
+      }
+      
+      if (a && a.owner === myRole && (clickedUnit.owner !== myRole || isAbsorbAttack || isConsumeGem)) {
         const ap = findUnitPos(selectedUnitId);
         const tp = findUnitPos(occId);
         if (!ap || !tp) return log("Error: position not found.");
@@ -2765,7 +2868,22 @@ function showCampaignVictoryPopup(data) {
     'bloodpact': 'Blood Pact',
     'bloodtransfusion': 'Blood Transfusion',
     'crimsonrevival': 'Crimson Revival',
-    'sanguinefeast': 'Sanguine Feast'
+    'sanguinefeast': 'Sanguine Feast',
+    // Jeweled Court cards
+    'rubysprite': 'Ruby Sprite',
+    'emeraldforager': 'Emerald Forager',
+    'sapphiredancer': 'Sapphire Dancer',
+    'topazminer': 'Topaz Miner',
+    'amethystenchanter': 'Amethyst Enchanter',
+    'diamondguardian': 'Diamond Guardian',
+    'opaldevourer': 'Opal Devourer',
+    'pearlblessing': 'Pearl Blessing',
+    'garnetqueen': 'Garnet Queen',
+    'moonstonewitch': 'Moonstone Witch',
+    'prismaticfairy': 'Prismatic Fairy',
+    'gemstonecurse': 'Gemstone Curse',
+    'fairyring': 'Fairy Ring',
+    'gemshard': 'Gem Shard'
   };
   
   // Slot machine reveal animation
@@ -2828,7 +2946,22 @@ function showCampaignVictoryPopup(data) {
     'bloodpact': '/images/Blood Pact.png',
     'bloodtransfusion': '/images/Blood Transfusion.png',
     'crimsonrevival': '/images/Crimson Revival.png',
-    'sanguinefeast': '/images/Sanguine Feast.png'
+    'sanguinefeast': '/images/Sanguine Feast.png',
+    // Jeweled Court cards
+    'rubysprite': '/images/Ruby Sprite.png',
+    'emeraldforager': '/images/Emerald Forager.png',
+    'sapphiredancer': '/images/Sapphire Dancer.png',
+    'topazminer': '/images/Topaz Miner.png',
+    'amethystenchanter': '/images/Amethyst Enchanter.png',
+    'diamondguardian': '/images/Diamond Guardian.png',
+    'opaldevourer': '/images/Opal Devourer.png',
+    'pearlblessing': '/images/Pearl Blessing.png',
+    'garnetqueen': '/images/Garnet Queen.png',
+    'moonstonewitch': '/images/Moonstone Witch.png',
+    'prismaticfairy': '/images/Prismatic Fairy.png',
+    'gemstonecurse': '/images/Gemstone Curse.png',
+    'fairyring': '/images/Fairy Ring.png',
+    'gemshard': '/images/Gem Shard.png'
   };
   
   // Card rarities for visual effects
@@ -2882,7 +3015,22 @@ function showCampaignVictoryPopup(data) {
     'bloodpact': 'rare',
     'bloodtransfusion': 'rare',
     'crimsonrevival': 'rare',
-    'sanguinefeast': 'legendary'
+    'sanguinefeast': 'legendary',
+    // Jeweled Court
+    'rubysprite': 'common',
+    'emeraldforager': 'common',
+    'sapphiredancer': 'common',
+    'topazminer': 'common',
+    'amethystenchanter': 'rare',
+    'diamondguardian': 'rare',
+    'opaldevourer': 'rare',
+    'pearlblessing': 'rare',
+    'garnetqueen': 'legendary',
+    'moonstonewitch': 'legendary',
+    'prismaticfairy': 'legendary',
+    'gemstonecurse': 'legendary',
+    'fairyring': 'legendary',
+    'gemshard': 'common'
   };
   
   // Reveal cards one by one with delays
