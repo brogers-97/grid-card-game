@@ -705,6 +705,25 @@
     .diff-btn.medium.selected { border-color: white; box-shadow: 0 0 8px #f59e0b; }
     .diff-btn.hard { background: #ef4444; }
     .diff-btn.hard.selected { border-color: white; box-shadow: 0 0 8px #ef4444; }
+    .diff-btn.challenge { 
+      background: linear-gradient(135deg, #7c3aed, #a855f7); 
+      position: relative;
+    }
+    .diff-btn.challenge::after {
+      content: '💀';
+      position: absolute;
+      font-size: 10px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .diff-btn.challenge.selected { border-color: #fbbf24; box-shadow: 0 0 12px #a855f7, 0 0 20px rgba(168, 85, 247, 0.5); }
+    .diff-btn.challenge.locked { 
+      opacity: 0.2; 
+      cursor: not-allowed; 
+      filter: grayscale(1);
+    }
+    .diff-btn.challenge.locked:hover { opacity: 0.2; transform: none; }
     
     .boss-desc { font-size: 12px; color: #94a3b8; }
     .boss-stars { margin-top: 8px; font-size: 14px; display: flex; gap: 4px; align-items: center; }
@@ -808,6 +827,7 @@
           </div>
         </div>
         <button class="btn-secondary" id="deckBuilderBtn" style="margin-bottom: 10px;">🛠️ Deck Builder</button>
+        <button class="btn-secondary hidden" id="playtestBtn" style="margin-bottom: 10px; background: linear-gradient(135deg, #f59e0b, #d97706);">🧪 Playtest</button>
         <button class="btn-danger" id="logoutBtn">Logout</button>
       </div>
     </div>
@@ -932,6 +952,7 @@
     const guestBtn = document.getElementById('guestBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const deckBuilderBtn = document.getElementById('deckBuilderBtn');
+    const playtestBtn = document.getElementById('playtestBtn');
     const authError = document.getElementById('authError');
     const authSuccess = document.getElementById('authSuccess');
     const displayUsername = document.getElementById('displayUsername');
@@ -1037,6 +1058,9 @@
         const isLocked = boss.id > currentLevel;
         const earnedStars = stars[String(boss.id)] || 0;
         
+        // Challenge mode unlocks after beating hard difficulty (3 stars)
+        const challengeUnlocked = earnedStars >= 3;
+        
         // Star labels: Easy, Medium, Hard
         const starLabels = ['Easy', 'Medium', 'Hard'];
         const starsHtml = [1,2,3].map(i => 
@@ -1048,14 +1072,20 @@
           ? `<span class="boss-stars-label">(${starLabels[earnedStars - 1]} beaten)</span>` 
           : `<span class="boss-stars-label">(Not beaten)</span>`;
         
+        // Challenge button - only show if boss has a challenge deck
+        const challengeBtn = boss.challengeDeckId 
+          ? `<div class="diff-btn challenge ${challengeUnlocked ? '' : 'locked'}" data-diff="4" title="${challengeUnlocked ? 'Challenge Mode' : 'Beat Hard to Unlock'}"></div>`
+          : '';
+        
         return `
-          <div class="boss-card ${isLocked ? 'locked' : ''}" data-boss-id="${boss.id}" data-difficulty="2">
+          <div class="boss-card ${isLocked ? 'locked' : ''}" data-boss-id="${boss.id}" data-difficulty="2" data-has-challenge="${boss.challengeDeckId ? '1' : '0'}">
             <div class="boss-header">
               <span class="boss-name">${isLocked ? '🔒 ' : ''}${boss.name}</span>
               <div class="difficulty-toggles">
                 <div class="diff-btn easy" data-diff="1" title="Easy"></div>
                 <div class="diff-btn medium selected" data-diff="2" title="Medium"></div>
                 <div class="diff-btn hard" data-diff="3" title="Hard"></div>
+                ${challengeBtn}
               </div>
             </div>
             <div class="boss-desc">${boss.description}</div>
@@ -1083,6 +1113,10 @@
         card.querySelectorAll('.diff-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            
+            // Don't allow clicking locked challenge button
+            if (btn.classList.contains('locked')) return;
+            
             const diff = btn.dataset.diff;
             card.dataset.difficulty = diff;
             card.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
@@ -1195,6 +1229,14 @@
       statsLevel.textContent = currentUser.campaign?.currentLevel || 1;
       deckBuilderBtn.classList.remove('hidden');
       campaignLoginHint.classList.add('hidden');
+      
+      // Show playtest button for admin users
+      if (currentUser.username === 'admin' || currentUser.username === 'Admin') {
+        playtestBtn.classList.remove('hidden');
+      } else {
+        playtestBtn.classList.add('hidden');
+      }
+      
       renderBossList();
     }
     
@@ -1238,6 +1280,10 @@
     
     deckBuilderBtn.addEventListener('click', () => {
       window.location.href = '/deckbuilder.html';
+    });
+    
+    playtestBtn.addEventListener('click', () => {
+      window.location.href = '/playtest.html';
     });
     
     // Multiplayer
@@ -1365,7 +1411,10 @@
         campaign: '1',
         boss: data.bossName,
         music: data.music || 'default',
-        background: data.background || 'default'
+        background: data.background || 'default',
+        bossId: data.bossId || '',
+        difficulty: data.difficulty || '2',
+        canAutoPlay: data.canAutoPlay ? '1' : '0'
       });
       window.location.href = '/game.html?' + params.toString();
     });

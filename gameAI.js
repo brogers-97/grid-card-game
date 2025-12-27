@@ -14,6 +14,14 @@ class GameAI {
   }
 
   /**
+   * Check if a unit/card has ranged attack capability
+   */
+  isRangedUnit(unit) {
+    if (!unit || !unit.effectId) return false;
+    return unit.effectId === 'ranged' || unit.effectId === 'ranged_pierce' || unit.effectId === 'starweave_ranged';
+  }
+
+  /**
    * Main decision function - returns an action to take
    */
   decideAction(gameState, hand, energy, hasDrawn) {
@@ -151,6 +159,26 @@ class GameAI {
       
       const pos = this.findUnitPos(board, uid);
       if (!pos) return; // Unit is in spawn
+
+      // Check if unit is rooted (by Moon Shadow Warden's shadow_root)
+      if (unit.rooted) return;
+      
+      // Check if unit is adjacent to enemy Coffin Trapper (root_aura)
+      let isRootedByAura = false;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = pos.r + dr, nc = pos.c + dc;
+          if (nr < 0 || nr >= 7 || nc < 0 || nc >= 6) continue;
+          const adjId = board[nr][nc];
+          if (adjId && units[adjId] && units[adjId].owner !== 'silver' && units[adjId].effectId === 'root_aura') {
+            isRootedByAura = true;
+            break;
+          }
+        }
+        if (isRootedByAura) break;
+      }
+      if (isRootedByAura) return;
 
       // Move actions
       if (!movedThisTurn.has(uid)) {
@@ -466,7 +494,7 @@ class GameAI {
     }
     
     // RANGED UNITS - Keep in back where they're safe
-    if (card.effectId === 'ranged') {
+    if (this.isRangedUnit(card)) {
       if (action.row !== undefined) {
         if (action.row >= 4) score += 15; // Safe back position
         if (action.row <= 2) score -= 10; // Too forward
@@ -609,6 +637,8 @@ class GameAI {
 
     switch (card.effectId) {
       case 'ranged':
+      case 'ranged_pierce':
+      case 'starweave_ranged':
         score += 8; // Ranged is very strong
         break;
       case 'shield_aura':
@@ -791,7 +821,7 @@ class GameAI {
     }
 
     // Ranged units should stay back
-    if (unit.effectId === 'ranged') {
+    if (this.isRangedUnit(unit)) {
       if (action.toRow >= 3) score += 4;
       if (action.toRow <= 2) score -= 5; // Too aggressive
     }
@@ -930,7 +960,7 @@ class GameAI {
     }
     
     // 4. KILL RANGED UNITS - they're annoying and safe
-    if (target.effectId === 'ranged') {
+    if (this.isRangedUnit(target)) {
       score += 18;
       // Extra priority if they're in a safe back position
       if (targetPos && targetPos.r <= 2) score += 10;
@@ -1272,7 +1302,7 @@ class GameAI {
     const targets = [];
     const { board, units } = gameState;
 
-    const isRanged = unit.effectId === 'ranged';
+    const isRanged = this.isRangedUnit(unit);
     const isDiagonal = unit.effectId === 'diagonal_attack';
     const canConsumeGem = unit.effectId === 'consume_gem';
 
@@ -1322,7 +1352,7 @@ class GameAI {
   getValidRowAttacks(gameState, unitId, pos, unit) {
     const rows = [];
     const { rowHP } = gameState;
-    const isRanged = unit.effectId === 'ranged';
+    const isRanged = this.isRangedUnit(unit);
     const maxRange = isRanged ? 2 : 1;
 
     for (let r = 0; r <= 1; r++) {
@@ -1340,7 +1370,7 @@ class GameAI {
     const { rowHP } = gameState;
     const heartRow = targetHeart === 'gold' ? 0 : 6;
     const distance = Math.abs(pos.r - heartRow);
-    const isRanged = unit.effectId === 'ranged';
+    const isRanged = this.isRangedUnit(unit);
     const maxRange = isRanged ? 1 : 0;
 
     // Can only attack if walls are down
@@ -1429,7 +1459,7 @@ class GameAI {
   countEnemiesInAttackRange(gameState, row, col, unit) {
     let count = 0;
     const { board, units } = gameState;
-    const isRanged = unit.effectId === 'ranged';
+    const isRanged = this.isRangedUnit(unit);
     const range = isRanged ? 2 : 1;
 
     for (let r = 0; r < 7; r++) {
@@ -1463,7 +1493,7 @@ class GameAI {
         const enemy = units[uid];
         const rowDist = Math.abs(row - r);
         const colDist = Math.abs(col - c);
-        const isRanged = enemy.effectId === 'ranged';
+        const isRanged = this.isRangedUnit(enemy);
         const range = isRanged ? 2 : 1;
 
         let canAttack = false;

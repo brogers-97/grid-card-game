@@ -106,6 +106,174 @@
     .collection-card.rarity-legendary { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
     .collection-card.rarity-legendary:hover { border-color: rgba(251, 191, 36, 1); box-shadow: 0 0 15px rgba(251, 191, 36, 0.6); }
     .collection-card.locked { border-color: rgba(100, 100, 120, 0.4) !important; box-shadow: none !important; }
+    
+    /* === HOLOGRAPHIC CARD EFFECTS BY RARITY === */
+    
+    /* Base holo styling */
+    .collection-card.holo { 
+      position: relative; 
+      border: 2px solid transparent;
+      background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9));
+    }
+    .collection-card.holo .card-art { position: relative; }
+    
+    /* COMMON HOLO - Purple/pink gradient shimmer */
+    .collection-card.holo.rarity-common::before {
+      content: '';
+      position: absolute;
+      top: -2px; left: -2px; right: -2px; bottom: -2px;
+      background: linear-gradient(45deg, #a855f7, #ec4899, #a855f7);
+      background-size: 200% 200%;
+      border-radius: 10px;
+      z-index: -1;
+      animation: holoCommonShift 4s ease-in-out infinite;
+    }
+    .collection-card.holo.rarity-common .card-art::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+      background-size: 200% 200%;
+      animation: holoShine 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .collection-card.holo.rarity-common .card-count {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.9));
+      color: white;
+    }
+    @keyframes holoCommonShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    /* RARE HOLO - Electric blue plasma effect */
+    .collection-card.holo.rarity-rare::before {
+      content: '';
+      position: absolute;
+      top: -3px; left: -3px; right: -3px; bottom: -3px;
+      background: linear-gradient(45deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4);
+      background-size: 300% 300%;
+      border-radius: 10px;
+      z-index: -1;
+      animation: holoRareShift 2s linear infinite;
+      filter: blur(1px);
+    }
+    .collection-card.holo.rarity-rare::after {
+      content: '⚡';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      opacity: 0;
+      animation: holoRareSpark 2s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .collection-card.holo.rarity-rare .card-art::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.4), transparent);
+      animation: holoRareStreak 2s ease-in-out infinite;
+    }
+    .collection-card.holo.rarity-rare .card-count {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(59, 130, 246, 0.9));
+      color: white;
+    }
+    @keyframes holoRareShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+    @keyframes holoRareSpark {
+      0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.3); }
+    }
+    @keyframes holoRareStreak {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+    
+    /* LEGENDARY HOLO - Full prismatic rainbow explosion */
+    .collection-card.holo.rarity-legendary::before {
+      content: '';
+      position: absolute;
+      top: -4px; left: -4px; right: -4px; bottom: -4px;
+      background: linear-gradient(45deg, 
+        #ff0000, #ff4400, #ff8800, #ffcc00, #ffff00, 
+        #88ff00, #00ff00, #00ff88, #00ffff, #0088ff, 
+        #0000ff, #4400ff, #8800ff, #ff00ff, #ff0088, #ff0000);
+      background-size: 600% 600%;
+      border-radius: 10px;
+      z-index: -1;
+      animation: holoLegendaryRainbow 2s linear infinite;
+      filter: blur(2px);
+    }
+    .collection-card.holo.rarity-legendary::after {
+      content: '👑';
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+      animation: holoLegendaryCrown 1s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 10;
+      filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.8));
+    }
+    .collection-card.holo.rarity-legendary .card-art::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, 
+        transparent 0deg, rgba(255,215,0,0.3) 60deg, transparent 120deg,
+        rgba(255,140,0,0.3) 180deg, transparent 240deg,
+        rgba(255,69,0,0.3) 300deg, transparent 360deg);
+      animation: holoLegendarySpin 3s linear infinite;
+      pointer-events: none;
+    }
+    .collection-card.holo.rarity-legendary .card-art::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 40%),
+        radial-gradient(circle at 70% 70%, rgba(255,215,0,0.3) 0%, transparent 40%);
+      animation: holoLegendarySparkle 1.5s ease-in-out infinite;
+      z-index: 1;
+    }
+    .collection-card.holo.rarity-legendary .card-count {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 1), rgba(245, 158, 11, 1));
+      color: #1a1a2e;
+      box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+    }
+    .collection-card.holo.rarity-legendary .card-name {
+      color: #fcd34d !important;
+      text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
+    }
+    @keyframes holoLegendaryRainbow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 600% 50%; }
+    }
+    @keyframes holoLegendarySpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes holoLegendaryCrown {
+      0%, 100% { transform: translateX(-50%) translateY(0) rotate(-5deg); }
+      50% { transform: translateX(-50%) translateY(-3px) rotate(5deg); }
+    }
+    @keyframes holoLegendarySparkle {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    
+    @keyframes holoShine {
+      0% { background-position: -100% -100%; }
+      100% { background-position: 200% 200%; }
+    }
     /* Rarity gem indicator */
     .rarity-gem { position: absolute; bottom: 3px; right: 3px; width: 10px; height: 10px; border-radius: 50%; }
     .rarity-gem.common { background: linear-gradient(135deg, #94a3b8, #64748b); }
@@ -161,6 +329,195 @@
     .deck-card-type { font-size: 8px; color: #64748b; }
     .deck-card-cost { width: 20px; height: 20px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px; color: white; }
     .deck-card-qty { font-size: 11px; color: #94a3b8; min-width: 24px; text-align: center; }
+    /* Holo deck card - base */
+    .deck-card-item.holo-deck-card { 
+      position: relative;
+      overflow: hidden;
+    }
+    .deck-card-item.holo-deck-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; right: 0; bottom: 0;
+      width: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: deckHoloShine 2s ease-in-out infinite;
+    }
+    /* Common holo deck card */
+    .deck-card-item.holo-deck-card.holo-common { 
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2)); 
+      border-color: rgba(168, 85, 247, 0.5);
+    }
+    .deck-card-item.holo-deck-card.holo-common .deck-card-name { color: #e879f9; }
+    /* Rare holo deck card */
+    .deck-card-item.holo-deck-card.holo-rare { 
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2)); 
+      border-color: rgba(59, 130, 246, 0.6);
+    }
+    .deck-card-item.holo-deck-card.holo-rare .deck-card-name { color: #67e8f9; text-shadow: 0 0 5px rgba(103, 232, 249, 0.5); }
+    /* Legendary holo deck card */
+    .deck-card-item.holo-deck-card.holo-legendary { 
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2)); 
+      border-color: rgba(251, 191, 36, 0.7);
+      box-shadow: inset 0 0 10px rgba(251, 191, 36, 0.2);
+    }
+    .deck-card-item.holo-deck-card.holo-legendary .deck-card-name { color: #fcd34d; text-shadow: 0 0 5px rgba(252, 211, 77, 0.5); }
+    .deck-card-item.holo-deck-card.holo-legendary::before {
+      background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.4), transparent);
+    }
+    @keyframes deckHoloShine {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    /* === HOLO PREVIEW EFFECTS BY RARITY === */
+    .preview-card.holo-preview .preview-card-glow {
+      position: relative;
+      overflow: visible;
+    }
+    .preview-card.holo-preview .preview-art {
+      position: relative;
+      overflow: hidden;
+    }
+    /* Common holo preview */
+    .preview-card.holo-preview.holo-common .preview-card-glow {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3)) !important;
+      border: 3px solid transparent !important;
+    }
+    .preview-card.holo-preview.holo-common .preview-card-glow::before {
+      content: '';
+      position: absolute;
+      top: -3px; left: -3px; right: -3px; bottom: -3px;
+      background: linear-gradient(45deg, #a855f7, #ec4899, #a855f7);
+      background-size: 200% 200%;
+      border-radius: 14px;
+      z-index: -1;
+      animation: holoCommonShift 4s ease-in-out infinite;
+    }
+    .preview-card.holo-preview.holo-common .preview-art::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+      background-size: 200% 200%;
+      animation: holoShine 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .preview-card.holo-preview.holo-common .preview-name { color: #e879f9; }
+    
+    /* Rare holo preview */
+    .preview-card.holo-preview.holo-rare .preview-card-glow {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3)) !important;
+      border: 3px solid transparent !important;
+    }
+    .preview-card.holo-preview.holo-rare .preview-card-glow::before {
+      content: '';
+      position: absolute;
+      top: -4px; left: -4px; right: -4px; bottom: -4px;
+      background: linear-gradient(45deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4);
+      background-size: 300% 300%;
+      border-radius: 14px;
+      z-index: -1;
+      animation: holoRareShift 2s linear infinite;
+      filter: blur(2px);
+    }
+    .preview-card.holo-preview.holo-rare .preview-card-glow::after {
+      content: '⚡';
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      font-size: 24px;
+      animation: holoRareSpark 1s ease-in-out infinite;
+      z-index: 10;
+    }
+    .preview-card.holo-preview.holo-rare .preview-art::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.5), transparent);
+      animation: holoRareStreak 1.5s ease-in-out infinite;
+    }
+    .preview-card.holo-preview.holo-rare .preview-art::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.2), transparent, rgba(139, 92, 246, 0.2), transparent);
+      animation: holoRareSpin 4s linear infinite;
+      pointer-events: none;
+    }
+    .preview-card.holo-preview.holo-rare .preview-name { color: #67e8f9; text-shadow: 0 0 10px rgba(103, 232, 249, 0.7); }
+    @keyframes holoRareSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Legendary holo preview - EPIC */
+    .preview-card.holo-preview.holo-legendary .preview-card-glow {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3)) !important;
+      border: 3px solid transparent !important;
+    }
+    .preview-card.holo-preview.holo-legendary .preview-card-glow::before {
+      content: '';
+      position: absolute;
+      top: -5px; left: -5px; right: -5px; bottom: -5px;
+      background: linear-gradient(45deg, 
+        #ff0000, #ff4400, #ff8800, #ffcc00, #ffff00, 
+        #88ff00, #00ff00, #00ff88, #00ffff, #0088ff, 
+        #0000ff, #4400ff, #8800ff, #ff00ff, #ff0088, #ff0000);
+      background-size: 600% 600%;
+      border-radius: 16px;
+      z-index: -1;
+      animation: holoLegendaryRainbow 2s linear infinite;
+      filter: blur(4px);
+    }
+    .preview-card.holo-preview.holo-legendary .preview-card-glow::after {
+      content: '👑';
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px;
+      animation: holoLegendaryCrown 1s ease-in-out infinite;
+      z-index: 10;
+      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+    }
+    .preview-card.holo-preview.holo-legendary .preview-art::after {
+      content: '';
+      position: absolute;
+      top: -100%; left: -100%;
+      width: 300%; height: 300%;
+      background: conic-gradient(from 0deg at 50% 50%, 
+        transparent 0deg, rgba(255,215,0,0.3) 60deg, transparent 120deg,
+        rgba(255,140,0,0.3) 180deg, transparent 240deg,
+        rgba(255,69,0,0.3) 300deg, transparent 360deg);
+      animation: holoLegendarySpin 3s linear infinite;
+      pointer-events: none;
+    }
+    .preview-card.holo-preview.holo-legendary .preview-art::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.5) 0%, transparent 30%),
+        radial-gradient(circle at 80% 30%, rgba(255,215,0,0.4) 0%, transparent 25%),
+        radial-gradient(circle at 40% 80%, rgba(255,140,0,0.4) 0%, transparent 25%);
+      animation: holoLegendarySparkle 1.5s ease-in-out infinite;
+      z-index: 1;
+    }
+    .preview-card.holo-preview.holo-legendary .preview-name { 
+      color: #fcd34d; 
+      text-shadow: 0 0 10px rgba(252, 211, 77, 0.8), 0 0 20px rgba(251, 146, 60, 0.6);
+      animation: holoLegendaryText 1s ease-in-out infinite;
+    }
+    @keyframes holoLegendarySparkle {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    @keyframes holoLegendaryText {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    
     .deck-empty { text-align: center; padding: 30px 15px; color: #64748b; }
     .deck-empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(30, 30, 60, 0.95); border: 2px solid rgba(16, 185, 129, 0.6); border-radius: 10px; padding: 12px 20px; color: #e2e8f0; font-size: 13px; display: flex; align-items: center; gap: 8px; z-index: 1000; opacity: 0; transition: all 0.3s; }
@@ -203,6 +560,7 @@
           <div class="filter-group"><label>Type:</label><select class="filter-select" id="typeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option></select></div>
           <div class="filter-group"><label>Cost:</label><select class="filter-select" id="costFilter"><option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
           <div class="filter-group"><label>Rarity:</label><select class="filter-select" id="rarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
+          <div class="filter-group"><label>Holo:</label><select class="filter-select" id="holoFilter"><option value="all">All</option><option value="holo">✨ Holo Only</option><option value="regular">Regular Only</option></select></div>
           <button class="filter-btn" id="resetFiltersBtn">Reset</button>
         </div>
         <div class="card-grid" id="cardGrid"></div>
@@ -363,7 +721,7 @@
       'jeweled-court': { name: "Jeweled Court", cards: ['rubysprite','rubysprite','rubysprite','emeraldforager','emeraldforager','emeraldforager','sapphiredancer','sapphiredancer','sapphiredancer','topazminer','topazminer','topazminer','amethystenchanter','amethystenchanter','diamondguardian','diamondguardian','opaldevourer','opaldevourer','pearlblessing','pearlblessing','garnetqueen','moonstonewitch','prismaticfairy','gemstonecurse','fairyring'] },
       'elunes-chosen': { name: "Elune's Chosen", cards: ['moonsentinel','moonsentinel','moonsentinel','starweavearcher','starweavearcher','starweavearcher','moonlitbladedancer','moonlitbladedancer','moonlitbladedancer','lunarpriestess','lunarpriestess','lunarpriestess','twilightsrespite','twilightsrespite','huntinggodsblessing','huntinggodsblessing','stonegiant','stonegiant','nightshadeambusher','nightshadeambusher','moonshadowwarden','moonshadowwarden','elunesmoonwell','elunesmoonwell','lunarprayer','lunarprayer','moonflaresorceress','moonflaresorceress','starlitchampion','starinvoker','templeofthemoon','lunarbarrage'] }
     };
-    let currentUser = null, userCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
+    let currentUser = null, userCollection = {}, holoCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
     let currentMusic = 'default', currentBackground = 'default';
     const MUSIC_OPTIONS = {
       'default': 'Default (Match Theme)',
@@ -388,7 +746,7 @@
     const fixCollectionBtn = document.getElementById('fixCollectionBtn');
     const deckSelect = document.getElementById('deckSelect'), deckNameInput = document.getElementById('deckNameInput'), cardPreview = document.getElementById('cardPreview');
     const searchInput = document.getElementById('searchInput'), ownedFilter = document.getElementById('ownedFilter'), archetypeFilter = document.getElementById('archetypeFilter');
-    const typeFilter = document.getElementById('typeFilter'), costFilter = document.getElementById('costFilter'), rarityFilter = document.getElementById('rarityFilter'), resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const typeFilter = document.getElementById('typeFilter'), costFilter = document.getElementById('costFilter'), rarityFilter = document.getElementById('rarityFilter'), holoFilter = document.getElementById('holoFilter'), resetFiltersBtn = document.getElementById('resetFiltersBtn');
     const toast = document.getElementById('toast'), toastIcon = document.getElementById('toastIcon'), toastMessage = document.getElementById('toastMessage');
     const musicSelect = document.getElementById('musicSelect'), backgroundSelect = document.getElementById('backgroundSelect');
     function init() {
@@ -401,6 +759,7 @@
       typeFilter.addEventListener('change', renderCollection);
       costFilter.addEventListener('change', renderCollection);
       rarityFilter.addEventListener('change', renderCollection);
+      holoFilter.addEventListener('change', renderCollection);
       resetFiltersBtn.addEventListener('click', resetFilters);
       clearBtn.addEventListener('click', clearDeck);
       saveBtn.addEventListener('click', saveDeck);
@@ -443,6 +802,7 @@
     }
     function loadUserData() {
       userCollection = currentUser.cardCollection || {};
+      holoCollection = currentUser.holoCollection || {};
       unlockedDecks = currentUser.unlockedDecks || ['medieval'];
       populateCustomizationSelects();
       const customDecks = currentUser.customDecks || [];
@@ -507,19 +867,25 @@
     }
     function renderCardPreview() {
       if (!selectedCardKey) { cardPreview.innerHTML = '<div class="preview-placeholder"><div class="preview-placeholder-icon">👆</div><div>Click a card to view details</div></div>'; return; }
-      const card = CARD_DATA[selectedCardKey]; if (!card) return;
-      const owned = userCollection[selectedCardKey] || 0;
+      
+      // Check if this is a holo card
+      const isHolo = selectedCardKey.endsWith('_holo');
+      const baseKey = isHolo ? selectedCardKey.replace('_holo', '') : selectedCardKey;
+      
+      const card = CARD_DATA[baseKey]; if (!card) return;
+      const owned = isHolo ? (holoCollection[baseKey] || 0) : (userCollection[baseKey] || 0);
       const inDeck = currentDeck.filter(function(k) { return k === selectedCardKey; }).length;
-      const canAdd = owned > inDeck && inDeck < 3 && currentDeck.length < 35;
-      const canRemove = inDeck > 0;
-      const artUrl = encodeURI(card.art || '');
       const rarity = card.rarity || 'common';
       const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
-      const ownedCapped = Math.min(owned, maxCopies);
+      const canAdd = owned > inDeck && inDeck < maxCopies && currentDeck.length < 35;
+      const canRemove = inDeck > 0;
+      const artUrl = encodeURI(card.art || '');
       const rarityLabel = rarity.charAt(0).toUpperCase() + rarity.slice(1);
       const rarityColor = rarity === 'legendary' ? '#fbbf24' : (rarity === 'rare' ? '#3b82f6' : '#94a3b8');
       const archetypeName = getArchetypeName(card.archetype);
-      cardPreview.innerHTML = '<div class="preview-card"><div class="preview-card-glow rarity-' + rarity + '"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div></div><div class="preview-name">' + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + archetypeName + ' • <span style="color:' + rarityColor + '">' + rarityLabel + '</span></div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">In deck: <span>' + inDeck + '</span> / Max: <span>' + maxCopies + '</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || ownedCapped === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
+      const holoLabel = isHolo ? ' ✨ HOLO' : '';
+      const holoClass = isHolo ? ' holo-preview holo-' + rarity : '';
+      cardPreview.innerHTML = '<div class="preview-card' + holoClass + '"><div class="preview-card-glow rarity-' + rarity + '"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div></div><div class="preview-name">' + (isHolo ? '✨ ' : '') + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + archetypeName + ' • <span style="color:' + rarityColor + '">' + rarityLabel + holoLabel + '</span></div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">Owned: <span>' + owned + '</span> • In deck: <span>' + inDeck + '</span> / <span>' + maxCopies + '</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || owned === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
     }
     function isCardUnlocked(cardKey) {
       const card = CARD_DATA[cardKey];
@@ -536,19 +902,23 @@
       return 'Unknown Boss';
     }
     function renderCollection() {
-      const search = searchInput.value.toLowerCase(), ownedVal = ownedFilter.value, archVal = archetypeFilter.value, typeVal = typeFilter.value, costVal = costFilter.value, rarityVal = rarityFilter.value;
+      const search = searchInput.value.toLowerCase(), ownedVal = ownedFilter.value, archVal = archetypeFilter.value, typeVal = typeFilter.value, costVal = costFilter.value, rarityVal = rarityFilter.value, holoVal = holoFilter.value;
       let cards = Object.entries(CARD_DATA).filter(function(entry) {
         const key = entry[0], card = entry[1];
         const owned = userCollection[key] || 0;
+        const holoOwned = holoCollection[key] || 0;
         const unlocked = isCardUnlocked(key);
         if (search && !unlocked) return false; // Don't search locked cards
         if (search && !card.name.toLowerCase().includes(search)) return false;
-        if (ownedVal === 'owned' && (owned === 0 || !unlocked)) return false;
-        if (ownedVal === 'not-owned' && (owned > 0 || !unlocked)) return false;
+        if (ownedVal === 'owned' && (owned === 0 && holoOwned === 0 || !unlocked)) return false;
+        if (ownedVal === 'not-owned' && ((owned > 0 || holoOwned > 0) || !unlocked)) return false;
         if (archVal !== 'all' && card.archetype !== archVal) return false;
         if (typeVal !== 'all' && card.type !== typeVal) return false;
         if (costVal !== 'all') { if (costVal === '5+') { if (card.cost < 5) return false; } else { if (card.cost !== parseInt(costVal)) return false; } }
         if (rarityVal !== 'all' && (card.rarity || 'common') !== rarityVal) return false;
+        // Holo filter - if "holo" only show cards that have holo versions owned
+        if (holoVal === 'holo' && holoOwned === 0) return false;
+        // If "regular" only, we still show the card (regular version) - holo display is handled below
         return true;
       });
       cards.sort(function(a, b) { 
@@ -564,7 +934,8 @@
         const unlocked = isCardUnlocked(key);
         const rarity = card.rarity || 'common';
         const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
-        const owned = Math.min(userCollection[key] || 0, maxCopies), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+        const owned = userCollection[key] || 0; // No cap on owned
+        const inDeck = currentDeck.filter(function(k) { return k === key; }).length;
         const artUrl = encodeURI(card.art || '');
         
         if (!unlocked) {
@@ -572,8 +943,29 @@
           return '<div class="collection-card locked"><div class="locked-overlay"><div class="locked-icon">❓</div><div class="locked-text">Defeat ' + getLockedBossName(card.archetype) + '</div></div></div>';
         }
         
-        let cls = 'collection-card rarity-' + rarity; if (key === selectedCardKey) cls += ' selected'; if (inDeck > 0) cls += ' in-deck'; if (owned === 0) cls += ' not-owned';
-        return '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + inDeck + '/' + maxCopies + '</div><div class="rarity-gem ' + rarity + '"></div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+        let html = '';
+        
+        // Regular card (skip if holo filter is set to "holo")
+        if (holoVal !== 'holo') {
+          let cls = 'collection-card rarity-' + rarity; 
+          if (key === selectedCardKey && !selectedCardKey.endsWith('_holo')) cls += ' selected'; 
+          if (inDeck > 0) cls += ' in-deck'; 
+          if (owned === 0) cls += ' not-owned';
+          html += '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + owned + '/' + maxCopies + '</div><div class="rarity-gem ' + rarity + '"></div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+        }
+        
+        // Add holo version if player owns any (skip if regular filter is set)
+        const holoOwned = holoCollection[key] || 0;
+        if (holoOwned > 0 && holoVal !== 'regular') {
+          const holoKey = key + '_holo';
+          const holoInDeck = currentDeck.filter(function(k) { return k === holoKey; }).length;
+          let holoCls = 'collection-card rarity-' + rarity + ' holo';
+          if (holoKey === selectedCardKey) holoCls += ' selected';
+          if (holoInDeck > 0) holoCls += ' in-deck';
+          html += '<div class="' + holoCls + '" onclick="selectCard(\'' + holoKey + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count">' + holoOwned + '/' + maxCopies + '</div><div class="rarity-gem ' + rarity + '"></div><div class="card-info"><div class="card-name">✨ ' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+        }
+        
+        return html;
       }).join('');
     }
     function renderDeck() {
@@ -582,12 +974,23 @@
       deckCount.className = 'deck-count' + (isValid ? ' valid' : count > 0 ? ' invalid' : '');
       if (count === 0) { deckCards.innerHTML = '<div class="deck-empty"><div class="deck-empty-icon">🃏</div><div>Click cards to add</div></div>'; return; }
       const cardCounts = {}; currentDeck.forEach(function(k) { cardCounts[k] = (cardCounts[k] || 0) + 1; });
-      const sorted = Object.entries(cardCounts).sort(function(a, b) { const cA = CARD_DATA[a[0]], cB = CARD_DATA[b[0]]; if (!cA || !cB) return 0; if (cA.cost !== cB.cost) return cA.cost - cB.cost; return cA.name.localeCompare(cB.name); });
+      const sorted = Object.entries(cardCounts).sort(function(a, b) { 
+        const keyA = a[0].replace('_holo', ''), keyB = b[0].replace('_holo', '');
+        const cA = CARD_DATA[keyA], cB = CARD_DATA[keyB]; 
+        if (!cA || !cB) return 0; 
+        if (cA.cost !== cB.cost) return cA.cost - cB.cost; 
+        return cA.name.localeCompare(cB.name); 
+      });
       deckCards.innerHTML = sorted.map(function(entry) {
         const key = entry[0], qty = entry[1];
-        const card = CARD_DATA[key]; if (!card) return '';
+        const isHolo = key.endsWith('_holo');
+        const baseKey = isHolo ? key.replace('_holo', '') : key;
+        const card = CARD_DATA[baseKey]; if (!card) return '';
         const artUrl = encodeURI(card.art || '');
-        return '<div class="deck-card-item ' + (key === selectedCardKey ? 'selected' : '') + '" onclick="selectCard(\'' + key + '\')"><div class="deck-card-art" style="background-image:url(\'' + artUrl + '\'); background-size: contain; background-position: center; background-repeat: no-repeat;"></div><div class="deck-card-info"><div class="deck-card-name">' + card.name + '</div><div class="deck-card-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + '</div></div><div class="deck-card-cost">' + card.cost + '</div><div class="deck-card-qty">×' + qty + '</div></div>';
+        const rarity = card.rarity || 'common';
+        const holoClass = isHolo ? ' holo-deck-card holo-' + rarity : '';
+        const holoPrefix = isHolo ? '✨ ' : '';
+        return '<div class="deck-card-item' + holoClass + ' ' + (key === selectedCardKey ? 'selected' : '') + '" onclick="selectCard(\'' + key + '\')"><div class="deck-card-art" style="background-image:url(\'' + artUrl + '\'); background-size: contain; background-position: center; background-repeat: no-repeat;"></div><div class="deck-card-info"><div class="deck-card-name">' + holoPrefix + card.name + '</div><div class="deck-card-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + '</div></div><div class="deck-card-cost">' + card.cost + '</div><div class="deck-card-qty">×' + qty + '</div></div>';
       }).join('');
     }
     function updateEnergyCurve() {
@@ -603,22 +1006,35 @@
     }
     function updateSaveButton() { const count = currentDeck.length; saveBtn.disabled = !(count >= 25 && count <= 35 && currentDeckName.trim() && hasChanges); }
     function getMaxCopies(card) {
+      // Deck limits based on rarity
       const rarity = card.rarity || 'common';
       if (rarity === 'legendary') return 1;
       if (rarity === 'rare') return 2;
       return 3;
     }
     function addToDeck(key) {
-      const card = CARD_DATA[key]; if (!card) return;
+      // Check if this is a holo card
+      const isHolo = key.endsWith('_holo');
+      const baseKey = isHolo ? key.replace('_holo', '') : key;
+      
+      const card = CARD_DATA[baseKey]; if (!card) return;
       const maxCopies = getMaxCopies(card);
-      const owned = Math.min(userCollection[key] || 0, maxCopies), inDeck = currentDeck.filter(function(k) { return k === key; }).length;
-      if (owned === 0) { showToast("You don't own this card", true); return; }
-      if (inDeck >= maxCopies) { 
-        const rarityName = card.rarity || 'common';
-        showToast('Max ' + maxCopies + ' ' + (rarityName === 'legendary' ? '(Legendary)' : rarityName === 'rare' ? '(Rare)' : '') , true); 
+      const owned = isHolo ? (holoCollection[baseKey] || 0) : (userCollection[baseKey] || 0);
+      const inDeck = currentDeck.filter(function(k) { return k === key; }).length;
+      
+      // Also count total of this card (regular + holo) toward the limit
+      const totalInDeck = currentDeck.filter(function(k) { 
+        return k === baseKey || k === baseKey + '_holo'; 
+      }).length;
+      
+      if (owned === 0) { showToast("You don't own this card" + (isHolo ? ' (holo)' : ''), true); return; }
+      if (totalInDeck >= maxCopies) { 
+        const rarity = card.rarity || 'common';
+        const rarityLabel = rarity === 'legendary' ? '(Legendary)' : rarity === 'rare' ? '(Rare)' : '';
+        showToast('Max ' + maxCopies + ' total in deck ' + rarityLabel, true); 
         return; 
       }
-      if (inDeck >= owned) { showToast('No more copies available', true); return; }
+      if (inDeck >= owned) { showToast('No more ' + (isHolo ? 'holo ' : '') + 'copies available (own ' + owned + ')', true); return; }
       if (currentDeck.length >= 35) { showToast('Deck full (35 max)', true); return; }
       currentDeck.push(key); hasChanges = true;
       renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview();
@@ -628,7 +1044,7 @@
       if (idx > -1) { currentDeck.splice(idx, 1); hasChanges = true; renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview(); }
     }
     function clearDeck() { if (currentDeck.length === 0) return; if (confirm('Clear all cards?')) { currentDeck = []; hasChanges = true; renderCollection(); renderDeck(); updateEnergyCurve(); updateSaveButton(); renderCardPreview(); } }
-    function resetFilters() { searchInput.value = ''; ownedFilter.value = 'all'; archetypeFilter.value = 'all'; typeFilter.value = 'all'; costFilter.value = 'all'; rarityFilter.value = 'all'; renderCollection(); }
+    function resetFilters() { searchInput.value = ''; ownedFilter.value = 'all'; archetypeFilter.value = 'all'; typeFilter.value = 'all'; costFilter.value = 'all'; rarityFilter.value = 'all'; holoFilter.value = 'all'; renderCollection(); }
     
     async function fixCollection() {
       if (!currentUser || currentUser.id === 'admin') { showToast('Cannot fix admin account', true); return; }
@@ -642,6 +1058,7 @@
           localStorage.setItem('gridCardUser', JSON.stringify(data.user));
           currentUser = data.user;
           userCollection = currentUser.cardCollection || {};
+          holoCollection = currentUser.holoCollection || {};
           renderCollection();
           renderDeck();
           renderCardPreview();

@@ -60,6 +60,13 @@ const userSchema = new mongoose.Schema({
     }
   },
   
+  // Holographic Card Collection - holo versions won from Challenge mode (key -> count)
+  holoCollection: {
+    type: Map,
+    of: Number,
+    default: () => new Map()
+  },
+  
   // Unlocked content
   unlockedDecks: {
     type: [String],
@@ -118,6 +125,7 @@ userSchema.methods.toPublicJSON = function() {
     username: this.username,
     campaign: this.campaign,
     cardCollection: Object.fromEntries(this.cardCollection),
+    holoCollection: Object.fromEntries(this.holoCollection || new Map()),
     unlockedDecks: this.unlockedDecks,
     unlockedMusic: this.unlockedMusic,
     unlockedBackgrounds: this.unlockedBackgrounds,
@@ -191,12 +199,20 @@ const CAMPAIGN_BOSSES = [
     name: "The Void Scout",
     description: "A lone alien scout testing Earth's defenses",
     deckId: "void-alien",
+    challengeDeckId: "void-alien-challenge", // Challenge mode deck
     difficulty: "easy",
     aiLevel: 1,
     cardRewards: ['voiddrone', 'scavengerlarva', 'spittercrawler', 'phaseskirmisher', 'energyleech', 'burrowerbeast', 'psionicoverseer', 'neuralharvester', 'adaptivecolossus', 'sporetitan', 'voidbroodmother', 'eclipsedevourer', 'ufoscraper', 'assimilation', 'voidcollapse', 'hiveascension'],
     unlocks: {
       music: 'void-alien',
       background: 'void-alien'
+    },
+    eventType: 'void_collapse', // Black hole event every 3 boss turns
+    eventConfig: {
+      turnInterval: 3, // Every 3 boss turns
+      startSize: 2,    // Starts as 2x2
+      maxSize: 4,      // Grows up to 4x4
+      growthRate: 1    // Grows by 1 each occurrence
     }
   },
   {
@@ -369,15 +385,17 @@ const authHelpers = {
     return user.toPublicJSON();
   },
   
-  async completeBoss(userId, bossId, stars, aiLevel = 2) {
+  async completeBoss(userId, bossId, stars, aiLevel = 2, isChallenge = false) {
     // Rarity chances based on difficulty
     // Easy (1): 15% rare, 5% legendary
     // Medium (2): 35% rare, 15% legendary  
     // Hard (3): 50% rare, 30% legendary
+    // Challenge (4): 60% rare, 40% legendary (best odds for holo)
     const rarityChances = {
       1: { rare: 0.15, legendary: 0.05 },   // Easy
       2: { rare: 0.35, legendary: 0.15 },   // Medium
-      3: { rare: 0.50, legendary: 0.30 }    // Hard
+      3: { rare: 0.50, legendary: 0.30 },   // Hard
+      4: { rare: 0.60, legendary: 0.40 }    // Challenge
     };
     
     const chances = rarityChances[aiLevel] || rarityChances[2];
@@ -422,12 +440,13 @@ const authHelpers = {
       const rewardCards = [];
       for (let i = 0; i < 3; i++) {
         const card = pickCardByRarity(boss.cardRewards);
-        if (card) rewardCards.push(card);
+        if (card) rewardCards.push({ card, isHolo: isChallenge });
       }
       return {
         user: null,
         rewards: {
           cards: rewardCards,
+          isHolo: isChallenge,
           music: boss.unlocks.music,
           background: boss.unlocks.background
         }
@@ -445,7 +464,7 @@ const authHelpers = {
       user.campaign.completedLevels.push(bossId);
     }
     
-    // Update stars if better
+    // Update stars if better (challenge mode = 4 stars)
     const currentStars = user.campaign.stars.get(String(bossId)) || 0;
     if (stars > currentStars) {
       user.campaign.stars.set(String(bossId), stars);
@@ -478,25 +497,33 @@ const authHelpers = {
       user.unlockedDecks.push(boss.deckId);
     }
     
-    // Random card rewards (3 cards) - max 3 copies of any card, rarity based on difficulty
+    // Random card rewards (3 cards) - no cap on collection, always can get cards
+    // Challenge mode gives HOLO cards instead of regular
     const rewardCards = [];
+    
+    // Initialize holoCollection if it doesn't exist
+    if (!user.holoCollection) {
+      user.holoCollection = new Map();
+    }
+    
     for (let i = 0; i < 3; i++) {
-      // Find cards that aren't maxed out yet (respect rarity limits: common 3, rare 2, legendary 1)
-      const availableCards = boss.cardRewards.filter(card => {
-        const currentCount = user.cardCollection.get(card) || 0;
-        const rarity = CARD_RARITIES[card] || 'common';
-        const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
-        return currentCount < maxCopies;
-      });
+      // All cards from boss are available - no max cap on collection
+      const availableCards = boss.cardRewards;
       
       if (availableCards.length > 0) {
         const selectedCard = pickCardByRarity(availableCards);
         if (selectedCard) {
-          rewardCards.push(selectedCard);
-          const currentCount = user.cardCollection.get(selectedCard) || 0;
-          const rarity = CARD_RARITIES[selectedCard] || 'common';
-          const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
-          user.cardCollection.set(selectedCard, Math.min(currentCount + 1, maxCopies));
+          rewardCards.push({ card: selectedCard, isHolo: isChallenge });
+          
+          if (isChallenge) {
+            // Add to holo collection
+            const currentCount = user.holoCollection.get(selectedCard) || 0;
+            user.holoCollection.set(selectedCard, currentCount + 1);
+          } else {
+            // Add to regular collection
+            const currentCount = user.cardCollection.get(selectedCard) || 0;
+            user.cardCollection.set(selectedCard, currentCount + 1);
+          }
         }
       }
     }
@@ -510,6 +537,7 @@ const authHelpers = {
       user: user.toPublicJSON(),
       rewards: {
         cards: rewardCards,
+        isHolo: isChallenge,
         music: boss.unlocks.music,
         background: boss.unlocks.background
       }
