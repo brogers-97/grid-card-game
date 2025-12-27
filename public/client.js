@@ -105,6 +105,54 @@ myDeckId = urlParams.get('myDeck');
 enemyDeckId = urlParams.get('enemyDeck');
 const isCampaign = urlParams.get('campaign') === '1';
 const bossName = urlParams.get('boss');
+const bossId = urlParams.get('bossId');
+const canAutoPlay = urlParams.get('canAutoPlay') === '1';
+
+// Set boss-specific background if in campaign mode
+if (isCampaign && bossId) {
+  document.body.classList.add('boss-bg');
+  document.body.style.backgroundImage = `url('/images/backgrounds/boss-${bossId}-bg.png')`;
+}
+
+// Show auto-play toggle if eligible (campaign mode and has beaten this boss)
+if (canAutoPlay && isCampaign) {
+  const autoPlayToggle = document.getElementById("autoPlayToggle");
+  const autoPlayCheckbox = document.getElementById("autoPlayCheckbox");
+  
+  if (autoPlayToggle && autoPlayCheckbox) {
+    autoPlayToggle.style.display = "flex";
+    
+    // Handle toggle changes
+    autoPlayCheckbox.addEventListener("change", () => {
+      const enabled = autoPlayCheckbox.checked;
+      socket.emit("toggleAutoPlay", { enabled });
+      
+      // Update tooltip and visual state
+      autoPlayToggle.title = enabled ? "Auto-Play: On" : "Auto-Play: Off";
+      if (enabled) {
+        autoPlayToggle.classList.add("active");
+      } else {
+        autoPlayToggle.classList.remove("active");
+      }
+    });
+  }
+}
+
+// Listen for auto-play status updates from server
+socket.on("autoPlayStatus", (data) => {
+  const autoPlayToggle = document.getElementById("autoPlayToggle");
+  const autoPlayCheckbox = document.getElementById("autoPlayCheckbox");
+  
+  if (autoPlayToggle && autoPlayCheckbox) {
+    autoPlayCheckbox.checked = data.enabled;
+    autoPlayToggle.title = data.enabled ? "Auto-Play: On" : "Auto-Play: Off";
+    if (data.enabled) {
+      autoPlayToggle.classList.add("active");
+    } else {
+      autoPlayToggle.classList.remove("active");
+    }
+  }
+});
 
 // Set enemy name from URL params (for campaign mode)
 if (bossName) {
@@ -591,6 +639,7 @@ document.querySelectorAll('.logTab').forEach(tab => {
 });
 
 function parseLogType(msg) {
+  if (msg.includes("BLACK HOLE EVENT:") || msg.includes("VOID COLLAPSE")) return "boss-warning";
   if (msg.includes("Turn ended") || msg.includes("'s turn")) return "turn";
   if (msg.includes("GAME OVER") || msg.includes("DESTROYED")) return "game-over";
   if (msg.includes("deals") || msg.includes("Attack") || msg.includes("destroyed")) return "combat";
@@ -758,6 +807,22 @@ function highlightDeployTiles(){
     return;
   }
 
+  if (card.effect === "instant" && card.requiresTarget === "tile") {
+    // Lunar Barrage - highlight tiles in neutral zones (not home rows)
+    for (let vr = 0; vr < ROWS; vr++) {
+      const sr = toServerRow(vr);
+      // Can't target home rows (0-1 or 5-6)
+      const isHomeRow = sr <= 1 || sr >= 5;
+      if (isHomeRow) continue;
+      
+      for (let c = 0; c < COLS; c++) {
+        const el = document.getElementById(cellId(vr, c));
+        if (el) el.classList.add("deploy-valid");
+      }
+    }
+    return;
+  }
+
   // Non-targeted instant spells play immediately (handled elsewhere)
   if (card.effect === "instant") {
     return;
@@ -765,7 +830,14 @@ function highlightDeployTiles(){
 
   // Normal board deploy highlights for unit cards - only home rows
   // Exception: Burrower Beast can deploy cardinal-adjacent to any friendly unit
+  // Exception: Night Shade Ambusher can deploy in neutral zones (rows 2-4)
   const isBurrower = card.effectId === "burrow";
+  const isAmbusher = card.effectId === "ambush_deploy";
+  
+  // Debug: log ambusher detection
+  if (card.key === "nightshadeambusher" || card.name === "Night Shade Ambusher") {
+    console.log("Ambusher card detected:", card.name, "effectId:", card.effectId, "isAmbusher:", isAmbusher);
+  }
   
   for (let vr = 0; vr < ROWS; vr++) {
     const sr = toServerRow(vr);
@@ -773,6 +845,13 @@ function highlightDeployTiles(){
       if (S.board[sr][c]) continue;
 
       let canDeploy = canDeployOnRow(sr);
+      
+      // Night Shade Ambusher can deploy in neutral zones (rows 2-4)
+      if (!canDeploy && isAmbusher) {
+        if (sr >= 2 && sr <= 4) {
+          canDeploy = true;
+        }
+      }
       
       // Burrower Beast can also deploy adjacent to friendly units
       if (!canDeploy && isBurrower) {
@@ -867,11 +946,13 @@ function highlightUnitMoves(unitId) {
   
   // Unit ability checks
   const canDiagonalAttack = u.effectId === "diagonal_attack" || u.effectId === "lifesteal_lord";
-  const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce";
+  const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce" || u.effectId === "starweave_ranged";
   const canKnightLeap = u.effectId === "knight_leap";
   const canAbsorbAlly = u.effectId === "absorb_ally";
   const canConsumeGem = u.effectId === "consume_gem";
   const canFairySwap = u.effectId === "fairy_swap";
+  const canHealAttack = u.effectId === "heal_attack";
+  const bonusRange = u.bonusRange || 0; // From Hunting God's Blessing
   const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
                      'amethystenchanter', 'diamondguardian', 'opaldevourer',
                      'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
@@ -973,6 +1054,14 @@ function highlightUnitMoves(unitId) {
           icon.innerHTML = "💎";
           el.appendChild(icon);
         }
+        // Lunar Priestess can attack friendly units to heal them (cardinal only)
+        else if (target && target.owner === myRole && canHealAttack && !hasAttacked && isCardinal) {
+          el.classList.add("deploy-valid"); // Green highlight for heal
+          const icon = document.createElement("div");
+          icon.className = "attack-icon";
+          icon.innerHTML = "💚";
+          el.appendChild(icon);
+        }
         // Normal attack on enemies
         else if (target && target.owner === enemy && !hasAttacked && canAttackHere) {
           el.classList.add("attack-valid");
@@ -1000,11 +1089,21 @@ function highlightUnitMoves(unitId) {
     }
   }
   
-  // Archer ranged attack - can attack 2 tiles away (cardinal only)
-  if (isRanged && !hasAttacked) {
-    const rangedOffsets = [
-      { dr: -2, dc: 0 }, { dr: 2, dc: 0 }, { dr: 0, dc: -2 }, { dr: 0, dc: 2 }
-    ];
+  // Archer ranged attack - can attack 1 OR 2 tiles away (cardinal only)
+  // Also handles bonus range from Hunting God's Blessing
+  const baseRange = isRanged ? 2 : 1;
+  const totalRange = baseRange + bonusRange;
+  
+  if ((isRanged || bonusRange > 0) && !hasAttacked) {
+    // Generate all cardinal offsets up to totalRange
+    const rangedOffsets = [];
+    for (let dist = 1; dist <= totalRange; dist++) {
+      rangedOffsets.push({ dr: -dist, dc: 0 });
+      rangedOffsets.push({ dr: dist, dc: 0 });
+      rangedOffsets.push({ dr: 0, dc: -dist });
+      rangedOffsets.push({ dr: 0, dc: dist });
+    }
+    
     for (const offset of rangedOffsets) {
       const nr = pos.r + offset.dr;
       const nc = pos.c + offset.dc;
@@ -1013,26 +1112,27 @@ function highlightUnitMoves(unitId) {
       const targetId = S.board[nr][nc];
       const viewRow = viewFlipped ? (ROWS - 1 - nr) : nr;
       const el = document.getElementById(cellId(viewRow, nc));
+      if (!el) continue;
       
       if (targetId) {
         const target = S.units[targetId];
-        if (target && target.owner === enemy) {
-          if (el && !el.classList.contains("attack-valid")) {
+        if (target && target.owner === enemy && !target.untargetable) {
+          if (!el.classList.contains("attack-valid")) {
             el.classList.add("attack-valid");
             const icon = document.createElement("div");
             icon.className = "attack-icon";
-            icon.innerHTML = "🏹";
+            icon.innerHTML = isRanged ? "🏹" : "⚔️";
             el.appendChild(icon);
           }
         }
       } else {
         // Empty cell - check if enemy home row with HP (can attack the row at range)
         const isEnemyHomeRow = (enemy === "gold" && nr <= 1) || (enemy === "silver" && nr >= 5);
-        if (isEnemyHomeRow && S.rowHP[nr] > 0 && el && !el.classList.contains("row-attack-valid")) {
+        if (isEnemyHomeRow && S.rowHP[nr] > 0 && !el.classList.contains("row-attack-valid")) {
           el.classList.add("row-attack-valid");
           const icon = document.createElement("div");
           icon.className = "attack-icon row-attack";
-          icon.innerHTML = "🏹";
+          icon.innerHTML = isRanged ? "🏹" : "🏰";
           el.appendChild(icon);
         }
       }
@@ -1512,6 +1612,21 @@ function renderHand() {
         return;
       }
       
+      // Check if we have enough energy
+      if (myEnergy < card.cost) {
+        return log("Not enough energy.", "system");
+      }
+      
+      // Non-targeted instant spells play immediately
+      if (card.effect === "instant" && !card.requiresTarget) {
+        sendAction({ type: "playCard", cardId: card.id });
+        selectedCardId = null;
+        deployCardId = null;
+        clearHighlights();
+        renderHand();
+        return;
+      }
+      
       selectedCardId = card.id;
       deployCardId = card.id;
       selectedUnitId = null;
@@ -1718,9 +1833,24 @@ function renderAll() {
 
       applyCls(cellEl);
 
-      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit");
+      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning");
       cellEl.removeAttribute("data-buff-icon");
       cellEl.innerHTML = "";
+      
+      // Check if this cell is in a boss event warning zone
+      if (S.bossEventWarning && S.bossEventWarning.type === 'void_collapse') {
+        const isInWarningZone = S.bossEventWarning.tiles.some(t => t.r === sr && t.c === c);
+        if (isInWarningZone) {
+          console.log("Adding void-collapse-warning to cell", sr, c, "cellEl:", cellEl.id);
+          cellEl.classList.add("void-collapse-warning");
+          
+          // Add danger icon
+          const dangerIcon = document.createElement('span');
+          dangerIcon.className = 'void-danger-icon';
+          dangerIcon.textContent = '⚠️';
+          cellEl.appendChild(dangerIcon);
+        }
+      }
       
       // Check if this is a buff tile
       const buffKey = `${sr}-${c}`;
@@ -1741,8 +1871,11 @@ function renderAll() {
 
       const unitId = S.board[sr][c];
 
-      // If there's a unit on a buff tile, add has-unit class to hide effects
+      // If there's a unit on a buff tile or void collapse warning, add has-unit class
       if (unitId && buff) {
+        cellEl.classList.add("has-unit");
+      }
+      if (unitId && cellEl.classList.contains("void-collapse-warning")) {
         cellEl.classList.add("has-unit");
       }
 
@@ -2034,6 +2167,22 @@ function onCellClick(viewRow, col) {
       return;
     }
     
+    if (card.effect === "instant" && card.requiresTarget === "tile") {
+      // Lunar Barrage - target a tile (can have enemy unit on it)
+      // Check that it's not a home row
+      const isHomeRow = row <= 1 || row >= 5;
+      if (isHomeRow) {
+        return log("Cannot target home rows.");
+      }
+      const cardIdToPlay = deployCardId;
+      deployCardId = null;
+      selectedCardId = null;
+      clearHighlights();
+      sendAction({ type: "playCard", cardId: cardIdToPlay, row, col });
+      renderHand();
+      return;
+    }
+    
     // Normal unit deployment - tile must be empty
     if (occId) return log("That tile is occupied.");
     
@@ -2073,6 +2222,9 @@ function onCellClick(viewRow, col) {
       // Opal Devourer can attack friendly Gem Shards to consume them
       const isConsumeGem = a && a.owner === myRole && a.effectId === "consume_gem" && clickedUnit.owner === myRole && clickedUnit.key === "gemshard";
       
+      // Lunar Priestess can attack friendly units to heal them
+      const isHealAttack = a && a.owner === myRole && a.effectId === "heal_attack" && clickedUnit.owner === myRole;
+      
       // Sapphire Dancer can swap with friendly fairies
       const fairyKeysForSwap = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
                                 'amethystenchanter', 'diamondguardian', 'opaldevourer',
@@ -2089,23 +2241,28 @@ function onCellClick(viewRow, col) {
         return;
       }
       
-      if (a && a.owner === myRole && (clickedUnit.owner !== myRole || isAbsorbAttack || isConsumeGem)) {
+      if (a && a.owner === myRole && (clickedUnit.owner !== myRole || isAbsorbAttack || isConsumeGem || isHealAttack)) {
         const ap = findUnitPos(selectedUnitId);
         const tp = findUnitPos(occId);
         if (!ap || !tp) return log("Error: position not found.");
         
         // Check if this is a valid attack based on unit abilities
         let canAttack = false;
+        const bonusRange = a.bonusRange || 0;
+        const isRangedUnit = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged";
+        const baseRange = isRangedUnit ? 2 : 1;
+        const totalRange = baseRange + bonusRange;
         
-        // Peasant diagonal attack
-        if (a.effectId === "diagonal_attack") {
+        const rowDist = Math.abs(ap.r - tp.r);
+        const colDist = Math.abs(ap.c - tp.c);
+        
+        // Peasant/Vampire Lord diagonal attack
+        if (a.effectId === "diagonal_attack" || a.effectId === "lifesteal_lord") {
           canAttack = isAdjacent(ap.r, ap.c, tp.r, tp.c);
         }
-        // Archer ranged attack (up to 2 tiles, cardinal only)
-        else if (a.effectId === "ranged") {
-          const rowDist = Math.abs(ap.r - tp.r);
-          const colDist = Math.abs(ap.c - tp.c);
-          canAttack = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
+        // Ranged or bonus range attack (cardinal only)
+        else if (isRangedUnit || bonusRange > 0) {
+          canAttack = (rowDist <= totalRange && colDist === 0) || (colDist <= totalRange && rowDist === 0);
         }
         // Default: cardinal adjacent only
         else {
@@ -2169,8 +2326,27 @@ function onCellClick(viewRow, col) {
   const ap = findUnitPos(selectedUnitId);
   if (!ap) return log("Error: unit position not found.");
 
-  // Check if this is a valid move (adjacent OR knight leap for squires)
+  // Check if this is a valid move (adjacent OR knight leap for squires OR stampede 2-tile)
   let validMove = isAdjacent(ap.r, ap.c, row, col);
+  
+  // Stampede can move up to 2 tiles in a straight line (cardinal)
+  if (a.effectId === "stampede" && !validMove) {
+    const rowDist = Math.abs(ap.r - row);
+    const colDist = Math.abs(ap.c - col);
+    const isStraightLine = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
+    if (isStraightLine) {
+      // Check path is clear for 2-tile move
+      let pathClear = true;
+      if (rowDist === 2 && colDist === 0) {
+        const midRow = ap.r + (row > ap.r ? 1 : -1);
+        if (S.board[midRow][ap.c]) pathClear = false;
+      } else if (colDist === 2 && rowDist === 0) {
+        const midCol = ap.c + (col > ap.c ? 1 : -1);
+        if (S.board[ap.r][midCol]) pathClear = false;
+      }
+      if (pathClear) validMove = true;
+    }
+  }
   
   // Squire knight_leap - can move to tiles adjacent to any friendly Knight
   if (a.effectId === "knight_leap" && !validMove) {
@@ -2224,6 +2400,151 @@ socket.on("connect", () => log("Connected: " + socket.id, "system"));
 socket.on("disconnect", () => log("Disconnected", "system"));
 socket.on("log", (msg) => log(msg, parseLogType(msg)));
 socket.on("combatLog", (data) => combatLog(data.msg, data.type));
+
+// Handle boss event warnings (visual effects)
+socket.on("bossEventWarning", (data) => {
+  if (data.type === 'void_collapse') {
+    // Play warning sound or show notification
+    combatLog(`⚠️ VOID COLLAPSE WARNING: ${data.size}x${data.size} zone marked!`, "boss-warning");
+    // The visual effect is handled by renderAll via bossEventWarning in state
+  }
+});
+
+// Handle boss event execution (destruction effects)
+socket.on("bossEventExecute", (data) => {
+  if (data.type === 'void_collapse') {
+    // Show dramatic countdown sequence
+    showVoidCollapseSequence(data.tiles, data.destroyed);
+  }
+});
+
+// Dramatic void collapse countdown and destruction sequence
+function showVoidCollapseSequence(tiles, destroyedCount) {
+  // Create overlay with caution tape wrapped content
+  const overlay = document.createElement('div');
+  overlay.className = 'void-collapse-overlay';
+  overlay.innerHTML = `
+    <div class="void-collapse-content">
+      <div class="void-collapse-inner">
+        <div class="void-collapse-title">VOID COLLAPSE</div>
+        <div class="void-collapse-countdown">3</div>
+        <div class="void-collapse-subtitle">IMMINENT</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  
+  const countdownEl = overlay.querySelector('.void-collapse-countdown');
+  const subtitleEl = overlay.querySelector('.void-collapse-subtitle');
+  
+  // Countdown sequence
+  setTimeout(() => {
+    countdownEl.textContent = '2';
+    countdownEl.classList.add('pulse');
+  }, 800);
+  
+  setTimeout(() => {
+    countdownEl.textContent = '1';
+  }, 1600);
+  
+  setTimeout(() => {
+    countdownEl.textContent = '💀';
+    subtitleEl.textContent = 'DETONATING';
+    overlay.classList.add('detonating');
+  }, 2400);
+  
+  // Fade out overlay
+  setTimeout(() => {
+    overlay.classList.add('fade-out');
+    
+    setTimeout(() => {
+      overlay.remove();
+      
+      // NOW trigger implosions after overlay is gone
+      tiles.forEach((tile, index) => {
+        setTimeout(() => {
+          animateVoidCollapse(tile.r, tile.c);
+        }, index * 150); // Stagger the implosions
+      });
+      
+      // Show result in combat log after implosions
+      const implosionDuration = tiles.length * 150 + 500;
+      setTimeout(() => {
+        if (destroyedCount > 0) {
+          combatLog(`VOID COLLAPSE DETONATED! ${destroyedCount} unit(s) obliterated!`, "boss-execute");
+        } else {
+          combatLog(`VOID COLLAPSE - All units escaped!`, "boss-execute");
+        }
+      }, implosionDuration);
+    }, 500);
+  }, 3000);
+}
+
+// Animate void collapse destruction effect on a single tile
+function animateVoidCollapse(serverRow, col) {
+  const viewRow = toViewRow(serverRow);
+  const cellEl = document.getElementById(cellId(viewRow, col));
+  if (!cellEl) return;
+  
+  const rect = cellEl.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  // 1. Create bright flash
+  const flash = document.createElement('div');
+  flash.className = 'void-detonation-flash';
+  cellEl.appendChild(flash);
+  
+  // 2. Create shockwave ring
+  const shockwave = document.createElement('div');
+  shockwave.className = 'void-detonation-shockwave';
+  cellEl.appendChild(shockwave);
+  
+  // 3. Create disintegrating particles
+  const particleCount = 20;
+  const particles = [];
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'void-detonation-particle';
+    
+    // Random direction and distance
+    const angle = (Math.PI * 2 * i / particleCount) + (Math.random() * 0.5 - 0.25);
+    const distance = 40 + Math.random() * 60;
+    const size = 3 + Math.random() * 5;
+    const duration = 0.4 + Math.random() * 0.4;
+    
+    particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+    particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+    particle.style.setProperty('--size', `${size}px`);
+    particle.style.setProperty('--duration', `${duration}s`);
+    particle.style.setProperty('--delay', `${Math.random() * 0.1}s`);
+    
+    cellEl.appendChild(particle);
+    particles.push(particle);
+  }
+  
+  // Screen shake effect
+  document.body.classList.add('screen-shake');
+  setTimeout(() => {
+    document.body.classList.remove('screen-shake');
+  }, 300);
+  
+  // Purple flash effect on the cell itself using a box-shadow
+  cellEl.style.transition = 'none';
+  cellEl.style.boxShadow = '0 0 40px rgba(147, 51, 234, 1), 0 0 80px rgba(147, 51, 234, 0.8), inset 0 0 30px rgba(192, 132, 252, 0.9)';
+  
+  setTimeout(() => {
+    cellEl.style.transition = 'box-shadow 0.4s ease-out';
+    cellEl.style.boxShadow = '';
+  }, 100);
+  
+  // Cleanup
+  setTimeout(() => {
+    flash.remove();
+    shockwave.remove();
+    particles.forEach(p => p.remove());
+  }, 1000);
+}
 
 // Handle animation events
 socket.on("animate", (data) => {
@@ -2499,6 +2820,12 @@ socket.on("state", (st) => {
   S.firstTurn = !!st.firstTurn;
   S.buffTiles = st.buffTiles || {};
   S.moveCountThisTurn = st.moveCountThisTurn || {};
+  S.bossEventWarning = st.bossEventWarning || null;
+  
+  // Debug log boss event warning
+  if (st.bossEventWarning) {
+    console.log("BOSS EVENT WARNING RECEIVED:", JSON.stringify(st.bossEventWarning));
+  }
 
   // Handle private state (hand, energy, etc) - now included in state
   if (st.hand !== undefined) {
@@ -2968,6 +3295,250 @@ function showCampaignVictoryPopup(data) {
       text-transform: uppercase;
       font-family: 'Cinzel', serif;
     }
+    /* === HOLO CARD EFFECTS BY RARITY === */
+    
+    /* COMMON HOLO - Simple purple/pink gradient with gentle shimmer */
+    .slot-card.holo.common {
+      position: relative;
+    }
+    .slot-card.holo.common::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      background: linear-gradient(45deg, #a855f7, #ec4899, #a855f7);
+      background-size: 200% 200%;
+      border-radius: 12px;
+      z-index: -1;
+      animation: holoCommonShift 4s ease-in-out infinite;
+      filter: blur(3px);
+    }
+    .slot-card.holo.common .card-reveal .card-art {
+      position: relative;
+    }
+    .slot-card.holo.common .card-reveal .card-art::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+      background-size: 200% 200%;
+      animation: holoShine 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .slot-card.holo.common .card-reveal .card-name {
+      color: #e879f9;
+    }
+    @keyframes holoCommonShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    /* RARE HOLO - Electric blue plasma with crackling energy */
+    .slot-card.holo.rare {
+      position: relative;
+    }
+    .slot-card.holo.rare::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      background: linear-gradient(45deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4, #3b82f6);
+      background-size: 300% 300%;
+      border-radius: 12px;
+      z-index: -1;
+      animation: holoRareShift 2s linear infinite;
+      filter: blur(4px);
+    }
+    .slot-card.holo.rare::after {
+      content: '⚡';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      font-size: 18px;
+      animation: holoRareSpark 1s ease-in-out infinite;
+      z-index: 10;
+    }
+    .slot-card.holo.rare .card-reveal .card-art {
+      position: relative;
+      overflow: hidden;
+    }
+    .slot-card.holo.rare .card-reveal .card-art::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.3), transparent, rgba(139, 92, 246, 0.3), transparent);
+      animation: holoRareSpin 3s linear infinite;
+      pointer-events: none;
+    }
+    .slot-card.holo.rare .card-reveal .card-art::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: holoRareStreak 2s ease-in-out infinite;
+      z-index: 1;
+    }
+    .slot-card.holo.rare .card-reveal .card-name {
+      color: #67e8f9;
+      text-shadow: 0 0 10px rgba(103, 232, 249, 0.7);
+    }
+    @keyframes holoRareShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+    @keyframes holoRareSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes holoRareStreak {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+    @keyframes holoRareSpark {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    
+    /* LEGENDARY HOLO - ULTIMATE prismatic explosion with particles and fire */
+    .slot-card.holo.legendary {
+      position: relative;
+    }
+    .slot-card.holo.legendary::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      background: linear-gradient(45deg, 
+        #ff0000, #ff4400, #ff8800, #ffcc00, #ffff00, 
+        #88ff00, #00ff00, #00ff88, #00ffff, #0088ff, 
+        #0000ff, #4400ff, #8800ff, #ff00ff, #ff0088, #ff0000);
+      background-size: 600% 600%;
+      border-radius: 14px;
+      z-index: -1;
+      animation: holoLegendaryRainbow 2s linear infinite;
+      filter: blur(6px);
+    }
+    .slot-card.holo.legendary::after {
+      content: '👑';
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      animation: holoLegendaryCrown 1s ease-in-out infinite;
+      z-index: 10;
+      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+    }
+    .slot-card.holo.legendary .card-reveal {
+      position: relative;
+      overflow: visible;
+    }
+    .slot-card.holo.legendary .card-reveal::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, rgba(255,215,0,0.5), rgba(255,140,0,0.5), rgba(255,69,0,0.3));
+      border-radius: 8px;
+      animation: holoLegendaryPulse 1s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .slot-card.holo.legendary .card-reveal .card-art {
+      position: relative;
+      overflow: hidden;
+    }
+    .slot-card.holo.legendary .card-reveal .card-art::after {
+      content: '';
+      position: absolute;
+      top: -100%; left: -100%;
+      width: 300%; height: 300%;
+      background: conic-gradient(from 0deg at 50% 50%, 
+        transparent 0deg, rgba(255,215,0,0.4) 60deg, transparent 120deg,
+        rgba(255,140,0,0.4) 180deg, transparent 240deg,
+        rgba(255,69,0,0.4) 300deg, transparent 360deg);
+      animation: holoLegendarySpin 2s linear infinite;
+      pointer-events: none;
+    }
+    .slot-card.holo.legendary .card-reveal .card-art::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.5) 0%, transparent 30%),
+        radial-gradient(circle at 80% 30%, rgba(255,215,0,0.4) 0%, transparent 25%),
+        radial-gradient(circle at 40% 80%, rgba(255,140,0,0.4) 0%, transparent 25%);
+      animation: holoLegendarySparkles 1.5s ease-in-out infinite;
+      z-index: 1;
+    }
+    .slot-card.holo.legendary .card-reveal .card-name {
+      color: #fcd34d;
+      text-shadow: 0 0 10px rgba(252, 211, 77, 0.8), 0 0 20px rgba(251, 146, 60, 0.6), 0 0 30px rgba(239, 68, 68, 0.4);
+      animation: holoLegendaryText 1s ease-in-out infinite;
+    }
+    @keyframes holoLegendaryRainbow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 600% 50%; }
+    }
+    @keyframes holoLegendarySpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes holoLegendaryPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.6; }
+    }
+    @keyframes holoLegendarySparkles {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+    @keyframes holoLegendaryText {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes holoLegendaryCrown {
+      0%, 100% { transform: translateX(-50%) translateY(0) rotate(-5deg); }
+      50% { transform: translateX(-50%) translateY(-5px) rotate(5deg); }
+    }
+    
+    /* Holo label styling by rarity */
+    .holo-label {
+      position: absolute;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: white;
+      font-family: 'Cinzel', serif;
+      z-index: 10;
+    }
+    .slot-card.holo.common .holo-label {
+      background: linear-gradient(135deg, #a855f7, #ec4899);
+    }
+    .slot-card.holo.rare .holo-label {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+      animation: holoLabelRare 1s ease-in-out infinite;
+    }
+    .slot-card.holo.legendary .holo-label {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24, #fcd34d);
+      color: #1a1a2e;
+      box-shadow: 0 0 15px rgba(251, 191, 36, 0.7), 0 0 30px rgba(245, 158, 11, 0.5);
+      animation: holoLabelLegendary 0.5s ease-in-out infinite;
+    }
+    @keyframes holoLabelRare {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.05); }
+    }
+    @keyframes holoLabelLegendary {
+      0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(251, 191, 36, 0.7), 0 0 30px rgba(245, 158, 11, 0.5); }
+      50% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 25px rgba(251, 191, 36, 1), 0 0 50px rgba(245, 158, 11, 0.8); }
+    }
+    
+    @keyframes holoShine {
+      0% { background-position: -100% -100%; }
+      100% { background-position: 200% 200%; }
+    }
     .reward-unlock {
       color: #4ade80;
       font-size: 14px;
@@ -3259,16 +3830,21 @@ function showCampaignVictoryPopup(data) {
   };
   
   // Reveal cards one by one with delays
-  data.rewards.cards.forEach((card, index) => {
+  data.rewards.cards.forEach((cardData, index) => {
     setTimeout(() => {
       const slot = slots[index];
-      const rarity = cardRarities[card] || 'common';
+      
+      // Handle both old string format and new object format
+      const cardKey = typeof cardData === 'object' ? cardData.card : cardData;
+      const isHolo = typeof cardData === 'object' ? cardData.isHolo : false;
+      const rarity = cardRarities[cardKey] || 'common';
       
       slot.classList.remove('spinning');
       slot.classList.add('revealed', rarity);
+      if (isHolo) slot.classList.add('holo');
       
       // Use actual card art image - encode URL for spaces
-      const artPath = encodeURI(cardArtPaths[card] || `/images/${card}.png`);
+      const artPath = encodeURI(cardArtPaths[cardKey] || `/images/${cardKey}.png`);
       
       // Build particles HTML for legendary
       const particlesHtml = rarity === 'legendary' ? `
@@ -3277,15 +3853,19 @@ function showCampaignVictoryPopup(data) {
         </div>
       ` : '';
       
+      // Holo label
+      const holoLabel = isHolo ? '<div class="holo-label">✨ HOLO</div>' : '';
+      
       slot.innerHTML = `
         ${particlesHtml}
-        <div class="card-reveal">
+        <div class="card-reveal${isHolo ? ' holo-card' : ''}">
           <div class="card-art" style="background-image: url('${artPath}')"></div>
           <div class="card-info">
-            <div class="card-name">${cardNames[card] || card}</div>
+            <div class="card-name">${isHolo ? '✨ ' : ''}${cardNames[cardKey] || cardKey}</div>
           </div>
         </div>
         <div class="rarity-label ${rarity}">${rarity}</div>
+        ${holoLabel}
       `;
       
       // Play a sound effect (optional - just visual for now)

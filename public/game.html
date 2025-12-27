@@ -23,6 +23,24 @@
       padding: 20px 0;
     }
 
+    /* Boss-specific background image */
+    body.boss-bg {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    /* Dark overlay on top of boss background */
+    body.boss-bg::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      pointer-events: none;
+      z-index: 0;
+    }
+
     body::before {
       content: '';
       position: fixed;
@@ -31,6 +49,7 @@
         radial-gradient(circle at 20% 50%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
         radial-gradient(circle at 80% 50%, rgba(0, 191, 255, 0.1) 0%, transparent 50%);
       pointer-events: none;
+      z-index: 0;
     }
 
     /* ===== MAIN 3-COLUMN LAYOUT ===== */
@@ -39,7 +58,7 @@
       gap: 16px;
       padding: 12px;
       position: relative;
-      z-index: 1;
+      z-index: 2;
       max-width: 1500px;
       justify-content: center;
       align-items: center;
@@ -98,6 +117,71 @@
     #turnNumber {
       color: #a78bfa;
       font-weight: 700;
+    }
+
+    /* Auto-play toggle */
+    #autoPlayToggle {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    #autoPlayToggle .auto-play-icon {
+      font-size: 14px;
+      opacity: 0.4;
+      transition: opacity 0.2s;
+    }
+
+    #autoPlayToggle.active .auto-play-icon {
+      opacity: 1;
+    }
+
+    .auto-play-switch {
+      position: relative;
+      width: 28px;
+      height: 16px;
+    }
+
+    .auto-play-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(100, 116, 139, 0.5);
+      transition: 0.3s;
+      border-radius: 16px;
+    }
+
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .auto-play-switch input:checked + .switch-slider {
+      background-color: #22c55e;
+    }
+
+    .auto-play-switch input:checked + .switch-slider:before {
+      transform: translateX(12px);
     }
 
     /* ===== CENTER AREA - Board ===== */
@@ -505,6 +589,7 @@
       background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9));
       border: 2px solid rgba(138, 43, 226, 0.3);
       border-radius: 10px;
+      position: relative;
     }
 
     #controlsTop {
@@ -922,6 +1007,34 @@
       text-align: center;
       font-size: 13px;
       padding: 10px;
+    }
+
+    .log-entry.boss-warning {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(0, 0, 0, 0.9),
+        rgba(0, 0, 0, 0.9) 8px,
+        rgba(251, 191, 36, 0.4) 8px,
+        rgba(251, 191, 36, 0.4) 16px
+      );
+      border: 2px solid #fbbf24;
+      border-left-width: 4px;
+      color: #fbbf24;
+      font-weight: 700;
+      text-align: center;
+      padding: 8px 10px;
+      margin: 6px 0;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+      animation: bossWarningPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes bossWarningPulse {
+      0%, 100% { 
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+      }
+      50% { 
+        box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+      }
     }
 
     .log-gold { color: #fbbf24; font-weight: 600; }
@@ -1616,6 +1729,531 @@
     .cell.buff-tile.buff-hp {
       border-color: rgba(236, 72, 153, 0.8) !important;
       box-shadow: 0 0 20px rgba(219, 39, 119, 0.6), 0 0 40px rgba(219, 39, 119, 0.3), inset 0 0 15px rgba(236, 72, 153, 0.3);
+    }
+
+    /* ===== BOSS EVENT: VOID COLLAPSE (Black Hole Warning) ===== */
+    .cell.void-collapse-warning {
+      background: 
+        url('/images/effects/void-collapse.png') center/cover no-repeat,
+        radial-gradient(circle at center, 
+          rgba(0, 0, 0, 0.95) 0%, 
+          rgba(88, 28, 135, 0.7) 40%,
+          rgba(126, 34, 206, 0.4) 70%,
+          transparent 100%) !important;
+      border: 2px solid rgba(147, 51, 234, 0.9) !important;
+      box-shadow: 
+        0 0 20px rgba(126, 34, 206, 0.9),
+        0 0 40px rgba(88, 28, 135, 0.6),
+        0 0 60px rgba(147, 51, 234, 0.4),
+        inset 0 0 30px rgba(0, 0, 0, 0.9);
+      animation: voidWarningFadeIn 0.8s ease-out forwards, voidCollapsePulse 1.5s ease-in-out 0.8s infinite, voidBreath 3s ease-in-out 0.8s infinite;
+      overflow: visible;
+      z-index: 5;
+    }
+
+    @keyframes voidWarningFadeIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.8);
+        box-shadow: 
+          0 0 60px rgba(126, 34, 206, 1),
+          0 0 100px rgba(88, 28, 135, 0.8),
+          0 0 140px rgba(147, 51, 234, 0.6),
+          inset 0 0 50px rgba(0, 0, 0, 1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 
+          0 0 20px rgba(126, 34, 206, 0.9),
+          0 0 40px rgba(88, 28, 135, 0.6),
+          0 0 60px rgba(147, 51, 234, 0.4),
+          inset 0 0 30px rgba(0, 0, 0, 0.9);
+      }
+    }
+
+    /* Spinning energy ring around the cell */
+    .cell.void-collapse-warning::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140%;
+      height: 140%;
+      transform: translate(-50%, -50%);
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(147, 51, 234, 0.6) 30deg,
+        transparent 60deg,
+        rgba(192, 132, 252, 0.4) 120deg,
+        transparent 150deg,
+        rgba(126, 34, 206, 0.5) 210deg,
+        transparent 240deg,
+        rgba(168, 85, 247, 0.4) 300deg,
+        transparent 330deg,
+        rgba(147, 51, 234, 0.6) 360deg
+      );
+      border-radius: 50%;
+      animation: voidSpin 2s linear infinite;
+      pointer-events: none;
+      z-index: -1;
+      filter: blur(2px);
+    }
+
+    /* Particle suction effect */
+    .cell.void-collapse-warning::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(2px 2px at 20% 20%, rgba(192, 132, 252, 0.9) 0%, transparent 100%),
+        radial-gradient(2px 2px at 80% 30%, rgba(147, 51, 234, 0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 70%, rgba(255, 255, 255, 0.7) 0%, transparent 100%),
+        radial-gradient(2px 2px at 70% 80%, rgba(168, 85, 247, 0.9) 0%, transparent 100%),
+        radial-gradient(1px 1px at 10% 50%, rgba(192, 132, 252, 0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 60%, rgba(255, 255, 255, 0.5) 0%, transparent 100%);
+      animation: voidParticles 2s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Danger indicator on cell */
+    .cell.void-collapse-warning .void-danger-icon {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 14px;
+      z-index: 10;
+      animation: dangerBlink 0.5s ease-in-out infinite;
+      filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.8));
+    }
+
+    /* When unit is on the tile, show smaller warning */
+    .cell.void-collapse-warning.has-unit::before {
+      width: 120%;
+      height: 120%;
+      opacity: 0.6;
+    }
+
+    .cell.void-collapse-warning.has-unit::after {
+      opacity: 0.4;
+    }
+
+    @keyframes voidCollapsePulse {
+      0%, 100% { 
+        box-shadow: 
+          0 0 20px rgba(126, 34, 206, 0.9),
+          0 0 40px rgba(88, 28, 135, 0.6),
+          0 0 60px rgba(147, 51, 234, 0.4),
+          inset 0 0 30px rgba(0, 0, 0, 0.9);
+        border-color: rgba(147, 51, 234, 0.9);
+      }
+      50% { 
+        box-shadow: 
+          0 0 35px rgba(126, 34, 206, 1),
+          0 0 70px rgba(88, 28, 135, 0.8),
+          0 0 100px rgba(147, 51, 234, 0.6),
+          inset 0 0 50px rgba(0, 0, 0, 1);
+        border-color: rgba(192, 132, 252, 1);
+      }
+    }
+
+    @keyframes voidBreath {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    @keyframes voidSpin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    @keyframes voidParticles {
+      0% { 
+        transform: scale(1.2) rotate(0deg); 
+        opacity: 0.8;
+      }
+      50% { 
+        transform: scale(0.8) rotate(180deg); 
+        opacity: 1;
+      }
+      100% { 
+        transform: scale(1.2) rotate(360deg); 
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes dangerBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Void explosion/implosion effect when destruction happens */
+    @keyframes voidImplode {
+      0% { 
+        transform: translate(-50%, -50%) scale(1.5); 
+        opacity: 0;
+        filter: blur(10px);
+      }
+      30% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+        filter: blur(0px);
+      }
+      60% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+      }
+      100% { 
+        transform: translate(-50%, -50%) scale(0); 
+        opacity: 0;
+        filter: blur(5px);
+      }
+    }
+
+    /* ===== VOID DETONATION EFFECTS (Flash + Shockwave + Particles) ===== */
+    .void-detonation-flash {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, 
+        rgba(192, 132, 252, 1) 0%,
+        rgba(147, 51, 234, 0.8) 40%,
+        rgba(88, 28, 135, 0.4) 70%,
+        transparent 100%);
+      border-radius: 50%;
+      animation: voidFlash 0.3s ease-out forwards;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    @keyframes voidFlash {
+      0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+      }
+    }
+
+    .void-detonation-shockwave {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      transform: translate(-50%, -50%);
+      border: 3px solid rgba(192, 132, 252, 0.9);
+      border-radius: 50%;
+      animation: voidShockwave 0.6s ease-out forwards;
+      pointer-events: none;
+      z-index: 99;
+      box-shadow: 
+        0 0 10px rgba(147, 51, 234, 0.8),
+        inset 0 0 10px rgba(147, 51, 234, 0.4);
+    }
+
+    @keyframes voidShockwave {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        border-width: 3px;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(8);
+        opacity: 0;
+        border-width: 1px;
+      }
+    }
+
+    .void-detonation-particle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: var(--size, 4px);
+      height: var(--size, 4px);
+      background: radial-gradient(circle, 
+        rgba(192, 132, 252, 1) 0%,
+        rgba(147, 51, 234, 1) 50%,
+        rgba(88, 28, 135, 0.8) 100%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: voidParticleDisintegrate var(--duration, 0.5s) ease-out var(--delay, 0s) forwards;
+      pointer-events: none;
+      z-index: 101;
+      box-shadow: 0 0 6px rgba(147, 51, 234, 0.8);
+    }
+
+    @keyframes voidParticleDisintegrate {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(
+          calc(-50% + var(--tx, 0px)), 
+          calc(-50% + var(--ty, 0px))
+        ) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* ===== VOID COLLAPSE DRAMATIC OVERLAY ===== */
+    .void-collapse-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at center, 
+        rgba(88, 28, 135, 0.4) 0%,
+        rgba(30, 0, 50, 0.5) 50%,
+        rgba(0, 0, 0, 0.6) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: overlayAppear 0.3s ease-out;
+      backdrop-filter: blur(2px);
+    }
+
+    .void-collapse-overlay.fade-out {
+      animation: overlayFadeOut 0.5s ease-out forwards;
+    }
+
+    .void-collapse-overlay.detonating {
+      animation: overlayDetonate 0.3s ease-out;
+      background: radial-gradient(circle at center, 
+        rgba(147, 51, 234, 0.5) 0%,
+        rgba(88, 28, 135, 0.5) 30%,
+        rgba(0, 0, 0, 0.6) 100%);
+    }
+
+    @keyframes overlayAppear {
+      0% { opacity: 0; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes overlayFadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes overlayDetonate {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(1.5); }
+      100% { filter: brightness(1); }
+    }
+
+    /* Caution tape container */
+    .void-collapse-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 25px 50px;
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(0, 0, 0, 0.9),
+        rgba(0, 0, 0, 0.9) 15px,
+        rgba(251, 191, 36, 0.9) 15px,
+        rgba(251, 191, 36, 0.9) 30px
+      );
+      border: 3px solid #fbbf24;
+      box-shadow: 
+        0 0 30px rgba(251, 191, 36, 0.5),
+        inset 0 0 60px rgba(0, 0, 0, 0.8);
+      position: relative;
+    }
+
+    /* Inner dark box for text readability */
+    .void-collapse-inner {
+      background: rgba(0, 0, 0, 0.95);
+      padding: 20px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid rgba(147, 51, 234, 0.8);
+      box-shadow: 0 0 30px rgba(147, 51, 234, 0.4);
+    }
+
+    .void-collapse-title {
+      font-family: 'Cinzel', serif;
+      font-size: 42px;
+      font-weight: 900;
+      color: #e879f9;
+      text-shadow: 
+        0 0 20px rgba(147, 51, 234, 1),
+        0 0 40px rgba(147, 51, 234, 0.8),
+        0 0 60px rgba(147, 51, 234, 0.6),
+        0 0 80px rgba(88, 28, 135, 0.4);
+      letter-spacing: 6px;
+      animation: titlePulse 0.5s ease-in-out infinite;
+      margin-bottom: 10px;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { 
+        transform: scale(1);
+        text-shadow: 
+          0 0 20px rgba(147, 51, 234, 1),
+          0 0 40px rgba(147, 51, 234, 0.8),
+          0 0 60px rgba(147, 51, 234, 0.6);
+      }
+      50% { 
+        transform: scale(1.02);
+        text-shadow: 
+          0 0 30px rgba(147, 51, 234, 1),
+          0 0 60px rgba(147, 51, 234, 0.9),
+          0 0 90px rgba(147, 51, 234, 0.7);
+      }
+    }
+
+    .void-collapse-countdown {
+      font-family: 'Cinzel', serif;
+      font-size: 120px;
+      font-weight: 900;
+      color: #fbbf24;
+      text-shadow: 
+        0 0 30px rgba(251, 191, 36, 1),
+        0 0 60px rgba(251, 191, 36, 0.8),
+        0 0 90px rgba(245, 158, 11, 0.6);
+      animation: countdownPulse 0.8s ease-in-out infinite;
+      line-height: 1;
+    }
+
+    .void-collapse-countdown.pulse {
+      animation: countdownBigPulse 0.3s ease-out;
+    }
+
+    @keyframes countdownPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes countdownBigPulse {
+      0% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    .void-collapse-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #f87171;
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      margin-top: 10px;
+      animation: subtitleBlink 0.3s ease-in-out infinite;
+    }
+
+    @keyframes subtitleBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Screen shake effect */
+    .screen-shake {
+      animation: screenShake 0.3s ease-in-out;
+    }
+
+    @keyframes screenShake {
+      0%, 100% { transform: translateX(0); }
+      10% { transform: translateX(-5px) translateY(2px); }
+      20% { transform: translateX(5px) translateY(-2px); }
+      30% { transform: translateX(-5px) translateY(2px); }
+      40% { transform: translateX(5px) translateY(-2px); }
+      50% { transform: translateX(-3px) translateY(1px); }
+      60% { transform: translateX(3px) translateY(-1px); }
+      70% { transform: translateX(-2px); }
+      80% { transform: translateX(2px); }
+      90% { transform: translateX(-1px); }
+    }
+
+    /* ===== BOSS EVENT COMBAT LOG STYLES - Caution Tape Theme ===== */
+    .combat-entry.boss-warning {
+      color: #fbbf24;
+      font-weight: 700;
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(0, 0, 0, 0.9),
+        rgba(0, 0, 0, 0.9) 10px,
+        rgba(251, 191, 36, 0.3) 10px,
+        rgba(251, 191, 36, 0.3) 20px
+      );
+      border: 2px solid #fbbf24;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin: 4px 0;
+      animation: cautionPulse 1s ease-in-out infinite;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+    }
+
+    .combat-entry.boss-warning::before {
+      content: '⚠️ ';
+      animation: dangerIconShake 0.5s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    @keyframes cautionPulse {
+      0%, 100% { 
+        box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        border-color: #fbbf24;
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 0 30px rgba(251, 191, 36, 0.4);
+        border-color: #fef08a;
+      }
+    }
+
+    @keyframes dangerIconShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px) rotate(-5deg); }
+      75% { transform: translateX(2px) rotate(5deg); }
+    }
+
+    .combat-entry.boss-execute {
+      color: #e879f9;
+      font-weight: 700;
+      background: linear-gradient(90deg, 
+        rgba(126, 34, 206, 0.4) 0%,
+        rgba(88, 28, 135, 0.6) 50%,
+        rgba(126, 34, 206, 0.4) 100%);
+      border: 2px solid #a855f7;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin: 4px 0;
+      animation: executeGlow 0.5s ease-out;
+      text-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+    }
+
+    .combat-entry.boss-execute::before {
+      content: '💀 ';
+    }
+
+    @keyframes executeGlow {
+      0% { 
+        box-shadow: 0 0 30px rgba(147, 51, 234, 1), 0 0 60px rgba(147, 51, 234, 0.5);
+        transform: scale(1.02);
+      }
+      100% { 
+        box-shadow: 0 0 10px rgba(147, 51, 234, 0.3);
+        transform: scale(1);
+      }
     }
 
     /* Buff tile tooltip */
@@ -3080,6 +3718,15 @@
             <div id="deckCountBadge">0</div>
             <button id="drawBtn">DRAW</button>
           </div>
+        </div>
+        
+        <!-- Auto-play toggle (only shows in campaign if eligible) -->
+        <div id="autoPlayToggle" style="display: none;" title="Auto-Play: Off">
+          <span class="auto-play-icon">🤖</span>
+          <label class="auto-play-switch">
+            <input type="checkbox" id="autoPlayCheckbox">
+            <span class="switch-slider"></span>
+          </label>
         </div>
       </div>
       
