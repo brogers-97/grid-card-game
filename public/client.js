@@ -9,8 +9,15 @@ const energyEl = document.getElementById("energyLabel");
 
 const handEl = document.getElementById("hand");
 const deckCountEl = document.getElementById("deckCount");
-const discardCountEl = document.getElementById("discardCount");
+const discardPileCountEl = document.getElementById("discardPileCount");
 const drawBtn = document.getElementById("drawBtn");
+const discardPileEl = document.getElementById("discardPile");
+const discardTooltipEl = document.getElementById("discardTooltip");
+
+// Opponent discard pile elements
+const opponentDiscardPileEl = document.getElementById("opponentDiscardPile");
+const opponentDiscardCountEl = document.getElementById("opponentDiscardCount");
+const opponentDiscardTooltipEl = document.getElementById("opponentDiscardTooltip");
 
 const spawnEnemyEl = document.getElementById("spawnEnemy");
 const spawnYouEl = document.getElementById("spawnYou");
@@ -96,6 +103,17 @@ const lobbyCode = urlParams.get('lobby');
 const isHost = urlParams.get('host') === '1';
 myDeckId = urlParams.get('myDeck');
 enemyDeckId = urlParams.get('enemyDeck');
+const isCampaign = urlParams.get('campaign') === '1';
+const bossName = urlParams.get('boss');
+
+// Set enemy name from URL params (for campaign mode)
+if (bossName) {
+  const enemyNameEl = document.getElementById("enemyName");
+  if (enemyNameEl) {
+    enemyNameEl.textContent = bossName;
+    enemyNameEl.classList.add("ai-opponent");
+  }
+}
 
 // Get custom music and background from URL (from deck builder settings)
 const customMusic = urlParams.get('music');
@@ -121,6 +139,154 @@ function getBackgroundDeckId() {
 if (myDeckId) {
   setupAudio(getMusicDeckId());
   setBackgroundImages(getBackgroundDeckId(), enemyDeckId);
+}
+
+// Discard pile hover tooltip
+if (discardPileEl && discardTooltipEl) {
+  discardPileEl.addEventListener("mouseenter", (e) => {
+    showDiscardTooltip(e);
+  });
+  
+  discardPileEl.addEventListener("mousemove", (e) => {
+    positionDiscardTooltip(e);
+  });
+  
+  discardPileEl.addEventListener("mouseleave", () => {
+    discardTooltipEl.classList.remove("visible");
+  });
+}
+
+function showDiscardTooltip(e) {
+  if (!myDiscard || myDiscard.length === 0) {
+    discardTooltipEl.innerHTML = `
+      <div class="discard-tooltip-title">Discard Pile</div>
+      <div class="discard-tooltip-empty">No cards in discard</div>
+    `;
+  } else {
+    // Count cards by name
+    const cardCounts = {};
+    myDiscard.forEach(card => {
+      const name = card.name;
+      if (!cardCounts[name]) {
+        cardCounts[name] = { count: 0, cost: card.cost };
+      }
+      cardCounts[name].count++;
+    });
+    
+    // Sort by cost
+    const sortedCards = Object.entries(cardCounts).sort((a, b) => a[1].cost - b[1].cost);
+    
+    let cardsHtml = sortedCards.map(([name, info]) => `
+      <div class="discard-tooltip-card">
+        <span class="discard-tooltip-card-cost">${info.cost}</span>
+        <span class="discard-tooltip-card-name">${name}</span>
+        ${info.count > 1 ? `<span class="discard-tooltip-card-count">x${info.count}</span>` : ''}
+      </div>
+    `).join('');
+    
+    discardTooltipEl.innerHTML = `
+      <div class="discard-tooltip-title">Discard Pile (${myDiscard.length})</div>
+      ${cardsHtml}
+    `;
+  }
+  
+  discardTooltipEl.classList.add("visible");
+  positionDiscardTooltip(e);
+}
+
+function positionDiscardTooltip(e) {
+  const tooltip = discardTooltipEl;
+  const padding = 15;
+  
+  let x = e.clientX + padding;
+  let y = e.clientY + padding;
+  
+  // Keep tooltip on screen
+  const rect = tooltip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) {
+    x = e.clientX - rect.width - padding;
+  }
+  if (y + rect.height > window.innerHeight) {
+    y = e.clientY - rect.height - padding;
+  }
+  
+  tooltip.style.left = x + "px";
+  tooltip.style.top = y + "px";
+}
+
+// Opponent discard pile hover tooltip
+let enemyDiscard = [];
+
+if (opponentDiscardPileEl && opponentDiscardTooltipEl) {
+  opponentDiscardPileEl.addEventListener("mouseenter", (e) => {
+    showOpponentDiscardTooltip(e);
+  });
+  
+  opponentDiscardPileEl.addEventListener("mousemove", (e) => {
+    positionOpponentDiscardTooltip(e);
+  });
+  
+  opponentDiscardPileEl.addEventListener("mouseleave", () => {
+    opponentDiscardTooltipEl.classList.remove("visible");
+  });
+}
+
+function showOpponentDiscardTooltip(e) {
+  if (!enemyDiscard || enemyDiscard.length === 0) {
+    opponentDiscardTooltipEl.innerHTML = `
+      <div class="discard-tooltip-title">Opponent Discard</div>
+      <div class="discard-tooltip-empty">No cards in discard</div>
+    `;
+  } else {
+    // Count cards by name
+    const cardCounts = {};
+    enemyDiscard.forEach(card => {
+      const name = card.name;
+      if (!cardCounts[name]) {
+        cardCounts[name] = { count: 0, cost: card.cost };
+      }
+      cardCounts[name].count++;
+    });
+    
+    // Sort by cost
+    const sortedCards = Object.entries(cardCounts).sort((a, b) => a[1].cost - b[1].cost);
+    
+    let cardsHtml = sortedCards.map(([name, info]) => `
+      <div class="discard-tooltip-card">
+        <span class="discard-tooltip-card-cost">${info.cost}</span>
+        <span class="discard-tooltip-card-name">${name}</span>
+        ${info.count > 1 ? `<span class="discard-tooltip-card-count">x${info.count}</span>` : ''}
+      </div>
+    `).join('');
+    
+    opponentDiscardTooltipEl.innerHTML = `
+      <div class="discard-tooltip-title">Opponent Discard (${enemyDiscard.length})</div>
+      ${cardsHtml}
+    `;
+  }
+  
+  opponentDiscardTooltipEl.classList.add("visible");
+  positionOpponentDiscardTooltip(e);
+}
+
+function positionOpponentDiscardTooltip(e) {
+  const tooltip = opponentDiscardTooltipEl;
+  const padding = 15;
+  
+  let x = e.clientX + padding;
+  let y = e.clientY + padding;
+  
+  // Keep tooltip on screen
+  const rect = tooltip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) {
+    x = e.clientX - rect.width - padding;
+  }
+  if (y + rect.height > window.innerHeight) {
+    y = e.clientY - rect.height - padding;
+  }
+  
+  tooltip.style.left = x + "px";
+  tooltip.style.top = y + "px";
 }
 
 // Rejoin lobby when connected
@@ -452,6 +618,7 @@ let myEnergy = 0;
 let myMaxEnergy = 0;
 let myDeckCount = 0;
 let myDiscardCount = 0;
+let myDiscard = [];
 let canDraw = false;
 
 let S = {
@@ -1396,7 +1563,7 @@ function renderHand() {
   const deckBadge = document.getElementById("deckCountBadge");
   if (deckCountEl) deckCountEl.textContent = myDeckCount;
   if (deckBadge) deckBadge.textContent = myDeckCount;
-  if (discardCountEl) discardCountEl.textContent = myDiscardCount;
+  if (discardPileCountEl) discardPileCountEl.textContent = myDiscardCount;
   
   // Update draw button state
   if (drawBtn) {
@@ -2345,6 +2512,7 @@ socket.on("state", (st) => {
     myHand = Array.isArray(st.hand) ? st.hand : [];
     myDeckCount = st.deckCount ?? 0;
     myDiscardCount = st.discardCount ?? 0;
+    myDiscard = Array.isArray(st.discard) ? st.discard : [];
     myEnergy = st.energy ?? 0;
     myMaxEnergy = st.maxEnergy ?? 0;
     canDraw = !!st.canDraw;
@@ -2358,6 +2526,12 @@ socket.on("state", (st) => {
       animateOpponentDraw(st.enemyHandCount - prevEnemyHandCount);
     }
     window.prevEnemyHandCount = st.enemyHandCount;
+    
+    // Update enemy discard data
+    enemyDiscard = Array.isArray(st.enemyDiscard) ? st.enemyDiscard : [];
+    if (opponentDiscardCountEl) {
+      opponentDiscardCountEl.textContent = enemyDiscard.length;
+    }
     
     renderOpponentInfo(st.enemyHandCount, st.enemyDeckCount, st.enemyEnergy, st.enemyMaxEnergy);
   }

@@ -635,6 +635,33 @@ function isAdjacent(r1, c1, r2, c2) { return Math.abs(r1-r2) <= 1 && Math.abs(c1
 // Cardinal adjacent = up, down, left, right only (no diagonal)
 function isCardinalAdjacent(r1, c1, r2, c2) { return (Math.abs(r1-r2) === 1 && c1 === c2) || (Math.abs(c1-c2) === 1 && r1 === r2); }
 
+// Add unit's card to owner's discard pile when it dies
+function discardUnitCard(lobby, unit) {
+  if (!unit || !unit.owner) return;
+  const player = lobby.gameState.players[unit.owner];
+  if (!player) return;
+  
+  // Use originalCard if stored, otherwise reconstruct from unit data
+  if (unit.originalCard) {
+    player.discard.push(unit.originalCard);
+  } else {
+    // Reconstruct card from unit data (for backwards compatibility)
+    const card = {
+      key: unit.key,
+      name: unit.name,
+      atk: unit.atk,
+      hp: unit.maxHp || unit.hp,
+      cost: unit.cost,
+      type: unit.type || "monster",
+      effect: unit.effect,
+      effectId: unit.effectId,
+      effectDesc: unit.effectDesc,
+      art: unit.art
+    };
+    player.discard.push(card);
+  }
+}
+
 // Generate random buff tiles in middle rows (2, 3, 4)
 function generateBuffTiles() {
   const middleRows = [2, 3, 4];
@@ -1118,6 +1145,7 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
         processAllyDeathTriggers(lobby, attacker.owner, attacker, attackerPos);
         state.board[attackerPos.r][attackerPos.c] = null;
       }
+      discardUnitCard(lobby, attacker);
       delete state.units[attackerId];
       logToLobby(lobby, attacker.name + " destroyed by retaliation!");
     }
@@ -1177,6 +1205,7 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
       processOnDeathEffect(lobby, deadTarget, deadTarget.owner, { r: item.r, c: item.c });
       processAllyDeathTriggers(lobby, deadTarget.owner, deadTarget, { r: item.r, c: item.c });
       state.board[item.r][item.c] = null;
+      discardUnitCard(lobby, deadTarget);
       delete state.units[item.id];
       logToLobby(lobby, deadTarget.name + " destroyed by " + deadUnit.name + "'s death explosion!");
     }
@@ -1270,6 +1299,7 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
           processOnDeathEffect(lobby, deadEnemy, deadEnemy.owner, item.pos);
           processAllyDeathTriggers(lobby, deadEnemy.owner, deadEnemy, item.pos);
           if (item.pos) state.board[item.pos.r][item.pos.c] = null;
+          discardUnitCard(lobby, deadEnemy);
           delete state.units[item.id];
           logToLobby(lobby, deadEnemy.name + " destroyed by gem shatter!");
         }
@@ -1536,6 +1566,7 @@ function processStartOfTurnEffects(lobby, role) {
           processOnDeathEffect(lobby, target, target.owner, targetPos);
           processAllyDeathTriggers(lobby, target.owner, target, targetPos);
           if (targetPos) state.board[targetPos.r][targetPos.c] = null;
+          discardUnitCard(lobby, target);
           delete state.units[targetId];
           logToLobby(lobby, target.name + " is destroyed by starfire!");
         }
@@ -1579,6 +1610,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           processOnDeathEffect(lobby, target, target.owner, pos);
           processAllyDeathTriggers(lobby, target.owner, target, pos);
           state.board[pos.r][pos.c] = null;
+          discardUnitCard(lobby, target);
           delete state.units[targetUnitId];
           logToLobby(lobby, "Assimilation destroys " + target.name + "!");
           return true;
@@ -1612,6 +1644,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, deadPos);
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, deadPos);
         state.board[targetRow][item.col] = null;
+        discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
       }
       logToLobby(lobby, "Void Collapse hits " + damaged + " enemies in row " + String.fromCharCode(65 + targetRow) + "!");
@@ -1703,6 +1736,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, { r: targetRow, c: item.col });
         state.board[targetRow][item.col] = null;
+        discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
       }
       logToLobby(lobby, "High Noon! " + damaged + " enemies hit for 2 damage in row " + String.fromCharCode(65 + targetRow) + "!");
@@ -1724,6 +1758,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           processOnDeathEffect(lobby, target, target.owner, pos);
           processAllyDeathTriggers(lobby, target.owner, target, pos);
           if (pos) state.board[pos.r][pos.c] = null;
+          discardUnitCard(lobby, target);
           delete state.units[targetUnitId];
           logToLobby(lobby, target.name + " destroyed!");
         }
@@ -1751,6 +1786,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         processOnDeathEffect(lobby, target, target.owner, pos);
         processAllyDeathTriggers(lobby, target.owner, target, pos);
         if (pos) state.board[pos.r][pos.c] = null;
+        discardUnitCard(lobby, target);
         delete state.units[targetUnitId];
         logToLobby(lobby, target.name + " destroyed!");
       }
@@ -1799,6 +1835,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, { r: targetRow, c: item.col });
         state.board[targetRow][item.col] = null;
+        discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
       }
       // Heal heart for each unit hit
@@ -1941,6 +1978,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, item.pos);
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, item.pos);
         state.board[item.pos.r][item.pos.c] = null;
+        discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
       }
       logToLobby(lobby, "Lunar Barrage hits " + hitCount + " enemies for 2 damage!");
@@ -2033,7 +2071,8 @@ function emitGameState(lobby) {
     ...base, 
     hand: players.gold.hand, 
     deckCount: players.gold.deck.length, 
-    discardCount: players.gold.discard.length, 
+    discardCount: players.gold.discard.length,
+    discard: players.gold.discard, 
     energy: players.gold.energy, 
     maxEnergy: players.gold.maxEnergy, 
     canDraw: !players.gold.hasDrawn && players.gold.hand.length < MAX_HAND_SIZE,
@@ -2041,13 +2080,15 @@ function emitGameState(lobby) {
     enemyHandCount: players.silver.hand.length,
     enemyDeckCount: players.silver.deck.length,
     enemyEnergy: players.silver.energy,
-    enemyMaxEnergy: players.silver.maxEnergy
+    enemyMaxEnergy: players.silver.maxEnergy,
+    enemyDiscard: players.silver.discard
   });
   if (lobby.guestSocket) lobby.guestSocket.emit("state", { 
     ...base, 
     hand: players.silver.hand, 
     deckCount: players.silver.deck.length, 
-    discardCount: players.silver.discard.length, 
+    discardCount: players.silver.discard.length,
+    discard: players.silver.discard, 
     energy: players.silver.energy, 
     maxEnergy: players.silver.maxEnergy, 
     canDraw: !players.silver.hasDrawn && players.silver.hand.length < MAX_HAND_SIZE,
@@ -2055,7 +2096,8 @@ function emitGameState(lobby) {
     enemyHandCount: players.gold.hand.length,
     enemyDeckCount: players.gold.deck.length,
     enemyEnergy: players.gold.energy,
-    enemyMaxEnergy: players.gold.maxEnergy
+    enemyMaxEnergy: players.gold.maxEnergy,
+    enemyDiscard: players.gold.discard
   });
 }
 
@@ -2235,11 +2277,10 @@ async function executeAction(lobby, role, action) {
       } else if (action.spawn) {
         p.energy -= card.cost;
         p.hand.splice(idx, 1);
-        p.discard.push(card);
         const id = genId();
         const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
           unitData.burrowTurnsLeft = 2;
@@ -2253,11 +2294,10 @@ async function executeAction(lobby, role, action) {
         if (state.board[action.row][action.col]) return;
         p.energy -= card.cost;
         p.hand.splice(idx, 1);
-        p.discard.push(card);
         const id = genId();
         const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
           unitData.burrowTurnsLeft = 2;
@@ -2442,6 +2482,7 @@ async function executeAction(lobby, role, action) {
         if (!state.board[tp.r][tp.c] || state.board[tp.r][tp.c] === action.targetId) {
           state.board[tp.r][tp.c] = null;
         }
+        discardUnitCard(lobby, t);
         delete state.units[action.targetId];
         logToLobby(lobby, t.name + " destroyed!");
         recomputeOwners(state);
@@ -2542,6 +2583,7 @@ async function executeAction(lobby, role, action) {
         processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
         state.board[tp.r][tp.c] = null;
+        discardUnitCard(lobby, t);
         delete state.units[action.targetId];
         logToLobby(lobby, t.name + " destroyed!");
         recomputeOwners(state);
@@ -3003,10 +3045,10 @@ io.on("connection", (socket) => {
       if (spawn) {
         if (spawn !== role) return socket.emit("log", "Not your spawn.");
         if (state.spawn[spawn]) return socket.emit("log", "Spawn occupied.");
-        p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
+        p.energy -= cost; p.hand.splice(idx, 1);
         const id = genId(); const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
         // Preserve stolen flag for Soul Collector cards
         if (card.stolen) unitData.stolen = true;
         // Burrower Beast - untargetable for 2 turns
@@ -3057,10 +3099,10 @@ io.on("connection", (socket) => {
       }
       
       if (!canDeploy) return socket.emit("log", "Can't deploy here.");
-      p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
+      p.energy -= cost; p.hand.splice(idx, 1);
       const id = genId(); const hpB = getArmoryBonus(state, role);
       const maxHp = card.hp + hpB;
-      const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art };
+      const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
       // Preserve stolen flag for Soul Collector cards
       if (card.stolen) unitData.stolen = true;
       // Burrower Beast - untargetable for 2 turns (deploy turn + next turn)
@@ -3371,6 +3413,7 @@ io.on("connection", (socket) => {
         processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         
         state.board[tp.r][tp.c] = null;
+        discardUnitCard(lobby, t);
         delete state.units[targetId];
         state.attackedThisTurn.add(attackerId);
         a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
@@ -3390,6 +3433,7 @@ io.on("connection", (socket) => {
         processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         
         state.board[tp.r][tp.c] = null;
+        discardUnitCard(lobby, t);
         delete state.units[targetId];
         state.attackedThisTurn.add(attackerId);
         a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
@@ -3409,6 +3453,7 @@ io.on("connection", (socket) => {
         processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         
         state.board[tp.r][tp.c] = null;
+        discardUnitCard(lobby, t);
         delete state.units[targetId];
         state.attackedThisTurn.add(attackerId);
         a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
@@ -3475,6 +3520,7 @@ io.on("connection", (socket) => {
           processOnDeathEffect(lobby, bodyguard, bodyguard.owner, bgPos, attackerId);
           processAllyDeathTriggers(lobby, bodyguard.owner, bodyguard, bgPos);
           if (bgPos) state.board[bgPos.r][bgPos.c] = null;
+          discardUnitCard(lobby, bodyguard);
           delete state.units[bodyguardId];
           logToLobby(lobby, bodyguard.name + " destroyed protecting ally!");
         }
@@ -3493,6 +3539,7 @@ io.on("connection", (socket) => {
           processOnDeathEffect(lobby, a, a.owner, attackerPos);
           processAllyDeathTriggers(lobby, a.owner, a, attackerPos);
           if (attackerPos) state.board[attackerPos.r][attackerPos.c] = null;
+          discardUnitCard(lobby, a);
           delete state.units[attackerId];
           logToLobby(lobby, a.name + " destroyed by reflected damage!");
         }
@@ -3599,7 +3646,8 @@ io.on("connection", (socket) => {
               if (splashTarget.hp <= 0) {
                 processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
                 processAllyDeathTriggers(lobby, splashTarget.owner, splashTarget, { r: sp.r, c: sp.c });
-                state.board[sp.r][sp.c] = null; 
+                state.board[sp.r][sp.c] = null;
+                discardUnitCard(lobby, splashTarget);
                 delete state.units[splashId];
                 logToLobby(lobby, splashTarget.name + " destroyed by cleave!");
               }
@@ -3627,7 +3675,8 @@ io.on("connection", (socket) => {
             if (splashTarget.hp <= 0) {
               processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
               processAllyDeathTriggers(lobby, splashTarget.owner, splashTarget, { r: sp.r, c: sp.c });
-              state.board[sp.r][sp.c] = null; 
+              state.board[sp.r][sp.c] = null;
+              discardUnitCard(lobby, splashTarget);
               delete state.units[splashId];
               logToLobby(lobby, splashTarget.name + " destroyed by spores!");
             }
@@ -3665,6 +3714,7 @@ io.on("connection", (socket) => {
             // Drone wasn't spawned, remove the dead unit
             state.board[tp.r][tp.c] = null;
           }
+          discardUnitCard(lobby, t);
           delete state.units[targetId];
           logToLobby(lobby, t.name + " destroyed!");
           const overflow = Math.max(0, dmg - before);
@@ -3774,7 +3824,9 @@ io.on("connection", (socket) => {
         processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
         processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
         processOnKillEffect(lobby, attackerId, role, { r: tp.r, c: tp.c }, t);
-        state.board[tp.r][tp.c] = null; delete state.units[targetId];
+        state.board[tp.r][tp.c] = null;
+        discardUnitCard(lobby, t);
+        delete state.units[targetId];
         logToLobby(lobby, t.name + " destroyed!");
         recomputeOwners(state);
       }
