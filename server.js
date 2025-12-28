@@ -684,6 +684,71 @@ const DECKS = {
       { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
       { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
     ]
+  },
+  "western-skeleton-challenge": {
+    name: "Western Skeleton (Challenge)",
+    description: "CHALLENGE MODE: The Dead Sheriff's unstoppable posse from Boot Hill",
+    archetype: "skeleton",
+    isChallenge: true,
+    cards: [
+      // === LEGENDARY SPAM (The unfair stuff) ===
+      // Bone Colossus x3 (normally 1) - damage reduction tanks
+      { key: "bonecolossus", name: "Bone Colossus", atk: 6, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "thick_bones", effectDesc: "PASSIVE: Takes 1 less damage from all sources.", art: "/images/Bone Colossus.png", rarity: "legendary" },
+      { key: "bonecolossus", name: "Bone Colossus", atk: 6, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "thick_bones", effectDesc: "PASSIVE: Takes 1 less damage from all sources.", art: "/images/Bone Colossus.png", rarity: "legendary" },
+      { key: "bonecolossus", name: "Bone Colossus", atk: 6, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "thick_bones", effectDesc: "PASSIVE: Takes 1 less damage from all sources.", art: "/images/Bone Colossus.png", rarity: "legendary" },
+      // The Hanged Man x3 (normally 1) - death explosions
+      { key: "thehangedman", name: "The Hanged Man", atk: 4, hp: 5, cost: 5, type: "monster", effect: "onDeath", effectId: "death_explosion", effectDesc: "ON DEATH: Deal 2 damage to all adjacent enemies.", art: "/images/The Hanged Man.png", rarity: "legendary" },
+      { key: "thehangedman", name: "The Hanged Man", atk: 4, hp: 5, cost: 5, type: "monster", effect: "onDeath", effectId: "death_explosion", effectDesc: "ON DEATH: Deal 2 damage to all adjacent enemies.", art: "/images/The Hanged Man.png", rarity: "legendary" },
+      { key: "thehangedman", name: "The Hanged Man", atk: 4, hp: 5, cost: 5, type: "monster", effect: "onDeath", effectId: "death_explosion", effectDesc: "ON DEATH: Deal 2 damage to all adjacent enemies.", art: "/images/The Hanged Man.png", rarity: "legendary" },
+      // Ghostly Stampede x3 (normally 1) - mobile siege monsters
+      { key: "ghostlystampede", name: "Ghostly Stampede", atk: 5, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "stampede", effectDesc: "PASSIVE: Can move up to 2 tiles. +2 damage to structures.", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
+      { key: "ghostlystampede", name: "Ghostly Stampede", atk: 5, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "stampede", effectDesc: "PASSIVE: Can move up to 2 tiles. +2 damage to structures.", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
+      { key: "ghostlystampede", name: "Ghostly Stampede", atk: 5, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "stampede", effectDesc: "PASSIVE: Can move up to 2 tiles. +2 damage to structures.", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
+      // High Noon x3 (normally 1) - row damage
+      { key: "highnoon", name: "High Noon", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "high_noon", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row.", art: "/images/High Noon.png", requiresTarget: "row", rarity: "legendary" },
+      { key: "highnoon", name: "High Noon", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "high_noon", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row.", art: "/images/High Noon.png", requiresTarget: "row", rarity: "legendary" },
+      { key: "highnoon", name: "High Noon", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "high_noon", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row.", art: "/images/High Noon.png", requiresTarget: "row", rarity: "legendary" },
+      
+      // === CONTROL & LOCKDOWN ===
+      // Coffin Trapper x5 - root enemies
+      { key: "coffintrapper", name: "Coffin Trapper", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "root_aura", effectDesc: "PASSIVE: Adjacent enemies cannot move.", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      { key: "coffintrapper", name: "Coffin Trapper", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "root_aura", effectDesc: "PASSIVE: Adjacent enemies cannot move.", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      { key: "coffintrapper", name: "Coffin Trapper", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "root_aura", effectDesc: "PASSIVE: Adjacent enemies cannot move.", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      { key: "coffintrapper", name: "Coffin Trapper", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "root_aura", effectDesc: "PASSIVE: Adjacent enemies cannot move.", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      { key: "coffintrapper", name: "Coffin Trapper", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "root_aura", effectDesc: "PASSIVE: Adjacent enemies cannot move.", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      // Most Wanted x4 - mark targets for extra damage
+      { key: "mostwanted", name: "Most Wanted", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "mark_target", effectDesc: "INSTANT: Target enemy takes +2 damage from all attacks.", art: "/images/Most Wanted.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "mostwanted", name: "Most Wanted", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "mark_target", effectDesc: "INSTANT: Target enemy takes +2 damage from all attacks.", art: "/images/Most Wanted.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "mostwanted", name: "Most Wanted", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "mark_target", effectDesc: "INSTANT: Target enemy takes +2 damage from all attacks.", art: "/images/Most Wanted.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "mostwanted", name: "Most Wanted", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "mark_target", effectDesc: "INSTANT: Target enemy takes +2 damage from all attacks.", art: "/images/Most Wanted.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      
+      // === DEATH SYNERGY ===
+      // Undertaker x5 - grows on death
+      { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
+      { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
+      { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
+      { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
+      { key: "undertaker", name: "Undertaker", atk: 3, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "grow_on_ally_death", effectDesc: "PASSIVE: Gains +1/+1 when a friendly unit dies.", art: "/images/Undertaker.png", rarity: "rare" },
+      
+      // === RANGED THREATS ===
+      // Bone Revolver x5 - ranged pierce
+      { key: "bonerevolver", name: "Bone Revolver", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "ranged_pierce", effectDesc: "PASSIVE: Ranged (2 tiles). Ignores shield effects.", art: "/images/Bone Revolver.png", rarity: "rare" },
+      { key: "bonerevolver", name: "Bone Revolver", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "ranged_pierce", effectDesc: "PASSIVE: Ranged (2 tiles). Ignores shield effects.", art: "/images/Bone Revolver.png", rarity: "rare" },
+      { key: "bonerevolver", name: "Bone Revolver", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "ranged_pierce", effectDesc: "PASSIVE: Ranged (2 tiles). Ignores shield effects.", art: "/images/Bone Revolver.png", rarity: "rare" },
+      { key: "bonerevolver", name: "Bone Revolver", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "ranged_pierce", effectDesc: "PASSIVE: Ranged (2 tiles). Ignores shield effects.", art: "/images/Bone Revolver.png", rarity: "rare" },
+      { key: "bonerevolver", name: "Bone Revolver", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "ranged_pierce", effectDesc: "PASSIVE: Ranged (2 tiles). Ignores shield effects.", art: "/images/Bone Revolver.png", rarity: "rare" },
+      
+      // === FODDER (Death triggers) ===
+      // Bone Deputy x8 - spawns bone pile on death
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+      { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
+    ]
   }
 };
 
@@ -2355,6 +2420,8 @@ function processBossEventWarning(lobby) {
   // Process based on event type
   if (boss.eventType === 'void_collapse') {
     processVoidCollapseWarning(lobby, boss, config);
+  } else if (boss.eventType === 'ghost_train') {
+    processGhostTrainWarning(lobby, boss, config);
   }
   // Add more event types here for other bosses
 }
@@ -2375,6 +2442,8 @@ function processBossEventExecute(lobby) {
   
   if (boss.eventType === 'void_collapse') {
     processVoidCollapseExecution(lobby);
+  } else if (boss.eventType === 'ghost_train') {
+    processGhostTrainExecution(lobby);
   }
   // Add more event types here for other bosses
 }
@@ -2399,6 +2468,8 @@ function processBossEventCountdown(lobby) {
   if (turnsUntilEvent <= 3 && turnsUntilEvent >= 1) {
     if (boss.eventType === 'void_collapse') {
       logToLobby(lobby, `⚠️ BLACK HOLE EVENT: ${turnsUntilEvent}`);
+    } else if (boss.eventType === 'ghost_train') {
+      logToLobby(lobby, `⚠️ GHOST TRAIN APPROACHING: ${turnsUntilEvent}`);
     }
   }
 }
@@ -2467,18 +2538,17 @@ function processVoidCollapseExecution(lobby) {
   let destroyedCount = 0;
   const destroyedNames = [];
   
-  // Destroy all PLAYER (gold) units in the warning zone
+  // Void Collapse destroys ALL units in the warning zone - both player AND boss!
   for (const tile of warning.tiles) {
     const unitId = state.board[tile.r][tile.c];
     if (unitId && state.units[unitId]) {
       const unit = state.units[unitId];
-      // Only destroy player's units
-      if (unit.owner === 'gold') {
-        destroyedNames.push(unit.name);
-        delete state.units[unitId];
-        state.board[tile.r][tile.c] = null;
-        destroyedCount++;
-      }
+      destroyedNames.push(`${unit.name} (${unit.owner})`);
+      // Send card to discard pile
+      discardUnitCard(lobby, unit);
+      delete state.units[unitId];
+      state.board[tile.r][tile.c] = null;
+      destroyedCount++;
     }
   }
   
@@ -2498,6 +2568,152 @@ function processVoidCollapseExecution(lobby) {
   } else {
     logToLobby(lobby, `🌀 Void Collapse fizzles - no units caught!`);
     combatLogToLobby(lobby, `VOID COLLAPSE - All units escaped!`, "boss-execute");
+  }
+  
+  // Clear warning
+  state.bossEventWarning = null;
+  
+  // Recompute row ownership
+  recomputeOwners(state);
+}
+
+// ==================== GHOST TRAIN EVENT ====================
+
+// Ghost Train - Create warning zone (marks rows/columns)
+function processGhostTrainWarning(lobby, boss, config) {
+  console.log("=== GHOST TRAIN WARNING TRIGGERED ===");
+  const { state } = lobby.gameState;
+  
+  // Calculate number of lines based on occurrence
+  const lineCount = Math.min(config.startLines + (state.bossEventOccurrence * config.growthRate), config.maxLines);
+  console.log("Line count:", lineCount, "Occurrence:", state.bossEventOccurrence);
+  
+  // Select random lines (mix of rows and columns)
+  const lines = [];
+  const usedRows = new Set();
+  const usedCols = new Set();
+  
+  for (let i = 0; i < lineCount; i++) {
+    // Randomly choose row or column
+    const isRow = Math.random() < 0.5;
+    
+    if (isRow) {
+      // Pick a random row not already used
+      let row;
+      let attempts = 0;
+      do {
+        row = Math.floor(Math.random() * ROWS);
+        attempts++;
+      } while (usedRows.has(row) && attempts < 20);
+      
+      if (!usedRows.has(row)) {
+        usedRows.add(row);
+        lines.push({ type: 'row', index: row });
+      }
+    } else {
+      // Pick a random column not already used
+      let col;
+      let attempts = 0;
+      do {
+        col = Math.floor(Math.random() * COLS);
+        attempts++;
+      } while (usedCols.has(col) && attempts < 20);
+      
+      if (!usedCols.has(col)) {
+        usedCols.add(col);
+        lines.push({ type: 'col', index: col });
+      }
+    }
+  }
+  
+  // Build list of affected tiles
+  const tiles = [];
+  for (const line of lines) {
+    if (line.type === 'row') {
+      for (let c = 0; c < COLS; c++) {
+        tiles.push({ r: line.index, c: c, lineType: 'row', lineIndex: line.index });
+      }
+    } else {
+      for (let r = 0; r < ROWS; r++) {
+        tiles.push({ r: r, c: line.index, lineType: 'col', lineIndex: line.index });
+      }
+    }
+  }
+  
+  console.log("Lines:", JSON.stringify(lines));
+  console.log("Tiles:", tiles.length);
+  
+  // Store warning in state
+  state.bossEventWarning = {
+    type: 'ghost_train',
+    lines: lines,
+    tiles: tiles,
+    lineCount: lineCount
+  };
+  
+  // Increment occurrence counter
+  state.bossEventOccurrence++;
+  
+  // Build warning message
+  const lineDescriptions = lines.map(l => l.type === 'row' ? `Row ${l.index + 1}` : `Column ${l.index + 1}`);
+  logToLobby(lobby, `🚂 GHOST TRAIN WARNING! Tracks appearing on: ${lineDescriptions.join(', ')}!`);
+  combatLogToLobby(lobby, `🚂 GHOST TRAIN INCOMING - CLEAR THE TRACKS!`, "boss-warning");
+  
+  // Emit event to client for visual effects
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("bossEventWarning", {
+      type: 'ghost_train',
+      lines: lines,
+      tiles: tiles,
+      lineCount: lineCount
+    });
+  }
+}
+
+// Ghost Train - Execute destruction
+function processGhostTrainExecution(lobby) {
+  const { state } = lobby.gameState;
+  const warning = state.bossEventWarning;
+  
+  if (!warning || warning.type !== 'ghost_train') return;
+  
+  let destroyedCount = 0;
+  const destroyedNames = [];
+  const destroyedUnits = []; // Track destroyed unit info for animation
+  
+  // Ghost Train destroys ALL units in its path - both player AND boss units!
+  for (const tile of warning.tiles) {
+    const unitId = state.board[tile.r][tile.c];
+    if (unitId && state.units[unitId]) {
+      const unit = state.units[unitId];
+      destroyedNames.push(`${unit.name} (${unit.owner})`);
+      destroyedUnits.push({ r: tile.r, c: tile.c, name: unit.name, owner: unit.owner });
+      // Send card to discard pile
+      discardUnitCard(lobby, unit);
+      delete state.units[unitId];
+      state.board[tile.r][tile.c] = null;
+      destroyedCount++;
+    }
+  }
+  
+  // Emit execution event for visual effects
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("bossEventExecute", {
+      type: 'ghost_train',
+      lines: warning.lines,
+      tiles: warning.tiles,
+      destroyed: destroyedCount,
+      destroyedUnits: destroyedUnits
+    });
+  }
+  
+  // Log results
+  if (destroyedCount > 0) {
+    logToLobby(lobby, `💀 GHOST TRAIN! ${destroyedCount} unit(s) run down: ${destroyedNames.join(', ')}`);
+    combatLogToLobby(lobby, `🚂 GHOST TRAIN STRIKES! ${destroyedCount} unit(s) destroyed!`, "boss-execute");
+  } else {
+    logToLobby(lobby, `🚂 Ghost Train passes through - no casualties!`);
+    combatLogToLobby(lobby, `🚂 GHOST TRAIN - All units escaped!`, "boss-execute");
   }
   
   // Clear warning
@@ -2608,6 +2824,30 @@ function emitGameState(lobby) {
   });
 }
 
+// Helper to log board state for AI debugging (condensed)
+function logBoardState(state, perspective) {
+  const { board, units, rowHP, heartHP, spawn, buffTiles } = state;
+  
+  // One-line summary
+  const goldUnits = Object.values(units).filter(u => u.owner === 'gold');
+  const silverUnits = Object.values(units).filter(u => u.owner === 'silver');
+  
+  console.log(`\n[BOARD] Hearts: G=${heartHP.gold} S=${heartHP.silver} | Walls: R0=${rowHP[0]} R1=${rowHP[1]} R5=${rowHP[5]} R6=${rowHP[6]}`);
+  console.log(`[UNITS] Gold(${goldUnits.length}): ${goldUnits.map(u => `${u.name.substring(0,8)} ${u.atk}/${u.hp}`).join(', ') || 'none'}`);
+  console.log(`[UNITS] Silver(${silverUnits.length}): ${silverUnits.map(u => `${u.name.substring(0,8)} ${u.atk}/${u.hp}`).join(', ') || 'none'}`);
+  
+  // Show buff tiles if any
+  if (buffTiles && Object.keys(buffTiles).length > 0) {
+    const buffInfo = Object.values(buffTiles).map(b => `${b.id}@(${b.row},${b.col})`).join(', ');
+    console.log(`[BUFFS] ${buffInfo}`);
+  }
+  
+  // Show boss event warning if any
+  if (state.bossEventWarning) {
+    console.log(`[WARNING] ${state.bossEventWarning.type} - ${state.bossEventWarning.tiles.length} tiles`);
+  }
+}
+
 // Process AI turn for campaign mode
 async function processAITurn(lobby) {
   const { state, players } = lobby.gameState;
@@ -2624,6 +2864,10 @@ async function processAITurn(lobby) {
   const aiRole = "silver";
   const aiPlayer = players[aiRole];
   
+  // Log board state at start of turn (condensed)
+  console.log("\n=== BOSS TURN ===");
+  logBoardState(state, "SILVER");
+  
   // *** BOSS EVENT: Execute pending warning at START of boss turn ***
   if (state.bossEventWarning) {
     console.log("=== EXECUTING BOSS EVENT AT START OF BOSS TURN ===");
@@ -2634,8 +2878,10 @@ async function processAITurn(lobby) {
     await new Promise(resolve => setTimeout(resolve, 6000));
   }
   
-  // Add delay to make AI feel more natural
-  const actionDelay = 800 + Math.random() * 400;
+  // Use same speed setting as player AI (if auto-play is enabled)
+  const speed = lobby.autoPlaySpeed || 1;
+  const baseDelay = speed === 2 ? 250 : 600;
+  const randomDelay = speed === 2 ? 150 : 300;
   
   // Track actions to prevent infinite loops
   let actionCount = 0;
@@ -2662,10 +2908,11 @@ async function processAITurn(lobby) {
         state,
         aiPlayer.hand,
         aiPlayer.energy,
-        aiPlayer.hasDrawn
+        aiPlayer.hasDrawn,
+        true // Enable logging
       );
       
-      console.log("AI action:", action.type);
+      // Removed duplicate log - decideAction now logs everything
       
       if (action.type === "endTurn") {
         // AI ends turn - process end of turn
@@ -2728,7 +2975,21 @@ async function processAITurn(lobby) {
         const stateAfterAction = JSON.stringify(state.board);
         if (stateBeforeAction === stateAfterAction) {
           consecutiveFailedMoves++;
-          console.log("AI move failed, consecutive failures:", consecutiveFailedMoves);
+          // Log why the move might have failed
+          const unit = state.units[action.unitId];
+          const moveCount = state.moveCountThisTurn[action.unitId] || 0;
+          const actualPos = getUnitPos(state, action.unitId);
+          console.log("AI move failed:", {
+            unitId: action.unitId,
+            unitName: unit?.name,
+            actionFrom: { r: action.fromRow, c: action.fromCol },
+            actualPos: actualPos,
+            actionTo: { r: action.toRow, c: action.toCol },
+            targetOccupied: !!state.board[action.toRow]?.[action.toCol],
+            moveCount: moveCount,
+            inMovedSet: state.movedThisTurn.has(action.unitId),
+            consecutiveFailures: consecutiveFailedMoves
+          });
           
           if (consecutiveFailedMoves >= MAX_CONSECUTIVE_FAILED_MOVES) {
             console.log("Too many failed moves, forcing end turn");
@@ -2744,8 +3005,10 @@ async function processAITurn(lobby) {
       
       emitGameState(lobby);
       
-      // Continue AI turn after delay
+      // Continue AI turn after delay (use same speed as player AI)
       if (state.activeSide === aiRole && !state.gameOver) {
+        const currentSpeed = lobby.autoPlaySpeed || 1;
+        const actionDelay = (currentSpeed === 2 ? 250 : 600) + Math.random() * (currentSpeed === 2 ? 150 : 300);
         setTimeout(executeAIAction, actionDelay);
       } else {
         lobby.aiProcessing = false; // Clear if turn ended another way
@@ -2793,7 +3056,8 @@ async function processAITurn(lobby) {
   };
   
   // Start AI turn with delay
-  setTimeout(executeAIAction, actionDelay);
+  const initialDelay = (speed === 2 ? 250 : 600) + Math.random() * (speed === 2 ? 150 : 300);
+  setTimeout(executeAIAction, initialDelay);
 }
 
 // Process player AI turn (auto-play mode)
@@ -2810,14 +3074,27 @@ async function processPlayerAITurn(lobby) {
   
   lobby.playerAIProcessing = true;
   
+  // Log board state at start of turn (condensed)
+  console.log("\n=== PLAYER TURN ===");
+  logBoardState(state, "GOLD");
+  
   const player = players[playerRole];
-  const actionDelay = 600 + Math.random() * 300;
+  // Speed setting: 1 = normal (600-900ms), 2 = fast (250-400ms)
+  const speed = lobby.autoPlaySpeed || 1;
+  const baseDelay = speed === 2 ? 250 : 600;
+  const randomDelay = speed === 2 ? 150 : 300;
   
   let actionCount = 0;
   const MAX_ACTIONS = 50;
   
   const executePlayerAIAction = async () => {
     try {
+      // Stop if auto-play was disabled
+      if (!lobby.autoPlay) {
+        lobby.playerAIProcessing = false;
+        return;
+      }
+      
       if (state.gameOver || state.activeSide !== playerRole) {
         lobby.playerAIProcessing = false;
         return;
@@ -2834,7 +3111,8 @@ async function processPlayerAITurn(lobby) {
         state,
         player.hand,
         player.energy,
-        player.hasDrawn
+        player.hasDrawn,
+        true // Enable logging
       );
       
       console.log("Player AI action:", action.type);
@@ -2848,7 +3126,9 @@ async function processPlayerAITurn(lobby) {
       await executeAction(lobby, playerRole, action);
       emitGameState(lobby);
       
-      // Continue with next action after delay
+      // Continue with next action after delay (recalculate in case speed changed)
+      const currentSpeed = lobby.autoPlaySpeed || 1;
+      const actionDelay = (currentSpeed === 2 ? 250 : 600) + Math.random() * (currentSpeed === 2 ? 150 : 300);
       setTimeout(executePlayerAIAction, actionDelay);
       
     } catch (err) {
@@ -2905,7 +3185,8 @@ async function processPlayerAITurn(lobby) {
   };
   
   // Start player AI with delay
-  setTimeout(executePlayerAIAction, actionDelay);
+  const initialDelay = (speed === 2 ? 250 : 600) + Math.random() * (speed === 2 ? 150 : 300);
+  setTimeout(executePlayerAIAction, initialDelay);
 }
 
 // Execute a single AI action
@@ -3449,7 +3730,7 @@ io.on("connection", (socket) => {
       ai: new GameAI(isChallenge ? 3 : aiLevel),
       canAutoPlay: canAutoPlay,
       autoPlay: false, // Start with auto-play off, player can toggle it
-      playerAI: canAutoPlay ? new GameAI(2) : null // Player AI ready if eligible
+      playerAI: canAutoPlay ? new GameAI(2, 'gold') : null // Player AI ready if eligible
     };
     
     socket.data.lobbyCode = code;
@@ -3492,13 +3773,19 @@ io.on("connection", (socket) => {
     const enable = data.enabled;
     lobby.autoPlay = enable;
     
+    // Set speed if provided
+    if (data.speed) {
+      lobby.autoPlaySpeed = data.speed;
+    }
+    
     if (enable) {
       // Make sure playerAI exists
       if (!lobby.playerAI) {
-        lobby.playerAI = new GameAI(2);
+        lobby.playerAI = new GameAI(2, 'gold');
       }
-      logToLobby(lobby, "🤖 Auto-Play ENABLED");
-      socket.emit("autoPlayStatus", { enabled: true });
+      const speedText = lobby.autoPlaySpeed === 2 ? " (2x Speed)" : "";
+      logToLobby(lobby, "🤖 Auto-Play ENABLED" + speedText);
+      socket.emit("autoPlayStatus", { enabled: true, speed: lobby.autoPlaySpeed || 1 });
       
       // If it's gold's turn, start the player AI
       const { state } = lobby.gameState;
@@ -3509,9 +3796,24 @@ io.on("connection", (socket) => {
       }
     } else {
       logToLobby(lobby, "🤖 Auto-Play DISABLED");
-      socket.emit("autoPlayStatus", { enabled: false });
+      socket.emit("autoPlayStatus", { enabled: false, speed: lobby.autoPlaySpeed || 1 });
       // Setting autoPlay to false will stop the player AI loop naturally
+      // Also reset processing flag to allow manual play
+      lobby.playerAIProcessing = false;
     }
+  });
+  
+  // Set auto-play speed
+  socket.on("setAutoPlaySpeed", (data) => {
+    const lobby = lobbies[socket.data.lobbyCode];
+    if (!lobby || !lobby.isAIGame || !lobby.autoPlay) return;
+    
+    const speed = data.speed === 2 ? 2 : 1;
+    lobby.autoPlaySpeed = speed;
+    
+    const speedText = speed === 2 ? "2x" : "1x";
+    logToLobby(lobby, "🤖 Auto-Play Speed: " + speedText);
+    socket.emit("autoPlayStatus", { enabled: true, speed: speed });
   });
 
   // Start playtest mode - player controls both sides with all cards available
