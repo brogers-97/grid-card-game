@@ -115,9 +115,12 @@ if (isCampaign && bossId) {
 }
 
 // Show auto-play toggle if eligible (campaign mode and has beaten this boss)
+let autoPlaySpeed = 1; // 1 = normal, 2 = fast
+
 if (canAutoPlay && isCampaign) {
   const autoPlayToggle = document.getElementById("autoPlayToggle");
   const autoPlayCheckbox = document.getElementById("autoPlayCheckbox");
+  const autoPlayIcon = document.getElementById("autoPlayIcon");
   
   if (autoPlayToggle && autoPlayCheckbox) {
     autoPlayToggle.style.display = "flex";
@@ -125,16 +128,52 @@ if (canAutoPlay && isCampaign) {
     // Handle toggle changes
     autoPlayCheckbox.addEventListener("change", () => {
       const enabled = autoPlayCheckbox.checked;
-      socket.emit("toggleAutoPlay", { enabled });
+      socket.emit("toggleAutoPlay", { enabled, speed: autoPlaySpeed });
       
       // Update tooltip and visual state
-      autoPlayToggle.title = enabled ? "Auto-Play: On" : "Auto-Play: Off";
-      if (enabled) {
-        autoPlayToggle.classList.add("active");
-      } else {
-        autoPlayToggle.classList.remove("active");
-      }
+      updateAutoPlayVisuals(enabled);
     });
+    
+    // Click on robot icon to toggle speed (only when auto-play is on)
+    if (autoPlayIcon) {
+      autoPlayIcon.addEventListener("click", (e) => {
+        e.stopPropagation(); // Don't trigger checkbox
+        if (autoPlayCheckbox.checked) {
+          autoPlaySpeed = autoPlaySpeed === 1 ? 2 : 1;
+          socket.emit("setAutoPlaySpeed", { speed: autoPlaySpeed });
+          updateAutoPlayVisuals(true);
+        }
+      });
+      
+      // Double-click anywhere on toggle for speed change
+      autoPlayToggle.addEventListener("dblclick", (e) => {
+        if (autoPlayCheckbox.checked) {
+          e.preventDefault();
+          autoPlaySpeed = autoPlaySpeed === 1 ? 2 : 1;
+          socket.emit("setAutoPlaySpeed", { speed: autoPlaySpeed });
+          updateAutoPlayVisuals(true);
+        }
+      });
+    }
+  }
+}
+
+function updateAutoPlayVisuals(enabled) {
+  const autoPlayToggle = document.getElementById("autoPlayToggle");
+  if (!autoPlayToggle) return;
+  
+  const speedText = autoPlaySpeed === 2 ? " (2x Speed)" : "";
+  autoPlayToggle.title = enabled ? `Auto-Play: On${speedText}` : "Auto-Play: Off";
+  
+  if (enabled) {
+    autoPlayToggle.classList.add("active");
+    if (autoPlaySpeed === 2) {
+      autoPlayToggle.classList.add("fast");
+    } else {
+      autoPlayToggle.classList.remove("fast");
+    }
+  } else {
+    autoPlayToggle.classList.remove("active", "fast");
   }
 }
 
@@ -145,12 +184,10 @@ socket.on("autoPlayStatus", (data) => {
   
   if (autoPlayToggle && autoPlayCheckbox) {
     autoPlayCheckbox.checked = data.enabled;
-    autoPlayToggle.title = data.enabled ? "Auto-Play: On" : "Auto-Play: Off";
-    if (data.enabled) {
-      autoPlayToggle.classList.add("active");
-    } else {
-      autoPlayToggle.classList.remove("active");
+    if (data.speed) {
+      autoPlaySpeed = data.speed;
     }
+    updateAutoPlayVisuals(data.enabled);
   }
 });
 
@@ -639,7 +676,7 @@ document.querySelectorAll('.logTab').forEach(tab => {
 });
 
 function parseLogType(msg) {
-  if (msg.includes("BLACK HOLE EVENT:") || msg.includes("VOID COLLAPSE")) return "boss-warning";
+  if (msg.includes("BLACK HOLE EVENT:") || msg.includes("VOID COLLAPSE") || msg.includes("GHOST TRAIN")) return "boss-warning";
   if (msg.includes("Turn ended") || msg.includes("'s turn")) return "turn";
   if (msg.includes("GAME OVER") || msg.includes("DESTROYED")) return "game-over";
   if (msg.includes("deals") || msg.includes("Attack") || msg.includes("destroyed")) return "combat";
@@ -1833,7 +1870,7 @@ function renderAll() {
 
       applyCls(cellEl);
 
-      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning");
+      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical");
       cellEl.removeAttribute("data-buff-icon");
       cellEl.innerHTML = "";
       
@@ -1849,6 +1886,15 @@ function renderAll() {
           dangerIcon.className = 'void-danger-icon';
           dangerIcon.textContent = '⚠️';
           cellEl.appendChild(dangerIcon);
+        }
+      }
+      
+      // Check for ghost train warning
+      if (S.bossEventWarning && S.bossEventWarning.type === 'ghost_train') {
+        const tile = S.bossEventWarning.tiles.find(t => t.r === sr && t.c === c);
+        if (tile) {
+          cellEl.classList.add("ghost-train-warning");
+          cellEl.classList.add(tile.lineType === 'row' ? 'train-horizontal' : 'train-vertical');
         }
       }
       
@@ -1876,6 +1922,9 @@ function renderAll() {
         cellEl.classList.add("has-unit");
       }
       if (unitId && cellEl.classList.contains("void-collapse-warning")) {
+        cellEl.classList.add("has-unit");
+      }
+      if (unitId && cellEl.classList.contains("ghost-train-warning")) {
         cellEl.classList.add("has-unit");
       }
 
@@ -2407,6 +2456,9 @@ socket.on("bossEventWarning", (data) => {
     // Play warning sound or show notification
     combatLog(`⚠️ VOID COLLAPSE WARNING: ${data.size}x${data.size} zone marked!`, "boss-warning");
     // The visual effect is handled by renderAll via bossEventWarning in state
+  } else if (data.type === 'ghost_train') {
+    const lineDescriptions = data.lines.map(l => l.type === 'row' ? `Row ${l.index + 1}` : `Col ${l.index + 1}`);
+    combatLog(`🚂 GHOST TRAIN WARNING: ${lineDescriptions.join(', ')}!`, "boss-warning");
   }
 });
 
@@ -2415,6 +2467,9 @@ socket.on("bossEventExecute", (data) => {
   if (data.type === 'void_collapse') {
     // Show dramatic countdown sequence
     showVoidCollapseSequence(data.tiles, data.destroyed);
+  } else if (data.type === 'ghost_train') {
+    // Show ghost train sequence
+    showGhostTrainSequence(data.lines, data.tiles, data.destroyed, data.destroyedUnits);
   }
 });
 
@@ -2545,6 +2600,241 @@ function animateVoidCollapse(serverRow, col) {
     particles.forEach(p => p.remove());
   }, 1000);
 }
+
+// ==================== GHOST TRAIN SEQUENCE ====================
+
+// Dramatic ghost train arrival and destruction sequence
+function showGhostTrainSequence(lines, tiles, destroyedCount, destroyedUnits) {
+  // Create overlay with western/spooky theme
+  const overlay = document.createElement('div');
+  overlay.className = 'ghost-train-overlay';
+  overlay.innerHTML = `
+    <div class="ghost-train-content">
+      <div class="ghost-train-inner">
+        <div class="ghost-train-whistle"><img src="/images/ghost-train-horizontal.png" alt="Ghost Train" style="height: 80px; width: auto; filter: drop-shadow(0 0 20px rgba(100, 200, 255, 0.8));"></div>
+        <div class="ghost-train-title">GHOST TRAIN</div>
+        <div class="ghost-train-countdown">3</div>
+        <div class="ghost-train-subtitle">ALL ABOARD THE DEATH EXPRESS</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  
+  const countdownEl = overlay.querySelector('.ghost-train-countdown');
+  const whistleEl = overlay.querySelector('.ghost-train-whistle');
+  const subtitleEl = overlay.querySelector('.ghost-train-subtitle');
+  
+  // Countdown sequence with train horn effects
+  setTimeout(() => {
+    countdownEl.textContent = '2';
+    countdownEl.classList.add('pulse');
+    whistleEl.classList.add('shake');
+  }, 800);
+  
+  setTimeout(() => {
+    countdownEl.textContent = '1';
+  }, 1600);
+  
+  setTimeout(() => {
+    countdownEl.textContent = '💀';
+    subtitleEl.textContent = 'IMPACT';
+    overlay.classList.add('impact');
+    whistleEl.classList.add('rushing');
+  }, 2400);
+  
+  // Fade out overlay
+  setTimeout(() => {
+    overlay.classList.add('fade-out');
+    
+    setTimeout(() => {
+      overlay.remove();
+      
+      // NOW trigger the train passing animation on each line
+      lines.forEach((line, index) => {
+        setTimeout(() => {
+          animateGhostTrainLine(line, tiles.filter(t => 
+            (line.type === 'row' && t.r === line.index) ||
+            (line.type === 'col' && t.c === line.index)
+          ));
+        }, index * 400);
+      });
+      
+      // Show result in combat log after animations
+      const animationDuration = lines.length * 400 + 1500;
+      setTimeout(() => {
+        if (destroyedCount > 0) {
+          combatLog(`🚂 GHOST TRAIN STRIKES! ${destroyedCount} unit(s) destroyed!`, "boss-execute");
+        } else {
+          combatLog(`🚂 GHOST TRAIN - All units escaped!`, "boss-execute");
+        }
+      }, animationDuration);
+    }, 500);
+  }, 3000);
+}
+
+// Animate ghost train passing through a single line (row or column)
+function animateGhostTrainLine(line, tiles) {
+  const isRow = line.type === 'row';
+  
+  // For rows: sort right to left (descending column)
+  // For columns: we'll sort by actual screen position after getting rects
+  if (isRow) {
+    tiles.sort((a, b) => b.c - a.c);
+  }
+  
+  // Create the train element that will travel across
+  const train = document.createElement('div');
+  train.className = 'ghost-train-sprite';
+  train.style.position = 'fixed';
+  train.style.zIndex = '9999';
+  train.style.pointerEvents = 'none';
+  train.style.opacity = '0';
+  train.style.transition = 'opacity 0.3s ease-in';
+  
+  // Use image based on direction
+  const trainImg = document.createElement('img');
+  trainImg.src = isRow ? '/images/ghost-train-horizontal.png' : '/images/ghost-train-vertical.png';
+  trainImg.style.height = isRow ? '80px' : '140px';
+  trainImg.style.width = 'auto';
+  trainImg.style.filter = 'drop-shadow(0 0 15px rgba(100, 200, 255, 0.8)) drop-shadow(0 0 30px rgba(100, 200, 255, 0.5))';
+  train.appendChild(trainImg);
+  
+  document.body.appendChild(train);
+  
+  // Get all cell positions for this line
+  const cellRects = tiles.map(tile => {
+    const cell = document.getElementById(cellId(toViewRow(tile.r), tile.c));
+    return cell ? cell.getBoundingClientRect() : null;
+  }).filter(r => r !== null);
+  
+  if (cellRects.length === 0) {
+    train.remove();
+    return;
+  }
+  
+  // For vertical, sort by screen Y position (top to bottom)
+  if (!isRow) {
+    cellRects.sort((a, b) => a.top - b.top);
+  }
+  
+  const firstRect = cellRects[0];
+  const lastRect = cellRects[cellRects.length - 1];
+  
+  // Position train at start (off-screen)
+  // Rows: come from right
+  // Columns: come from top, centered on column
+  if (isRow) {
+    train.style.left = (firstRect.right + 100) + 'px';
+    train.style.top = (firstRect.top + firstRect.height / 2 - 40) + 'px';
+  } else {
+    // Center the train on the column - will adjust after image loads
+    const colCenterX = firstRect.left + firstRect.width / 2;
+    train.style.left = colCenterX + 'px';
+    train.style.transform = 'translateX(-50%)';
+    train.style.top = (firstRect.top - 150) + 'px';
+  }
+  
+  // Fade in
+  requestAnimationFrame(() => {
+    train.style.opacity = '1';
+  });
+  
+  // Screen shake
+  document.body.classList.add('screen-shake-heavy');
+  
+  // Start movement after fade in
+  setTimeout(() => {
+    train.style.transition = 'left 0.7s linear, top 0.7s linear, opacity 0.3s ease-out';
+    if (isRow) {
+      train.style.left = (lastRect.left - 200) + 'px';
+    } else {
+      train.style.top = (lastRect.bottom + 100) + 'px';
+    }
+  }, 150);
+  
+  // Trigger impact effects on each tile as train passes
+  // For vertical, use the sorted screen positions
+  const sortedTiles = isRow ? tiles : tiles.slice().sort((a, b) => {
+    const cellA = document.getElementById(cellId(toViewRow(a.r), a.c));
+    const cellB = document.getElementById(cellId(toViewRow(b.r), b.c));
+    if (!cellA || !cellB) return 0;
+    return cellA.getBoundingClientRect().top - cellB.getBoundingClientRect().top;
+  });
+  
+  sortedTiles.forEach((tile, index) => {
+    const delay = 150 + (index / sortedTiles.length) * 500;
+    setTimeout(() => {
+      animateGhostTrainImpact(tile.r, tile.c);
+    }, delay);
+  });
+  
+  // Fade out near the end
+  setTimeout(() => {
+    train.style.opacity = '0';
+  }, 700);
+  
+  // Cleanup
+  setTimeout(() => {
+    document.body.classList.remove('screen-shake-heavy');
+    train.remove();
+  }, 1000);
+}
+
+// Animate impact effect on a single tile from ghost train
+function animateGhostTrainImpact(serverRow, col) {
+  const viewRow = toViewRow(serverRow);
+  const cellEl = document.getElementById(cellId(viewRow, col));
+  if (!cellEl) return;
+  
+  // Create impact flash - blue/ghostly
+  const flash = document.createElement('div');
+  flash.className = 'ghost-train-impact-flash';
+  cellEl.appendChild(flash);
+  
+  // Create sparks/debris
+  const sparkCount = 12;
+  const sparks = [];
+  for (let i = 0; i < sparkCount; i++) {
+    const spark = document.createElement('div');
+    spark.className = 'ghost-train-spark';
+    
+    const angle = (Math.PI * 2 * i / sparkCount) + (Math.random() * 0.5 - 0.25);
+    const distance = 30 + Math.random() * 50;
+    const size = 2 + Math.random() * 4;
+    const duration = 0.3 + Math.random() * 0.3;
+    
+    spark.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+    spark.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+    spark.style.setProperty('--size', `${size}px`);
+    spark.style.setProperty('--duration', `${duration}s`);
+    
+    cellEl.appendChild(spark);
+    sparks.push(spark);
+  }
+  
+  // Create smoke puff
+  const smoke = document.createElement('div');
+  smoke.className = 'ghost-train-smoke';
+  cellEl.appendChild(smoke);
+  
+  // Blue/ghostly flash effect on the cell
+  cellEl.style.transition = 'none';
+  cellEl.style.boxShadow = '0 0 30px rgba(100, 200, 255, 1), 0 0 60px rgba(100, 200, 255, 0.8), inset 0 0 20px rgba(150, 220, 255, 0.9)';
+  
+  setTimeout(() => {
+    cellEl.style.transition = 'box-shadow 0.4s ease-out';
+    cellEl.style.boxShadow = '';
+  }, 100);
+  
+  // Cleanup
+  setTimeout(() => {
+    flash.remove();
+    smoke.remove();
+    sparks.forEach(s => s.remove());
+  }, 800);
+}
+
+// ==================== END GHOST TRAIN SEQUENCE ====================
 
 // Handle animation events
 socket.on("animate", (data) => {

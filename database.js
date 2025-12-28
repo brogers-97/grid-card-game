@@ -220,6 +220,7 @@ const CAMPAIGN_BOSSES = [
     name: "The Dead Sheriff",
     description: "An undead lawman risen from Boot Hill to enforce his own twisted justice",
     deckId: "western-skeleton",
+    challengeDeckId: "western-skeleton-challenge",
     difficulty: "medium",
     aiLevel: 2,
     requiresBoss: 1,
@@ -227,6 +228,13 @@ const CAMPAIGN_BOSSES = [
     unlocks: {
       music: 'western-skeleton',
       background: 'western-skeleton'
+    },
+    eventType: 'ghost_train',
+    eventConfig: {
+      turnInterval: 3,    // Every 3 boss turns
+      startLines: 1,      // Starts hitting 1 row/column
+      maxLines: 4,        // Max 4 rows/columns at once
+      growthRate: 1       // Grows by 1 each occurrence
     }
   },
   {
