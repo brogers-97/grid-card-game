@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collections Gallery - Grid Card Game</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #e2e8f0; }
+    
+    /* Background orbs */
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.3; pointer-events: none; z-index: 0; }
+    .bg-orb-1 { width: 400px; height: 400px; background: #8b5cf6; top: -100px; left: -100px; }
+    .bg-orb-2 { width: 300px; height: 300px; background: #6d28d9; bottom: -50px; right: -50px; }
+    
+    .page-container { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: rgba(20, 20, 40, 0.9); border-bottom: 2px solid rgba(138, 43, 226, 0.4); }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .back-btn { padding: 8px 16px; background: rgba(138, 43, 226, 0.3); border: 1px solid rgba(138, 43, 226, 0.5); border-radius: 8px; color: #e2e8f0; text-decoration: none; font-size: 13px; transition: all 0.2s; }
+    .back-btn:hover { background: rgba(138, 43, 226, 0.5); }
+    .page-title { font-family: 'Cinzel', serif; font-size: 24px; color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+    
+    /* Tab Navigation */
+    .tab-nav { display: flex; gap: 5px; padding: 15px 25px; background: rgba(20, 20, 40, 0.5); border-bottom: 1px solid rgba(138, 43, 226, 0.3); flex-wrap: wrap; }
+    .tab-btn { padding: 10px 20px; background: rgba(30, 30, 60, 0.5); border: 2px solid rgba(138, 43, 226, 0.3); border-radius: 8px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .tab-btn:hover { background: rgba(138, 43, 226, 0.2); color: #e2e8f0; }
+    .tab-btn.active { background: linear-gradient(135deg, rgba(138, 43, 226, 0.4), rgba(168, 85, 247, 0.4)); border-color: #a855f7; color: #fbbf24; }
+    
+    /* Main content */
+    .main-content { flex: 1; padding: 20px 25px; overflow-y: auto; }
+    
+    /* Gallery Grid */
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
+    .gallery-grid.backgrounds { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    .gallery-grid.music { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+    
+    /* Card Item */
+    .gallery-item { position: relative; background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9)); border: 2px solid rgba(138, 43, 226, 0.4); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s; }
+    .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3); }
+    .gallery-item.locked { opacity: 0.4; filter: grayscale(0.7); cursor: not-allowed; }
+    .gallery-item.locked:hover { transform: none; box-shadow: none; }
+    
+    /* Card art display */
+    .gallery-art { width: 100%; aspect-ratio: 3/4; background-size: cover; background-position: center top; background-color: rgba(30, 30, 60, 0.5); }
+    .gallery-item.holo .gallery-art { position: relative; }
+    .gallery-item.holo::before { content: ''; position: absolute; inset: -2px; background: linear-gradient(45deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0080ff, #8000ff, #ff00ff, #ff0000); background-size: 400% 400%; border-radius: 14px; z-index: -1; animation: holoShift 3s linear infinite; }
+    @keyframes holoShift { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
+    
+    /* Background art display */
+    .gallery-art.bg-art { aspect-ratio: 16/9; background-size: cover; background-position: center; }
+    
+    /* Mat art display */
+    .gallery-art.mat-art { aspect-ratio: 2/1; background-size: cover; background-position: center; }
+    
+    .gallery-info { padding: 12px; background: linear-gradient(to top, rgba(15, 15, 35, 1), rgba(15, 15, 35, 0.9)); }
+    .gallery-name { font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; color: #e2e8f0; text-align: center; margin-bottom: 4px; }
+    .gallery-subtitle { font-size: 10px; color: #64748b; text-align: center; }
+    .gallery-holo-label { font-size: 9px; color: #e879f9; text-align: center; margin-top: 2px; }
+    
+    /* Rarity borders */
+    .gallery-item.rarity-common { border-color: rgba(148, 163, 184, 0.6); }
+    .gallery-item.rarity-rare { border-color: rgba(59, 130, 246, 0.7); box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+    .gallery-item.rarity-legendary { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
+    
+    /* Locked overlay */
+    .locked-overlay { position: absolute; inset: 0; background: rgba(20, 20, 40, 0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .locked-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.6; }
+    .locked-text { font-size: 11px; color: #64748b; text-align: center; padding: 0 10px; }
+    
+    /* Music player */
+    .music-item { display: flex; align-items: center; gap: 15px; padding: 15px; }
+    .music-icon { font-size: 36px; }
+    .music-info { flex: 1; }
+    .music-title { font-family: 'Cinzel', serif; font-size: 16px; color: #e2e8f0; margin-bottom: 4px; }
+    .music-archetype { font-size: 12px; color: #64748b; }
+    .music-controls { display: flex; gap: 10px; }
+    .music-btn { padding: 8px 16px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+    .music-btn:hover { transform: scale(1.05); }
+    .music-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .music-btn.playing { background: linear-gradient(135deg, #10b981, #059669); }
+    
+    /* Archetype filter */
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filter-label { font-size: 13px; color: #94a3b8; }
+    .filter-select { padding: 8px 12px; background: rgba(20, 20, 40, 0.8); border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 6px; color: #e2e8f0; font-size: 12px; cursor: pointer; }
+    .filter-select:focus { outline: none; border-color: #a855f7; }
+    
+    /* Lightbox modal */
+    .lightbox { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 40px; }
+    .lightbox.active { display: flex; }
+    .lightbox-content { max-width: 90%; max-height: 90%; position: relative; }
+    .lightbox-image { max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 0 50px rgba(138, 43, 226, 0.5); }
+    .lightbox-info { text-align: center; margin-top: 20px; }
+    .lightbox-title { font-family: 'Cinzel', serif; font-size: 24px; color: #fbbf24; margin-bottom: 8px; }
+    .lightbox-subtitle { font-size: 14px; color: #94a3b8; }
+    .lightbox-close { position: absolute; top: -40px; right: 0; background: none; border: none; color: #e2e8f0; font-size: 32px; cursor: pointer; }
+    .lightbox-close:hover { color: #fbbf24; }
+    
+    /* Stats bar */
+    .stats-bar { display: flex; gap: 20px; padding: 10px 25px; background: rgba(20, 20, 40, 0.5); border-bottom: 1px solid rgba(138, 43, 226, 0.2); font-size: 12px; color: #94a3b8; }
+    .stat-item { display: flex; align-items: center; gap: 5px; }
+    .stat-value { color: #fbbf24; font-weight: 600; }
+    
+    /* Empty state */
+    .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+    .empty-icon { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
+    .empty-text { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  
+  <div class="page-container">
+    <header class="header">
+      <div class="header-left">
+        <a href="/home.html" class="back-btn">← Back</a>
+        <h1 class="page-title">🖼️ Collections Gallery</h1>
+      </div>
+    </header>
+    
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="cards">🃏 Cards</button>
+      <button class="tab-btn" data-tab="backgrounds">🖼️ Backgrounds</button>
+      <button class="tab-btn" data-tab="mats">🎴 Game Mats</button>
+      <button class="tab-btn" data-tab="music">🎵 Music</button>
+    </nav>
+    
+    <div class="stats-bar">
+      <div class="stat-item">Cards: <span class="stat-value" id="cardsStat">0/0</span></div>
+      <div class="stat-item">Holo: <span class="stat-value" id="holoStat">0</span></div>
+      <div class="stat-item">Backgrounds: <span class="stat-value" id="bgStat">0/0</span></div>
+      <div class="stat-item">Music: <span class="stat-value" id="musicStat">0/0</span></div>
+    </div>
+    
+    <main class="main-content">
+      <div class="filter-bar" id="filterBar">
+        <span class="filter-label">Filter:</span>
+        <select class="filter-select" id="archetypeFilter">
+          <option value="all">All Archetypes</option>
+          <option value="medieval">Medieval</option>
+          <option value="void-alien">Void Alien</option>
+          <option value="western-skeleton">Western Skeleton</option>
+          <option value="crimson-court">Crimson Court</option>
+          <option value="jeweled-court">Jeweled Court</option>
+          <option value="elunes-chosen">Elune's Chosen</option>
+        </select>
+        <select class="filter-select" id="rarityFilter">
+          <option value="all">All Rarities</option>
+          <option value="common">Common</option>
+          <option value="rare">Rare</option>
+          <option value="legendary">Legendary</option>
+        </select>
+      </div>
+      
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </main>
+  </div>
+  
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <div class="lightbox-content">
+      <button class="lightbox-close" id="lightboxClose">&times;</button>
+      <img class="lightbox-image" id="lightboxImage" src="" alt="">
+      <div class="lightbox-info">
+        <div class="lightbox-title" id="lightboxTitle"></div>
+        <div class="lightbox-subtitle" id="lightboxSubtitle"></div>
+      </div>
+    </div>
+  </div>
+  
+  <audio id="audioPlayer"></audio>
+  
+  <script>
+    // Card data (same as deckbuilder)
+    const CARD_DATA = {
+      peasant: { name: "Peasant", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack diagonally", art: "/images/Peasant.png", rarity: "common" },
+      squire: { name: "Squire", cost: 1, atk: 2, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move to any friendly Knight", art: "/images/Squire.png", rarity: "common" },
+      archer: { name: "Archer", cost: 2, atk: 3, hp: 2, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can attack units 2 tiles away", art: "/images/Archer.png", rarity: "common" },
+      manatarms: { name: "Man-at-Arms", cost: 2, atk: 2, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Man-at-Arms.png", rarity: "common" },
+      shieldbearer: { name: "Shield Bearer", cost: 2, atk: 1, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Adjacent allies take 1 less damage", art: "/images/Shield Bearer.png", rarity: "rare" },
+      warhound: { name: "War Hound", cost: 2, atk: 3, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Can move twice per turn", art: "/images/War Hound.png", rarity: "rare" },
+      battlefieldmedic: { name: "Battlefield Medic", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals adjacent allies 1 HP at end of turn", art: "/images/Battlefield Medic.png", rarity: "common" },
+      knight: { name: "Knight", cost: 3, atk: 4, hp: 4, type: "monster", archetype: "medieval", effect: false, effectDesc: null, art: "/images/Knight.png", rarity: "common" },
+      crusader: { name: "Crusader", cost: 4, atk: 5, hp: 4, type: "monster", archetype: "medieval", effect: true, effectDesc: "Heals 2 HP when killing an enemy", art: "/images/Crusader.png", rarity: "legendary" },
+      royalguard: { name: "Royal Guard", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Attacks deal cleave damage to adjacent enemies", art: "/images/Royal Guard.png", rarity: "rare" },
+      paladin: { name: "Paladin", cost: 4, atk: 6, hp: 5, type: "monster", archetype: "medieval", effect: true, effectDesc: "Gain 1 energy when killing an enemy", art: "/images/Paladin.png", rarity: "legendary" },
+      siegeram: { name: "Battering Ram", cost: 3, atk: 2, hp: 6, type: "monster", archetype: "medieval", effect: true, effectDesc: "Deals double damage to row HP", art: "/images/Battering Ram.png", rarity: "rare" },
+      warbanner: { name: "War Banner", cost: 2, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Adjacent allies gain +1 ATK", art: "/images/War Banner.png", rarity: "rare" },
+      shrine: { name: "Healing Shrine", cost: 3, atk: 0, hp: 5, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Heals allies in same row 1 HP per turn", art: "/images/Healing Shrine.png", rarity: "rare" },
+      armory: { name: "Armory", cost: 3, atk: 0, hp: 4, type: "spell", archetype: "medieval", effect: true, effectDesc: "Structure: Units you deploy gain +1 HP. Stacks.", art: "/images/Armory.png", rarity: "rare" },
+      castlewalls: { name: "Castle Walls", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Add +15 HP to target friendly row", art: "/images/Castle Walls.png", rarity: "common" },
+      treasury: { name: "King's Treasury", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Draw 2 cards", art: "/images/Kings Treasury.png", rarity: "common" },
+      rally: { name: "Rallying Cry", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "medieval", effect: true, effectDesc: "Instant: Target unit attacks twice this turn", art: "/images/Rallying Cry.png", rarity: "common" },
+      voiddrone: { name: "Void Drone", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "void-alien", effect: false, effectDesc: null, art: "/images/Void Drone.png", rarity: "common" },
+      scavengerlarva: { name: "Scavenger Larva", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy when this unit dies", art: "/images/Scavenger Larva.png", rarity: "common" },
+      spittercrawler: { name: "Spitter Crawler", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Ranged: Can attack 2 tiles away", art: "/images/Spitter Crawler.png", rarity: "common" },
+      phaseskirmisher: { name: "Phase Skirmisher", cost: 2, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Can move twice per turn", art: "/images/Phase Skirmisher.png", rarity: "rare" },
+      energyleech: { name: "Energy Leech", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Drain 1 energy from opponent on kill", art: "/images/Energy Leech.png", rarity: "common" },
+      burrowerbeast: { name: "Burrower Beast", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Untargetable next turn, can deploy adjacent to allies", art: "/images/Burrower Beast.png", rarity: "rare" },
+      psionicoverseer: { name: "Psionic Overseer", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Adjacent allies gain +1 ATK", art: "/images/Psionic Overseer.png", rarity: "rare" },
+      neuralharvester: { name: "Neural Harvester", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy if target survives attack", art: "/images/Neural Harvester.png", rarity: "common" },
+      adaptivecolossus: { name: "Adaptive Colossus", cost: 4, atk: 4, hp: 5, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gains +1 max HP when surviving damage", art: "/images/Adaptive Colossus.png", rarity: "legendary" },
+      sporetitan: { name: "Spore Titan", cost: 4, atk: 3, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Attacks deal 1 splash damage to adjacent enemies", art: "/images/Spore Titan.png", rarity: "rare" },
+      voidbroodmother: { name: "Void Broodmother", cost: 4, atk: 2, hp: 6, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Spawn a Void Drone when killing an enemy", art: "/images/Void Broodmother.png", rarity: "legendary" },
+      eclipsedevourer: { name: "Eclipse Devourer", cost: 5, atk: 5, hp: 4, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Gain 1 energy on kill", art: "/images/Eclipse Devourer.png", rarity: "legendary" },
+      ufoscraper: { name: "UFO Scraper", cost: 4, atk: 1, hp: 1, type: "monster", archetype: "void-alien", effect: true, effectDesc: "Can attack friendly Aliens to absorb their stats", art: "/images/UFO Scraper.png", rarity: "legendary" },
+      assimilation: { name: "Assimilation", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Destroy a friendly unit to give its stats to another", art: "/images/Assimilation.png", rarity: "rare" },
+      voidcollapse: { name: "Void Collapse", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Deal 3 damage to all enemies in target row", art: "/images/Void Collapse.png", rarity: "rare" },
+      hiveascension: { name: "Hive Ascension", cost: 5, atk: 0, hp: 0, type: "spell", archetype: "void-alien", effect: true, effectDesc: "Transform target into 5/5 Ascended Alien", art: "/images/Hive Ascension.png", rarity: "legendary" },
+      bonedeputy: { name: "Bone Deputy", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "western-skeleton", effect: false, effectDesc: null, art: "/images/Bone Deputy.png", rarity: "common" },
+      dustyrattler: { name: "Dusty Rattler", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Deal 1 damage to attacker when hit", art: "/images/Dusty Rattler.png", rarity: "common" },
+      graverobber: { name: "Grave Robber", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Draw a card on kill", art: "/images/Grave Robber.png", rarity: "common" },
+      phantomscout: { name: "Phantom Scout", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Can move twice per turn", art: "/images/Phantom Scout.png", rarity: "common" },
+      bonerevolver: { name: "Bone Revolver", cost: 2, atk: 3, hp: 1, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Range 2", art: "/images/Bone Revolver.png", rarity: "common" },
+      undeadsheriff: { name: "Undead Sheriff", cost: 3, atk: 3, hp: 4, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Adjacent allies gain +1 ATK", art: "/images/Undead Sheriff.png", rarity: "rare" },
+      coffintrapper: { name: "Coffin Trapper", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "On kill, spawn Coffin structure", art: "/images/Coffin Trapper.png", rarity: "rare" },
+      undertaker: { name: "Undertaker", cost: 4, atk: 3, hp: 5, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "On any death, gain +1 ATK", art: "/images/Undertaker.png", rarity: "rare" },
+      thehangedman: { name: "The Hanged Man", cost: 5, atk: 4, hp: 4, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "On death, deal 3 damage to killer", art: "/images/The Hanged Man.png", rarity: "legendary" },
+      ghostlystampede: { name: "Ghostly Stampede", cost: 6, atk: 5, hp: 5, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "Charge: Can attack immediately after deploying", art: "/images/Ghostly Stampede.png", rarity: "legendary" },
+      bonecolossus: { name: "Bone Colossus", cost: 7, atk: 6, hp: 8, type: "monster", archetype: "western-skeleton", effect: true, effectDesc: "On death, spawn two 2/2 Bone Deputies", art: "/images/Bone Colossus.png", rarity: "legendary" },
+      deadmanshand: { name: "Dead Man's Hand", cost: 1, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Draw 2 cards", art: "/images/Dead Mans Hand.png", rarity: "common" },
+      mostwanted: { name: "Most Wanted", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "Target gains +2 ATK but enemies prioritize it", art: "/images/Most Wanted.png", rarity: "rare" },
+      shallowgrave: { name: "Shallow Grave", cost: 3, atk: 0, hp: 3, type: "structure", archetype: "western-skeleton", effect: true, effectDesc: "On friendly death, spawn 1/1 Bone Deputy", art: "/images/Shallow Grave.png", rarity: "rare" },
+      highnoon: { name: "High Noon", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "western-skeleton", effect: true, effectDesc: "All units attack immediately", art: "/images/High Noon.png", rarity: "legendary" },
+      thrall: { name: "Thrall", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Heal 1 HP on kill", art: "/images/Thrall.png", rarity: "common" },
+      bloodfamiliar: { name: "Blood Familiar", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Flying: Can move over units", art: "/images/Blood Familiar.png", rarity: "common" },
+      nightstalker: { name: "Nightstalker", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Can move twice per turn", art: "/images/Nightstalker.png", rarity: "common" },
+      cryptkeeper: { name: "Crypt Keeper", cost: 2, atk: 1, hp: 4, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Adjacent vampires heal 1 HP per turn", art: "/images/Crypt Keeper.png", rarity: "common" },
+      vampirespawn: { name: "Vampire Spawn", cost: 2, atk: 3, hp: 2, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Lifesteal: Heal damage dealt", art: "/images/Vampire Spawn.png", rarity: "rare" },
+      bloodpriest: { name: "Blood Priest", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Can sacrifice friendly to give another +2/+2", art: "/images/Blood Priest.png", rarity: "rare" },
+      soulcollector: { name: "Soul Collector", cost: 3, atk: 3, hp: 3, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Draw a card on kill", art: "/images/Soul Collector.png", rarity: "rare" },
+      nosferatu: { name: "Nosferatu", cost: 4, atk: 4, hp: 4, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Lifesteal: Heal damage dealt", art: "/images/Nosferatu.png", rarity: "rare" },
+      coffin: { name: "Coffin", cost: 2, atk: 0, hp: 3, type: "structure", archetype: "crimson-court", effect: true, effectDesc: "On destruction, spawn 2/2 Vampire Spawn", art: "/images/Coffin.png", rarity: "rare" },
+      bloodcountess: { name: "Blood Countess", cost: 5, atk: 4, hp: 5, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "On kill, gain +1/+1 permanently", art: "/images/Blood Countess.png", rarity: "legendary" },
+      eldervampire: { name: "Elder Vampire", cost: 6, atk: 5, hp: 6, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "Lifesteal. On kill, spawn Blood Thrall", art: "/images/Elder Vampire.png", rarity: "legendary" },
+      vampirelord: { name: "Vampire Lord", cost: 7, atk: 6, hp: 7, type: "monster", archetype: "crimson-court", effect: true, effectDesc: "All friendly vampires gain Lifesteal", art: "/images/Vampire Lord.png", rarity: "legendary" },
+      bloodpact: { name: "Blood Pact", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Pay 3 row HP to draw 2 cards", art: "/images/Blood Pact.png", rarity: "common" },
+      bloodtransfusion: { name: "Blood Transfusion", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Transfer HP between two friendly units", art: "/images/Blood Transfusion.png", rarity: "rare" },
+      crimsonrevival: { name: "Crimson Revival", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "Revive last dead friendly unit", art: "/images/Crimson Revival.png", rarity: "legendary" },
+      sanguinefeast: { name: "Sanguine Feast", cost: 5, atk: 0, hp: 0, type: "spell", archetype: "crimson-court", effect: true, effectDesc: "All friendly vampires heal 3 HP", art: "/images/Sanguine Feast.png", rarity: "legendary" },
+      rubysprite: { name: "Ruby Sprite", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "On death, deal 1 damage to killer", art: "/images/Ruby Sprite.png", rarity: "common" },
+      emeraldforager: { name: "Emerald Forager", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Gain 1 energy when this dies", art: "/images/Emerald Forager.png", rarity: "common" },
+      sapphiredancer: { name: "Sapphire Dancer", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Can move twice per turn", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      topazminer: { name: "Topaz Miner", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "On attack, spawn 1/1 Gem Shard nearby", art: "/images/Topaz Miner.png", rarity: "common" },
+      amethystenchanter: { name: "Amethyst Enchanter", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Reflects 1 damage back to attackers", art: "/images/Amethyst Enchanter.png", rarity: "rare" },
+      diamondguardian: { name: "Diamond Guardian", cost: 3, atk: 1, hp: 5, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "When adjacent friendly takes damage, takes 1 instead", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      opaldevourer: { name: "Opal Devourer", cost: 3, atk: 2, hp: 2, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Can attack friendly Gem Shards to gain +2/+2", art: "/images/Opal Devourer.png", rarity: "rare" },
+      pearlblessing: { name: "Pearl Blessing", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "All friendly units +1 HP. Fairies also +1 ATK", art: "/images/Pearl Blessing.png", rarity: "rare" },
+      garnetqueen: { name: "Garnet Queen", cost: 5, atk: 3, hp: 5, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "Adjacent enemies ATK=1. Adjacent friendlies +1 ATK", art: "/images/Garnet Queen.png", rarity: "legendary" },
+      moonstonewitch: { name: "Moonstone Witch", cost: 4, atk: 2, hp: 4, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "On kill: spawn Gem Shard. +1 ATK per Gem on field", art: "/images/Moonstone Witch.png", rarity: "legendary" },
+      prismaticfairy: { name: "Prismatic Fairy", cost: 5, atk: 3, hp: 4, type: "monster", archetype: "jeweled-court", effect: true, effectDesc: "When friendly Gem Shard dies, all enemies take 1 damage", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
+      gemstonecurse: { name: "Gemstone Curse", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "Halve target enemy's ATK (minimum 1)", art: "/images/Gemstone Curse.png", rarity: "legendary" },
+      fairyring: { name: "Fairy Ring", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "jeweled-court", effect: true, effectDesc: "Summon two 1/1 Gem Shards in your home rows", art: "/images/Fairy Ring.png", rarity: "legendary" },
+      moonsentinel: { name: "Moon Sentinel", cost: 1, atk: 2, hp: 1, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Gain +1 HP at start of turn if adjacent to 2+ allies", art: "/images/Moon Sentinel.png", rarity: "common" },
+      starweavearcher: { name: "Star Weave Archer", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Range 2. Gains +1 ATK per adjacent ally", art: "/images/Star Weave Archer.png", rarity: "common" },
+      moonlitbladedancer: { name: "Moonlit Blade Dancer", cost: 2, atk: 3, hp: 1, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "On kill, can move again this turn", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      lunarpriestess: { name: "Lunar Priestess", cost: 3, atk: 3, hp: 2, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Can attack allies to heal them for ATK", art: "/images/Lunar Priestess.png", rarity: "common" },
+      twilightsrespite: { name: "Twilight's Respite", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Your units take -1 damage until next turn", art: "/images/Twilights Respite.png", rarity: "common" },
+      huntinggodsblessing: { name: "Hunting God's Blessing", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Target ally gains +1 ATK and +1 range this turn", art: "/images/Hunting Gods Blessing.png", rarity: "common" },
+      stonegiant: { name: "Stone Giant", cost: 5, atk: 3, hp: 8, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Takes all damage for adjacent allies", art: "/images/Stone Giant.png", rarity: "rare" },
+      nightshadeambusher: { name: "Night Shade Ambusher", cost: 4, atk: 4, hp: 2, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Can deploy in neutral zones (rows 2-4)", art: "/images/Night Shade Ambusher.png", rarity: "rare" },
+      moonshadowwarden: { name: "Moon Shadow Warden", cost: 3, atk: 4, hp: 2, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "On attack, target cannot move next turn", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
+      moonflaresorceress: { name: "Moon Flare Sorceress", cost: 4, atk: 2, hp: 6, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "Adjacent allies gain +1 ATK and +1 HP", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      elunesmoonwell: { name: "Elune's Moonwell", cost: 2, atk: 0, hp: 4, type: "structure", archetype: "elunes-chosen", effect: true, effectDesc: "If adjacent to 2+ allies, gain 1 energy and draw a card", art: "/images/Elunes Moonwell.png", rarity: "rare" },
+      lunarprayer: { name: "Lunar Prayer", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Target ally survives lethal damage once with 1 HP", art: "/images/Lunar Prayer.png", rarity: "rare" },
+      starlitchampion: { name: "Starlit Champion", cost: 6, atk: 4, hp: 6, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "On kill, gain 1 energy and +1 ATK permanently", art: "/images/Starlit Champion.png", rarity: "legendary" },
+      starinvoker: { name: "Star Invoker", cost: 6, atk: 2, hp: 5, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "At start of turn, deal 2 damage to a random enemy", art: "/images/Star Invoker.png", rarity: "legendary" },
+      templeofthemoon: { name: "Temple of the Moon", cost: 4, atk: 0, hp: 4, type: "structure", archetype: "elunes-chosen", effect: true, effectDesc: "If adjacent to 2+ allies, give them +1 ATK permanently", art: "/images/Temple of the Moon.png", rarity: "legendary" },
+      lunarbarrage: { name: "Lunar Barrage", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Deal 2 damage to all enemies in and adjacent to target tile", art: "/images/Lunar Barrage.png", rarity: "legendary" }
+    };
+    
+    // Background/Music data - use actual paths
+    // bgImage = full page backgrounds (boss backgrounds folder, using boss ID)
+    // matImage = game board mat backgrounds
+    const ARCHETYPES = {
+      'medieval': { name: 'Medieval Kingdom', bgImage: '/images/medieval-bg.png', matImage: '/images/medieval-bg.png', musicFile: '/audio/medieval-theme.mp3', bossId: null },
+      'void-alien': { name: 'Void Alien Swarm', bgImage: '/images/backgrounds/boss-1-bg.png', matImage: '/images/void-alien-bg.png', musicFile: '/audio/void-alien-theme.mp3', bossId: 1 },
+      'western-skeleton': { name: 'Western Skeleton', bgImage: '/images/backgrounds/boss-2-bg.png', matImage: '/images/western-skeleton-bg.png', musicFile: '/audio/western-skeleton-theme.mp3', bossId: 2 },
+      'crimson-court': { name: 'Crimson Court', bgImage: '/images/backgrounds/boss-3-bg.png', matImage: '/images/crimson-court-bg.png', musicFile: '/audio/crimson-court-theme.mp3', bossId: 3 },
+      'jeweled-court': { name: 'Jeweled Court', bgImage: '/images/backgrounds/boss-4-bg.png', matImage: '/images/jeweled-court-bg.png', musicFile: '/audio/jeweled-court-theme.mp3', bossId: 4 },
+      'elunes-chosen': { name: "Elune's Chosen", bgImage: '/images/backgrounds/boss-5-bg.png', matImage: '/images/elunes-chosen-bg.png', musicFile: '/audio/elunes-chosen-theme.mp3', bossId: 5 }
+    };
+    
+    let currentUser = null;
+    let currentTab = 'cards';
+    let currentlyPlaying = null;
+    const audioPlayer = document.getElementById('audioPlayer');
+    
+    // DOM elements
+    const galleryGrid = document.getElementById('galleryGrid');
+    const archetypeFilter = document.getElementById('archetypeFilter');
+    const rarityFilter = document.getElementById('rarityFilter');
+    const filterBar = document.getElementById('filterBar');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxTitle = document.getElementById('lightboxTitle');
+    const lightboxSubtitle = document.getElementById('lightboxSubtitle');
+    const lightboxClose = document.getElementById('lightboxClose');
+    
+    // Initialize
+    function init() {
+      const storedUser = localStorage.getItem('gridCardUser');
+      if (storedUser) {
+        try {
+          currentUser = JSON.parse(storedUser);
+          updateStats();
+          renderGallery();
+        } catch(e) {
+          window.location.href = '/home.html';
+        }
+      } else {
+        window.location.href = '/home.html';
+      }
+      
+      // Tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentTab = btn.dataset.tab;
+          updateFilters();
+          renderGallery();
+        });
+      });
+      
+      // Filters
+      archetypeFilter.addEventListener('change', renderGallery);
+      rarityFilter.addEventListener('change', renderGallery);
+      
+      // Lightbox
+      lightboxClose.addEventListener('click', closeLightbox);
+      lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeLightbox();
+      });
+    }
+    
+    function updateFilters() {
+      // Show/hide filters based on tab
+      if (currentTab === 'cards' || currentTab === 'holo') {
+        filterBar.style.display = 'flex';
+        rarityFilter.style.display = 'block';
+      } else if (currentTab === 'backgrounds' || currentTab === 'mats' || currentTab === 'music') {
+        filterBar.style.display = 'none';
+      }
+    }
+    
+    function updateStats() {
+      const cardCollection = currentUser.cardCollection || {};
+      const holoCollection = currentUser.holoCollection || {};
+      const unlockedDecks = currentUser.unlockedDecks || ['medieval'];
+      const unlockedMusic = currentUser.unlockedMusic || ['medieval'];
+      const unlockedBackgrounds = currentUser.unlockedBackgrounds || ['medieval'];
+      
+      // Count owned cards
+      const totalCards = Object.keys(CARD_DATA).length;
+      const ownedCards = Object.keys(CARD_DATA).filter(k => (cardCollection[k] || 0) > 0).length;
+      document.getElementById('cardsStat').textContent = `${ownedCards}/${totalCards}`;
+      
+      // Count holo cards
+      const holoCount = Object.values(holoCollection).reduce((sum, n) => sum + n, 0);
+      document.getElementById('holoStat').textContent = holoCount;
+      
+      // Count backgrounds
+      const totalBgs = Object.keys(ARCHETYPES).length;
+      const ownedBgs = unlockedBackgrounds.length;
+      document.getElementById('bgStat').textContent = `${ownedBgs}/${totalBgs}`;
+      
+      // Count music
+      const totalMusic = Object.keys(ARCHETYPES).length;
+      const ownedMusic = unlockedMusic.length;
+      document.getElementById('musicStat').textContent = `${ownedMusic}/${totalMusic}`;
+    }
+    
+    function isCardUnlocked(cardKey) {
+      const card = CARD_DATA[cardKey];
+      if (!card) return false;
+      if (card.archetype === 'medieval') return true;
+      const unlockedDecks = currentUser.unlockedDecks || ['medieval'];
+      return unlockedDecks.includes(card.archetype);
+    }
+    
+    function renderGallery() {
+      const archFilter = archetypeFilter.value;
+      const rarFilter = rarityFilter.value;
+      
+      if (currentTab === 'cards') {
+        renderCards(archFilter, rarFilter, false);
+      } else if (currentTab === 'holo') {
+        renderCards(archFilter, rarFilter, true);
+      } else if (currentTab === 'backgrounds') {
+        renderBackgrounds();
+      } else if (currentTab === 'mats') {
+        renderMats();
+      } else if (currentTab === 'music') {
+        renderMusic();
+      }
+    }
+    
+    // Helper to escape strings for use in onclick handlers
+    function escapeForAttr(str) {
+      return str.replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+    }
+    
+    function renderCards(archFilter, rarFilter, holoOnly) {
+      const cardCollection = currentUser.cardCollection || {};
+      const holoCollection = currentUser.holoCollection || {};
+      
+      let cards = Object.entries(CARD_DATA).filter(([key, card]) => {
+        // Must be unlocked (archetype unlocked)
+        if (!isCardUnlocked(key)) return false;
+        
+        // Apply filters
+        if (archFilter !== 'all' && card.archetype !== archFilter) return false;
+        if (rarFilter !== 'all' && (card.rarity || 'common') !== rarFilter) return false;
+        
+        if (holoOnly) {
+          // Only show cards that have holo versions owned
+          return (holoCollection[key] || 0) > 0;
+        } else {
+          // Only show cards that are owned (regular collection)
+          return (cardCollection[key] || 0) > 0;
+        }
+      });
+      
+      // Sort by archetype, then cost
+      cards.sort((a, b) => {
+        const archOrder = { 'medieval': 0, 'void-alien': 1, 'western-skeleton': 2, 'crimson-court': 3, 'jeweled-court': 4, 'elunes-chosen': 5 };
+        if (a[1].archetype !== b[1].archetype) return (archOrder[a[1].archetype] || 99) - (archOrder[b[1].archetype] || 99);
+        return a[1].cost - b[1].cost;
+      });
+      
+      if (cards.length === 0) {
+        galleryGrid.innerHTML = `<div class="empty-state"><div class="empty-icon">${holoOnly ? '✨' : '🃏'}</div><div class="empty-text">${holoOnly ? 'No holo cards collected yet. Win Challenge mode to get holo cards!' : 'No cards collected yet. Win battles to earn cards!'}</div></div>`;
+        galleryGrid.className = 'gallery-grid';
+        return;
+      }
+      
+      galleryGrid.className = 'gallery-grid';
+      galleryGrid.innerHTML = cards.map(([key, card]) => {
+        const owned = holoOnly ? (holoCollection[key] || 0) : (cardCollection[key] || 0);
+        const rarity = card.rarity || 'common';
+        const artUrl = encodeURI(card.art || '');
+        const holoClass = holoOnly ? ' holo' : '';
+        const cardName = escapeForAttr(card.name);
+        const archName = escapeForAttr(ARCHETYPES[card.archetype]?.name || card.archetype);
+        const subtitle = `${archName} • ${rarity.charAt(0).toUpperCase() + rarity.slice(1)}${holoOnly ? ' • ✨ HOLO' : ''}`;
+        
+        return `
+          <div class="gallery-item rarity-${rarity}${holoClass}" onclick="openLightbox('${artUrl}', '${cardName}', '${escapeForAttr(subtitle)}')">
+            <div class="gallery-art" style="background-image: url('${artUrl}')"></div>
+            <div class="gallery-info">
+              <div class="gallery-name">${holoOnly ? '✨ ' : ''}${card.name}</div>
+              <div class="gallery-subtitle">${rarity.charAt(0).toUpperCase() + rarity.slice(1)} • ${card.cost}⚡</div>
+              ${holoOnly ? `<div class="gallery-holo-label">Owned: ${owned}</div>` : `<div class="gallery-subtitle" style="color: #fbbf24;">Owned: ${owned}</div>`}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function renderBackgrounds() {
+      const unlockedBackgrounds = currentUser.unlockedBackgrounds || ['medieval'];
+      
+      // Only show unlocked backgrounds
+      const unlocked = Object.entries(ARCHETYPES).filter(([key]) => unlockedBackgrounds.includes(key));
+      
+      if (unlocked.length === 0) {
+        galleryGrid.innerHTML = `<div class="empty-state"><div class="empty-icon">🖼️</div><div class="empty-text">No backgrounds unlocked yet. Defeat bosses to unlock!</div></div>`;
+        galleryGrid.className = 'gallery-grid backgrounds';
+        return;
+      }
+      
+      galleryGrid.className = 'gallery-grid backgrounds';
+      galleryGrid.innerHTML = unlocked.map(([key, arch]) => {
+        const archName = escapeForAttr(arch.name);
+        return `
+          <div class="gallery-item" onclick="openLightbox('${arch.bgImage}', '${archName}', 'Background')">
+            <div class="gallery-art bg-art" style="background-image: url('${arch.bgImage}')"></div>
+            <div class="gallery-info">
+              <div class="gallery-name">${arch.name}</div>
+              <div class="gallery-subtitle">Background</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function renderMats() {
+      const unlockedDecks = currentUser.unlockedDecks || ['medieval'];
+      
+      // Only show unlocked mats
+      const unlocked = Object.entries(ARCHETYPES).filter(([key]) => unlockedDecks.includes(key));
+      
+      if (unlocked.length === 0) {
+        galleryGrid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎴</div><div class="empty-text">No game mats unlocked yet. Defeat bosses to unlock!</div></div>`;
+        galleryGrid.className = 'gallery-grid backgrounds';
+        return;
+      }
+      
+      galleryGrid.className = 'gallery-grid backgrounds';
+      galleryGrid.innerHTML = unlocked.map(([key, arch]) => {
+        const archName = escapeForAttr(arch.name);
+        return `
+          <div class="gallery-item" onclick="openLightbox('${arch.matImage}', '${archName}', 'Game Mat')">
+            <div class="gallery-art mat-art" style="background-image: url('${arch.matImage}')"></div>
+            <div class="gallery-info">
+              <div class="gallery-name">${arch.name}</div>
+              <div class="gallery-subtitle">Game Mat</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function renderMusic() {
+      const unlockedMusic = currentUser.unlockedMusic || ['medieval'];
+      
+      // Only show unlocked music
+      const unlocked = Object.entries(ARCHETYPES).filter(([key]) => unlockedMusic.includes(key));
+      
+      if (unlocked.length === 0) {
+        galleryGrid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎵</div><div class="empty-text">No music unlocked yet. Defeat bosses to unlock!</div></div>`;
+        galleryGrid.className = 'gallery-grid music';
+        return;
+      }
+      
+      galleryGrid.className = 'gallery-grid music';
+      galleryGrid.innerHTML = unlocked.map(([key, arch]) => {
+        const isPlaying = currentlyPlaying === key;
+        
+        return `
+          <div class="gallery-item">
+            <div class="music-item">
+              <div class="music-icon">🎵</div>
+              <div class="music-info">
+                <div class="music-title">${arch.name}</div>
+                <div class="music-archetype">Theme Music</div>
+              </div>
+              <div class="music-controls">
+                <button class="music-btn${isPlaying ? ' playing' : ''}" onclick="toggleMusic('${key}')">
+                  ${isPlaying ? '⏹ Stop' : '▶ Play'}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function toggleMusic(key) {
+      const arch = ARCHETYPES[key];
+      if (!arch) return;
+      
+      if (currentlyPlaying === key) {
+        // Stop
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+        currentlyPlaying = null;
+      } else {
+        // Play
+        audioPlayer.src = arch.musicFile;
+        audioPlayer.play().catch(e => console.log('Audio play failed:', e));
+        currentlyPlaying = key;
+      }
+      
+      renderMusic();
+    }
+    
+    // Audio ended handler
+    audioPlayer.addEventListener('ended', () => {
+      currentlyPlaying = null;
+      if (currentTab === 'music') renderMusic();
+    });
+    
+    function openLightbox(imageUrl, title, subtitle) {
+      lightboxImage.src = imageUrl;
+      lightboxTitle.textContent = title;
+      lightboxSubtitle.textContent = subtitle;
+      lightbox.classList.add('active');
+    }
+    
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+    }
+    
+    // Keyboard shortcut to close lightbox
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+    
+    // Init on load
+    init();
+  </script>
+</body>
+</html>

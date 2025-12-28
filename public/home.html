@@ -827,6 +827,7 @@
           </div>
         </div>
         <button class="btn-secondary" id="deckBuilderBtn" style="margin-bottom: 10px;">🛠️ Deck Builder</button>
+        <button class="btn-secondary" id="collectionsBtn" style="margin-bottom: 10px;">🖼️ Collections</button>
         <button class="btn-secondary hidden" id="playtestBtn" style="margin-bottom: 10px; background: linear-gradient(135deg, #f59e0b, #d97706);">🧪 Playtest</button>
         <button class="btn-danger" id="logoutBtn">Logout</button>
       </div>
@@ -952,6 +953,7 @@
     const guestBtn = document.getElementById('guestBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const deckBuilderBtn = document.getElementById('deckBuilderBtn');
+    const collectionsBtn = document.getElementById('collectionsBtn');
     const playtestBtn = document.getElementById('playtestBtn');
     const authError = document.getElementById('authError');
     const authSuccess = document.getElementById('authSuccess');
@@ -1280,6 +1282,10 @@
     
     deckBuilderBtn.addEventListener('click', () => {
       window.location.href = '/deckbuilder.html';
+    });
+    
+    collectionsBtn.addEventListener('click', () => {
+      window.location.href = '/collections.html';
     });
     
     playtestBtn.addEventListener('click', () => {
