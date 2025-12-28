@@ -39,6 +39,239 @@ let isMuted = false;
 let myDeckId = null;
 let enemyDeckId = null;
 
+// Sound effects system with Web Audio API synthesis fallback
+const sfxPool = {};
+let sfxVolume = 0.5;
+let audioContext = null;
+
+// Get or create AudioContext (for synthesized sounds)
+function getAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioContext;
+}
+
+// Synthesized sound generators (Web Audio API fallbacks)
+const SYNTH_SOUNDS = {
+  // Monster deploy - deep thud
+  'deploy-monster': (vol = 1) => {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.4 * vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+  },
+  // Spell deploy - magical shimmer
+  'deploy-spell': (vol = 1) => {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.25 * vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  },
+  // Castle walls fortify - stone/construction sound
+  'fortify': (vol = 1) => {
+    const ctx = getAudioContext();
+    // Low rumble
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(80, ctx.currentTime);
+    gain1.gain.setValueAtTime(0.2 * vol, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start();
+    osc1.stop(ctx.currentTime + 0.4);
+    // Stone clunk
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(200, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
+    gain2.gain.setValueAtTime(0.3 * vol, ctx.currentTime);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start();
+    osc2.stop(ctx.currentTime + 0.15);
+  },
+  // Attack - sword slash
+  'attack': (vol = 1) => {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3 * vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  },
+  // Hit/damage - impact
+  'hit': (vol = 1) => {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.35 * vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  },
+  // Arrow/ranged attack
+  'arrow': (vol = 1) => {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.2 * vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  },
+  // Coins/treasury
+  'coins': (vol = 1) => {
+    const ctx = getAudioContext();
+    [0, 0.05, 0.1].forEach((delay, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200 + i * 200, ctx.currentTime + delay);
+      gain.gain.setValueAtTime(0.15 * vol, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.1);
+    });
+  },
+  // Heal
+  'heal': (vol = 1) => {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.2 * vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  }
+};
+
+// Card-specific sound mappings (use synth key names)
+const CARD_SOUNDS = {
+  // Medieval deck
+  castlewalls: { deploy: 'fortify' },
+  archer: { attack: 'arrow' },
+  treasury: { deploy: 'coins' },
+  shrine: { deploy: 'heal' },
+  // Void Alien deck - use spell sounds
+  assimilation: { deploy: 'deploy-spell' },
+  voidcollapse: { deploy: 'deploy-spell' },
+  hiveascension: { deploy: 'deploy-spell' },
+  // Western Skeleton
+  // Crimson Court
+  // Jeweled Court
+  // Elune's Chosen
+};
+
+// Get current SFX volume based on slider
+function getSfxVolume() {
+  return (volumeSlider?.value || 50) / 100;
+}
+
+// Play a synthesized sound effect
+function playSynthSound(soundKey) {
+  if (isMuted) return;
+
+  const volume = getSfxVolume();
+  if (volume < 0.05) return; // Too quiet to hear
+
+  try {
+    const ctx = getAudioContext();
+    // Resume context if suspended (browser autoplay policy)
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const synth = SYNTH_SOUNDS[soundKey];
+    if (synth) {
+      synth(volume);
+    }
+  } catch (e) {
+    console.log('Synth sound error:', e.message);
+  }
+}
+
+// Play deploy sound for a card
+function playDeploySound(card) {
+  if (!card || isMuted) return;
+
+  // Check for card-specific deploy sound
+  const cardSounds = CARD_SOUNDS[card.key];
+  if (cardSounds?.deploy) {
+    playSynthSound(cardSounds.deploy);
+    return;
+  }
+
+  // Fall back to type-based default
+  const soundKey = card.type === 'spell' ? 'deploy-spell' : 'deploy-monster';
+  playSynthSound(soundKey);
+}
+
+// Play attack sound for a card/unit
+function playAttackSound(card) {
+  if (!card || isMuted) return;
+
+  // Check for card-specific attack sound
+  const cardSounds = CARD_SOUNDS[card.key];
+  if (cardSounds?.attack) {
+    playSynthSound(cardSounds.attack);
+    return;
+  }
+
+  // Fall back to default attack sound
+  playSynthSound('attack');
+}
+
+// Play hit/damage sound
+function playHitSound() {
+  if (isMuted) return;
+  playSynthSound('hit');
+}
+
 // Audio setup
 function setupAudio(deckId) {
   if (!bgMusic || !deckId) return;
@@ -390,8 +623,11 @@ if (enemyHeartContainer) {
     
     const enemyHeartEl = document.getElementById("enemyHeartHP");
     if (!enemyHeartEl?.parentElement?.classList.contains("heart-attackable")) return;
-    
+
     const enemy = enemyOf(myRole);
+    // Play attack sound for heart attack
+    const attacker = S.units[selectedUnitId];
+    if (attacker) playAttackSound(attacker);
     sendAction({ type: "attackHeart", attackerId: selectedUnitId, target: enemy });
     selectedUnitId = null;
     clearHighlights();
@@ -1505,6 +1741,8 @@ function spawnClick(spawnSide){ // spawnSide = "gold" | "silver"
     });
     renderHand();
   } else {
+    // No animation - play sound immediately
+    if (card) playDeploySound(card);
     sendAction({ type: "playCard", cardId: cardIdToPlay, spawn: spawnSide });
     renderHand();
     renderAll();
@@ -1656,6 +1894,7 @@ function renderHand() {
       
       // Non-targeted instant spells play immediately
       if (card.effect === "instant" && !card.requiresTarget) {
+        playDeploySound(card);
         sendAction({ type: "playCard", cardId: card.id });
         selectedCardId = null;
         deployCardId = null;
@@ -2161,11 +2400,12 @@ function onCellClick(viewRow, col) {
       deployCardId = null;
       selectedCardId = null;
       clearHighlights();
+      playDeploySound(card);
       sendAction({ type: "playCard", cardId: cardIdToPlay, targetUnitId: occId });
       renderHand();
       return;
     }
-    
+
     if (card.effect === "instant" && card.requiresTarget === "enemy_unit") {
       // Assimilation - target an enemy unit with 2 or less HP
       if (!occId || !S.units[occId] || S.units[occId].owner === myRole) {
@@ -2182,11 +2422,12 @@ function onCellClick(viewRow, col) {
       deployCardId = null;
       selectedCardId = null;
       clearHighlights();
+      playDeploySound(card);
       sendAction({ type: "playCard", cardId: cardIdToPlay, targetUnitId: occId });
       renderHand();
       return;
     }
-    
+
     if (card.effect === "instant" && card.requiresTarget === "any_unit") {
       // Blood Transfusion - target any unit
       if (!occId || !S.units[occId]) {
@@ -2200,22 +2441,24 @@ function onCellClick(viewRow, col) {
       deployCardId = null;
       selectedCardId = null;
       clearHighlights();
+      playDeploySound(card);
       sendAction({ type: "playCard", cardId: cardIdToPlay, targetUnitId: occId });
       renderHand();
       return;
     }
-    
+
     if (card.effect === "instant" && card.requiresTarget === "row") {
       // Castle Walls / Void Collapse - target a row
       const cardIdToPlay = deployCardId;
       deployCardId = null;
       selectedCardId = null;
       clearHighlights();
+      playDeploySound(card);
       sendAction({ type: "playCard", cardId: cardIdToPlay, row });
       renderHand();
       return;
     }
-    
+
     if (card.effect === "instant" && card.requiresTarget === "tile") {
       // Lunar Barrage - target a tile (can have enemy unit on it)
       // Check that it's not a home row
@@ -2227,6 +2470,7 @@ function onCellClick(viewRow, col) {
       deployCardId = null;
       selectedCardId = null;
       clearHighlights();
+      playDeploySound(card);
       sendAction({ type: "playCard", cardId: cardIdToPlay, row, col });
       renderHand();
       return;
@@ -2250,6 +2494,8 @@ function onCellClick(viewRow, col) {
       });
       renderHand();
     } else {
+      // No animation - play sound immediately
+      if (card) playDeploySound(card);
       sendAction({ type: "playCard", cardId: cardIdToPlay, row, col });
       renderHand();
       renderAll();
@@ -2325,6 +2571,8 @@ function onCellClick(viewRow, col) {
           renderAll();
           return;
         }
+        // Play attack sound when initiating attack
+        playAttackSound(a);
         return sendAction({ type: "attackUnit", attackerId: selectedUnitId, targetId: occId });
       }
     }
@@ -3062,6 +3310,8 @@ function animateCardPlay(card, targetEl, callback) {
     // After animation completes
     setTimeout(() => {
       animCard.classList.add("arrived");
+      // Play deploy sound when card arrives
+      playDeploySound(card);
       setTimeout(() => {
         animCard.remove();
         if (callback) callback();
