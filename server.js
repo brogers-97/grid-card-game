@@ -1200,7 +1200,7 @@ function getEffectiveAtk(state, uid, targetId) {
   return atk;
 }
 
-function applyDamageReduction(state, tid, dmg, attackerId) {
+function applyDamageReduction(state, tid, dmg, attackerId, lobby = null) {
   const t = state.units[tid]; if (!t) return dmg; const pos = getUnitPos(state, tid); if (!pos) return dmg;
   const attacker = attackerId ? state.units[attackerId] : null;
   
@@ -1237,7 +1237,20 @@ function applyDamageReduction(state, tid, dmg, attackerId) {
         // Stone Giant takes the damage instead
         const stoneGiant = state.units[aid];
         stoneGiant.hp -= dmg;
-        // Don't remove here - let the caller handle death
+        
+        // Check if Stone Giant died from taking this damage
+        if (stoneGiant.hp <= 0) {
+          stoneGiant.hp = 0; // Ensure HP doesn't go negative
+          // Remove Stone Giant from board
+          state.board[nr][nc] = null;
+          // Send to discard
+          if (lobby) {
+            discardUnitCard(lobby, stoneGiant);
+          }
+          delete state.units[aid];
+          logToLobby(lobby, `💀 ${stoneGiant.name} died protecting an ally!`);
+        }
+        
         return 0; // Target takes no damage
       }
     }
@@ -1359,6 +1372,23 @@ function getEffectiveMaxHp(state, uid) {
 }
 
 function logToLobby(lobby, msg) { lobby.log = lobby.log || []; lobby.log.push(msg); if (lobby.hostSocket) lobby.hostSocket.emit("log", msg); if (lobby.guestSocket) lobby.guestSocket.emit("log", msg); }
+
+// Emit sound effect to both players
+// Get archetype for a card key by searching all decks
+function getCardArchetype(cardKey) {
+  for (const [deckId, deck] of Object.entries(DECKS)) {
+    if (deck.cards && deck.cards.some(c => c.key === cardKey)) {
+      return deck.archetype || deckId;
+    }
+  }
+  return null;
+}
+
+function emitSFX(lobby, cardKey, action) {
+  const archetype = getCardArchetype(cardKey);
+  if (lobby.hostSocket) lobby.hostSocket.emit("sfx", { cardKey, action, archetype });
+  if (lobby.guestSocket) lobby.guestSocket.emit("sfx", { cardKey, action, archetype });
+}
 
 // Combat log for detailed damage calculations
 function combatLogToLobby(lobby, msg, type = "combat-step") { 
@@ -2781,7 +2811,8 @@ function emitGameState(lobby) {
     units: unitsWithBuffs, 
     activeSide: state.activeSide, 
     turnNumber: state.turnNumber, 
-    gameOver: state.gameOver, 
+    gameOver: state.gameOver,
+    winner: state.winner || null,
     spawn: state.spawn, 
     movedThisTurn: [...state.movedThisTurn], 
     attackedThisTurn: [...state.attackedThisTurn], 
@@ -3238,6 +3269,7 @@ async function executeAction(lobby, role, action) {
         state.units[id] = unitData;
         state.spawn[role] = id;
         logToLobby(lobby, role.toUpperCase() + " deployed " + card.name + " to spawn");
+        emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       } else if (action.row !== undefined && action.col !== undefined) {
         if (state.board[action.row][action.col]) return;
         p.energy -= card.cost;
@@ -3284,6 +3316,7 @@ async function executeAction(lobby, role, action) {
         }
         
         logToLobby(lobby, role.toUpperCase() + " played " + card.name);
+        emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       }
       break;
     }
@@ -3426,7 +3459,7 @@ async function executeAction(lobby, role, action) {
       }
       
       const dmgBeforeReduction = dmg;
-      dmg = applyDamageReduction(state, action.targetId, dmg, action.attackerId);
+      dmg = applyDamageReduction(state, action.targetId, dmg, action.attackerId, lobby);
       if (dmg !== dmgBeforeReduction) {
         combatLogToLobby(lobby, `Damage reduced: ${dmgBeforeReduction} → ${dmg} (Shield Bearer/armor)`, "combat-step");
       }
@@ -3437,6 +3470,9 @@ async function executeAction(lobby, role, action) {
       combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
+      
+      // Play attack sound for attacker
+      emitSFX(lobby, a.key, 'attack');
       
       state.attackedThisTurn.add(action.attackerId);
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name);
@@ -3479,6 +3515,9 @@ async function executeAction(lobby, role, action) {
       const beforeRowHP = state.rowHP[action.row];
       state.rowHP[action.row] = Math.max(0, state.rowHP[action.row] - dmg);
       state.attackedThisTurn.add(action.attackerId);
+      
+      // Play attack sound
+      emitSFX(lobby, a.key, 'attack');
       
       combatLogToLobby(lobby, `Row ${rowLetter}: ${beforeRowHP} HP - ${dmg} damage = ${state.rowHP[action.row]} HP`, "combat-result");
       logToLobby(lobby, a.name + " attacks row for " + dmg);
@@ -3529,7 +3568,7 @@ async function executeAction(lobby, role, action) {
       }
       
       const dmgBeforeReduction = dmg;
-      dmg = applyDamageReduction(state, action.targetId, dmg, attackerId);
+      dmg = applyDamageReduction(state, action.targetId, dmg, attackerId, lobby);
       if (dmg !== dmgBeforeReduction) {
         combatLogToLobby(lobby, `Damage reduced: ${dmgBeforeReduction} → ${dmg} (Shield Bearer/armor)`, "combat-step");
       }
@@ -3541,6 +3580,9 @@ async function executeAction(lobby, role, action) {
       combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
+      
+      // Play attack sound for attacker
+      emitSFX(lobby, a.key, 'attack');
       
       logToLobby(lobby, a.name + " (from spawn) deals " + dmg + " to " + t.name);
       
@@ -3594,6 +3636,9 @@ async function executeAction(lobby, role, action) {
       const beforeHP = state.heartHP[target];
       state.attackedThisTurn.add(action.attackerId);
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
+      
+      // Play attack sound
+      emitSFX(lobby, a.key, 'attack');
       
       combatLogToLobby(lobby, `${target.toUpperCase()} Heart: ${beforeHP} HP - ${dmg} damage = ${state.heartHP[target]} HP`, "combat-result");
       logToLobby(lobby, a.name + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
@@ -4314,6 +4359,7 @@ io.on("connection", (socket) => {
         p.energy -= cost; p.hand.splice(idx, 1); p.discard.push(card);
         processInstantSpell(lobby, role, card.effectId, row, targetUnitId, col);
         logToLobby(lobby, role.toUpperCase() + " cast " + card.name);
+        emitSFX(lobby, card.key, 'deploy'); // Play spell sound
         return emitGameState(lobby);
       }
 
@@ -4338,6 +4384,7 @@ io.on("connection", (socket) => {
         state.units[id] = unitData;
         state.spawn[spawn] = id;
         logToLobby(lobby, role.toUpperCase() + " deployed " + card.name + " to spawn");
+        emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
         return emitGameState(lobby);
       }
 
@@ -4431,6 +4478,7 @@ io.on("connection", (socket) => {
       }
       
       logToLobby(lobby, role.toUpperCase() + " played " + card.name);
+      emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       return emitGameState(lobby);
     }
 
@@ -4759,7 +4807,7 @@ io.on("connection", (socket) => {
       }
       
       const dmgBeforeReduction = dmg;
-      dmg = applyDamageReduction(state, targetId, dmg, attackerId);
+      dmg = applyDamageReduction(state, targetId, dmg, attackerId, lobby);
       if (dmg !== dmgBeforeReduction) {
         combatLogToLobby(lobby, `Damage reduced: ${dmgBeforeReduction} → ${dmg} (Shield Bearer/armor)`, "combat-step");
       }
@@ -4828,6 +4876,9 @@ io.on("connection", (socket) => {
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
       if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
       
+      // Play attack sound for attacker
+      emitSFX(lobby, a.key, 'attack');
+      
       // Adaptive Colossus - gains +1 max HP when surviving damage (for the target if it has this ability)
       if (t.effectId === "adapt_hp" && t.hp > 0 && dmg > 0) {
         t.maxHp = (t.maxHp || t.hp) + 1;
@@ -4892,7 +4943,7 @@ io.on("connection", (socket) => {
       // Blood Familiar blood_bite - attacks twice, second attack deals 1 damage
       if (a.effectId === "blood_bite" && t.hp > 0) {
         // Deal second attack for 1 damage
-        const secondDmg = applyDamageReduction(state, targetId, 1, attackerId);
+        const secondDmg = applyDamageReduction(state, targetId, 1, attackerId, lobby);
         t.hp -= secondDmg;
         logToLobby(lobby, a.name + " bites again for " + secondDmg + "!");
         combatLogToLobby(lobby, `Second bite: ${t.name} takes ${secondDmg} damage, now ${t.hp} HP`, "combat-step");
@@ -4917,7 +4968,7 @@ io.on("connection", (socket) => {
             if (splashId && state.units[splashId] && state.units[splashId].owner !== role) {
               const splashTarget = state.units[splashId];
               if (splashTarget.untargetable) continue;
-              const reducedSplash = applyDamageReduction(state, splashId, splashDmg, attackerId);
+              const reducedSplash = applyDamageReduction(state, splashId, splashDmg, attackerId, lobby);
               splashTarget.hp -= reducedSplash;
               logToLobby(lobby, a.name + " cleaves " + splashTarget.name + " for " + reducedSplash);
               if (splashTarget.hp <= 0 && shouldUnitDie(lobby, splashTarget)) {
@@ -5037,6 +5088,7 @@ io.on("connection", (socket) => {
       // Ghostly Stampede deals +2 to structures
       if (a.effectId === "stampede") dmg += 2;
       state.attackedThisTurn.add(attackerId); state.rowHP[row] = Math.max(0, state.rowHP[row] - dmg);
+      emitSFX(lobby, a.key, 'attack'); // Play attack sound
       logToLobby(lobby, a.name + " hits row for " + dmg + " (HP: " + state.rowHP[row] + ")");
       return emitGameState(lobby);
     }
@@ -5065,6 +5117,7 @@ io.on("connection", (socket) => {
       if (u.effectId === "stampede") dmg += 2;
       state.attackedThisTurn.add(attackerId);
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
+      emitSFX(lobby, u.key, 'attack'); // Play attack sound
       logToLobby(lobby, role.toUpperCase() + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
       if (state.heartHP[target] <= 0) { 
         state.gameOver = true; 
@@ -5092,8 +5145,9 @@ io.on("connection", (socket) => {
       // Spawn can attack units in adjacent row (row 0 for gold, row 6 for silver)
       const adjRow = role === "gold" ? 0 : 6;
       if (tp.r !== adjRow) return socket.emit("log", "Can only attack units in adjacent row.");
-      let dmg = getEffectiveAtk(state, attackerId, targetId); dmg = applyDamageReduction(state, targetId, dmg, attackerId);
+      let dmg = getEffectiveAtk(state, attackerId, targetId); dmg = applyDamageReduction(state, targetId, dmg, attackerId, lobby);
       const before = t.hp; t.hp -= dmg; state.attackedThisTurn.add(attackerId);
+      emitSFX(lobby, a.key, 'attack'); // Play attack sound
       logToLobby(lobby, a.name + " (from spawn) deals " + dmg + " to " + t.name);
       if (t.hp <= 0 && shouldUnitDie(lobby, t)) {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });

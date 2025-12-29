@@ -3867,91 +3867,6 @@
       100% { transform: scale(1); }
     }
 
-    /* ===== AUDIO CONTROLS ===== */
-    #audioControls {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      z-index: 1000;
-      display: flex;
-      gap: 8px;
-    }
-
-    #muteBtn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: linear-gradient(145deg, rgba(30, 30, 60, 0.95), rgba(20, 20, 40, 0.95));
-      border: 2px solid rgba(139, 92, 246, 0.5);
-      color: #a78bfa;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    }
-
-    #muteBtn:hover {
-      border-color: rgba(139, 92, 246, 0.8);
-      transform: scale(1.05);
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-    }
-
-    #muteBtn.muted {
-      color: #64748b;
-      border-color: rgba(100, 116, 139, 0.5);
-    }
-
-    #volumeSlider {
-      width: 80px;
-      height: 44px;
-      -webkit-appearance: none;
-      appearance: none;
-      background: transparent;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.3s, width 0.3s;
-      position: absolute;
-      left: 50px;
-    }
-
-    #audioControls:hover #volumeSlider {
-      opacity: 1;
-      width: 80px;
-    }
-
-    #volumeSlider::-webkit-slider-runnable-track {
-      height: 6px;
-      background: rgba(139, 92, 246, 0.3);
-      border-radius: 3px;
-    }
-
-    #volumeSlider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      background: #a78bfa;
-      border-radius: 50%;
-      margin-top: -5px;
-      box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
-    }
-
-    #volumeSlider::-moz-range-track {
-      height: 6px;
-      background: rgba(139, 92, 246, 0.3);
-      border-radius: 3px;
-    }
-
-    #volumeSlider::-moz-range-thumb {
-      width: 16px;
-      height: 16px;
-      background: #a78bfa;
-      border-radius: 50%;
-      border: none;
-    }
-
     /* ===== DISCARD MODAL ===== */
     #discardModal {
       position: fixed;
@@ -4159,11 +4074,7 @@
   <!-- Buff tile tooltip -->
   <div id="buffTooltip" class="buff-tooltip"></div>
 
-  <!-- Audio controls -->
-  <div id="audioControls">
-    <button id="muteBtn" title="Toggle Music">🔊</button>
-    <input type="range" id="volumeSlider" min="0" max="100" value="30" title="Volume">
-  </div>
+  <!-- Audio element (controls moved to menu) -->
   <audio id="bgMusic" loop></audio>
 
   <!-- Discard modal -->
@@ -4181,6 +4092,28 @@
   <div id="gameMenu" class="hidden">
     <div class="menuContent">
       <h2>⚔️ Game Menu</h2>
+      
+      <!-- Audio Controls Section -->
+      <div class="menuSection">
+        <h3>🔊 Audio Settings</h3>
+        <div class="audioControl">
+          <label>
+            <span class="audioLabel">Music</span>
+            <button id="musicMuteBtn" class="audioToggle" title="Toggle Music">🔊</button>
+          </label>
+          <input type="range" id="musicSlider" min="0" max="100" value="30" title="Music Volume">
+        </div>
+        <div class="audioControl">
+          <label>
+            <span class="audioLabel">SFX</span>
+            <button id="sfxMuteBtn" class="audioToggle" title="Toggle SFX">🔊</button>
+          </label>
+          <input type="range" id="sfxSlider" min="0" max="100" value="50" title="SFX Volume">
+        </div>
+      </div>
+      
+      <div class="menuDivider"></div>
+      
       <button id="resumeBtn" class="menuBtn">Resume Game</button>
       <button id="restartBtn" class="menuBtn" style="display:none;">Restart Game</button>
       <button id="leaveBtn" class="menuBtn danger">Leave Game</button>
@@ -4262,6 +4195,91 @@
       color: #64748b;
       font-size: 11px;
       margin-top: 8px;
+    }
+    
+    /* Audio Controls in Menu */
+    .menuSection {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .menuSection h3 {
+      color: #a78bfa;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .audioControl {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+    }
+    .audioControl label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 80px;
+    }
+    .audioLabel {
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .audioToggle {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(138, 43, 226, 0.3);
+      color: #a78bfa;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .audioToggle:hover {
+      background: rgba(138, 43, 226, 0.5);
+    }
+    .audioToggle.muted {
+      background: rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .audioControl input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      appearance: none;
+      cursor: pointer;
+    }
+    .audioControl input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #a78bfa;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .audioControl input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      background: #c4b5fd;
+    }
+    .audioControl input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #a78bfa;
+      border: none;
+      cursor: pointer;
+    }
+    .menuDivider {
+      height: 1px;
+      background: rgba(138, 43, 226, 0.3);
+      margin: 20px 0;
     }
   </style>
 

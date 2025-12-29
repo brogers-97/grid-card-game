@@ -32,10 +32,13 @@ const gameMenu = document.getElementById("gameMenu");
 
 // Audio elements
 const bgMusic = document.getElementById("bgMusic");
-const muteBtn = document.getElementById("muteBtn");
-const volumeSlider = document.getElementById("volumeSlider");
+const musicMuteBtn = document.getElementById("musicMuteBtn");
+const musicSlider = document.getElementById("musicSlider");
+const sfxMuteBtn = document.getElementById("sfxMuteBtn");
+const sfxSlider = document.getElementById("sfxSlider");
 
-let isMuted = false;
+let isMusicMuted = false;
+let isSfxMuted = false;
 let myDeckId = null;
 let enemyDeckId = null;
 
@@ -48,7 +51,7 @@ function setupAudio(deckId) {
   // Only change source if different
   if (bgMusic.src !== window.location.origin + audioSrc) {
     bgMusic.src = audioSrc;
-    bgMusic.volume = (volumeSlider?.value || 30) / 100;
+    bgMusic.volume = (musicSlider?.value || 30) / 100;
     
     // Try to play (may be blocked by browser autoplay policy)
     bgMusic.play().catch(e => {
@@ -60,31 +63,199 @@ function setupAudio(deckId) {
 }
 
 function startMusicOnInteraction() {
-  if (bgMusic && myDeckId && !isMuted) {
+  if (bgMusic && myDeckId && !isMusicMuted) {
     bgMusic.play().catch(e => console.log("Could not play audio"));
   }
 }
 
-// Mute button handler
-if (muteBtn) {
-  muteBtn.addEventListener('click', () => {
-    isMuted = !isMuted;
+// Music mute button handler
+if (musicMuteBtn) {
+  musicMuteBtn.addEventListener('click', () => {
+    isMusicMuted = !isMusicMuted;
     if (bgMusic) {
-      bgMusic.muted = isMuted;
+      bgMusic.muted = isMusicMuted;
     }
-    muteBtn.textContent = isMuted ? '🔇' : '🔊';
-    muteBtn.classList.toggle('muted', isMuted);
+    musicMuteBtn.textContent = isMusicMuted ? '🔇' : '🔊';
+    musicMuteBtn.classList.toggle('muted', isMusicMuted);
   });
 }
 
-// Volume slider handler
-if (volumeSlider) {
-  volumeSlider.addEventListener('input', (e) => {
+// Music volume slider handler
+if (musicSlider) {
+  musicSlider.addEventListener('input', (e) => {
     if (bgMusic) {
       bgMusic.volume = e.target.value / 100;
     }
   });
 }
+
+// SFX mute button handler
+if (sfxMuteBtn) {
+  sfxMuteBtn.addEventListener('click', () => {
+    isSfxMuted = !isSfxMuted;
+    sfxMuteBtn.textContent = isSfxMuted ? '🔇' : '🔊';
+    sfxMuteBtn.classList.toggle('muted', isSfxMuted);
+  });
+}
+
+// SFX volume slider handler - value used in playSFX function
+if (sfxSlider) {
+  sfxSlider.addEventListener('input', (e) => {
+    // Volume is read directly from slider in playSFX
+  });
+}
+
+// ==================== SFX SOUND SYSTEM ====================
+const SFX_VOLUME = 0.5; // SFX volume (0-1)
+
+// Sound file mapping - all mp3 format
+const SOUND_FILES = {
+  // Universal sounds
+  move: '/audio/sfx/move.mp3',
+  draw: '/audio/sfx/draw.mp3',
+  
+  // Deck attack sounds
+  sword: '/audio/sfx/sword.mp3',      // Medieval
+  gunshot: '/audio/sfx/gunshot.mp3',  // Western Skeleton
+  slash: '/audio/sfx/slash.mp3',      // Crimson Vampire
+  twinkle: '/audio/sfx/twinkle.mp3',  // Gem Fairies
+  laser: '/audio/sfx/laser.mp3',      // Aliens
+};
+
+// Universal sounds for all cards
+const UNIVERSAL_SOUNDS = {
+  deploy: 'move',  // All card deployments use move.mp3
+  draw: 'draw'     // All draws use draw.mp3
+};
+
+// Deck-based attack sounds - all units in a deck use the same attack sound
+const DECK_ATTACK_SOUNDS = {
+  medieval: 'sword',
+  skeleton: 'gunshot',
+  vampire: 'slash',
+  fairy: 'twinkle',
+  alien: 'laser',
+};
+
+// Audio cache for preloaded sounds
+const audioCache = {};
+
+// Sounds that should have fade in/out
+const FADE_SOUNDS = ['warcry', 'trumpet'];
+const FADE_DURATION = 150; // ms for fade in/out
+
+// Start time offsets for sounds with silence at the beginning (in seconds)
+const SOUND_START_OFFSETS = {
+  magic: 0.15,  // Skip first 150ms of silence
+  // Add more sounds here if needed: soundName: offsetInSeconds
+};
+
+// Preload all SFX sounds
+function preloadSFX() {
+  Object.entries(SOUND_FILES).forEach(([name, path]) => {
+    const audio = new Audio(path);
+    audio.preload = 'auto';
+    audio.volume = SFX_VOLUME;
+    audioCache[name] = audio;
+  });
+}
+
+// Play a sound effect with optional fade
+function playSFX(soundName) {
+  console.log("[SFX] playSFX called:", soundName, "isSfxMuted:", isSfxMuted);
+  if (isSfxMuted) return;
+  
+  const cachedAudio = audioCache[soundName];
+  console.log("[SFX] cachedAudio:", cachedAudio ? "found" : "NOT FOUND");
+  if (cachedAudio) {
+    // Clone the audio to allow overlapping sounds
+    const sound = cachedAudio.cloneNode();
+    const targetVolume = (sfxSlider?.value || 50) / 100;
+    const shouldFade = FADE_SOUNDS.includes(soundName);
+    const startOffset = SOUND_START_OFFSETS[soundName] || 0;
+    
+    // Apply start offset to skip silence at beginning
+    if (startOffset > 0) {
+      sound.currentTime = startOffset;
+    }
+    
+    if (shouldFade) {
+      // Start at 0 volume and fade in
+      sound.volume = 0;
+      sound.play().catch(e => console.log("SFX blocked:", e));
+      
+      // Fade in
+      const fadeInInterval = setInterval(() => {
+        if (sound.volume < targetVolume - 0.05) {
+          sound.volume = Math.min(sound.volume + 0.1, targetVolume);
+        } else {
+          sound.volume = targetVolume;
+          clearInterval(fadeInInterval);
+        }
+      }, FADE_DURATION / 10);
+      
+      // Set up fade out near the end
+      sound.addEventListener('timeupdate', function fadeOutHandler() {
+        if (sound.duration - sound.currentTime < FADE_DURATION / 1000) {
+          const fadeOutInterval = setInterval(() => {
+            if (sound.volume > 0.05) {
+              sound.volume = Math.max(sound.volume - 0.1, 0);
+            } else {
+              sound.volume = 0;
+              clearInterval(fadeOutInterval);
+            }
+          }, FADE_DURATION / 10);
+          sound.removeEventListener('timeupdate', fadeOutHandler);
+        }
+      });
+    } else {
+      // Play normally without fade
+      sound.volume = targetVolume;
+      console.log("[SFX] Playing sound at volume:", sound.volume);
+      sound.play().catch(e => console.log("SFX blocked:", e));
+    }
+  }
+}
+
+// Play sound for a card action
+function playCardSound(cardKey, action, archetype) {
+  console.log("[SFX] playCardSound:", cardKey, action, "archetype:", archetype);
+  
+  // Deploy - universal sound for all cards
+  if (action === 'deploy') {
+    console.log("[SFX] Playing deploy sound");
+    playSFX(UNIVERSAL_SOUNDS.deploy);
+    return;
+  }
+  
+  // Attack - archetype-based sounds
+  if (action === 'attack' && archetype) {
+    const deckSound = DECK_ATTACK_SOUNDS[archetype];
+    if (deckSound) {
+      console.log("[SFX] Playing archetype attack sound:", deckSound, "for archetype:", archetype);
+      playSFX(deckSound);
+      return;
+    }
+  }
+  
+  console.log("[SFX] No sound found for:", cardKey, action, archetype);
+}
+
+// Initialize SFX on page load
+preloadSFX();
+console.log("[SFX] Preloaded sounds:", Object.keys(audioCache));
+
+// Listen for sound events from server
+socket.on("sfx", (data) => {
+  console.log("[SFX] Received sfx event:", data);
+  if (data.sound) {
+    playSFX(data.sound);
+  } else if (data.cardKey && data.action) {
+    playCardSound(data.cardKey, data.action, data.archetype);
+  }
+});
+
+// ==================== END SFX SOUND SYSTEM ====================
 
 // Set background images based on deck selections
 function setBackgroundImages(playerDeckId, enemyDeckId) {
@@ -2094,6 +2265,7 @@ if (drawBtn) {
   drawBtn.onclick = () => {
     if (!isMyTurn()) return log("Not your turn.", "system");
     if (!canDraw) return log("Already drew this turn.", "system");
+    playSFX('draw'); // Play draw sound immediately
     sendAction({ type: "drawCard" });
   };
 }
@@ -2866,6 +3038,7 @@ function applyDamageAnimation(cell, serverRow, col) {
 
 // Animate unit movement on board
 function animateUnitMove(unitId, fromRow, fromCol, toRow, toCol) {
+  console.log("[SFX] animateUnitMove called");
   const fromViewRow = toViewRow(fromRow);
   const toViewRowVal = toViewRow(toRow);
   
@@ -2876,6 +3049,9 @@ function animateUnitMove(unitId, fromRow, fromCol, toRow, toCol) {
   
   const unit = S.units[unitId];
   if (!unit) return;
+  
+  // Play move sound
+  playSFX('move');
   
   const fromRect = fromCell.getBoundingClientRect();
   const toRect = toCell.getBoundingClientRect();
@@ -3163,6 +3339,11 @@ socket.on("state", (st) => {
   }
 
   renderAll();
+  
+  // Show game over screen if game ended
+  if (S.gameOver && st.winner) {
+    showGameOverScreen(st.winner);
+  }
 });
 
 function animateHeartDamage() {
@@ -3187,11 +3368,15 @@ function animateHeartDamage() {
 
 // Animate player drawing a card from deck to hand
 function animatePlayerDraw(cardCount = 1) {
+  console.log("[SFX] animatePlayerDraw called, cardCount:", cardCount);
   const deckEl = document.getElementById("deckTile");
   const handEl = document.getElementById("handSection");
   const animationLayer = document.getElementById("cardAnimationLayer");
   
   if (!deckEl || !handEl || !animationLayer) return;
+  
+  // Play draw sound
+  playSFX('draw');
   
   const deckRect = deckEl.getBoundingClientRect();
   const handRect = handEl.getBoundingClientRect();
@@ -3223,11 +3408,15 @@ function animatePlayerDraw(cardCount = 1) {
 
 // Animate opponent drawing a card from deck to hand
 function animateOpponentDraw(cardCount = 1) {
+  console.log("[SFX] animateOpponentDraw called, cardCount:", cardCount);
   const deckEl = document.getElementById("opponentDeckTile");
   const handEl = document.getElementById("opponentHandSection");
   const animationLayer = document.getElementById("cardAnimationLayer");
   
   if (!deckEl || !handEl || !animationLayer) return;
+  
+  // Play draw sound
+  playSFX('draw');
   
   const deckRect = deckEl.getBoundingClientRect();
   const handRect = handEl.getBoundingClientRect();
@@ -3310,8 +3499,140 @@ socket.on("enemyInfo", (data) => {
   }
 });
 
+// Show game over screen (Victory or Defeat)
+function showGameOverScreen(winner) {
+  // Don't show if already shown or if campaign victory will show
+  if (document.querySelector('.game-over-overlay')) return;
+  
+  const isVictory = (myRole === winner);
+  
+  const overlay = document.createElement('div');
+  overlay.className = 'game-over-overlay';
+  
+  const title = isVictory ? 'VICTORY!' : 'DEFEAT';
+  const subtitle = isVictory ? 'You have conquered your enemy!' : 'Your heart has been destroyed...';
+  const titleClass = isVictory ? 'victory-title' : 'defeat-title';
+  
+  overlay.innerHTML = `
+    <div class="game-over-content">
+      <h1 class="game-over-title ${titleClass}">${title}</h1>
+      <p class="game-over-subtitle">${subtitle}</p>
+      <div class="game-over-buttons">
+        <button class="game-over-btn primary" onclick="window.location.href='/home.html'">Return to Menu</button>
+        <button class="game-over-btn secondary" onclick="window.location.reload()">Play Again</button>
+      </div>
+    </div>
+  `;
+  
+  // Add styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .game-over-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .game-over-content {
+      text-align: center;
+      animation: slideUp 0.6s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .game-over-title {
+      font-size: 5rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 40px currentColor, 0 0 80px currentColor;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    .victory-title {
+      color: #fbbf24;
+      text-shadow: 0 0 40px rgba(251, 191, 36, 0.8), 0 0 80px rgba(251, 191, 36, 0.5);
+    }
+    
+    .defeat-title {
+      color: #ef4444;
+      text-shadow: 0 0 40px rgba(239, 68, 68, 0.8), 0 0 80px rgba(239, 68, 68, 0.5);
+    }
+    
+    .game-over-subtitle {
+      font-size: 1.5rem;
+      color: #94a3b8;
+      margin-bottom: 3rem;
+    }
+    
+    .game-over-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+    
+    .game-over-btn {
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .game-over-btn.primary {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #1e293b;
+    }
+    
+    .game-over-btn.primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4);
+    }
+    
+    .game-over-btn.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .game-over-btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-3px);
+    }
+  `;
+  
+  document.head.appendChild(style);
+  document.body.appendChild(overlay);
+}
+
 // Campaign victory - show rewards popup
 socket.on("campaignVictory", (data) => {
+  // Remove basic game over screen if shown (campaign victory replaces it)
+  const basicOverlay = document.querySelector('.game-over-overlay');
+  if (basicOverlay) basicOverlay.remove();
+  
   // Update local storage with new user data
   if (data.user) {
     localStorage.setItem('gridCardUser', JSON.stringify(data.user));
