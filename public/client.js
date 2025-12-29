@@ -108,7 +108,7 @@ if (sfxSlider) {
 // ==================== SFX SOUND SYSTEM ====================
 const SFX_VOLUME = 0.5; // SFX volume (0-1)
 
-// Sound file mapping - all mp3 format
+// Sound file mapping - all mp3 format unless noted
 const SOUND_FILES = {
   // Universal sounds
   move: '/audio/sfx/move.mp3',
@@ -120,6 +120,11 @@ const SOUND_FILES = {
   slash: '/audio/sfx/slash.mp3',      // Crimson Vampire
   twinkle: '/audio/sfx/twinkle.mp3',  // Gem Fairies
   laser: '/audio/sfx/laser.mp3',      // Aliens
+  
+  // Boss event sounds (wav for seamless looping)
+  siren: '/audio/sfx/siren.wav',      // Void collapse countdown (loopable)
+  hum: '/audio/sfx/hum.wav',          // Black hole warning (loopable)
+  implosion: '/audio/sfx/implosion.mp3', // Black hole explosion
 };
 
 // Universal sounds for all cards
@@ -215,6 +220,45 @@ function playSFX(soundName) {
       sound.play().catch(e => console.log("SFX blocked:", e));
     }
   }
+}
+
+// Play a looping sound effect (returns the audio element so it can be stopped)
+function playLoopingSFX(soundName) {
+  console.log("[SFX] playLoopingSFX called:", soundName, "isSfxMuted:", isSfxMuted);
+  if (isSfxMuted) return null;
+  
+  const path = SOUND_FILES[soundName];
+  if (path) {
+    // Create fresh audio element for seamless looping
+    const sound = new Audio(path);
+    sound.volume = (sfxSlider?.value || 50) / 100;
+    
+    // Restart immediately when ended
+    sound.addEventListener('ended', function() {
+      sound.currentTime = 0;
+      sound.play().catch(e => console.log("SFX loop blocked:", e));
+    });
+    
+    sound.play().catch(e => console.log("SFX blocked:", e));
+    return sound;
+  }
+  return null;
+}
+
+// Stop a looping sound with fade out
+function stopLoopingSound(sound) {
+  if (!sound) return;
+  
+  // Fade out over 300ms
+  const fadeOutInterval = setInterval(() => {
+    if (sound.volume > 0.05) {
+      sound.volume = Math.max(sound.volume - 0.1, 0);
+    } else {
+      sound.volume = 0;
+      sound.pause();
+      clearInterval(fadeOutInterval);
+    }
+  }, 30);
 }
 
 // Play sound for a card action
@@ -2623,8 +2667,16 @@ socket.on("log", (msg) => log(msg, parseLogType(msg)));
 socket.on("combatLog", (data) => combatLog(data.msg, data.type));
 
 // Handle boss event warnings (visual effects)
+// Track looping sounds so we can stop them
+let warningSirenSound = null;
+let blackHoleHumSound = null;
+
 socket.on("bossEventWarning", (data) => {
   if (data.type === 'void_collapse') {
+    // Play humming sound during warning phase (looping)
+    stopLoopingSound(blackHoleHumSound);
+    blackHoleHumSound = playLoopingSFX('hum');
+    
     // Play warning sound or show notification
     combatLog(`⚠️ VOID COLLAPSE WARNING: ${data.size}x${data.size} zone marked!`, "boss-warning");
     // The visual effect is handled by renderAll via bossEventWarning in state
@@ -2637,6 +2689,11 @@ socket.on("bossEventWarning", (data) => {
 // Handle boss event execution (destruction effects)
 socket.on("bossEventExecute", (data) => {
   if (data.type === 'void_collapse') {
+    // Stop humming, start siren for countdown
+    stopLoopingSound(blackHoleHumSound);
+    blackHoleHumSound = null;
+    warningSirenSound = playLoopingSFX('siren');
+    
     // Show dramatic countdown sequence
     showVoidCollapseSequence(data.tiles, data.destroyed);
   } else if (data.type === 'ghost_train') {
@@ -2684,12 +2741,17 @@ function showVoidCollapseSequence(tiles, destroyedCount) {
   setTimeout(() => {
     overlay.classList.add('fade-out');
     
+    // Stop the siren sound when detonation starts
+    stopLoopingSound(warningSirenSound);
+    warningSirenSound = null;
+    
     setTimeout(() => {
       overlay.remove();
       
       // NOW trigger implosions after overlay is gone
       tiles.forEach((tile, index) => {
         setTimeout(() => {
+          playSFX('implosion'); // Play implosion sound for each tile
           animateVoidCollapse(tile.r, tile.c);
         }, index * 150); // Stagger the implosions
       });
