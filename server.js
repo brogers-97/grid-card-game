@@ -749,6 +749,73 @@ const DECKS = {
       { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
       { key: "bonedeputy", name: "Bone Deputy", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_bone_pile", effectDesc: "ON DEATH: Summon a 1/1 Bone Pile.", art: "/images/Bone Deputy.png", rarity: "common" },
     ]
+  },
+  "crimson-court-challenge": {
+    name: "Crimson Court (Challenge)",
+    description: "CHALLENGE MODE: The Blood Countess's immortal vampire legion",
+    archetype: "vampire",
+    isChallenge: true,
+    cards: [
+      // === LEGENDARY SPAM (The unfair stuff) ===
+      // Vampire Lord x3 (normally 1) - diagonal attack + global lifesteal
+      { key: "vampirelord", name: "Vampire Lord", atk: 5, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "lifesteal_lord", effectDesc: "PASSIVE: Can attack diagonally. All friendly units have Lifesteal.", art: "/images/Vampire Lord.png", rarity: "legendary" },
+      { key: "vampirelord", name: "Vampire Lord", atk: 5, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "lifesteal_lord", effectDesc: "PASSIVE: Can attack diagonally. All friendly units have Lifesteal.", art: "/images/Vampire Lord.png", rarity: "legendary" },
+      { key: "vampirelord", name: "Vampire Lord", atk: 5, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "lifesteal_lord", effectDesc: "PASSIVE: Can attack diagonally. All friendly units have Lifesteal.", art: "/images/Vampire Lord.png", rarity: "legendary" },
+      // Blood Countess x3 (normally 1) - lifesteal + grows on kill
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      // Elder Vampire x3 (normally 1) - immortal resurrection
+      { key: "eldervampire", name: "Elder Vampire", atk: 3, hp: 6, cost: 5, type: "monster", effect: "passive", effectId: "immortal", effectDesc: "PASSIVE: When this would die, instead heal to full HP (once per game).", art: "/images/Elder Vampire.png", rarity: "legendary" },
+      { key: "eldervampire", name: "Elder Vampire", atk: 3, hp: 6, cost: 5, type: "monster", effect: "passive", effectId: "immortal", effectDesc: "PASSIVE: When this would die, instead heal to full HP (once per game).", art: "/images/Elder Vampire.png", rarity: "legendary" },
+      { key: "eldervampire", name: "Elder Vampire", atk: 3, hp: 6, cost: 5, type: "monster", effect: "passive", effectId: "immortal", effectDesc: "PASSIVE: When this would die, instead heal to full HP (once per game).", art: "/images/Elder Vampire.png", rarity: "legendary" },
+      // Sanguine Feast x3 (normally 1) - row damage + heart heal
+      { key: "sanguinefeast", name: "Sanguine Feast", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "sanguine_feast", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row. Heal your Heart for each hit.", art: "/images/Sanguine Feast.png", requiresTarget: "row", rarity: "legendary" },
+      { key: "sanguinefeast", name: "Sanguine Feast", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "sanguine_feast", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row. Heal your Heart for each hit.", art: "/images/Sanguine Feast.png", requiresTarget: "row", rarity: "legendary" },
+      { key: "sanguinefeast", name: "Sanguine Feast", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "sanguine_feast", effectDesc: "INSTANT: Deal 2 damage to all enemies in target row. Heal your Heart for each hit.", art: "/images/Sanguine Feast.png", requiresTarget: "row", rarity: "legendary" },
+      
+      // === IMMORTAL STRUCTURES ===
+      // Coffin x5 - self-resurrect structures
+      { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
+      { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
+      { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
+      { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
+      { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
+      
+      // === LIFESTEAL SYNERGY ===
+      // Nosferatu x4 - lifesteal + weaken aura
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      // Blood Priest x4 - end of turn heals
+      { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
+      { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
+      { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
+      { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
+      
+      // === CARD STEALING ===
+      // Soul Collector x4 - steal killed units
+      { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
+      { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
+      { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
+      { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
+      
+      // === RECURSION SPELLS ===
+      // Crimson Revival x3 - return dead to hand
+      { key: "crimsonrevival", name: "Crimson Revival", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "mass_resurrect", effectDesc: "INSTANT: Return the last 2 units that died to your hand.", art: "/images/Crimson Revival.png", rarity: "rare" },
+      { key: "crimsonrevival", name: "Crimson Revival", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "mass_resurrect", effectDesc: "INSTANT: Return the last 2 units that died to your hand.", art: "/images/Crimson Revival.png", rarity: "rare" },
+      { key: "crimsonrevival", name: "Crimson Revival", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "mass_resurrect", effectDesc: "INSTANT: Return the last 2 units that died to your hand.", art: "/images/Crimson Revival.png", rarity: "rare" },
+      
+      // === FODDER (Lifesteal bodies) ===
+      // Nightstalker x6 - cheap lifesteal units
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+    ]
   }
 };
 
@@ -1371,7 +1438,7 @@ function getEffectiveMaxHp(state, uid) {
   return maxHp;
 }
 
-function logToLobby(lobby, msg) { lobby.log = lobby.log || []; lobby.log.push(msg); if (lobby.hostSocket) lobby.hostSocket.emit("log", msg); if (lobby.guestSocket) lobby.guestSocket.emit("log", msg); }
+function logToLobby(lobby, msg, type = "system") { lobby.log = lobby.log || []; lobby.log.push(msg); if (lobby.hostSocket) lobby.hostSocket.emit("log", { msg, type }); if (lobby.guestSocket) lobby.guestSocket.emit("log", { msg, type }); }
 
 // Emit sound effect to both players
 // Get archetype for a card key by searching all decks
@@ -2452,6 +2519,8 @@ function processBossEventWarning(lobby) {
     processVoidCollapseWarning(lobby, boss, config);
   } else if (boss.eventType === 'ghost_train') {
     processGhostTrainWarning(lobby, boss, config);
+  } else if (boss.eventType === 'blood_chalice') {
+    processBloodChaliceSpawn(lobby, boss, config);
   }
   // Add more event types here for other bosses
 }
@@ -2500,6 +2569,8 @@ function processBossEventCountdown(lobby) {
       logToLobby(lobby, `⚠️ BLACK HOLE EVENT: ${turnsUntilEvent}`);
     } else if (boss.eventType === 'ghost_train') {
       logToLobby(lobby, `⚠️ GHOST TRAIN APPROACHING: ${turnsUntilEvent}`);
+    } else if (boss.eventType === 'blood_chalice') {
+      logToLobby(lobby, `🍷 BLOOD CHALICE RITUAL: ${turnsUntilEvent}`, "boss-benefit");
     }
   }
 }
@@ -2755,6 +2826,140 @@ function processGhostTrainExecution(lobby) {
 
 // ==================== END BOSS EVENT SYSTEM ====================
 
+// ==================== BLOOD CHALICE EVENT ====================
+
+// Blood Chalice - Spawn chalices on random open tiles
+function processBloodChaliceSpawn(lobby, boss, config) {
+  console.log("=== BLOOD CHALICE SPAWN TRIGGERED ===");
+  const { state } = lobby.gameState;
+  
+  // Calculate count based on occurrence
+  const count = Math.min(config.startCount + (state.bossEventOccurrence * config.growthRate), config.maxCount);
+  console.log("Chalice count:", count, "Occurrence:", state.bossEventOccurrence);
+  
+  // Find all open tiles (not occupied by units, not spawn tiles, not already a chalice)
+  const openTiles = [];
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (!state.board[r][c]) {
+        openTiles.push({ r, c });
+      }
+    }
+  }
+  
+  // Initialize chalice tiles if not exists
+  if (!state.chaliceTiles) {
+    state.chaliceTiles = [];
+  }
+  
+  // Remove existing chalices from open tiles list
+  const existingChalices = new Set(state.chaliceTiles.map(t => `${t.r}-${t.c}`));
+  const availableTiles = openTiles.filter(t => !existingChalices.has(`${t.r}-${t.c}`));
+  
+  // Select random tiles ensuring none are adjacent to each other
+  const selectedTiles = [];
+  const shuffled = availableTiles.sort(() => Math.random() - 0.5);
+  
+  for (const tile of shuffled) {
+    if (selectedTiles.length >= count) break;
+    
+    // Check if adjacent to any already selected tile
+    const isAdjacent = selectedTiles.some(selected => {
+      const dr = Math.abs(selected.r - tile.r);
+      const dc = Math.abs(selected.c - tile.c);
+      return dr <= 1 && dc <= 1; // Adjacent includes diagonals
+    });
+    
+    // Also check against existing chalices
+    const isAdjacentToExisting = state.chaliceTiles.some(existing => {
+      const dr = Math.abs(existing.r - tile.r);
+      const dc = Math.abs(existing.c - tile.c);
+      return dr <= 1 && dc <= 1;
+    });
+    
+    if (!isAdjacent && !isAdjacentToExisting) {
+      selectedTiles.push(tile);
+    }
+  }
+  
+  console.log("Selected chalice tiles:", JSON.stringify(selectedTiles));
+  
+  // Add new chalices to state
+  state.chaliceTiles = [...state.chaliceTiles, ...selectedTiles];
+  
+  // Increment occurrence counter
+  state.bossEventOccurrence++;
+  
+  // Log the event
+  logToLobby(lobby, `🍷 BLOOD CHALICE RITUAL! ${selectedTiles.length} chalices have appeared!`, "boss-benefit");
+  combatLogToLobby(lobby, `🍷 ${selectedTiles.length} Blood Chalices have appeared...`, "boss-benefit");
+  
+  // Emit event to client for visual effects
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("bloodChaliceSpawn", {
+      tiles: selectedTiles,
+      allChalices: state.chaliceTiles
+    });
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("bloodChaliceSpawn", {
+      tiles: selectedTiles,
+      allChalices: state.chaliceTiles
+    });
+  }
+}
+
+// Check if a unit consumes a chalice at the given position
+function checkChaliceConsumption(lobby, unitId, row, col) {
+  const { state } = lobby.gameState;
+  if (!state.chaliceTiles || state.chaliceTiles.length === 0) return false;
+  
+  // Check if there's a chalice at this position
+  const chaliceIndex = state.chaliceTiles.findIndex(t => t.r === row && t.c === col);
+  if (chaliceIndex === -1) return false;
+  
+  const unit = state.units[unitId];
+  if (!unit) return false;
+  
+  // Remove the chalice
+  state.chaliceTiles.splice(chaliceIndex, 1);
+  
+  // Heal unit to full and increase max HP by 1
+  const oldMaxHp = unit.maxHp || unit.hp;
+  unit.maxHp = oldMaxHp + 1;
+  unit.hp = unit.maxHp; // Heal to new max
+  
+  // Log the consumption
+  logToLobby(lobby, `🍷 ${unit.name} consumed a Blood Chalice! +1 Max HP, fully healed!`);
+  combatLogToLobby(lobby, `🍷 ${unit.name} (${unit.owner}) drank the chalice: ${oldMaxHp} → ${unit.maxHp} Max HP`, "heal");
+  
+  // Emit consumption event
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("bloodChaliceConsumed", {
+      unitId: unitId,
+      unitName: unit.name,
+      row: row,
+      col: col,
+      newMaxHp: unit.maxHp,
+      remainingChalices: state.chaliceTiles
+    });
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("bloodChaliceConsumed", {
+      unitId: unitId,
+      unitName: unit.name,
+      row: row,
+      col: col,
+      newMaxHp: unit.maxHp,
+      remainingChalices: state.chaliceTiles
+    });
+  }
+  
+  return true;
+}
+
+// ==================== END BLOOD CHALICE EVENT ====================
+
 function emitLobbyState(lobby) {
   const info = { code: lobby.code, hostDeck: lobby.hostDeck, guestDeck: lobby.guestDeck, hostReady: lobby.hostReady, guestReady: lobby.guestReady, guestJoined: !!lobby.guestSocket, gameStarted: lobby.gameStarted };
   if (lobby.hostSocket) lobby.hostSocket.emit("lobbyState", { ...info, isHost: true });
@@ -2819,7 +3024,8 @@ function emitGameState(lobby) {
     firstTurn: state.firstTurn,
     buffTiles: state.buffTiles,
     moveCountThisTurn: state.moveCountThisTurn,
-    bossEventWarning: state.bossEventWarning // For boss event visual warnings
+    bossEventWarning: state.bossEventWarning, // For boss event visual warnings
+    chaliceTiles: state.chaliceTiles || [] // For blood chalice tiles
   };
   if (lobby.hostSocket) lobby.hostSocket.emit("state", { 
     ...base, 
@@ -3286,6 +3492,10 @@ async function executeAction(lobby, role, action) {
         if (card.stolen) unitData.stolen = true;
         state.units[id] = unitData;
         state.board[action.row][action.col] = id;
+        
+        // Check for blood chalice consumption
+        checkChaliceConsumption(lobby, id, action.row, action.col);
+        
         recomputeOwners(state);
         
         // Process on-deploy effects (gem_spawn for Emerald Forager)
@@ -3389,6 +3599,10 @@ async function executeAction(lobby, role, action) {
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "move", unitId: action.unitId, fromRow: from.r, fromCol: from.c, toRow: action.toRow, toCol: action.toCol });
       state.board[from.r][from.c] = null;
       state.board[action.toRow][action.toCol] = action.unitId;
+      
+      // Check for blood chalice consumption
+      checkChaliceConsumption(lobby, action.unitId, action.toRow, action.toCol);
+      
       state.moveCountThisTurn[action.unitId] = moveCount + 1;
       if (state.moveCountThisTurn[action.unitId] >= maxMoves) {
         state.movedThisTurn.add(action.unitId);
@@ -3406,6 +3620,10 @@ async function executeAction(lobby, role, action) {
       state.spawn[role] = null;
       state.board[action.toRow][action.toCol] = action.unitId;
       state.movedThisTurn.add(action.unitId);
+      
+      // Check for blood chalice consumption
+      checkChaliceConsumption(lobby, action.unitId, action.toRow, action.toCol);
+      
       recomputeOwners(state);
       
       // Process on-deploy effects when unit enters board from spawn
@@ -4438,6 +4656,10 @@ io.on("connection", (socket) => {
       }
       state.units[id] = unitData;
       state.board[row][col] = id;
+      
+      // Check for blood chalice consumption
+      checkChaliceConsumption(lobby, id, row, col);
+      
       recomputeOwners(state); // Update row ownership after placing unit
       
       // Process on-deploy effects
@@ -4491,6 +4713,10 @@ io.on("connection", (socket) => {
       const hr = role === "gold" ? [0, 1] : [5, 6]; if (!hr.includes(toRow)) return socket.emit("log", "Home rows only.");
       state.spawn[role] = null; state.board[toRow][toCol] = unitId; state.movedThisTurn.add(unitId);
       state.moveCountThisTurn[unitId] = 1;
+      
+      // Check for blood chalice consumption
+      checkChaliceConsumption(lobby, unitId, toRow, toCol);
+      
       recomputeOwners(state); // Update row ownership
       
       // Process on-deploy effects when unit enters board from spawn
@@ -4632,6 +4858,9 @@ io.on("connection", (socket) => {
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "move", unitId, fromRow: from.r, fromCol: from.c, toRow, toCol });
       if (lobby.guestSocket) lobby.guestSocket.emit("animate", { type: "move", unitId, fromRow: from.r, fromCol: from.c, toRow, toCol });
       state.board[from.r][from.c] = null; state.board[toRow][toCol] = unitId;
+      
+      // Check for blood chalice consumption
+      checkChaliceConsumption(lobby, unitId, toRow, toCol);
       
       // Track move count
       state.moveCountThisTurn[unitId] = moveCount + 1;

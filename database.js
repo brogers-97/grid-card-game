@@ -242,6 +242,7 @@ const CAMPAIGN_BOSSES = [
     name: "The Blood Countess",
     description: "An ancient vampire queen who has fed on countless souls",
     deckId: "crimson-court",
+    challengeDeckId: "crimson-court-challenge",
     difficulty: "hard",
     aiLevel: 3,
     requiresBoss: 2,
@@ -249,6 +250,13 @@ const CAMPAIGN_BOSSES = [
     unlocks: {
       music: 'crimson-court',
       background: 'crimson-court'
+    },
+    eventType: 'blood_chalice',
+    eventConfig: {
+      turnInterval: 3,    // Every 3 boss turns
+      startCount: 3,      // Starts with 3 chalices
+      maxCount: 6,        // Max 6 chalices
+      growthRate: 1       // Grows by 1 each occurrence
     }
   },
   {

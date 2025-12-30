@@ -1429,13 +1429,29 @@ class GameAI {
         if (Math.random() < 0.5) {
           return score;
         }
+        // But still grab chalices sometimes (30% chance to notice)
+        const chaliceTiles = gameState.chaliceTiles || [];
+        if (chaliceTiles.some(t => t.r === action.toRow && t.c === action.toCol)) {
+          if (Math.random() < 0.3) {
+            score += 30; // Sometimes notice chalices
+          }
+        }
       }
       
-      // Medium AI has some buff tile awareness
-      if (this.level === 2 && buffTiles) {
-        const buffKey = `${action.toRow}-${action.toCol}`;
-        if (buffTiles[buffKey]) {
-          score += 15; // Some bonus but not as much as Hard
+      // Medium AI has some buff tile awareness AND chalice awareness
+      if (this.level === 2) {
+        if (buffTiles) {
+          const buffKey = `${action.toRow}-${action.toCol}`;
+          if (buffTiles[buffKey]) {
+            score += 15; // Some bonus but not as much as Hard
+          }
+        }
+        // Medium AI actively seeks chalices (60% of the time)
+        const chaliceTiles = gameState.chaliceTiles || [];
+        if (chaliceTiles.some(t => t.r === action.toRow && t.c === action.toCol)) {
+          if (Math.random() < 0.6) {
+            score += 50; // Good bonus for chalices
+          }
         }
       }
       
@@ -1465,6 +1481,43 @@ class GameAI {
       // Double move units are perfect for grabbing buffs
       if (unit.effectId === 'double_move' || unit.effectId === 'stampede') {
         score += 20;
+      }
+    }
+    
+    // === BLOOD CHALICE PRIORITY - VERY HIGH VALUE ===
+    const chaliceTiles = gameState.chaliceTiles || [];
+    const isMovingToChalice = chaliceTiles.some(t => t.r === action.toRow && t.c === action.toCol);
+    if (isMovingToChalice) {
+      // Chalices are extremely valuable - full heal + max HP increase
+      score += 80; // Higher than buff tiles
+      
+      // Even MORE valuable for damaged units
+      const maxHp = unit.maxHp || unit.hp;
+      const missingHp = maxHp - unit.hp;
+      if (missingHp > 0) {
+        score += missingHp * 15; // Big bonus for healing
+      }
+      
+      // Valuable units benefit more from +1 max HP
+      if (unit.effectId) score += 20;
+      if (unit.atk >= 3) score += 15;
+      if (unit.hp >= 4) score += 10;
+      
+      // Double move units can grab chalices easily
+      if (unit.effectId === 'double_move' || unit.effectId === 'stampede') {
+        score += 25;
+      }
+    }
+    
+    // Bonus for moving TOWARD unclaimed chalices
+    if (chaliceTiles.length > 0) {
+      for (const chalice of chaliceTiles) {
+        // Calculate distance improvement
+        const currentDist = Math.abs(action.fromRow - chalice.r) + Math.abs(action.fromCol - chalice.c);
+        const newDist = Math.abs(action.toRow - chalice.r) + Math.abs(action.toCol - chalice.c);
+        if (newDist < currentDist) {
+          score += (currentDist - newDist) * 8; // Bonus for getting closer to chalice
+        }
       }
     }
     
@@ -2069,6 +2122,15 @@ class GameAI {
       const buffKey = `${action.toRow}-${action.toCol}`;
       if (buffTiles && buffTiles[buffKey]) {
         score += 15;
+      }
+      
+      // Move onto chalice tiles - very high priority!
+      const chaliceTiles = gameState.chaliceTiles || [];
+      const isMovingToChalice = chaliceTiles.some(t => t.r === action.toRow && t.c === action.toCol);
+      if (isMovingToChalice) {
+        score += 50; // High priority to grab chalice when deploying
+        // Even more valuable for units with effects
+        if (unit.effectId) score += 15;
       }
 
       // Position based on unit type

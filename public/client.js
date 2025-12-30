@@ -808,6 +808,46 @@ function hideBuffTooltip() {
   if (buffTooltipEl) buffTooltipEl.classList.remove("visible");
 }
 
+// Chalice tooltip
+let chaliceTooltipEl = null;
+
+function showChaliceTooltip(x, y) {
+  if (!chaliceTooltipEl) {
+    chaliceTooltipEl = document.createElement('div');
+    chaliceTooltipEl.className = 'chalice-tooltip';
+    document.body.appendChild(chaliceTooltipEl);
+  }
+  
+  chaliceTooltipEl.innerHTML = `
+    <div class="chalice-tooltip-image">
+      <img src="/images/blood-chalice.png" alt="Blood Chalice">
+    </div>
+    <div class="chalice-tooltip-text">"To drink, or not to drink..."</div>
+  `;
+  
+  positionChaliceTooltip(x, y);
+  chaliceTooltipEl.classList.add("visible");
+}
+
+function positionChaliceTooltip(x, y) {
+  if (!chaliceTooltipEl) return;
+  const padding = 15;
+  let left = x + padding;
+  let top = y + padding;
+  
+  if (left + 220 > window.innerWidth) left = x - 220 - padding;
+  if (top + 150 > window.innerHeight) top = y - 150 - padding;
+  if (left < 0) left = padding;
+  if (top < 0) top = padding;
+  
+  chaliceTooltipEl.style.left = left + "px";
+  chaliceTooltipEl.style.top = top + "px";
+}
+
+function hideChaliceTooltip() {
+  if (chaliceTooltipEl) chaliceTooltipEl.classList.remove("visible");
+}
+
 function setupCellTooltip(cellEl, unitId) {
   cellEl.addEventListener("mouseenter", (e) => {
     if (unitId && S.units[unitId]) {
@@ -2036,6 +2076,9 @@ function renderSpawnUnit(el, unitId, spawnEl) {
 
 function renderAll() {
   if (!boardEl) return;
+  
+  // Hide chalice tooltip when re-rendering (fixes persistence bug)
+  hideChaliceTooltip();
 
   for (let vr = 0; vr < ROWS; vr++) {
     const sr = toServerRow(vr);
@@ -2085,7 +2128,7 @@ function renderAll() {
 
       applyCls(cellEl);
 
-      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical");
+      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical", "blood-chalice-tile");
       cellEl.removeAttribute("data-buff-icon");
       cellEl.innerHTML = "";
       
@@ -2129,6 +2172,17 @@ function renderAll() {
         cellEl.setAttribute("data-buff-name", buff.name);
         cellEl.setAttribute("data-buff-desc", buff.desc);
       }
+      
+      // Check if this is a blood chalice tile
+      const hasChalice = S.chaliceTiles && S.chaliceTiles.some(t => t.r === sr && t.c === c);
+      if (hasChalice) {
+        console.log("[CHALICE] Rendering chalice at", sr, c);
+        cellEl.classList.add("blood-chalice-tile");
+        // Add glow overlay
+        const glowDiv = document.createElement('div');
+        glowDiv.className = 'chalice-glow';
+        cellEl.appendChild(glowDiv);
+      }
 
       const unitId = S.board[sr][c];
 
@@ -2150,6 +2204,10 @@ function renderAll() {
           cellEl.onmouseenter = (e) => showBuffTooltip(buff, e.clientX, e.clientY);
           cellEl.onmousemove = (e) => positionBuffTooltip(e.clientX, e.clientY);
           cellEl.onmouseleave = hideBuffTooltip;
+        } else if (hasChalice) {
+          cellEl.onmouseenter = (e) => showChaliceTooltip(e.clientX, e.clientY);
+          cellEl.onmousemove = (e) => positionChaliceTooltip(e.clientX, e.clientY);
+          cellEl.onmouseleave = hideChaliceTooltip;
         } else {
           cellEl.onmouseenter = null;
           cellEl.onmousemove = null;
@@ -2663,7 +2721,14 @@ function onCellClick(viewRow, col) {
 
 socket.on("connect", () => log("Connected: " + socket.id, "system"));
 socket.on("disconnect", () => log("Disconnected", "system"));
-socket.on("log", (msg) => log(msg, parseLogType(msg)));
+socket.on("log", (data) => {
+  // Handle both old string format and new object format
+  if (typeof data === 'string') {
+    log(data, parseLogType(data));
+  } else {
+    log(data.msg, data.type || parseLogType(data.msg));
+  }
+});
 socket.on("combatLog", (data) => combatLog(data.msg, data.type));
 
 // Handle boss event warnings (visual effects)
@@ -2701,6 +2766,82 @@ socket.on("bossEventExecute", (data) => {
     showGhostTrainSequence(data.lines, data.tiles, data.destroyed, data.destroyedUnits);
   }
 });
+
+// Handle blood chalice spawn
+socket.on("bloodChaliceSpawn", (data) => {
+  console.log("Blood chalice spawn:", data);
+  combatLog(`🍷 ${data.tiles.length} Blood Chalices appeared!`, "boss-benefit");
+  
+  // Animate chalices falling onto tiles
+  data.tiles.forEach((tile, index) => {
+    setTimeout(() => {
+      animateChaliceSpawn(tile.r, tile.c);
+    }, index * 150);
+  });
+});
+
+// Handle blood chalice consumption
+socket.on("bloodChaliceConsumed", (data) => {
+  console.log("Blood chalice consumed:", data);
+  animateChaliceConsume(data.row, data.col);
+});
+
+// Animate chalice falling onto a tile
+function animateChaliceSpawn(serverRow, col) {
+  const viewRow = toViewRow(serverRow);
+  const cellEl = document.getElementById(cellId(viewRow, col));
+  if (!cellEl) return;
+  
+  const rect = cellEl.getBoundingClientRect();
+  
+  // Create falling chalice (emoji)
+  const chalice = document.createElement('div');
+  chalice.className = 'chalice-spawn-anim';
+  chalice.textContent = '🍷';
+  chalice.style.left = rect.left + rect.width / 2 + 'px';
+  chalice.style.top = rect.top - 100 + 'px';
+  
+  document.body.appendChild(chalice);
+  
+  // Animate fall
+  requestAnimationFrame(() => {
+    chalice.style.top = rect.top + rect.height / 2 + 'px';
+    chalice.style.opacity = '1';
+    chalice.style.transform = 'translateX(-50%) translateY(-50%) scale(1)';
+  });
+  
+  // Remove after animation and re-render
+  setTimeout(() => {
+    chalice.remove();
+    renderAll();
+  }, 600);
+}
+
+// Animate chalice being consumed
+function animateChaliceConsume(serverRow, col) {
+  const viewRow = toViewRow(serverRow);
+  const cellEl = document.getElementById(cellId(viewRow, col));
+  if (!cellEl) return;
+  
+  const rect = cellEl.getBoundingClientRect();
+  
+  // Create consumption effect (emoji rising)
+  const effect = document.createElement('div');
+  effect.className = 'chalice-consume-anim';
+  effect.innerHTML = '🍷<span class="heal-text">+1 MAX HP</span>';
+  effect.style.left = rect.left + rect.width / 2 + 'px';
+  effect.style.top = rect.top + rect.height / 2 + 'px';
+  
+  document.body.appendChild(effect);
+  
+  // Animate upward and fade
+  requestAnimationFrame(() => {
+    effect.style.top = rect.top - 30 + 'px';
+    effect.style.opacity = '0';
+  });
+  
+  setTimeout(() => effect.remove(), 800);
+}
 
 // Dramatic void collapse countdown and destruction sequence
 function showVoidCollapseSequence(tiles, destroyedCount) {
@@ -3349,6 +3490,7 @@ socket.on("state", (st) => {
   S.buffTiles = st.buffTiles || {};
   S.moveCountThisTurn = st.moveCountThisTurn || {};
   S.bossEventWarning = st.bossEventWarning || null;
+  S.chaliceTiles = st.chaliceTiles || [];
   
   // Debug log boss event warning
   if (st.bossEventWarning) {
@@ -4564,3 +4706,163 @@ socket.on("lobbyError", (msg) => {
   alert(msg);
   window.location.href = "/home.html";
 });
+
+// ==================== KEYBOARD HIGHLIGHT FEATURE ====================
+// Q = highlight units that can still move
+// W = highlight units that can still attack
+
+let highlightingMoves = false;
+let highlightingAttacks = false;
+
+// Update the highlight indicator on left side of board
+function updateHighlightIndicator() {
+  const indicator = document.getElementById('highlightIndicator');
+  const moveLabel = document.getElementById('highlightMove');
+  const attackLabel = document.getElementById('highlightAttack');
+  
+  if (!indicator || !moveLabel || !attackLabel) return;
+  
+  if (highlightingMoves || highlightingAttacks) {
+    indicator.classList.add('visible');
+  } else {
+    indicator.classList.remove('visible');
+  }
+  
+  if (highlightingMoves) {
+    moveLabel.classList.add('active');
+  } else {
+    moveLabel.classList.remove('active');
+  }
+  
+  if (highlightingAttacks) {
+    attackLabel.classList.add('active');
+  } else {
+    attackLabel.classList.remove('active');
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.repeat) return; // Ignore key repeat
+  
+  console.log("[HIGHLIGHT] keydown:", e.key);
+  
+  if (e.key.toLowerCase() === 'q' && !highlightingMoves) {
+    console.log("[HIGHLIGHT] Q pressed - highlighting moves");
+    highlightingMoves = true;
+    updateUnitHighlights();
+    updateHighlightIndicator();
+  }
+  if (e.key.toLowerCase() === 'w' && !highlightingAttacks) {
+    console.log("[HIGHLIGHT] W pressed - highlighting attacks");
+    highlightingAttacks = true;
+    updateUnitHighlights();
+    updateHighlightIndicator();
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  console.log("[HIGHLIGHT] keyup:", e.key);
+  
+  if (e.key.toLowerCase() === 'q') {
+    highlightingMoves = false;
+    updateUnitHighlights();
+    updateHighlightIndicator();
+  }
+  if (e.key.toLowerCase() === 'w') {
+    highlightingAttacks = false;
+    updateUnitHighlights();
+    updateHighlightIndicator();
+  }
+});
+
+// Update unit highlights based on current key state
+function updateUnitHighlights() {
+  console.log("[HIGHLIGHT] updateUnitHighlights called, moves:", highlightingMoves, "attacks:", highlightingAttacks);
+  
+  // Remove all existing highlights
+  document.querySelectorAll('.unit').forEach(el => {
+    el.classList.remove('highlight-can-move', 'highlight-can-attack', 'highlight-dimmed');
+  });
+  
+  // Also remove from spawn units
+  document.querySelectorAll('.spawnUnit').forEach(el => {
+    el.classList.remove('highlight-can-move', 'highlight-can-attack', 'highlight-dimmed');
+  });
+  
+  if (!highlightingMoves && !highlightingAttacks) return;
+  
+  console.log("[HIGHLIGHT] myRole:", myRole, "S.board:", S.board);
+  
+  // Find all units on the board
+  for (let vr = 0; vr < ROWS; vr++) {
+    const sr = toServerRow(vr);
+    for (let c = 0; c < COLS; c++) {
+      const unitId = S.board[sr][c];
+      if (!unitId) continue;
+      
+      const unit = S.units[unitId];
+      if (!unit || unit.owner !== myRole) continue; // Only highlight own units
+      
+      console.log("[HIGHLIGHT] Found own unit:", unit.name, "at", sr, c);
+      
+      const cellEl = document.getElementById(cellId(vr, c));
+      if (!cellEl) continue;
+      
+      const unitEl = cellEl.querySelector('.unit');
+      if (!unitEl) continue;
+      
+      const hasMoved = S.movedThisTurn.includes(unitId);
+      const hasAttacked = S.attackedThisTurn.includes(unitId);
+      
+      // Check move count for double-move units
+      const moveCount = S.moveCountThisTurn ? (S.moveCountThisTurn[unitId] || 0) : (hasMoved ? 1 : 0);
+      const maxMoves = unit.effectId === 'double_move' ? 2 : 1;
+      const canStillMove = moveCount < maxMoves;
+      
+      // Check attack count for double-attack units
+      const attackCount = unit.attackCountThisTurn || 0;
+      const maxAttacks = unit.canDoubleAttack ? 2 : 1;
+      const canStillAttack = attackCount < maxAttacks && !hasAttacked;
+      
+      if (highlightingMoves) {
+        if (canStillMove) {
+          unitEl.classList.add('highlight-can-move');
+        } else {
+          unitEl.classList.add('highlight-dimmed');
+        }
+      }
+      
+      if (highlightingAttacks) {
+        if (canStillAttack) {
+          unitEl.classList.add('highlight-can-attack');
+        } else if (!highlightingMoves) {
+          // Only dim if not also highlighting moves
+          unitEl.classList.add('highlight-dimmed');
+        }
+      }
+    }
+  }
+  
+  // Also check spawn units
+  const spawnId = S.spawn[myRole];
+  if (spawnId && S.units[spawnId]) {
+    const unit = S.units[spawnId];
+    const spawnEl = myRole === 'gold' ? spawnYouUnitEl : spawnEnemyUnitEl;
+    if (spawnEl) {
+      const hasMoved = S.movedThisTurn.includes(spawnId);
+      const hasAttacked = S.attackedThisTurn.includes(spawnId);
+      
+      if (highlightingMoves && !hasMoved) {
+        spawnEl.classList.add('highlight-can-move');
+      } else if (highlightingMoves) {
+        spawnEl.classList.add('highlight-dimmed');
+      }
+      
+      if (highlightingAttacks && !hasAttacked) {
+        spawnEl.classList.add('highlight-can-attack');
+      } else if (highlightingAttacks && !highlightingMoves) {
+        spawnEl.classList.add('highlight-dimmed');
+      }
+    }
+  }
+}

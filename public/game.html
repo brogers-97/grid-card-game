@@ -214,6 +214,7 @@
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
+      position: relative; /* For highlight indicator positioning */
     }
 
     /* ===== ENEMY ROW - At top ===== */
@@ -1058,6 +1059,103 @@
       50% { 
         box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
       }
+    }
+
+    .log-entry.boss-benefit {
+      background: linear-gradient(90deg, 
+        rgba(80, 0, 20, 0.8) 0%,
+        rgba(60, 0, 15, 0.9) 50%,
+        rgba(80, 0, 20, 0.8) 100%);
+      border: 2px solid #ff003c;
+      border-left-width: 4px;
+      color: #ff003c;
+      font-weight: 700;
+      text-align: center;
+      padding: 8px 10px;
+      margin: 6px 0;
+      text-shadow: 0 0 10px rgba(255, 0, 60, 1), 0 0 20px rgba(255, 0, 60, 0.6);
+      animation: neonLogPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes neonLogPulse {
+      0%, 100% { 
+        box-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
+        border-color: #ff003c;
+      }
+      50% { 
+        box-shadow: 0 0 25px rgba(255, 0, 60, 0.8);
+        border-color: #ff5080;
+      }
+    }
+
+    /* Chalice Tooltip - Royal Style */
+    .chalice-tooltip {
+      position: fixed;
+      width: 160px;
+      height: 200px;
+      border: 3px solid;
+      border-image: linear-gradient(135deg, #ffd700, #b8860b, #ffd700, #daa520, #ffd700) 1;
+      border-radius: 0;
+      padding: 0;
+      z-index: 2000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      box-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.4),
+        0 0 40px rgba(255, 215, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .chalice-tooltip.visible {
+      opacity: 1;
+    }
+
+    .chalice-tooltip-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .chalice-tooltip-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: drop-shadow(0 0 10px rgba(255, 0, 60, 0.8));
+    }
+
+    /* Gradient fade to black at bottom */
+    .chalice-tooltip-image::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60%;
+      background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.95) 100%);
+      pointer-events: none;
+    }
+
+    .chalice-tooltip-text {
+      position: absolute;
+      bottom: 12px;
+      left: 0;
+      right: 0;
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      font-weight: 700;
+      font-style: italic;
+      color: transparent;
+      background: linear-gradient(135deg, #ffd700, #ffec8b, #ffd700, #daa520);
+      -webkit-background-clip: text;
+      background-clip: text;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+      letter-spacing: 0.5px;
+      z-index: 1;
+      padding: 0 8px;
     }
 
     .log-gold { color: #fbbf24; font-weight: 600; }
@@ -1919,6 +2017,108 @@
       50% { opacity: 0.3; }
     }
 
+    /* ===== BLOOD CHALICE TILES ===== */
+    .cell.blood-chalice-tile {
+      position: relative;
+      border: 3px solid rgba(255, 20, 80, 1) !important;
+      background: radial-gradient(circle at center, rgba(80, 0, 20, 0.7), rgba(40, 0, 10, 0.5)) !important;
+      animation: chaliceTilePulse 2s ease-in-out infinite;
+      z-index: 5;
+    }
+
+    .cell.blood-chalice-tile::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255, 0, 60, 0.25), transparent 70%);
+      pointer-events: none;
+      animation: chaliceGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes chaliceTilePulse {
+      0%, 100% { 
+        box-shadow: 0 0 20px rgba(255, 20, 80, 0.8), 0 0 40px rgba(255, 0, 60, 0.4), inset 0 0 20px rgba(80, 0, 20, 0.4);
+        border-color: rgba(255, 20, 80, 1);
+      }
+      50% { 
+        box-shadow: 0 0 35px rgba(255, 50, 100, 1), 0 0 60px rgba(255, 0, 60, 0.6), inset 0 0 30px rgba(120, 0, 30, 0.5);
+        border-color: rgba(255, 100, 150, 1);
+      }
+    }
+
+    /* Chalice image on the tile */
+    .cell.blood-chalice-tile::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('/images/blood-chalice.png') center/cover no-repeat;
+      z-index: 10;
+      filter: drop-shadow(0 0 15px rgba(255, 0, 60, 1)) drop-shadow(0 0 30px rgba(255, 0, 60, 0.8));
+      pointer-events: none;
+    }
+
+    /* Red transparent glow overlay that blinks */
+    .cell.blood-chalice-tile .chalice-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(255, 0, 60, 0.55), rgba(255, 0, 60, 0.25) 50%, rgba(255, 0, 60, 0.1) 80%, transparent 100%);
+      z-index: 11;
+      pointer-events: none;
+      animation: chaliceRedGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes chaliceRedGlow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.9; }
+    }
+
+    @keyframes chaliceGlow {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 0.8; }
+    }
+
+    /* Chalice spawn animation (emoji falling) */
+    .chalice-spawn-anim {
+      position: fixed;
+      font-size: 32px;
+      z-index: 9999;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(0) scale(1.5);
+      opacity: 0;
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.9));
+    }
+
+    /* Chalice consume animation (emoji rising) */
+    .chalice-consume-anim {
+      position: fixed;
+      font-size: 28px;
+      z-index: 9999;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(-50%);
+      opacity: 1;
+      transition: all 0.7s ease-out;
+      filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.9));
+    }
+
+    .chalice-consume-anim .heal-text {
+      position: absolute;
+      left: 50%;
+      top: -20px;
+      transform: translateX(-50%);
+      font-size: 14px;
+      font-weight: bold;
+      color: #22c55e;
+      text-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+      white-space: nowrap;
+    }
+
     /* ===== GHOST TRAIN WARNING TILES ===== */
     .cell.ghost-train-warning {
       position: relative;
@@ -2654,6 +2854,37 @@
       }
     }
 
+    /* Blood Chalice beneficial event style - Neon Red */
+    .combat-entry.boss-benefit {
+      color: #ff003c;
+      font-weight: 700;
+      background: linear-gradient(90deg, 
+        rgba(80, 0, 20, 0.7) 0%,
+        rgba(60, 0, 15, 0.8) 50%,
+        rgba(80, 0, 20, 0.7) 100%);
+      border: 2px solid #ff003c;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin: 4px 0;
+      animation: neonBenefitPulse 2s ease-in-out infinite;
+      text-shadow: 0 0 10px rgba(255, 0, 60, 1), 0 0 20px rgba(255, 0, 60, 0.8);
+    }
+
+    .combat-entry.boss-benefit::before {
+      content: '🍷 ';
+    }
+
+    @keyframes neonBenefitPulse {
+      0%, 100% { 
+        box-shadow: 0 0 10px rgba(255, 0, 60, 0.5), 0 0 20px rgba(255, 0, 60, 0.3);
+        border-color: #ff003c;
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(255, 0, 60, 0.8), 0 0 40px rgba(255, 0, 60, 0.5);
+        border-color: #ff5080;
+      }
+    }
+
     /* Buff tile tooltip */
     .buff-tooltip {
       position: fixed;
@@ -2690,6 +2921,78 @@
       line-height: 1.4;
     }
 
+    /* ===== HIGHLIGHT MODE INDICATOR ===== */
+    .highlight-indicator {
+      position: absolute;
+      left: -80px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 100;
+    }
+    
+    .highlight-indicator.visible {
+      opacity: 1;
+    }
+    
+    .highlight-indicator-move,
+    .highlight-indicator-attack {
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+      opacity: 0.3;
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+    }
+    
+    .highlight-indicator-move {
+      color: #22d3ee;
+      background: rgba(34, 211, 238, 0.1);
+      border: 2px solid rgba(34, 211, 238, 0.3);
+    }
+    
+    .highlight-indicator-move.active {
+      opacity: 1;
+      background: rgba(34, 211, 238, 0.2);
+      border-color: #22d3ee;
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.5), 0 0 40px rgba(34, 211, 238, 0.3);
+      text-shadow: 0 0 10px rgba(34, 211, 238, 0.8);
+      animation: indicatorPulseMove 1s ease-in-out infinite;
+    }
+    
+    .highlight-indicator-attack {
+      color: #f97316;
+      background: rgba(249, 115, 22, 0.1);
+      border: 2px solid rgba(249, 115, 22, 0.3);
+    }
+    
+    .highlight-indicator-attack.active {
+      opacity: 1;
+      background: rgba(249, 115, 22, 0.2);
+      border-color: #f97316;
+      box-shadow: 0 0 20px rgba(249, 115, 22, 0.5), 0 0 40px rgba(249, 115, 22, 0.3);
+      text-shadow: 0 0 10px rgba(249, 115, 22, 0.8);
+      animation: indicatorPulseAttack 1s ease-in-out infinite;
+    }
+    
+    @keyframes indicatorPulseMove {
+      0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.5), 0 0 40px rgba(34, 211, 238, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(34, 211, 238, 0.7), 0 0 60px rgba(34, 211, 238, 0.5); }
+    }
+    
+    @keyframes indicatorPulseAttack {
+      0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.5), 0 0 40px rgba(249, 115, 22, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(249, 115, 22, 0.7), 0 0 60px rgba(249, 115, 22, 0.5); }
+    }
+
     /* ===== UNIT CARDS ON BOARD ===== */
     .unit{
       width: 100%;
@@ -2702,6 +3005,84 @@
       position: relative;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       overflow: hidden;
+      transition: all 0.15s ease;
+    }
+
+    /* Highlight for units that can still move (Q key) */
+    .unit.highlight-can-move {
+      border-color: #22d3ee !important;
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.8), 0 0 40px rgba(34, 211, 238, 0.5), inset 0 0 30px rgba(34, 211, 238, 0.4) !important;
+      animation: pulse-move 1s ease-in-out infinite;
+    }
+    .unit.highlight-can-move::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(34, 211, 238, 0.25);
+      z-index: 10;
+      pointer-events: none;
+      border-radius: 8px;
+    }
+
+    /* Highlight for units that can still attack (W key) */
+    .unit.highlight-can-attack {
+      border-color: #f97316 !important;
+      box-shadow: 0 0 20px rgba(249, 115, 22, 0.8), 0 0 40px rgba(249, 115, 22, 0.5), inset 0 0 30px rgba(249, 115, 22, 0.4) !important;
+      animation: pulse-attack 1s ease-in-out infinite;
+    }
+    .unit.highlight-can-attack::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(249, 115, 22, 0.25);
+      z-index: 10;
+      pointer-events: none;
+      border-radius: 8px;
+    }
+
+    /* Both move and attack available */
+    .unit.highlight-can-move.highlight-can-attack {
+      border-color: #a855f7 !important;
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), 0 0 40px rgba(168, 85, 247, 0.5), inset 0 0 30px rgba(168, 85, 247, 0.4) !important;
+      animation: pulse-both 1s ease-in-out infinite;
+    }
+    .unit.highlight-can-move.highlight-can-attack::before {
+      background: rgba(168, 85, 247, 0.25);
+    }
+
+    /* Dimmed units that have already acted */
+    .unit.highlight-dimmed {
+      opacity: 0.3;
+      filter: grayscale(70%);
+    }
+
+    @keyframes pulse-move {
+      0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.8), 0 0 40px rgba(34, 211, 238, 0.5), inset 0 0 30px rgba(34, 211, 238, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(34, 211, 238, 1), 0 0 60px rgba(34, 211, 238, 0.7), inset 0 0 50px rgba(34, 211, 238, 0.6); }
+    }
+
+    @keyframes pulse-attack {
+      0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.8), 0 0 40px rgba(249, 115, 22, 0.5), inset 0 0 30px rgba(249, 115, 22, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(249, 115, 22, 1), 0 0 60px rgba(249, 115, 22, 0.7), inset 0 0 50px rgba(249, 115, 22, 0.6); }
+    }
+
+    @keyframes pulse-both {
+      0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), 0 0 40px rgba(168, 85, 247, 0.5), inset 0 0 30px rgba(168, 85, 247, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(168, 85, 247, 1), 0 0 60px rgba(168, 85, 247, 0.7), inset 0 0 50px rgba(168, 85, 247, 0.6); }
+    }
+
+    /* Spawn unit highlights */
+    .spawnUnit.highlight-can-move {
+      border-color: #22d3ee !important;
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.8), inset 0 0 20px rgba(34, 211, 238, 0.4) !important;
+    }
+    .spawnUnit.highlight-can-attack {
+      border-color: #f97316 !important;
+      box-shadow: 0 0 20px rgba(249, 115, 22, 0.8), inset 0 0 20px rgba(249, 115, 22, 0.4) !important;
+    }
+    .spawnUnit.highlight-dimmed {
+      opacity: 0.3;
+      filter: grayscale(70%);
     }
 
     .unitArt {
@@ -3943,6 +4324,12 @@
             <span class="heartLabel">ENEMY</span>
           </div>
         </div>
+      </div>
+
+      <!-- Highlight Mode Indicator -->
+      <div class="highlight-indicator" id="highlightIndicator">
+        <div class="highlight-indicator-move" id="highlightMove">MOVE</div>
+        <div class="highlight-indicator-attack" id="highlightAttack">ATTACK</div>
       </div>
 
       <div class="board" id="board"></div>
