@@ -816,6 +816,63 @@ const DECKS = {
       { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
       { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
     ]
+  },
+  "dragon-wizard": {
+    name: "Arcane Dragonflight",
+    description: "Wizards and dragons unite with spell synergy and anti-buff tech",
+    archetype: "dragon",
+    cards: [
+      // Meditation Monk x3 (channeling energy ramp)
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "passive", effectId: "channeling_energy", effectDesc: "CHANNELING: Can't move. Gain +1 Energy at start of your turn.", art: "/images/Meditation Monk.png", rarity: "common" },
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "passive", effectId: "channeling_energy", effectDesc: "CHANNELING: Can't move. Gain +1 Energy at start of your turn.", art: "/images/Meditation Monk.png", rarity: "common" },
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "passive", effectId: "channeling_energy", effectDesc: "CHANNELING: Can't move. Gain +1 Energy at start of your turn.", art: "/images/Meditation Monk.png", rarity: "common" },
+      // Wyrm Whelp x3 (anti-effect tech)
+      { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
+      { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
+      { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
+      // Rune Scribe x3 (spell cost reduction)
+      { key: "runescribe", name: "Rune Scribe", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "spell_discount", effectDesc: "ON DEPLOY: Your next spell costs 1 less energy.", art: "/images/Rune Scribe.png", rarity: "common" },
+      { key: "runescribe", name: "Rune Scribe", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "spell_discount", effectDesc: "ON DEPLOY: Your next spell costs 1 less energy.", art: "/images/Rune Scribe.png", rarity: "common" },
+      { key: "runescribe", name: "Rune Scribe", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "spell_discount", effectDesc: "ON DEPLOY: Your next spell costs 1 less energy.", art: "/images/Rune Scribe.png", rarity: "common" },
+      // Cinderwing x3 (splash damage on attack)
+      { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
+      { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
+      { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
+      // Mana Siphon Mage x2 (energy drain on kill)
+      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 2, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
+      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 2, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
+      // Arcane Tether x2 (damage reflection)
+      { key: "arcanetether", name: "Arcane Tether", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_link", effectDesc: "ARCANE LINK: When this takes damage, deal 1 damage to the nearest enemy.", art: "/images/Arcane Tether.png", rarity: "rare" },
+      { key: "arcanetether", name: "Arcane Tether", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_link", effectDesc: "ARCANE LINK: When this takes damage, deal 1 damage to the nearest enemy.", art: "/images/Arcane Tether.png", rarity: "rare" },
+      // Storm Drake x2 (spell echo damage)
+      { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
+      { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
+      // Mirror Wizard x2 (copy buffs)
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 1, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "mirror_buffs", effectDesc: "PASSIVE: Copies any buffs applied to adjacent allies.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 1, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "mirror_buffs", effectDesc: "PASSIVE: Copies any buffs applied to adjacent allies.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      // Volcanic Dragon x2 (death HP reset)
+      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units (friend and enemy) to 1 HP.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
+      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units (friend and enemy) to 1 HP.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
+      // Red Wizard x1 (gains HP when any unit gains HP)
+      { key: "redwizard", name: "Red Wizard", atk: 2, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "red_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains HP, this unit gains +1 HP.", art: "/images/Red Wizard.png", rarity: "legendary" },
+      // Blue Wizard x1 (gains ATK when any unit gains ATK)
+      { key: "bluewizard", name: "Blue Wizard", atk: 4, hp: 2, cost: 5, type: "monster", effect: "passive", effectId: "blue_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains ATK, this unit gains +1 ATK.", art: "/images/Blue Wizard.png", rarity: "legendary" },
+      // Chrono Drake x1 (temporal stasis)
+      { key: "chronodrake", name: "Chrono Drake", atk: 4, hp: 5, cost: 6, type: "monster", effect: "onDeploy", effectId: "temporal_stasis", effectDesc: "ON DEPLOY: Freeze target enemy for 2 turns (can't move, attack, or use effects).", art: "/images/Chrono Drake.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      // Polymorph x2
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy into a 1/1 Sheep (loses all effects).", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy into a 1/1 Sheep (loses all effects).", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      // Mana Drain x2
+      { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      // Overcharge Bolt x2
+      { key: "overchargebolt", name: "Overcharge Bolt", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "overcharge", effectDesc: "INSTANT: Deal damage equal to half the energy spent (min 4). Can spend extra energy.", art: "/images/Overcharge Bolt.png", requiresTarget: "enemy_unit", rarity: "rare", overcharge: true },
+      { key: "overchargebolt", name: "Overcharge Bolt", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "overcharge", effectDesc: "INSTANT: Deal damage equal to half the energy spent (min 4). Can spend extra energy.", art: "/images/Overcharge Bolt.png", requiresTarget: "enemy_unit", rarity: "rare", overcharge: true },
+      // Arcane Rift x1
+      { key: "arcanerift", name: "Arcane Rift", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "swap_positions", effectDesc: "INSTANT: Swap positions of any two units on the field.", art: "/images/Arcane Rift.png", requiresTarget: "any_unit", rarity: "legendary" },
+      // Dragon's Fury x1
+      { key: "dragonsfury", name: "Dragon's Fury", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "dragons_fury", effectDesc: "INSTANT: All friendly Dragons gain +2 ATK permanently.", art: "/images/Dragons Fury.png", rarity: "legendary" },
+    ]
   }
 };
 
@@ -1264,6 +1321,14 @@ function getEffectiveAtk(state, uid, targetId) {
   if (targetId && state.units[targetId] && state.units[targetId].marked) {
     atk += 2;
   }
+  // Wyrm Whelp - +1 ATK when attacking units with effects
+  if (u.effectId === "anti_effect" && targetId && state.units[targetId]) {
+    const target = state.units[targetId];
+    if (target.effectId) {
+      atk += 1;
+    }
+  }
+  // Ember Drake (Cinderwing) - bonus ATK when adjacent to Wizard (reserved for future)
   return atk;
 }
 
@@ -1500,6 +1565,14 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
       logToLobby(lobby, a.name + " drains 1 energy from " + enemy.toUpperCase());
     }
   }
+  // Mana Siphon Mage - enemy loses 1 energy on kill
+  if (a.effectId === "mana_drain_kill") {
+    const enemy = enemyOf(role);
+    if (lobby.gameState.players[enemy].energy > 0) {
+      lobby.gameState.players[enemy].energy = Math.max(0, lobby.gameState.players[enemy].energy - 1);
+      logToLobby(lobby, a.name + " siphons mana! Enemy loses 1 energy!");
+    }
+  }
   if (a.effectId === "spawn_drone" && killedUnitPos) {
     // Spawn a Void Drone in the killed unit's tile
     const droneId = genId();
@@ -1693,6 +1766,31 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
       logToLobby(lobby, deadUnit.name + "'s Gem Shard is lost - hand is full!");
     }
   }
+  
+  // Volcanic Dragon - set all adjacent units to 1 HP on death
+  if (deadUnit.effectId === "volcanic_death" && deadPos) {
+    const adjacentPositions = [
+      { r: deadPos.r - 1, c: deadPos.c - 1 }, { r: deadPos.r - 1, c: deadPos.c }, { r: deadPos.r - 1, c: deadPos.c + 1 },
+      { r: deadPos.r, c: deadPos.c - 1 }, { r: deadPos.r, c: deadPos.c + 1 },
+      { r: deadPos.r + 1, c: deadPos.c - 1 }, { r: deadPos.r + 1, c: deadPos.c }, { r: deadPos.r + 1, c: deadPos.c + 1 }
+    ];
+    let affected = 0;
+    for (const pos of adjacentPositions) {
+      if (pos.r < 0 || pos.r >= ROWS || pos.c < 0 || pos.c >= COLS) continue;
+      const targetId = state.board[pos.r][pos.c];
+      if (targetId && state.units[targetId]) {
+        const target = state.units[targetId];
+        if (target.untargetable) continue;
+        if (target.hp > 1) {
+          target.hp = 1;
+          affected++;
+        }
+      }
+    }
+    if (affected > 0) {
+      logToLobby(lobby, deadUnit.name + "'s volcanic eruption scorches " + affected + " units to 1 HP!");
+    }
+  }
 }
 
 // Check if dying unit is a Coffin - queue for resurrection
@@ -1770,12 +1868,59 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
       u.hp += 1;
       u.maxHp = (u.maxHp || u.hp) + 1;
       logToLobby(lobby, u.name + " grows from ally death! Now " + u.atk + "/" + u.hp);
+      triggerStatGainEffects(lobby, 'atk', 1, uid);
+      triggerStatGainEffects(lobby, 'hp', 1, uid);
     }
     // Crypt Keeper - gains +1 max HP on ally death
     if (u.owner === deadUnitOwner && u.effectId === "grow_max_hp_on_ally_death") {
       u.maxHp = (u.maxHp || u.hp) + 1;
       u.hp += 1; // Also heal for the new max
       logToLobby(lobby, u.name + " absorbs death essence! Max HP now " + u.maxHp);
+      triggerStatGainEffects(lobby, 'hp', 1, uid);
+    }
+  }
+}
+
+// Trigger Red/Blue Wizard when any unit gains stats
+function triggerStatGainEffects(lobby, statType, amount, sourceUnitId) {
+  const state = lobby.gameState.state;
+  
+  for (const uid in state.units) {
+    if (uid === sourceUnitId) continue; // Don't trigger on self
+    const u = state.units[uid];
+    
+    // Red Wizard - gains HP when any unit gains HP
+    if (u.effectId === "red_wizard" && statType === 'hp') {
+      u.hp += amount;
+      u.maxHp = (u.maxHp || u.hp) + amount;
+      logToLobby(lobby, u.name + " absorbs life energy! +" + amount + " HP (now " + u.hp + ")");
+    }
+    
+    // Blue Wizard - gains ATK when any unit gains ATK
+    if (u.effectId === "blue_wizard" && statType === 'atk') {
+      u.atk += amount;
+      logToLobby(lobby, u.name + " absorbs arcane power! +" + amount + " ATK (now " + u.atk + ")");
+    }
+    
+    // Mirror Wizard - copies buffs from adjacent allies
+    if (u.effectId === "mirror_buffs") {
+      const mirrorPos = getUnitPos(state, uid);
+      const sourcePos = getUnitPos(state, sourceUnitId);
+      if (mirrorPos && sourcePos) {
+        const dist = Math.abs(mirrorPos.r - sourcePos.r) + Math.abs(mirrorPos.c - sourcePos.c);
+        if (dist === 1) { // Adjacent
+          const sourceUnit = state.units[sourceUnitId];
+          if (sourceUnit && sourceUnit.owner === u.owner) {
+            if (statType === 'hp') {
+              u.hp += amount;
+              u.maxHp = (u.maxHp || u.hp) + amount;
+            } else if (statType === 'atk') {
+              u.atk += amount;
+            }
+            logToLobby(lobby, u.name + " mirrors the buff! +" + amount + " " + statType.toUpperCase());
+          }
+        }
+      }
     }
   }
 }
@@ -2024,6 +2169,28 @@ function processStartOfTurnEffects(lobby, role) {
           delete state.units[targetId];
           logToLobby(lobby, target.name + " is destroyed by starfire!");
         }
+      }
+    }
+  }
+  
+  // Channeling effects (passive but with start-of-turn triggers)
+  for (const id in state.units) {
+    const u = state.units[id];
+    if (u.owner !== role) continue;
+    
+    // Meditation Monk - channeling energy (can't move, gains 1 energy at start of turn)
+    if (u.effectId === "channeling_energy") {
+      const player = lobby.gameState.players[role];
+      player.energy = Math.min(player.energy + 1, MAX_ENERGY);
+      logToLobby(lobby, u.name + " channels energy! (+1 energy)");
+    }
+    
+    // Decrement frozen counter
+    if (u.frozen && u.frozen > 0) {
+      u.frozen -= 1;
+      if (u.frozen <= 0) {
+        delete u.frozen;
+        logToLobby(lobby, u.name + " thaws from temporal stasis!");
       }
     }
   }
@@ -2441,6 +2608,148 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       }
       logToLobby(lobby, "Lunar Barrage hits " + hitCount + " enemies for 2 damage!");
     }
+  }
+  
+  // === DRAGON WIZARD SPELLS ===
+  
+  if (effectId === "polymorph") {
+    // Polymorph - transform target enemy into a 1/1 Sheep
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner !== role) {
+        if (target.untargetable) {
+          logToLobby(lobby, target.name + " is untargetable!");
+          return false;
+        }
+        const oldName = target.name;
+        // Transform into sheep - remove all effects
+        target.name = "Sheep";
+        target.key = "sheep";
+        target.atk = 1;
+        target.hp = 1;
+        target.maxHp = 1;
+        target.effectId = null;
+        target.effectDesc = null;
+        target.effect = null;
+        target.art = "/images/Sheep.png";
+        logToLobby(lobby, "Polymorph transforms " + oldName + " into a Sheep!");
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  if (effectId === "mana_drain") {
+    // Mana Drain - deal 2 damage, enemy loses 1 energy
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner !== role) {
+        if (target.untargetable) {
+          logToLobby(lobby, target.name + " is untargetable!");
+          return false;
+        }
+        target.hp -= 2;
+        const enemyRole = role === "gold" ? "silver" : "gold";
+        const enemyPlayer = lobby.gameState.players[enemyRole];
+        if (enemyPlayer.energy > 0) {
+          enemyPlayer.energy = Math.max(0, enemyPlayer.energy - 1);
+        }
+        logToLobby(lobby, "Mana Drain hits " + target.name + " for 2 damage! Enemy loses 1 energy!");
+        
+        if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
+          const pos = getUnitPos(state, targetUnitId);
+          processOnDeathEffect(lobby, target, target.owner, pos);
+          processAllyDeathTriggers(lobby, target.owner, target, pos);
+          if (pos) state.board[pos.r][pos.c] = null;
+          discardUnitCard(lobby, target);
+          delete state.units[targetUnitId];
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  if (effectId === "overcharge") {
+    // Overcharge Bolt - deal damage equal to half energy spent
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner !== role) {
+        if (target.untargetable) {
+          logToLobby(lobby, target.name + " is untargetable!");
+          return false;
+        }
+        // energySpent is passed in from the spell cast - default to 4 (base cost)
+        const energySpent = lobby.lastOverchargeEnergy || 4;
+        const damage = Math.floor(energySpent / 2);
+        target.hp -= damage;
+        logToLobby(lobby, "Overcharge Bolt hits " + target.name + " for " + damage + " damage! (" + energySpent + " energy spent)");
+        
+        if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
+          const pos = getUnitPos(state, targetUnitId);
+          processOnDeathEffect(lobby, target, target.owner, pos);
+          processAllyDeathTriggers(lobby, target.owner, target, pos);
+          if (pos) state.board[pos.r][pos.c] = null;
+          discardUnitCard(lobby, target);
+          delete state.units[targetUnitId];
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  if (effectId === "swap_positions") {
+    // Arcane Rift - swap positions of two units (needs special handling)
+    // For now, swap target with nearest ally
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      const targetPos = getUnitPos(state, targetUnitId);
+      if (!targetPos) return false;
+      
+      // Find another unit to swap with (prefer enemy for strategic swaps)
+      let swapTarget = null;
+      let swapPos = null;
+      
+      // Look for any other unit on the board
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const uid = state.board[r][c];
+          if (uid && uid !== targetUnitId && state.units[uid]) {
+            // Prefer units far from their target position
+            if (!swapTarget) {
+              swapTarget = uid;
+              swapPos = { r, c };
+            }
+          }
+        }
+      }
+      
+      if (swapTarget && swapPos) {
+        // Swap positions
+        state.board[targetPos.r][targetPos.c] = swapTarget;
+        state.board[swapPos.r][swapPos.c] = targetUnitId;
+        logToLobby(lobby, "Arcane Rift swaps " + target.name + " with " + state.units[swapTarget].name + "!");
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  if (effectId === "dragons_fury") {
+    // Dragon's Fury - all friendly Dragons gain +2 ATK
+    const dragonKeys = ['wyrmwhelp', 'cinderwing', 'stormdrake', 'volcanicdragon', 'chronodrake'];
+    let buffed = 0;
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      if (u.owner === role && dragonKeys.includes(u.key)) {
+        u.atk += 2;
+        buffed++;
+        // Trigger stat gain effects (Red/Blue Wizard)
+        triggerStatGainEffects(lobby, 'atk', 2, uid);
+      }
+    }
+    logToLobby(lobby, "Dragon's Fury empowers " + buffed + " Dragons with +2 ATK!");
   }
 }
 
@@ -3525,6 +3834,26 @@ async function executeAction(lobby, role, action) {
           }
         }
         
+        // Rune Scribe - next spell costs 1 less
+        if (card.effectId === "spell_discount") {
+          if (!state.spellDiscount) state.spellDiscount = {};
+          state.spellDiscount[role] = (state.spellDiscount[role] || 0) + 1;
+          logToLobby(lobby, "Rune Scribe enchants - your next spell costs 1 less!");
+        }
+        
+        // Chrono Drake - freeze target enemy for 2 turns (handled via requiresTarget)
+        if (card.effectId === "temporal_stasis" && action.targetUnitId) {
+          const target = state.units[action.targetUnitId];
+          if (target && target.owner !== role) {
+            if (target.untargetable) {
+              logToLobby(lobby, target.name + " is untargetable!");
+            } else {
+              target.frozen = 2; // Frozen for 2 turns
+              logToLobby(lobby, "Chrono Drake freezes " + target.name + " in temporal stasis for 2 turns!");
+            }
+          }
+        }
+        
         logToLobby(lobby, role.toUpperCase() + " played " + card.name);
         emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       }
@@ -3537,6 +3866,12 @@ async function executeAction(lobby, role, action) {
       
       // Check if unit is rooted
       if (u.rooted) return;
+      
+      // Check if unit is channeling (Meditation Monk can't move)
+      if (u.effectId === "channeling_energy") return;
+      
+      // Check if unit is frozen (Temporal Stasis)
+      if (u.frozen) return;
       
       // Check if unit is adjacent to Coffin Trapper (root_aura)
       const fromPos = getUnitPos(state, action.unitId);
@@ -3663,6 +3998,9 @@ async function executeAction(lobby, role, action) {
       if (!a || !t || a.owner !== role) return;
       if (state.attackedThisTurn.has(action.attackerId)) return;
       
+      // Check if attacker is frozen
+      if (a.frozen) return;
+      
       const ap = getUnitPos(state, action.attackerId);
       const tp = getUnitPos(state, action.targetId);
       if (!ap || !tp) return;
@@ -3694,6 +4032,63 @@ async function executeAction(lobby, role, action) {
       
       state.attackedThisTurn.add(action.attackerId);
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name);
+      
+      // Cinderwing splash_random - deal 1 damage to another random enemy on attack
+      if (a.effectId === "splash_random") {
+        const otherEnemies = [];
+        for (const uid in state.units) {
+          if (state.units[uid].owner !== role && uid !== action.targetId && !state.units[uid].untargetable) {
+            otherEnemies.push(uid);
+          }
+        }
+        if (otherEnemies.length > 0) {
+          const splashTargetId = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
+          const splashTarget = state.units[splashTargetId];
+          splashTarget.hp -= 1;
+          logToLobby(lobby, a.name + "'s flames splash " + splashTarget.name + " for 1 damage!");
+          if (splashTarget.hp <= 0 && shouldUnitDie(lobby, splashTarget)) {
+            const splashPos = getUnitPos(state, splashTargetId);
+            processOnDeathEffect(lobby, splashTarget, splashTarget.owner, splashPos);
+            processAllyDeathTriggers(lobby, splashTarget.owner, splashTarget, splashPos);
+            if (splashPos) state.board[splashPos.r][splashPos.c] = null;
+            discardUnitCard(lobby, splashTarget);
+            delete state.units[splashTargetId];
+            logToLobby(lobby, splashTarget.name + " destroyed by splash damage!");
+          }
+        }
+      }
+      
+      // Arcane Tether - when damaged, deal 1 damage to nearest enemy
+      if (t.effectId === "arcane_link" && t.hp > 0) {
+        let nearestEnemy = null;
+        let nearestDist = Infinity;
+        for (const uid in state.units) {
+          if (state.units[uid].owner !== t.owner && uid !== action.attackerId && !state.units[uid].untargetable) {
+            const enemyPos = getUnitPos(state, uid);
+            if (enemyPos) {
+              const dist = Math.abs(tp.r - enemyPos.r) + Math.abs(tp.c - enemyPos.c);
+              if (dist < nearestDist) {
+                nearestDist = dist;
+                nearestEnemy = uid;
+              }
+            }
+          }
+        }
+        if (nearestEnemy) {
+          const linkTarget = state.units[nearestEnemy];
+          linkTarget.hp -= 1;
+          logToLobby(lobby, t.name + "'s arcane link zaps " + linkTarget.name + " for 1 damage!");
+          if (linkTarget.hp <= 0 && shouldUnitDie(lobby, linkTarget)) {
+            const linkPos = getUnitPos(state, nearestEnemy);
+            processOnDeathEffect(lobby, linkTarget, linkTarget.owner, linkPos);
+            processAllyDeathTriggers(lobby, linkTarget.owner, linkTarget, linkPos);
+            if (linkPos) state.board[linkPos.r][linkPos.c] = null;
+            discardUnitCard(lobby, linkTarget);
+            delete state.units[nearestEnemy];
+            logToLobby(lobby, linkTarget.name + " destroyed by arcane link!");
+          }
+        }
+      }
       
       if (t.hp <= 0 && shouldUnitDie(lobby, t)) {
         combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
@@ -4540,7 +4935,15 @@ io.on("connection", (socket) => {
     if (payload.type === "playCard") {
       const { cardId, row, col, spawn, targetUnitId } = payload; const p = players[role];
       const idx = p.hand.findIndex(c => c.id === cardId); if (idx === -1) return socket.emit("log", "Card not found.");
-      const card = p.hand[idx]; const cost = card.cost || 0;
+      const card = p.hand[idx]; let cost = card.cost || 0;
+      
+      // Apply spell discount from Rune Scribe
+      if (card.type === "spell" && state.spellDiscount && state.spellDiscount[role] > 0) {
+        cost = Math.max(0, cost - state.spellDiscount[role]);
+        state.spellDiscount[role] = 0; // Consume the discount
+        logToLobby(lobby, "Rune Scribe's enchantment reduces spell cost!");
+      }
+      
       if (p.energy < cost) return socket.emit("log", "Not enough energy.");
 
       if (card.effect === "instant") {
@@ -4578,6 +4981,35 @@ io.on("connection", (socket) => {
         processInstantSpell(lobby, role, card.effectId, row, targetUnitId, col);
         logToLobby(lobby, role.toUpperCase() + " cast " + card.name);
         emitSFX(lobby, card.key, 'deploy'); // Play spell sound
+        
+        // Storm Drake spell_echo - deal 1 damage to random enemy when spell is cast
+        for (const uid in state.units) {
+          const u = state.units[uid];
+          if (u.owner === role && u.effectId === "spell_echo") {
+            const enemies = [];
+            for (const eid in state.units) {
+              if (state.units[eid].owner !== role && !state.units[eid].untargetable) {
+                enemies.push(eid);
+              }
+            }
+            if (enemies.length > 0) {
+              const targetId = enemies[Math.floor(Math.random() * enemies.length)];
+              const target = state.units[targetId];
+              target.hp -= 1;
+              logToLobby(lobby, u.name + " echoes the spell - zaps " + target.name + " for 1 damage!");
+              if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
+                const targetPos = getUnitPos(state, targetId);
+                processOnDeathEffect(lobby, target, target.owner, targetPos);
+                processAllyDeathTriggers(lobby, target.owner, target, targetPos);
+                if (targetPos) state.board[targetPos.r][targetPos.c] = null;
+                discardUnitCard(lobby, target);
+                delete state.units[targetId];
+                logToLobby(lobby, target.name + " destroyed by spell echo!");
+              }
+            }
+          }
+        }
+        
         return emitGameState(lobby);
       }
 

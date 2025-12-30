@@ -286,6 +286,20 @@ const CAMPAIGN_BOSSES = [
       music: 'elunes-chosen',
       background: 'elunes-chosen'
     }
+  },
+  {
+    id: 6,
+    name: "The Arcane Dragonlord",
+    description: "A legendary wizard who has bonded with ancient dragons, wielding devastating spell-fire",
+    deckId: "dragon-wizard",
+    difficulty: "hard",
+    aiLevel: 3,
+    requiresBoss: 5,
+    cardRewards: ['meditationmonk', 'wyrmwhelp', 'runescribe', 'cinderwing', 'manasiphonmage', 'arcanetether', 'stormdrake', 'mirrorwizard', 'volcanicdragon', 'redwizard', 'bluewizard', 'chronodrake', 'polymorph', 'manadrain', 'overchargebolt', 'arcanerift', 'dragonsfury'],
+    unlocks: {
+      music: 'dragon-wizard',
+      background: 'dragon-wizard'
+    }
   }
 ];
 
