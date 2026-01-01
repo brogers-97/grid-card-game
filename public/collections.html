@@ -108,6 +108,47 @@
     .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
     .empty-icon { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
     .empty-text { font-size: 14px; }
+    
+    /* Achievements styles */
+    .gallery-grid.achievements { display: flex; justify-content: center; align-items: center; min-height: 400px; }
+    .achievements-container { 
+      text-align: center; 
+      padding: 40px; 
+      max-width: 600px;
+      background: linear-gradient(145deg, rgba(30, 30, 60, 0.8), rgba(20, 20, 40, 0.9));
+      border: 2px solid rgba(251, 191, 36, 0.3);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .achievements-header { margin-bottom: 30px; }
+    .achievements-icon { font-size: 64px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6)); }
+    .achievements-title { 
+      font-family: 'Cinzel', serif; 
+      font-size: 28px; 
+      color: #fbbf24; 
+      margin-bottom: 8px;
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+    }
+    .achievements-subtitle { 
+      font-size: 16px; 
+      color: #a78bfa; 
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .achievements-preview { display: flex; flex-direction: column; gap: 15px; }
+    .achievement-placeholder {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px 20px;
+      background: rgba(100, 116, 139, 0.1);
+      border: 1px dashed rgba(100, 116, 139, 0.4);
+      border-radius: 10px;
+      text-align: left;
+    }
+    .achievement-placeholder-icon { font-size: 28px; opacity: 0.5; }
+    .achievement-placeholder-text { font-size: 13px; color: #94a3b8; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -127,6 +168,7 @@
       <button class="tab-btn" data-tab="backgrounds">🖼️ Backgrounds</button>
       <button class="tab-btn" data-tab="mats">🎴 Game Mats</button>
       <button class="tab-btn" data-tab="music">🎵 Music</button>
+      <button class="tab-btn" data-tab="achievements">🏆 Achievements</button>
     </nav>
     
     <div class="stats-bar">
@@ -147,6 +189,7 @@
           <option value="crimson-court">Crimson Court</option>
           <option value="jeweled-court">Jeweled Court</option>
           <option value="elunes-chosen">Elune's Chosen</option>
+          <option value="dragon-wizard">Dragon Wizard</option>
         </select>
         <select class="filter-select" id="rarityFilter">
           <option value="all">All Rarities</option>
@@ -270,7 +313,27 @@
       starlitchampion: { name: "Starlit Champion", cost: 6, atk: 4, hp: 6, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "On kill, gain 1 energy and +1 ATK permanently", art: "/images/Starlit Champion.png", rarity: "legendary" },
       starinvoker: { name: "Star Invoker", cost: 6, atk: 2, hp: 5, type: "monster", archetype: "elunes-chosen", effect: true, effectDesc: "At start of turn, deal 2 damage to a random enemy", art: "/images/Star Invoker.png", rarity: "legendary" },
       templeofthemoon: { name: "Temple of the Moon", cost: 4, atk: 0, hp: 4, type: "structure", archetype: "elunes-chosen", effect: true, effectDesc: "If adjacent to 2+ allies, give them +1 ATK permanently", art: "/images/Temple of the Moon.png", rarity: "legendary" },
-      lunarbarrage: { name: "Lunar Barrage", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Deal 2 damage to all enemies in and adjacent to target tile", art: "/images/Lunar Barrage.png", rarity: "legendary" }
+      lunarbarrage: { name: "Lunar Barrage", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "elunes-chosen", effect: true, effectDesc: "Deal 2 damage to all enemies in and adjacent to target tile", art: "/images/Lunar Barrage.png", rarity: "legendary" },
+      
+      // Dragon Wizard cards
+      spellspark: { name: "Spell Spark", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "On summon, deal 1 damage to adjacent enemy", art: "/images/Spell Spark.png", rarity: "common" },
+      apprenticemage: { name: "Apprentice Mage", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "On spell cast, gain +1 ATK this turn", art: "/images/Apprentice Mage.png", rarity: "common" },
+      runedrake: { name: "Rune Drake", cost: 2, atk: 2, hp: 3, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "Spells cost 1 less while this is alive", art: "/images/Rune Drake.png", rarity: "common" },
+      flamewyrm: { name: "Flame Wyrm", cost: 3, atk: 3, hp: 2, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "On attack, deal 1 damage to adjacent enemies", art: "/images/Flame Wyrm.png", rarity: "common" },
+      arcanefamiliar: { name: "Arcane Familiar", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "On spell cast, draw a card (once per turn)", art: "/images/Arcane Familiar.png", rarity: "common" },
+      channeler: { name: "Channeler", cost: 3, atk: 2, hp: 4, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "Store up to 3 energy. Release all for +2 ATK each", art: "/images/Channeler.png", rarity: "rare" },
+      stormdragon: { name: "Storm Dragon", cost: 4, atk: 3, hp: 4, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "On spell cast, deal 2 damage to random enemy", art: "/images/Storm Dragon.png", rarity: "rare" },
+      spellweaver: { name: "Spellweaver", cost: 4, atk: 2, hp: 3, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "Your spells are cast twice", art: "/images/Spellweaver.png", rarity: "rare" },
+      wyrmlinghatchery: { name: "Wyrmling Hatchery", cost: 3, atk: 0, hp: 4, type: "structure", archetype: "dragon-wizard", effect: true, effectDesc: "At turn start, spawn 1/1 Wyrmling if space available", art: "/images/Wyrmling Hatchery.png", rarity: "rare" },
+      timewarden: { name: "Time Warden", cost: 5, atk: 3, hp: 5, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "On summon, freeze an enemy for 1 turn", art: "/images/Time Warden.png", rarity: "rare" },
+      redwizard: { name: "Red Wizard", cost: 4, atk: 2, hp: 3, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "Gains +1 ATK for each spell cast this game", art: "/images/Red Wizard.png", rarity: "legendary" },
+      bluewizard: { name: "Blue Wizard", cost: 4, atk: 2, hp: 3, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "Gains +1 HP for each spell cast this game", art: "/images/Blue Wizard.png", rarity: "legendary" },
+      elderdragon: { name: "Elder Dragon", cost: 7, atk: 6, hp: 8, type: "monster", archetype: "dragon-wizard", effect: true, effectDesc: "Immune to spells. On kill, gain 2 energy", art: "/images/Elder Dragon.png", rarity: "legendary" },
+      arcanerift: { name: "Arcane Rift", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Swap positions of two units anywhere", art: "/images/Arcane Rift.png", rarity: "common" },
+      polymorph: { name: "Polymorph", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Transform enemy into 1/1 Sheep", art: "/images/Polymorph.png", rarity: "rare" },
+      overchargebolt: { name: "Overcharge Bolt", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Deal 3 damage. Can spend extra energy for +2 each", art: "/images/Overcharge Bolt.png", rarity: "rare" },
+      temporalstasis: { name: "Temporal Stasis", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Freeze all enemies for 1 turn", art: "/images/Temporal Stasis.png", rarity: "legendary" },
+      dragonsfury: { name: "Dragon's Fury", cost: 5, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Deal 2 damage to all enemies. Dragons deal +2 this turn", art: "/images/Dragons Fury.png", rarity: "legendary" }
     };
     
     // Background/Music data - use actual paths
@@ -282,7 +345,8 @@
       'western-skeleton': { name: 'Western Skeleton', bgImage: '/images/backgrounds/boss-2-bg.png', matImage: '/images/western-skeleton-bg.png', musicFile: '/audio/western-skeleton-theme.mp3', bossId: 2 },
       'crimson-court': { name: 'Crimson Court', bgImage: '/images/backgrounds/boss-3-bg.png', matImage: '/images/crimson-court-bg.png', musicFile: '/audio/crimson-court-theme.mp3', bossId: 3 },
       'jeweled-court': { name: 'Jeweled Court', bgImage: '/images/backgrounds/boss-4-bg.png', matImage: '/images/jeweled-court-bg.png', musicFile: '/audio/jeweled-court-theme.mp3', bossId: 4 },
-      'elunes-chosen': { name: "Elune's Chosen", bgImage: '/images/backgrounds/boss-5-bg.png', matImage: '/images/elunes-chosen-bg.png', musicFile: '/audio/elunes-chosen-theme.mp3', bossId: 5 }
+      'elunes-chosen': { name: "Elune's Chosen", bgImage: '/images/backgrounds/boss-5-bg.png', matImage: '/images/elunes-chosen-bg.png', musicFile: '/audio/elunes-chosen-theme.mp3', bossId: 5 },
+      'dragon-wizard': { name: "Dragon Wizard", bgImage: '/images/backgrounds/dragon-wizard.png', matImage: '/images/mats/dragon-wizard.png', musicFile: '/audio/dragon-wizard-theme.mp3', bossId: 6 }
     };
     
     let currentUser = null;
@@ -397,6 +461,8 @@
         renderMats();
       } else if (currentTab === 'music') {
         renderMusic();
+      } else if (currentTab === 'achievements') {
+        renderAchievements();
       }
     }
     
@@ -428,7 +494,7 @@
       
       // Sort by archetype, then cost
       cards.sort((a, b) => {
-        const archOrder = { 'medieval': 0, 'void-alien': 1, 'western-skeleton': 2, 'crimson-court': 3, 'jeweled-court': 4, 'elunes-chosen': 5 };
+        const archOrder = { 'medieval': 0, 'void-alien': 1, 'western-skeleton': 2, 'crimson-court': 3, 'jeweled-court': 4, 'elunes-chosen': 5, 'dragon-wizard': 6 };
         if (a[1].archetype !== b[1].archetype) return (archOrder[a[1].archetype] || 99) - (archOrder[b[1].archetype] || 99);
         return a[1].cost - b[1].cost;
       });
@@ -549,6 +615,36 @@
           </div>
         `;
       }).join('');
+    }
+    
+    function renderAchievements() {
+      // Hide filter bar for achievements
+      filterBar.style.display = 'none';
+      
+      galleryGrid.className = 'gallery-grid achievements';
+      galleryGrid.innerHTML = `
+        <div class="achievements-container">
+          <div class="achievements-header">
+            <div class="achievements-icon">🏆</div>
+            <h2 class="achievements-title">Achievements</h2>
+            <p class="achievements-subtitle">Coming Soon!</p>
+          </div>
+          <div class="achievements-preview">
+            <div class="achievement-placeholder">
+              <div class="achievement-placeholder-icon">⚔️</div>
+              <div class="achievement-placeholder-text">Battle achievements will track your combat prowess</div>
+            </div>
+            <div class="achievement-placeholder">
+              <div class="achievement-placeholder-icon">📖</div>
+              <div class="achievement-placeholder-text">Collection achievements will reward card collectors</div>
+            </div>
+            <div class="achievement-placeholder">
+              <div class="achievement-placeholder-icon">👑</div>
+              <div class="achievement-placeholder-text">Campaign achievements will honor boss slayers</div>
+            </div>
+          </div>
+        </div>
+      `;
     }
     
     function toggleMusic(key) {

@@ -108,6 +108,9 @@ if (sfxSlider) {
 // ==================== SFX SOUND SYSTEM ====================
 const SFX_VOLUME = 0.5; // SFX volume (0-1)
 
+// Sounds that should be played louder (1.5x volume boost)
+const BOOSTED_SOUNDS = ['move', 'draw'];
+
 // Sound file mapping - all mp3 format unless noted
 const SOUND_FILES = {
   // Universal sounds
@@ -125,6 +128,11 @@ const SOUND_FILES = {
   siren: '/audio/sfx/siren.wav',      // Void collapse countdown (loopable)
   hum: '/audio/sfx/hum.wav',          // Black hole warning (loopable)
   implosion: '/audio/sfx/implosion.mp3', // Black hole explosion
+  
+  // Lottery sounds
+  lotterySpin: '/audio/sfx/lottery-spin.mp3',
+  lotteryWin: '/audio/sfx/lottery-win.mp3',
+  lotteryWinLegendary: '/audio/sfx/lottery-win-legendary.mp3',
 };
 
 // Universal sounds for all cards
@@ -175,7 +183,13 @@ function playSFX(soundName) {
   if (cachedAudio) {
     // Clone the audio to allow overlapping sounds
     const sound = cachedAudio.cloneNode();
-    const targetVolume = (sfxSlider?.value || 50) / 100;
+    let targetVolume = (sfxSlider?.value || 50) / 100;
+    
+    // Apply 50% volume boost for move/draw sounds
+    if (BOOSTED_SOUNDS.includes(soundName)) {
+      targetVolume = Math.min(targetVolume * 1.5, 1.0);
+    }
+    
     const shouldFade = FADE_SOUNDS.includes(soundName);
     const startOffset = SOUND_START_OFFSETS[soundName] || 0;
     
@@ -974,11 +988,15 @@ let S = {
   attackedThisTurn: [],
   firstTurn: true,
   buffTiles: {},
-  moveCountThisTurn: {}
+  moveCountThisTurn: {},
+  attackCountThisTurn: {}
 };
 
 // Track cells that are currently showing damage animation
 let damagingCells = new Set();
+
+// Track units being destroyed by void collapse (hide from render)
+let voidDestroyingUnits = new Set();
 
 function enemyOf(owner) {
   return owner === "silver" ? "gold" : "silver";
@@ -1231,7 +1249,8 @@ function highlightUnitMoves(unitId) {
   const moveCount = S.moveCountThisTurn[unitId] || 0;
   const canDoubleMove = u.effectId === "double_move" || hasBuffTile("move_buff");
   const canLongMove = u.effectId === "stampede"; // Can move 2 tiles in one move
-  const maxMoves = canDoubleMove ? 2 : 1;
+  const hasUnlimitedMoves = u.gemBuffs && u.gemBuffs.unlimitedMoves; // Diamond gem buff
+  const maxMoves = hasUnlimitedMoves ? 999 : (canDoubleMove ? 2 : 1);
   const canStillMove = moveCount < maxMoves;
   const hasAttacked = S.attackedThisTurn.includes(unitId);
   const isFirstTurn = S.firstTurn;
@@ -1574,7 +1593,7 @@ function updateBatteryDisplay(energy) {
 // Active buffs display
 function updateActiveBuffsDisplay() {
   const buffsList = document.getElementById('activeBuffsList');
-  if (!buffsList || !S.buffTiles) return;
+  if (!buffsList) return;
   
   const BUFF_INFO = {
     'energy_buff': { icon: '⚡', name: 'Energy Well', class: 'energy' },
@@ -1587,14 +1606,22 @@ function updateActiveBuffsDisplay() {
   
   // Find which buff tiles have the player's units on them
   const activeBuffs = [];
-  for (const key in S.buffTiles) {
-    const buff = S.buffTiles[key];
-    const [row, col] = key.split('-').map(Number);
-    const unitId = S.board[row][col];
-    if (unitId && S.units[unitId] && S.units[unitId].owner === myRole) {
-      const buffInfo = BUFF_INFO[buff.id];
-      if (buffInfo && !activeBuffs.find(b => b.id === buff.id)) {
-        activeBuffs.push({ ...buffInfo, id: buff.id });
+  
+  // Add Wizard's Rune free wizard buff if active
+  if (S.freeWizard) {
+    activeBuffs.push({ icon: '🧙', name: 'Free Wizard', class: 'wizard', id: 'freeWizard' });
+  }
+  
+  if (S.buffTiles) {
+    for (const key in S.buffTiles) {
+      const buff = S.buffTiles[key];
+      const [row, col] = key.split('-').map(Number);
+      const unitId = S.board[row][col];
+      if (unitId && S.units[unitId] && S.units[unitId].owner === myRole) {
+        const buffInfo = BUFF_INFO[buff.id];
+        if (buffInfo && !activeBuffs.find(b => b.id === buff.id)) {
+          activeBuffs.push({ ...buffInfo, id: buff.id });
+        }
       }
     }
   }
@@ -1836,6 +1863,50 @@ function buildBoardOnce() {
 
 buildBoardOnce();
 
+// Card rarities for holo effects
+const CARD_RARITIES = {
+  // Medieval
+  peasant: 'common', squire: 'common', archer: 'common', manatarms: 'common', shieldbearer: 'common',
+  warhound: 'common', battlefieldmedic: 'rare', knight: 'rare', crusader: 'rare', royalguard: 'rare',
+  paladin: 'legendary', siegeram: 'rare', warbanner: 'rare', shrine: 'rare', armory: 'rare',
+  healspring: 'rare', castlewalls: 'legendary', treasury: 'legendary', rally: 'common',
+  // Void Alien
+  voiddrone: 'common', scavengerlarva: 'common', spittercrawler: 'common', phaseskirmisher: 'common',
+  energyleech: 'rare', burrowerbeast: 'rare', psionicoverseer: 'rare', neuralharvester: 'rare',
+  adaptivecolossus: 'legendary', sporetitan: 'legendary', voidbroodmother: 'legendary', eclipsedevourer: 'legendary',
+  ufoscraper: 'legendary', assimilation: 'rare', voidcollapse: 'rare', hiveascension: 'legendary',
+  // Western Skeleton
+  bonedeputy: 'common', dustyrattler: 'common', graverobber: 'rare', phantomscout: 'common',
+  bonerevolver: 'rare', undeadsheriff: 'rare', coffintrapper: 'rare', undertaker: 'rare',
+  thehangedman: 'legendary', ghostlystampede: 'legendary', bonecolossus: 'legendary',
+  deadmanshand: 'common', mostwanted: 'rare', shallowgrave: 'legendary', highnoon: 'legendary',
+  // Crimson Court
+  thrall: 'common', bloodfamiliar: 'common', nightstalker: 'common', cryptkeeper: 'rare',
+  vampirespawn: 'common', bloodpriest: 'rare', soulcollector: 'rare', nosferatu: 'rare',
+  coffin: 'rare', bloodcountess: 'legendary', eldervampire: 'legendary', vampirelord: 'legendary',
+  bloodmoon: 'legendary', crimsonsacrifice: 'rare', sanguinepact: 'rare', eternalhunger: 'legendary',
+  // Moon Elf
+  moonlitarcher: 'common', lunarfawn: 'common', starweaver: 'common', moonbladesentinel: 'common',
+  celestialmender: 'rare', dreamwalker: 'rare', moonfiresprite: 'rare', eclipsewarden: 'rare',
+  lunarqueen: 'legendary', moonshadowassassin: 'legendary', celestialdancer: 'legendary',
+  moonfire: 'common', lunarblessing: 'rare', eclipseveil: 'rare', celestialconvergence: 'legendary',
+  // Steampunk
+  gearsmith: 'common', steamdrone: 'common', brassguardian: 'common', cogworksaboteur: 'common',
+  aethericsniper: 'rare', mechanizedinfantry: 'rare', clockworkassassin: 'rare', steamtitan: 'rare',
+  ironcladdreadnought: 'legendary', gearworkharvester: 'legendary', arcaneengine: 'legendary',
+  overcharge: 'common', brassbarrier: 'rare', mechanizedassault: 'rare', clockworkapocalypse: 'legendary',
+  // Forest
+  sprite: 'common', forestfox: 'common', thornweaver: 'common', vinesnare: 'common',
+  elderoak: 'rare', beehivebomber: 'rare', wolfpackleader: 'rare', livingcompost: 'rare',
+  ancienttreant: 'legendary', blossomdragon: 'legendary', forestspirit: 'legendary',
+  regrowth: 'common', naturesgrasp: 'rare', wildgrowth: 'rare', forestsvengeance: 'legendary',
+  // Dragon Wizard
+  meditationmonk: 'common', wyrmwhelp: 'common', wizardsrune: 'common', cinderwing: 'common',
+  manasiphonmage: 'rare', arcanetether: 'rare', stormdrake: 'rare', mirrorwizard: 'rare', volcanicdragon: 'rare',
+  redwizard: 'legendary', bluewizard: 'legendary', chronodrake: 'legendary',
+  polymorph: 'rare', manadrain: 'rare', overchargebolt: 'rare', arcanerift: 'legendary', dragonsfury: 'legendary'
+};
+
 // Card icons based on card key
 const CARD_ICONS = {
   // Medieval
@@ -1861,6 +1932,10 @@ function renderHand() {
     if (card.type === "spell") el.classList.add("spell-card");
     if (card.id === selectedCardId) el.classList.add("selected");
     if (card.stolen) el.classList.add("stolen-card"); // Grayscale for Soul Collector stolen cards
+    if (card.isHolo) {
+      const rarity = CARD_RARITIES[card.key] || 'common';
+      el.classList.add("holo-card", `holo-${rarity}`); // Holographic effect based on rarity
+    }
 
     const icon = CARD_ICONS[card.key] || '⚔️';
     const effectLabel = card.effectDesc ? card.effectDesc.split(':')[0] : '';
@@ -1881,6 +1956,7 @@ function renderHand() {
       <div class="cardCost">${card.cost}</div>
       ${card.type === 'spell' ? '<div class="cardType">SPELL</div>' : ''}
       ${card.stolen ? '<div class="stolenBadge">👻</div>' : ''}
+      ${card.isHolo ? '<div class="holoBadge">✨</div>' : ''}
       <div class="cardInfoOverlay">
         <div class="cardName">${card.name}</div>
         ${effectLabel ? `<div class="cardEffect">${effectLabel}</div>` : ''}
@@ -2051,11 +2127,22 @@ function renderSpawnUnit(el, unitId, spawnEl) {
   }
   
   const u = S.units[unitId];
+  
+  // Art display - same as board units
+  const icon = CARD_ICONS[u.key] || '⚔️';
+  const hasArt = u.art;
+  const encodedArt = hasArt ? encodeURI(u.art) : '';
+  const artStyle = hasArt ? `background: url('${encodedArt}') center/cover no-repeat` : '';
+  const artContent = hasArt ? '' : icon;
+  
   el.innerHTML = `
-    <div class="unitName">${u.name}</div>
-    <div class="unitStats">
-      <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${u.atk}</div>
-      <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}</div>
+    <div class="unitArt" style="${artStyle}">${artContent}</div>
+    <div class="unitInfoOverlay">
+      <div class="unitName">${u.name}</div>
+      <div class="unitStats">
+        <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${u.atk}</div>
+        <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}</div>
+      </div>
     </div>
   `;
   el.parentElement?.classList.add("occupied");
@@ -2128,7 +2215,7 @@ function renderAll() {
 
       applyCls(cellEl);
 
-      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical", "blood-chalice-tile");
+      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical", "blood-chalice-tile", "gem-rain-warning");
       cellEl.removeAttribute("data-buff-icon");
       cellEl.innerHTML = "";
       
@@ -2153,6 +2240,26 @@ function renderAll() {
         if (tile) {
           cellEl.classList.add("ghost-train-warning");
           cellEl.classList.add(tile.lineType === 'row' ? 'train-horizontal' : 'train-vertical');
+        }
+      }
+      
+      // Check for gem rain warning (generic glow - don't know which gems yet)
+      if (S.bossEventWarning && S.bossEventWarning.type === 'gem_rain') {
+        const isWarningTile = S.bossEventWarning.tiles.some(t => t.r === sr && t.c === c);
+        if (isWarningTile) {
+          cellEl.classList.add("gem-rain-warning");
+          
+          // Add particle container
+          const particleContainer = document.createElement('div');
+          particleContainer.className = 'gem-particles';
+          for (let i = 0; i < 5; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'gem-particle';
+            particle.style.setProperty('--delay', `${i * 0.2}s`);
+            particle.style.setProperty('--x-offset', `${(Math.random() - 0.5) * 30}px`);
+            particleContainer.appendChild(particle);
+          }
+          cellEl.appendChild(particleContainer);
         }
       }
       
@@ -2224,6 +2331,12 @@ function renderAll() {
         cellEl.onmouseleave = null;
         continue;
       }
+      
+      // Skip rendering units being destroyed by void collapse
+      if (voidDestroyingUnits.has(unitId)) {
+        cellEl.textContent = coordLabel(sr, c);
+        continue;
+      }
 
       const wrap = document.createElement("div");
       wrap.className = "unit";
@@ -2237,6 +2350,12 @@ function renderAll() {
       // Add stolen class for Soul Collector stolen units
       if (u.stolen) wrap.classList.add("stolen-unit");
       
+      // Add holo class for holographic cards with rarity-based effect
+      if (u.isHolo) {
+        const rarity = CARD_RARITIES[u.key] || 'common';
+        wrap.classList.add("holo-unit", `holo-${rarity}`);
+      }
+      
       // Add untargetable class for burrowed/phantom units
       if (u.untargetable) wrap.classList.add("untargetable");
       
@@ -2244,6 +2363,15 @@ function renderAll() {
       const damageKey = `${sr}-${c}`;
       if (damagingCells.has(damageKey)) {
         wrap.classList.add("taking-damage");
+      }
+      
+      // Add attack animation if this unit is attacking
+      const attackKey = `${sr}-${c}`;
+      if (attackingCells.has(attackKey)) {
+        const { budgeX, budgeY } = attackingCells.get(attackKey);
+        wrap.style.setProperty('--budge-x', `${budgeX}px`);
+        wrap.style.setProperty('--budge-y', `${budgeY}px`);
+        wrap.classList.add("attacking");
       }
       
       // Calculate buffs
@@ -2684,22 +2812,35 @@ function onCellClick(viewRow, col) {
       }
     }
   }
+  
+  // Ranged units (archer) can attack rows from 2 tiles away
+  const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce";
+  const bonusRange = a.bonusRange || 0;
+  const totalRange = (isRanged ? 2 : 1) + bonusRange;
+  const rowDist = Math.abs(ap.r - row);
+  const colDist = Math.abs(ap.c - col);
+  const isCardinal = (rowDist > 0 && colDist === 0) || (colDist > 0 && rowDist === 0);
+  const enemy = enemyOf(myRole);
+  const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+  
+  if (!validMove && isEnemyHomeRow && S.rowHP[row] > 0 && isCardinal) {
+    const maxDist = Math.max(rowDist, colDist);
+    if (maxDist <= totalRange) {
+      validMove = true; // Allow ranged row attack at distance
+    }
+  }
 
   if (!validMove) {
-    // Clicked non-adjacent empty cell (and not a valid knight leap) - deselect
+    // Clicked non-adjacent empty cell (and not a valid knight leap or ranged row attack) - deselect
     selectedUnitId = null;
     clearHighlights();
     renderAll();
     return;
   }
 
-  const enemy = enemyOf(myRole);
   const rowHasHP = S.rowHP[row] > 0;
   const hasAttacked = S.attackedThisTurn.includes(selectedUnitId);
   const hasMoved = S.movedThisTurn.includes(selectedUnitId);
-  
-  // Check if this is an enemy home row
-  const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
 
   // Check if clicking on a row-attack-valid cell (enemy home row with HP, no enemy units there)
   if (isEnemyHomeRow && rowHasHP && !hasAttacked) {
@@ -2759,8 +2900,8 @@ socket.on("bossEventExecute", (data) => {
     blackHoleHumSound = null;
     warningSirenSound = playLoopingSFX('siren');
     
-    // Show dramatic countdown sequence
-    showVoidCollapseSequence(data.tiles, data.destroyed);
+    // Show dramatic countdown sequence with destroyed units info
+    showVoidCollapseSequence(data.tiles, data.destroyed, data.destroyedUnits || []);
   } else if (data.type === 'ghost_train') {
     // Show ghost train sequence
     showGhostTrainSequence(data.lines, data.tiles, data.destroyed, data.destroyedUnits);
@@ -2784,6 +2925,28 @@ socket.on("bloodChaliceSpawn", (data) => {
 socket.on("bloodChaliceConsumed", (data) => {
   console.log("Blood chalice consumed:", data);
   animateChaliceConsume(data.row, data.col);
+});
+
+// Handle gem rain warning
+socket.on("gemRainWarning", (data) => {
+  console.log("Gem rain warning:", data);
+  combatLog(`💎 GEM RAIN: ${data.tiles.length} tiles are glowing!`, "boss-event");
+});
+
+// Handle gem rain execution
+socket.on("gemRainExecute", (data) => {
+  console.log("Gem rain execute:", data);
+  
+  // Clear warning tiles immediately when gems start falling
+  S.bossEventWarning = null;
+  renderAll();
+  
+  // Show falling gems with staggered timing
+  data.results.forEach((result, index) => {
+    setTimeout(() => {
+      animateGemFall(result.r, result.c, result.gemType, result.effect, result.unitName);
+    }, index * 300);
+  });
 });
 
 // Animate chalice falling onto a tile
@@ -2843,8 +3006,238 @@ function animateChaliceConsume(serverRow, col) {
   setTimeout(() => effect.remove(), 800);
 }
 
+// Gem fall and impact animation for gem rain event
+function animateGemFall(serverRow, col, gemType, effect, unitName) {
+  const viewRow = toViewRow(serverRow);
+  const cellEl = document.getElementById(cellId(viewRow, col));
+  if (!cellEl) return;
+  
+  const rect = cellEl.getBoundingClientRect();
+  
+  // Create falling gem image
+  const gemEl = document.createElement('div');
+  gemEl.className = 'gem-falling';
+  gemEl.style.cssText = `
+    position: fixed;
+    left: ${rect.left + rect.width / 2}px;
+    top: -60px;
+    width: 50px;
+    height: 50px;
+    background-image: url('/images/gems/gem-${gemType}.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transform: translateX(-50%);
+    z-index: 1000;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+    pointer-events: none;
+  `;
+  document.body.appendChild(gemEl);
+  
+  // Animate the fall (slower - 700ms)
+  const targetY = rect.top + rect.height / 2;
+  const duration = 700;
+  const startTime = performance.now();
+  const startY = -60;
+  
+  function animateFall(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Easing function for acceleration (ease-in)
+    const easeIn = progress * progress;
+    const currentY = startY + (targetY - startY) * easeIn;
+    
+    // Add slight rotation during fall
+    const rotation = progress * 360;
+    
+    gemEl.style.top = currentY + 'px';
+    gemEl.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+    
+    if (progress < 1) {
+      requestAnimationFrame(animateFall);
+    } else {
+      // Gem has landed - show impact effect
+      gemEl.remove();
+      showGemImpact(cellEl, rect, gemType, effect, unitName);
+    }
+  }
+  
+  requestAnimationFrame(animateFall);
+}
+
+// Show gem impact effect after landing
+function showGemImpact(cellEl, rect, gemType, effect, unitName) {
+  // Color mapping for each gem type
+  const gemColors = {
+    ruby: { main: 'rgba(239, 68, 68, 1)', glow: 'rgba(239, 68, 68, 0.6)', enshroud: 'rgba(239, 68, 68, 0.5)' },
+    emerald: { main: 'rgba(34, 197, 94, 1)', glow: 'rgba(34, 197, 94, 0.6)', enshroud: 'rgba(34, 197, 94, 0.5)' },
+    topaz: { main: 'rgba(251, 146, 60, 1)', glow: 'rgba(251, 146, 60, 0.6)', enshroud: 'rgba(251, 146, 60, 0.5)' },
+    obsidian: { main: 'rgba(30, 30, 40, 1)', glow: 'rgba(60, 60, 80, 0.6)', enshroud: 'rgba(0, 0, 0, 0.6)' },
+    diamond: { main: 'rgba(255, 255, 255, 1)', glow: 'rgba(200, 220, 255, 0.8)', enshroud: 'rgba(255, 255, 255, 0.5)' }
+  };
+  
+  const colors = gemColors[gemType] || gemColors.diamond;
+  
+  // Create enshroud overlay on the tile
+  const enshroud = document.createElement('div');
+  enshroud.className = 'gem-enshroud';
+  enshroud.style.cssText = `
+    position: absolute;
+    inset: 0;
+    background: ${colors.enshroud};
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-in;
+  `;
+  cellEl.style.position = 'relative';
+  cellEl.appendChild(enshroud);
+  
+  // Fade in the enshroud
+  requestAnimationFrame(() => {
+    enshroud.style.opacity = '1';
+  });
+  
+  // Remove enshroud after 1.5 seconds
+  setTimeout(() => {
+    enshroud.style.transition = 'opacity 0.5s ease-out';
+    enshroud.style.opacity = '0';
+    setTimeout(() => enshroud.remove(), 500);
+  }, 1500);
+  
+  // Create shockwave ring
+  const shockwave = document.createElement('div');
+  shockwave.className = 'gem-shockwave';
+  shockwave.style.cssText = `
+    position: fixed;
+    left: ${rect.left + rect.width / 2}px;
+    top: ${rect.top + rect.height / 2}px;
+    width: 20px;
+    height: 20px;
+    border: 3px solid ${colors.main};
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    pointer-events: none;
+    box-shadow: 0 0 15px ${colors.glow}, inset 0 0 10px ${colors.glow};
+  `;
+  document.body.appendChild(shockwave);
+  
+  // Animate shockwave expanding
+  requestAnimationFrame(() => {
+    shockwave.style.transition = 'all 0.4s ease-out';
+    shockwave.style.width = '100px';
+    shockwave.style.height = '100px';
+    shockwave.style.opacity = '0';
+    shockwave.style.borderWidth = '1px';
+  });
+  
+  setTimeout(() => shockwave.remove(), 500);
+  
+  // Create flash effect
+  const flash = document.createElement('div');
+  flash.className = 'gem-flash';
+  flash.style.cssText = `
+    position: fixed;
+    left: ${rect.left + rect.width / 2}px;
+    top: ${rect.top + rect.height / 2}px;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, ${colors.main} 0%, ${colors.glow} 40%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.3);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 1;
+  `;
+  document.body.appendChild(flash);
+  
+  // Animate flash
+  requestAnimationFrame(() => {
+    flash.style.transition = 'all 0.3s ease-out';
+    flash.style.transform = 'translate(-50%, -50%) scale(1.5)';
+    flash.style.opacity = '0';
+  });
+  
+  setTimeout(() => flash.remove(), 400);
+  
+  // Create sparkle particles
+  for (let i = 0; i < 8; i++) {
+    const particle = document.createElement('div');
+    const angle = (i / 8) * Math.PI * 2;
+    const distance = 40 + Math.random() * 20;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+    
+    particle.style.cssText = `
+      position: fixed;
+      left: ${rect.left + rect.width / 2}px;
+      top: ${rect.top + rect.height / 2}px;
+      width: 6px;
+      height: 6px;
+      background: ${colors.main};
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1002;
+      pointer-events: none;
+      box-shadow: 0 0 8px ${colors.main}, 0 0 15px ${colors.glow};
+    `;
+    document.body.appendChild(particle);
+    
+    // Animate particle outward
+    requestAnimationFrame(() => {
+      particle.style.transition = 'all 0.4s ease-out';
+      particle.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`;
+      particle.style.opacity = '0';
+    });
+    
+    setTimeout(() => particle.remove(), 500);
+  }
+  
+  // Show floating effect text
+  if (effect && effect !== 'miss') {
+    const textEl = document.createElement('div');
+    textEl.style.cssText = `
+      position: fixed;
+      left: ${rect.left + rect.width / 2}px;
+      top: ${rect.top + rect.height / 2}px;
+      transform: translate(-50%, -50%);
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: bold;
+      color: ${colors.main};
+      text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px ${colors.glow};
+      z-index: 1003;
+      pointer-events: none;
+      white-space: nowrap;
+    `;
+    textEl.textContent = effect;
+    document.body.appendChild(textEl);
+    
+    // Animate upward and fade
+    requestAnimationFrame(() => {
+      textEl.style.transition = 'all 0.8s ease-out';
+      textEl.style.top = (rect.top - 30) + 'px';
+      textEl.style.opacity = '0';
+    });
+    
+    setTimeout(() => textEl.remove(), 900);
+  }
+  
+  // Log to combat log
+  if (unitName) {
+    const gemNames = { ruby: '💎 Ruby', emerald: '💎 Emerald', topaz: '💎 Topaz', obsidian: '💎 Obsidian', diamond: '💎 Diamond' };
+    combatLog(`${gemNames[gemType]} hits ${unitName}: ${effect}`, gemType === 'obsidian' ? 'damage' : 'buff');
+  }
+}
+
 // Dramatic void collapse countdown and destruction sequence
-function showVoidCollapseSequence(tiles, destroyedCount) {
+function showVoidCollapseSequence(tiles, destroyedCount, destroyedUnits = []) {
+  // Clear the warning tiles immediately so black hole images disappear
+  S.bossEventWarning = null;
+  renderAll();
+  
   // Create overlay with caution tape wrapped content
   const overlay = document.createElement('div');
   overlay.className = 'void-collapse-overlay';
@@ -2889,17 +3282,42 @@ function showVoidCollapseSequence(tiles, destroyedCount) {
     setTimeout(() => {
       overlay.remove();
       
-      // NOW trigger implosions after overlay is gone
-      tiles.forEach((tile, index) => {
-        setTimeout(() => {
-          playSFX('implosion'); // Play implosion sound for each tile
-          animateVoidCollapse(tile.r, tile.c);
-        }, index * 150); // Stagger the implosions
+      // Sort tiles from bottom-left to top-right (highest row first, then lowest col)
+      // In server coordinates: higher row = bottom, lower col = left
+      const sortedTiles = [...tiles].sort((a, b) => {
+        if (b.r !== a.r) return b.r - a.r; // Higher row (bottom) first
+        return a.c - b.c; // Lower col (left) first
       });
       
-      // Show result in combat log after implosions
-      const implosionDuration = tiles.length * 150 + 500;
+      // Create a map of tile positions to their explosion timing
+      const tileTimingMap = {};
+      sortedTiles.forEach((tile, index) => {
+        tileTimingMap[`${tile.r}-${tile.c}`] = index * 150;
+      });
+      
+      // Trigger implosions in sorted order, with unit death synced to each tile
+      sortedTiles.forEach((tile, index) => {
+        setTimeout(() => {
+          playSFX('implosion');
+          animateVoidCollapse(tile.r, tile.c);
+          
+          // Find if there's a unit on this tile and animate its death
+          const unitOnTile = destroyedUnits.find(u => u.r === tile.r && u.c === tile.c);
+          if (unitOnTile) {
+            // Add to destroying set so it's hidden from render immediately
+            voidDestroyingUnits.add(unitOnTile.id);
+            renderAll(); // Re-render to hide the unit
+            animateUnitVoidDeath(unitOnTile.r, unitOnTile.c, unitOnTile.art);
+          }
+        }, index * 150);
+      });
+      
+      // Show result in combat log and clear destroying set after all implosions
+      const implosionDuration = sortedTiles.length * 150 + 500;
       setTimeout(() => {
+        // Clear the destroying set
+        voidDestroyingUnits.clear();
+        
         if (destroyedCount > 0) {
           combatLog(`VOID COLLAPSE DETONATED! ${destroyedCount} unit(s) obliterated!`, "boss-execute");
         } else {
@@ -2908,6 +3326,73 @@ function showVoidCollapseSequence(tiles, destroyedCount) {
       }, implosionDuration);
     }, 500);
   }, 3000);
+}
+
+// Animate a unit disintegrating into the void
+function animateUnitVoidDeath(serverRow, col, artPath) {
+  const viewRow = toViewRow(serverRow);
+  const cellEl = document.getElementById(cellId(viewRow, col));
+  if (!cellEl) return;
+  
+  const rect = cellEl.getBoundingClientRect();
+  
+  // Create container for the disintegration effect
+  const container = document.createElement('div');
+  container.className = 'void-death-container';
+  container.style.left = rect.left + 'px';
+  container.style.top = rect.top + 'px';
+  container.style.width = rect.width + 'px';
+  container.style.height = rect.height + 'px';
+  
+  // Create the unit image that will fade
+  const unitGhost = document.createElement('div');
+  unitGhost.className = 'void-death-unit';
+  unitGhost.style.width = '100%';
+  unitGhost.style.height = '100%';
+  if (artPath) {
+    unitGhost.style.backgroundImage = `url('${encodeURI(artPath)}')`;
+  }
+  container.appendChild(unitGhost);
+  
+  // Create disintegration particles
+  const particleCount = 30;
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'void-death-particle';
+    
+    // Random position within the unit
+    const startX = Math.random() * 100;
+    const startY = Math.random() * 100;
+    
+    // Random direction outward then inward to center
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 30 + Math.random() * 50;
+    const size = 2 + Math.random() * 4;
+    const delay = Math.random() * 0.3;
+    const duration = 0.5 + Math.random() * 0.3;
+    
+    particle.style.left = startX + '%';
+    particle.style.top = startY + '%';
+    particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+    particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+    particle.style.setProperty('--size', `${size}px`);
+    particle.style.setProperty('--delay', `${delay}s`);
+    particle.style.setProperty('--duration', `${duration}s`);
+    
+    container.appendChild(particle);
+  }
+  
+  document.body.appendChild(container);
+  
+  // Trigger the disintegration animation
+  requestAnimationFrame(() => {
+    unitGhost.classList.add('disintegrating');
+  });
+  
+  // Remove after animation (150ms - before next tile explodes)
+  setTimeout(() => {
+    container.remove();
+  }, 150);
 }
 
 // Animate void collapse destruction effect on a single tile
@@ -3211,12 +3696,58 @@ function animateGhostTrainImpact(serverRow, col) {
 
 // ==================== END GHOST TRAIN SEQUENCE ====================
 
+// Track cells that are currently showing attack animation
+let attackingCells = new Map(); // key -> {budgeX, budgeY, timestamp}
+
 // Handle animation events
 socket.on("animate", (data) => {
+  console.log("Animate event received:", data);
   if (data.type === "move") {
     animateUnitMove(data.unitId, data.fromRow, data.fromCol, data.toRow, data.toCol);
   } else if (data.type === "destroy") {
     animateDestruction(data.row, data.col);
+  } else if (data.type === "attack") {
+    console.log("Attack animation:", data);
+    // Track attacker for budge animation
+    const attackerViewRow = toViewRow(data.attackerRow);
+    const targetViewRow = toViewRow(data.targetRow);
+    
+    console.log("attackerViewRow:", attackerViewRow, "targetViewRow:", targetViewRow);
+    
+    // Calculate direction from attacker to target (in view coordinates)
+    const dRow = targetViewRow - attackerViewRow;
+    const dCol = data.targetCol - data.attackerCol;
+    
+    // Normalize and scale for budge distance (15px)
+    const len = Math.sqrt(dRow * dRow + dCol * dCol) || 1;
+    const budgeX = (dCol / len) * 15;
+    const budgeY = (dRow / len) * 15;
+    
+    console.log("budgeX:", budgeX, "budgeY:", budgeY);
+    
+    const key = `${data.attackerRow}-${data.attackerCol}`;
+    attackingCells.set(key, { budgeX, budgeY });
+    
+    // Apply animation immediately by finding the unit and adding the class
+    const cellIdStr = cellId(attackerViewRow, data.attackerCol);
+    console.log("Looking for cell:", cellIdStr);
+    const attackerCell = document.getElementById(cellIdStr);
+    console.log("Found cell:", attackerCell);
+    if (attackerCell) {
+      const unitEl = attackerCell.querySelector('.unit');
+      console.log("Found unit:", unitEl);
+      if (unitEl) {
+        unitEl.style.setProperty('--budge-x', `${budgeX}px`);
+        unitEl.style.setProperty('--budge-y', `${budgeY}px`);
+        unitEl.classList.add('attacking');
+        console.log("Added attacking class");
+      }
+    }
+    
+    // Remove after animation completes
+    setTimeout(() => {
+      attackingCells.delete(key);
+    }, 300);
   } else if (data.type === "damage") {
     // Add to tracking set and let renderAll apply the class
     const key = `${data.row}-${data.col}`;
@@ -3227,6 +3758,20 @@ socket.on("animate", (data) => {
     }, 500);
   }
 });
+
+// Apply attack animation - called from renderAll
+function applyAttackAnimation(cell, serverRow, col) {
+  const key = `${serverRow}-${col}`;
+  if (attackingCells.has(key)) {
+    const unitEl = cell.querySelector('.unit');
+    if (unitEl) {
+      const { budgeX, budgeY } = attackingCells.get(key);
+      unitEl.style.setProperty('--budge-x', `${budgeX}px`);
+      unitEl.style.setProperty('--budge-y', `${budgeY}px`);
+      unitEl.classList.add('attacking');
+    }
+  }
+}
 
 // Animate unit taking damage - called from renderAll
 function applyDamageAnimation(cell, serverRow, col) {
@@ -3489,6 +4034,7 @@ socket.on("state", (st) => {
   S.firstTurn = !!st.firstTurn;
   S.buffTiles = st.buffTiles || {};
   S.moveCountThisTurn = st.moveCountThisTurn || {};
+  S.attackCountThisTurn = st.attackCountThisTurn || {};
   S.bossEventWarning = st.bossEventWarning || null;
   S.chaliceTiles = st.chaliceTiles || [];
   
@@ -3705,6 +4251,9 @@ socket.on("enemyInfo", (data) => {
 
 // Show game over screen (Victory or Defeat)
 function showGameOverScreen(winner) {
+  // Don't show for campaign/boss battles - they have their own victory/defeat handling
+  if (isCampaign) return;
+  
   // Don't show if already shown or if campaign victory will show
   if (document.querySelector('.game-over-overlay')) return;
   
@@ -4460,7 +5009,26 @@ function showCampaignVictoryPopup(data) {
     'starlitchampion': 'Starlit Champion',
     'starinvoker': 'Star Invoker',
     'templeofthemoon': 'Temple of the Moon',
-    'lunarbarrage': 'Lunar Barrage'
+    'lunarbarrage': 'Lunar Barrage',
+    // Dragon Wizard
+    'meditationmonk': 'Meditation Monk',
+    'wyrmwhelp': 'Wyrm Whelp',
+    'wizardsrune': "Wizard's Rune",
+    'cinderwing': 'Cinderwing',
+    'manasiphonmage': 'Mana Siphon Mage',
+    'arcanetether': 'Arcane Tether',
+    'stormdrake': 'Storm Drake',
+    'mirrorwizard': 'Mirror Wizard',
+    'volcanicdragon': 'Volcanic Dragon',
+    'redwizard': 'Red Wizard',
+    'bluewizard': 'Blue Wizard',
+    'chronodrake': 'Chrono Drake',
+    'polymorph': 'Polymorph',
+    'manadrain': 'Mana Drain',
+    'overchargebolt': 'Overcharge Bolt',
+    'arcanerift': 'Arcane Rift',
+    'dragonsfury': "Dragon's Fury",
+    'sheep': 'Sheep'
   };
   
   // Slot machine reveal animation
@@ -4472,6 +5040,17 @@ function showCampaignVictoryPopup(data) {
   
   // Start spinning all slots
   slots.forEach(slot => slot.classList.add('spinning'));
+  
+  // Play lottery spin sound (looping) - use preloaded audio
+  const spinSound = audioCache['lotterySpin'] ? audioCache['lotterySpin'].cloneNode() : new Audio('/audio/sfx/lottery-spin.mp3');
+  spinSound.loop = true;
+  spinSound.volume = isSfxMuted ? 0 : (parseFloat(sfxSlider?.value) / 100 || 0.5);
+  console.log('[LOTTERY] Starting spin sound, volume:', spinSound.volume, 'muted:', isSfxMuted);
+  spinSound.play().then(() => {
+    console.log('[LOTTERY] Spin sound playing');
+  }).catch((err) => {
+    console.log('[LOTTERY] Spin sound failed:', err);
+  });
   
   // Card art paths (matching server definitions)
   const cardArtPaths = {
@@ -4555,7 +5134,26 @@ function showCampaignVictoryPopup(data) {
     'starlitchampion': '/images/Starlit Champion.png',
     'starinvoker': '/images/Star Invoker.png',
     'templeofthemoon': '/images/Temple of the Moon.png',
-    'lunarbarrage': '/images/Lunar Barrage.png'
+    'lunarbarrage': '/images/Lunar Barrage.png',
+    // Dragon Wizard
+    'meditationmonk': '/images/Meditation Monk.png',
+    'wyrmwhelp': '/images/Wyrm Whelp.png',
+    'wizardsrune': '/images/Wizards Rune.png',
+    'cinderwing': '/images/Cinderwing.png',
+    'manasiphonmage': '/images/Mana Siphon Mage.png',
+    'arcanetether': '/images/Arcane Tether.png',
+    'stormdrake': '/images/Storm Drake.png',
+    'mirrorwizard': '/images/Mirror Wizard.png',
+    'volcanicdragon': '/images/Volcanic Dragon.png',
+    'redwizard': '/images/Red Wizard.png',
+    'bluewizard': '/images/Blue Wizard.png',
+    'chronodrake': '/images/Chrono Drake.png',
+    'polymorph': '/images/Polymorph.png',
+    'manadrain': '/images/Mana Drain.png',
+    'overchargebolt': '/images/Overcharge Bolt.png',
+    'arcanerift': '/images/Arcane Rift.png',
+    'dragonsfury': '/images/Dragons Fury.png',
+    'sheep': '/images/Sheep.png'
   };
   
   // Card rarities for visual effects
@@ -4641,10 +5239,29 @@ function showCampaignVictoryPopup(data) {
     'starlitchampion': 'legendary',
     'starinvoker': 'legendary',
     'templeofthemoon': 'legendary',
-    'lunarbarrage': 'legendary'
+    'lunarbarrage': 'legendary',
+    // Dragon Wizard
+    'meditationmonk': 'common',
+    'wyrmwhelp': 'common',
+    'wizardsrune': 'common',
+    'cinderwing': 'common',
+    'manasiphonmage': 'rare',
+    'arcanetether': 'rare',
+    'stormdrake': 'rare',
+    'mirrorwizard': 'rare',
+    'volcanicdragon': 'rare',
+    'redwizard': 'legendary',
+    'bluewizard': 'legendary',
+    'chronodrake': 'legendary',
+    'polymorph': 'rare',
+    'manadrain': 'rare',
+    'overchargebolt': 'rare',
+    'arcanerift': 'legendary',
+    'dragonsfury': 'legendary'
   };
   
   // Reveal cards one by one with delays
+  let hasLegendary = false;
   data.rewards.cards.forEach((cardData, index) => {
     setTimeout(() => {
       const slot = slots[index];
@@ -4654,9 +5271,33 @@ function showCampaignVictoryPopup(data) {
       const isHolo = typeof cardData === 'object' ? cardData.isHolo : false;
       const rarity = cardRarities[cardKey] || 'common';
       
+      // Track if any legendary
+      if (rarity === 'legendary') hasLegendary = true;
+      
       slot.classList.remove('spinning');
       slot.classList.add('revealed', rarity);
       if (isHolo) slot.classList.add('holo');
+      
+      // Stop spin sound on first reveal
+      if (index === 0) {
+        console.log('[LOTTERY] Stopping spin sound');
+        spinSound.pause();
+        spinSound.currentTime = 0;
+      }
+      
+      // Play win sound based on rarity - use preloaded audio
+      const winSoundKey = rarity === 'legendary' ? 'lotteryWinLegendary' : 'lotteryWin';
+      const winSoundPath = rarity === 'legendary' 
+        ? '/audio/sfx/lottery-win-legendary.mp3' 
+        : '/audio/sfx/lottery-win.mp3';
+      console.log('[LOTTERY] Playing win sound:', winSoundKey, 'rarity:', rarity);
+      const winSound = audioCache[winSoundKey] ? audioCache[winSoundKey].cloneNode() : new Audio(winSoundPath);
+      winSound.volume = isSfxMuted ? 0 : (parseFloat(sfxSlider?.value) / 100 || 0.5);
+      winSound.play().then(() => {
+        console.log('[LOTTERY] Win sound playing');
+      }).catch((err) => {
+        console.log('[LOTTERY] Win sound failed:', err);
+      });
       
       // Use actual card art image - encode URL for spaces
       const artPath = encodeURI(cardArtPaths[cardKey] || `/images/${cardKey}.png`);
@@ -4683,7 +5324,6 @@ function showCampaignVictoryPopup(data) {
         ${holoLabel}
       `;
       
-      // Play a sound effect (optional - just visual for now)
     }, 1000 + (index * 800)); // 1s initial delay, then 0.8s between each
   });
   
@@ -4814,14 +5454,16 @@ function updateUnitHighlights() {
       const hasMoved = S.movedThisTurn.includes(unitId);
       const hasAttacked = S.attackedThisTurn.includes(unitId);
       
-      // Check move count for double-move units
+      // Check move count for double-move units and diamond gem buff
       const moveCount = S.moveCountThisTurn ? (S.moveCountThisTurn[unitId] || 0) : (hasMoved ? 1 : 0);
-      const maxMoves = unit.effectId === 'double_move' ? 2 : 1;
+      const hasUnlimitedMoves = unit.gemBuffs && unit.gemBuffs.unlimitedMoves;
+      const maxMoves = hasUnlimitedMoves ? 999 : (unit.effectId === 'double_move' ? 2 : 1);
       const canStillMove = moveCount < maxMoves;
       
-      // Check attack count for double-attack units
-      const attackCount = unit.attackCountThisTurn || 0;
-      const maxAttacks = unit.canDoubleAttack ? 2 : 1;
+      // Check attack count for double-attack units and topaz gem buff
+      const attackCount = S.attackCountThisTurn ? (S.attackCountThisTurn[unitId] || 0) : 0;
+      const topazBonus = (unit.gemBuffs && unit.gemBuffs.extraAttacks) || 0;
+      const maxAttacks = (unit.canDoubleAttack ? 2 : 1) + topazBonus;
       const canStillAttack = attackCount < maxAttacks && !hasAttacked;
       
       if (highlightingMoves) {

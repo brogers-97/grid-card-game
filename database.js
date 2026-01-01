@@ -211,7 +211,7 @@ const CAMPAIGN_BOSSES = [
     eventConfig: {
       turnInterval: 3, // Every 3 boss turns
       startSize: 2,    // Starts as 2x2
-      maxSize: 4,      // Grows up to 4x4
+      maxSize: 3,      // Grows up to 3x3
       growthRate: 1    // Grows by 1 each occurrence
     }
   },
@@ -271,6 +271,13 @@ const CAMPAIGN_BOSSES = [
     unlocks: {
       music: 'jeweled-court',
       background: 'jeweled-court'
+    },
+    eventType: 'gem_rain',
+    eventConfig: {
+      turnInterval: 3,    // Every 3 boss turns
+      startCount: 3,      // Starts with 3 gems
+      maxCount: 7,        // Max 7 gems
+      growthRate: 1       // Grows by 1 each occurrence
     }
   },
   {

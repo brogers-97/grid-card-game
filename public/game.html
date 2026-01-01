@@ -770,6 +770,11 @@
     .activeBuff.draw { background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #a855f7; }
     .activeBuff.move { background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.4); color: #22d3ee; }
     .activeBuff.hp { background: rgba(244, 114, 182, 0.15); border-color: rgba(244, 114, 182, 0.4); color: #f472b6; }
+    .activeBuff.wizard { background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.6); color: #a78bfa; animation: wizardGlow 1.5s ease-in-out infinite; }
+    @keyframes wizardGlow {
+      0%, 100% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.3); }
+      50% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.6); }
+    }
 
     .activeBuffIcon { font-size: 14px; }
     .activeBuffName { font-weight: 600; }
@@ -1286,14 +1291,14 @@
     /* ===== HOME TILES ===== */
     .spawn{
       width: 70px;
-      min-height: 90px;
+      height: 90px;
       border: 2px dashed rgba(138, 43, 226, 0.4);
       border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 6px;
+      padding: 4px;
       font-size: 10px;
       font-weight: 700;
       color: #a78bfa;
@@ -1324,28 +1329,78 @@
       border-style: solid;
       border-color: rgba(139, 92, 246, 0.5);
       background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+      padding: 0;
+    }
+    
+    .spawn.occupied .spawnLabel {
+      display: none;
     }
 
     .spawnLabel { font-size: 9px; margin-bottom: 4px; }
 
     .spawnUnit{
       width: 100%;
-      display: flex;
+      height: 100%;
+      display: none;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       font-size: 9px;
       color: #e2e8f0;
+      position: relative;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    
+    .spawn.occupied .spawnUnit {
+      display: flex;
+    }
+    
+    .spawnUnit .unitArt {
+      flex: 1;
+      background: linear-gradient(135deg, #4c1d95, #5b21b6, #6d28d9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+    
+    .spawnUnit .unitArt::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.95), transparent);
+      pointer-events: none;
+    }
+    
+    .spawnUnit .unitInfoOverlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .spawnUnit .unitName {
       font-family: 'Cinzel', serif;
       font-weight: 700;
-      font-size: 8px;
-      margin-bottom: 3px;
+      font-size: 7px;
+      text-align: center;
+      text-transform: uppercase;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
     .spawnUnit .unitStats {
       display: flex;
+      justify-content: center;
       gap: 6px;
     }
 
@@ -1354,7 +1409,7 @@
       align-items: center;
       gap: 2px;
       font-weight: 900;
-      font-size: 10px;
+      font-size: 9px;
     }
 
     .spawnUnit .unitAtk { color: #fb923c; }
@@ -1436,17 +1491,6 @@
     .draw-anim-card.opponent-draw .draw-card-back {
       font-size: 16px;
     }
-
-    .spawnUnit .unitStat {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      font-weight: 900;
-      font-size: 10px;
-    }
-
-    .spawnUnit .unitAtk { color: #fb923c; }
-    .spawnUnit .unitHp { color: #22d3ee; }
 
     /* ===== TURN INDICATOR (Left side) ===== */
     #turnIndicator {
@@ -2494,6 +2538,113 @@
       90% { transform: translateX(-1px); }
     }
 
+    /* ===== GEM RAIN EVENT (Garnet Queen) ===== */
+    .cell.gem-rain-warning {
+      position: relative;
+      border: 3px solid rgba(255, 255, 255, 0.9) !important;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3), rgba(200, 220, 255, 0.15)) !important;
+      box-shadow: 
+        0 0 20px rgba(255, 255, 255, 0.7),
+        0 0 40px rgba(200, 220, 255, 0.4),
+        inset 0 0 15px rgba(255, 255, 255, 0.3);
+      animation: gemWarningPulse 1.5s ease-in-out infinite;
+      z-index: 5;
+    }
+
+    .cell.gem-rain-warning.has-unit {
+      /* Slightly dimmer when unit is on tile */
+      box-shadow: 
+        0 0 15px rgba(255, 255, 255, 0.5),
+        0 0 30px rgba(200, 220, 255, 0.3),
+        inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    /* Floating particles */
+    .gem-particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .gem-particle {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 6px;
+      height: 6px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 1), rgba(200, 220, 255, 0.8));
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 12px rgba(200, 220, 255, 0.6);
+      animation: particleRise 1.5s ease-out infinite;
+      animation-delay: var(--delay, 0s);
+      transform: translateX(var(--x-offset, 0));
+    }
+
+    @keyframes gemWarningPulse {
+      0%, 100% { 
+        box-shadow: 
+          0 0 20px rgba(255, 255, 255, 0.7),
+          0 0 40px rgba(200, 220, 255, 0.4),
+          inset 0 0 15px rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.9);
+      }
+      50% { 
+        box-shadow: 
+          0 0 35px rgba(255, 255, 255, 0.9),
+          0 0 60px rgba(200, 220, 255, 0.6),
+          inset 0 0 25px rgba(255, 255, 255, 0.5);
+        border-color: rgba(255, 255, 255, 1);
+      }
+    }
+
+    @keyframes particleRise {
+      0% { 
+        bottom: 0;
+        opacity: 0;
+        transform: translateX(var(--x-offset, 0)) scale(0.5);
+      }
+      20% {
+        opacity: 1;
+      }
+      80% {
+        opacity: 1;
+      }
+      100% { 
+        bottom: 100%;
+        opacity: 0;
+        transform: translateX(var(--x-offset, 0)) scale(0.3);
+      }
+    }
+
+    /* Gem impact effect when gems fall (during execution) */
+    .gem-impact {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      animation: gemImpact 0.5s ease-out forwards;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .gem-impact.gem-ruby { background: radial-gradient(circle, rgba(239, 68, 68, 0.8), transparent 70%); }
+    .gem-impact.gem-emerald { background: radial-gradient(circle, rgba(34, 197, 94, 0.8), transparent 70%); }
+    .gem-impact.gem-topaz { background: radial-gradient(circle, rgba(251, 191, 36, 0.8), transparent 70%); }
+    .gem-impact.gem-obsidian { background: radial-gradient(circle, rgba(100, 100, 120, 0.8), transparent 70%); }
+    .gem-impact.gem-diamond { background: radial-gradient(circle, rgba(255, 255, 255, 0.9), transparent 70%); }
+
+    @keyframes gemImpact {
+      0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+    /* ===== END GEM RAIN EVENT ===== */
+
     /* Void explosion/implosion effect when destruction happens */
     @keyframes voidImplode {
       0% { 
@@ -2605,6 +2756,66 @@
           calc(-50% + var(--tx, 0px)), 
           calc(-50% + var(--ty, 0px))
         ) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* ===== VOID DEATH UNIT DISINTEGRATION ===== */
+    .void-death-container {
+      position: fixed;
+      z-index: 9999;
+      pointer-events: none;
+      overflow: visible;
+    }
+    
+    .void-death-unit {
+      position: absolute;
+      background-size: cover;
+      background-position: center;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.8);
+      transition: none;
+    }
+    
+    .void-death-unit.disintegrating {
+      animation: voidDisintegrate 0.15s ease-out forwards;
+    }
+    
+    @keyframes voidDisintegrate {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(0.7);
+        filter: brightness(2) saturate(0);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0);
+        filter: brightness(3) saturate(0);
+      }
+    }
+    
+    .void-death-particle {
+      position: absolute;
+      width: var(--size, 4px);
+      height: var(--size, 4px);
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(168, 85, 247, 0.8);
+      animation: voidParticleFly 0.15s ease-out forwards;
+    }
+    
+    @keyframes voidParticleFly {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
         opacity: 0;
       }
     }
@@ -2924,7 +3135,7 @@
     /* ===== HIGHLIGHT MODE INDICATOR ===== */
     .highlight-indicator {
       position: absolute;
-      left: -80px;
+      left: -100px;
       top: 50%;
       transform: translateY(-50%);
       display: flex;
@@ -2934,6 +3145,7 @@
       pointer-events: none;
       transition: opacity 0.2s ease;
       z-index: 100;
+      width: 80px;
     }
     
     .highlight-indicator.visible {
@@ -2943,14 +3155,16 @@
     .highlight-indicator-move,
     .highlight-indicator-attack {
       font-family: 'Cinzel', serif;
-      font-size: 16px;
+      font-size: 11px;
       font-weight: 700;
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 6px 4px;
+      border-radius: 6px;
       text-align: center;
       opacity: 0.3;
       transition: all 0.2s ease;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
     }
     
     .highlight-indicator-move {
@@ -3207,6 +3421,131 @@
       background: linear-gradient(to top, rgba(100, 116, 139, 0.95), transparent) !important;
     }
 
+    /* Holo unit on board - rainbow shimmer effect */
+    /* ===== HOLO CARD EFFECTS BY RARITY ===== */
+    
+    /* Base holo unit styles */
+    .unit.holo-unit {
+      position: relative;
+    }
+    
+    /* COMMON: Simple glimmer/shimmer */
+    .unit.holo-common::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.3) 45%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0.3) 55%,
+        transparent 60%
+      );
+      background-size: 200% 100%;
+      animation: shimmerCommon 2s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    @keyframes shimmerCommon {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    /* RARE: Rainbow holographic */
+    .unit.holo-rare::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 0, 0, 0.15) 0%,
+        rgba(255, 154, 0, 0.15) 10%,
+        rgba(208, 222, 33, 0.15) 20%,
+        rgba(79, 220, 74, 0.15) 30%,
+        rgba(63, 218, 216, 0.15) 40%,
+        rgba(47, 201, 226, 0.15) 50%,
+        rgba(28, 127, 238, 0.15) 60%,
+        rgba(95, 21, 242, 0.15) 70%,
+        rgba(186, 12, 248, 0.15) 80%,
+        rgba(251, 7, 217, 0.15) 90%,
+        rgba(255, 0, 0, 0.15) 100%
+      );
+      background-size: 200% 200%;
+      animation: holoRainbow 3s ease infinite;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: color-dodge;
+    }
+    
+    @keyframes holoRainbow {
+      0% { background-position: 0% 0%; }
+      50% { background-position: 100% 100%; }
+      100% { background-position: 0% 0%; }
+    }
+    
+    /* LEGENDARY: Epic shimmer + sparkle particles */
+    .unit.holo-legendary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 215, 0, 0.2) 0%,
+        rgba(255, 0, 128, 0.15) 25%,
+        rgba(0, 255, 255, 0.15) 50%,
+        rgba(128, 0, 255, 0.15) 75%,
+        rgba(255, 215, 0, 0.2) 100%
+      );
+      background-size: 300% 300%;
+      animation: holoLegendaryShimmer 4s ease infinite;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: screen;
+    }
+    
+    .unit.holo-legendary::after {
+      content: '✦ ✧ ✦';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      letter-spacing: 4px;
+      color: rgba(255, 255, 255, 0.8);
+      text-shadow: 
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 15px gold,
+        0 0 20px gold;
+      animation: sparkleFloat 2s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 11;
+    }
+    
+    @keyframes holoLegendaryShimmer {
+      0% { background-position: 0% 0%; opacity: 0.7; }
+      50% { background-position: 100% 100%; opacity: 1; }
+      100% { background-position: 0% 0%; opacity: 0.7; }
+    }
+    
+    @keyframes sparkleFloat {
+      0%, 100% { 
+        opacity: 0.6;
+        transform: translateY(0) scale(1);
+      }
+      50% { 
+        opacity: 1;
+        transform: translateY(-3px) scale(1.1);
+      }
+    }
+
     /* Enemy unit styling - red glow/border */
     .unit.enemy-unit {
       border-color: rgba(239, 68, 68, 0.8);
@@ -3369,6 +3708,18 @@
       100% { opacity: 0; }
     }
 
+    /* Unit attack animation - budge toward target */
+    .unit.attacking {
+      animation: unitAttackBudge 0.25s ease-out;
+      z-index: 100;
+    }
+
+    @keyframes unitAttackBudge {
+      0% { transform: translate(0, 0); }
+      40% { transform: translate(var(--budge-x, 0), var(--budge-y, 0)); }
+      100% { transform: translate(0, 0); }
+    }
+
     /* ===== HIGHLIGHTS ===== */
     .cell.deploy-valid{
       outline: 3px solid #10b981 !important;
@@ -3493,6 +3844,133 @@
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
       z-index: 5;
       opacity: 0.8;
+    }
+
+    /* Holo cards - rainbow shimmer effect */
+    /* ===== HOLO HAND CARD EFFECTS BY RARITY ===== */
+    
+    .handCard.holo-card {
+      position: relative;
+    }
+    
+    /* COMMON: Simple glimmer/shimmer */
+    .handCard.holo-common::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.4) 45%,
+        rgba(255, 255, 255, 0.6) 50%,
+        rgba(255, 255, 255, 0.4) 55%,
+        transparent 60%
+      );
+      background-size: 200% 100%;
+      animation: shimmerCommon 2s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    .handCard.holo-common:hover::after {
+      animation-duration: 1s;
+    }
+    
+    /* RARE: Rainbow holographic */
+    .handCard.holo-rare::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 0, 0, 0.2) 0%,
+        rgba(255, 154, 0, 0.2) 10%,
+        rgba(208, 222, 33, 0.2) 20%,
+        rgba(79, 220, 74, 0.2) 30%,
+        rgba(63, 218, 216, 0.2) 40%,
+        rgba(47, 201, 226, 0.2) 50%,
+        rgba(28, 127, 238, 0.2) 60%,
+        rgba(95, 21, 242, 0.2) 70%,
+        rgba(186, 12, 248, 0.2) 80%,
+        rgba(251, 7, 217, 0.2) 90%,
+        rgba(255, 0, 0, 0.2) 100%
+      );
+      background-size: 200% 200%;
+      animation: holoRainbow 3s ease infinite;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: color-dodge;
+    }
+    
+    .handCard.holo-rare:hover::after {
+      animation-duration: 1.5s;
+    }
+    
+    /* LEGENDARY: Epic shimmer + sparkle particles */
+    .handCard.holo-legendary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 215, 0, 0.25) 0%,
+        rgba(255, 0, 128, 0.2) 25%,
+        rgba(0, 255, 255, 0.2) 50%,
+        rgba(128, 0, 255, 0.2) 75%,
+        rgba(255, 215, 0, 0.25) 100%
+      );
+      background-size: 300% 300%;
+      animation: holoLegendaryShimmer 4s ease infinite;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: screen;
+    }
+    
+    .handCard.holo-legendary::after {
+      content: '✦ ✧ ✦';
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      letter-spacing: 6px;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 15px gold,
+        0 0 20px gold;
+      animation: sparkleFloat 2s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 11;
+    }
+    
+    .handCard.holo-legendary:hover::before {
+      animation-duration: 2s;
+    }
+    
+    .handCard.holo-legendary:hover::after {
+      animation-duration: 1s;
+    }
+    
+    .holoBadge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      font-size: 12px;
+      filter: drop-shadow(0 0 4px gold);
+      z-index: 5;
+      animation: holoPulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes holoPulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.2); opacity: 1; }
     }
 
     .spell-art:not([style*="background"]) {

@@ -203,7 +203,7 @@ app.post("/api/saveDeck", async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
     
-    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen'].includes(deckType)) {
+    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard'].includes(deckType)) {
       return res.status(400).json({ success: false, error: 'Invalid deck type' });
     }
     
@@ -243,16 +243,34 @@ app.post("/api/saveDeck", async (req, res) => {
     
     // Validate that user owns all cards in deck
     const cardCounts = {};
+    const holoCardCounts = {};
     cards.forEach(key => {
-      cardCounts[key] = (cardCounts[key] || 0) + 1;
+      if (key.endsWith('_holo')) {
+        const baseKey = key.replace('_holo', '');
+        holoCardCounts[baseKey] = (holoCardCounts[baseKey] || 0) + 1;
+      } else {
+        cardCounts[key] = (cardCounts[key] || 0) + 1;
+      }
     });
     
+    // Check regular cards
     for (const [key, count] of Object.entries(cardCounts)) {
       const owned = user.cardCollection.get(key) || 0;
       if (count > owned) {
         return res.status(400).json({ 
           success: false, 
           error: `You don't own enough copies of ${key}` 
+        });
+      }
+    }
+    
+    // Check holo cards
+    for (const [key, count] of Object.entries(holoCardCounts)) {
+      const owned = user.holoCollection.get(key) || 0;
+      if (count > owned) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `You don't own enough holo copies of ${key}` 
         });
       }
     }
@@ -323,6 +341,9 @@ const START_ENERGY = 8;
 const MAX_ENERGY = 10;
 const START_HAND_SIZE = 5;
 const MAX_HAND_SIZE = 7;
+
+// Wizard unit keys for Wizard's Rune effect
+const WIZARD_CARDS = ['redwizard', 'bluewizard', 'mirrorwizard', 'manasiphonmage', 'wizardsrune'];
 
 // Buff tile definitions
 const BUFF_TYPES = [
@@ -553,7 +574,7 @@ const DECKS = {
       { key: "pearlblessing", name: "Pearl Blessing", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "fairy_blessing", effectDesc: "INSTANT: All friendly units gain +1 HP. Fairies also gain +1 ATK.", art: "/images/Pearl Blessing.png", rarity: "rare" },
       { key: "pearlblessing", name: "Pearl Blessing", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "fairy_blessing", effectDesc: "INSTANT: All friendly units gain +1 HP. Fairies also gain +1 ATK.", art: "/images/Pearl Blessing.png", rarity: "rare" },
       // Garnet Queen x1 (ATK suppress + ally buff)
-      { key: "garnetqueen", name: "Garnet Queen", atk: 3, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "garnet_aura", effectDesc: "PASSIVE: Adjacent enemies have ATK set to 1. Adjacent friendlies gain +1 ATK.", art: "/images/Garnet Queen.png", rarity: "legendary" },
+      { key: "garnetqueen", name: "Garnet Queen", atk: 3, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "garnet_aura", effectDesc: "PASSIVE: Adjacent enemies have ATK reduced to max 2. Adjacent friendlies gain +1 ATK.", art: "/images/Garnet Queen.png", rarity: "legendary" },
       // Moonstone Witch x1 (transform kills + gem buff)
       { key: "moonstonewitch", name: "Moonstone Witch", atk: 2, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "gem_transform", effectDesc: "ON KILL: Transform killed unit into a 1/1 Gem Shard. PASSIVE: +1 ATK per Gem Shard on field.", art: "/images/Moonstone Witch.png", rarity: "legendary" },
       // Prismatic Fairy x1 (gem death AOE)
@@ -830,10 +851,10 @@ const DECKS = {
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
-      // Rune Scribe x3 (spell cost reduction)
-      { key: "runescribe", name: "Rune Scribe", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "spell_discount", effectDesc: "ON DEPLOY: Your next spell costs 1 less energy.", art: "/images/Rune Scribe.png", rarity: "common" },
-      { key: "runescribe", name: "Rune Scribe", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "spell_discount", effectDesc: "ON DEPLOY: Your next spell costs 1 less energy.", art: "/images/Rune Scribe.png", rarity: "common" },
-      { key: "runescribe", name: "Rune Scribe", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "spell_discount", effectDesc: "ON DEPLOY: Your next spell costs 1 less energy.", art: "/images/Rune Scribe.png", rarity: "common" },
+      // Wizard's Rune x3 (draw wizard on deploy, free wizard on death)
+      { key: "wizardsrune", name: "Wizard's Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a Wizard. DEATH: Next Wizard costs 0.", art: "/images/Wizards Rune.png", rarity: "common" },
+      { key: "wizardsrune", name: "Wizard's Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a Wizard. DEATH: Next Wizard costs 0.", art: "/images/Wizards Rune.png", rarity: "common" },
+      { key: "wizardsrune", name: "Wizard's Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a Wizard. DEATH: Next Wizard costs 0.", art: "/images/Wizards Rune.png", rarity: "common" },
       // Cinderwing x3 (splash damage on attack)
       { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
       { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
@@ -899,17 +920,22 @@ function getCardTemplate(cardKey) {
 
 // Create deck from array of card keys (for custom decks)
 function createDeckFromKeys(cardKeys) {
-  console.log('createDeckFromKeys called with', cardKeys.length, 'cards');
   const result = cardKeys.map(key => {
-    const template = getCardTemplate(key);
+    // Check if this is a holo card
+    const isHolo = key.endsWith('_holo');
+    const baseKey = isHolo ? key.replace('_holo', '') : key;
+    
+    const template = getCardTemplate(baseKey);
     if (!template) {
-      console.warn(`Unknown card key: ${key}`);
+      console.warn(`Unknown card key: ${baseKey}`);
       return null;
     }
-    return { ...template, id: genId(), maxHp: template.hp };
+    const card = { ...template, id: genId(), maxHp: template.hp };
+    if (isHolo) {
+      card.isHolo = true;
+    }
+    return card;
   }).filter(c => c !== null);
-  console.log('createDeckFromKeys returning', result.length, 'cards');
-  console.log('First 3 cards:', result.slice(0, 3).map(c => c.name));
   return result;
 }
 
@@ -1013,6 +1039,7 @@ function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCusto
     firstTurn: true,
     buffTiles: buffTiles,
     moveCountThisTurn: {}, // Track moves per unit for double_move
+    attackCountThisTurn: {}, // Track attacks per unit for topaz gem buff
     pendingCoffinResurrects: { gold: [], silver: [] }, // For Coffin resurrect_self
     // Boss event tracking
     bossTurnCount: 0,           // Count of boss (silver) turns taken
@@ -1021,8 +1048,6 @@ function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCusto
   };
   
   // Create decks - use custom cards if provided, otherwise default deck
-  console.log('createGameState - hostCustomCards:', hostCustomCards ? hostCustomCards.length : 'null');
-  console.log('createGameState - guestCustomCards:', guestCustomCards ? guestCustomCards.length : 'null');
   
   const goldDeckCards = hostCustomCards && hostCustomCards.length >= 25 
     ? shuffle(createDeckFromKeys(hostCustomCards)) 
@@ -1031,8 +1056,6 @@ function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCusto
     ? shuffle(createDeckFromKeys(guestCustomCards)) 
     : shuffle(createDeck(guestDeck));
   
-  console.log('Gold deck size:', goldDeckCards.length);
-  console.log('Silver deck size:', silverDeckCards.length);
   
   const players = { 
     gold: {deck: goldDeckCards, hand:[], discard:[], energy:START_ENERGY, maxEnergy:START_ENERGY, hasDrawn:false}, 
@@ -1063,6 +1086,7 @@ function createPlaytestGameState() {
     firstTurn: false, // Skip first turn restrictions in playtest
     buffTiles: buffTiles,
     moveCountThisTurn: {},
+    attackCountThisTurn: {},
     pendingCoffinResurrects: { gold: [], silver: [] }
   };
   
@@ -1306,14 +1330,14 @@ function getEffectiveAtk(state, uid, targetId) {
       }
     }
   }
-  // Garnet Queen - adjacent enemies have ATK set to 1
+  // Garnet Queen - adjacent enemies have ATK reduced to max 2 (doesn't increase ATK)
   for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
     if (dr === 0 && dc === 0) continue; 
     const nr = pos.r + dr, nc = pos.c + dc; 
     if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
     const aid = state.board[nr][nc]; 
     if (aid && state.units[aid] && state.units[aid].owner !== u.owner && state.units[aid].effectId === "garnet_aura") {
-      atk = 1; // Set ATK to 1, overrides everything
+      atk = Math.min(atk, 2); // Reduce ATK to max 2, but don't increase if already lower
       break;
     }
   }
@@ -1677,7 +1701,7 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
     }
   }
   
-  if (deadUnit.effect !== "onDeath") return;
+  if (deadUnit.effect !== "onDeath" && deadUnit.effect !== "onDeployDeath") return;
   
   if (deadUnit.effectId === "energy_on_death") {
     lobby.gameState.players[deadUnitOwner].energy = Math.min(lobby.gameState.players[deadUnitOwner].energy + 1, MAX_ENERGY);
@@ -1790,6 +1814,13 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
     if (affected > 0) {
       logToLobby(lobby, deadUnit.name + "'s volcanic eruption scorches " + affected + " units to 1 HP!");
     }
+  }
+  
+  // Wizard's Rune - grant free wizard play on death
+  if (deadUnit.effectId === "wizard_rune") {
+    if (!state.freeWizard) state.freeWizard = {};
+    state.freeWizard[deadUnitOwner] = true;
+    logToLobby(lobby, "Wizard's Rune enchants - your next Wizard costs 0 energy!");
   }
 }
 
@@ -2185,12 +2216,14 @@ function processStartOfTurnEffects(lobby, role) {
       logToLobby(lobby, u.name + " channels energy! (+1 energy)");
     }
     
-    // Decrement frozen counter
+    // Decrement frozen counter (unit is blocked from acting THIS turn, then counter decreases)
     if (u.frozen && u.frozen > 0) {
       u.frozen -= 1;
       if (u.frozen <= 0) {
         delete u.frozen;
-        logToLobby(lobby, u.name + " thaws from temporal stasis!");
+        logToLobby(lobby, u.name + " thaws from the obsidian freeze!");
+      } else {
+        logToLobby(lobby, `${u.name} is still frozen (${u.frozen} turn(s) remaining)`);
       }
     }
   }
@@ -2804,24 +2837,20 @@ async function handleCampaignVictory(lobby) {
 
 // Process boss event WARNING at END of boss turn (creates warning)
 function processBossEventWarning(lobby) {
-  console.log("processBossEventWarning called - isAIGame:", lobby.isAIGame, "bossId:", lobby.bossId);
   
   if (!lobby.isAIGame || !lobby.bossId) return;
   
   const boss = CAMPAIGN_BOSSES.find(b => b.id === lobby.bossId);
-  console.log("Boss found:", boss ? boss.name : "none", "eventType:", boss?.eventType);
   
   if (!boss || !boss.eventType) return;
   
   const { state } = lobby.gameState;
   const config = boss.eventConfig;
   
-  console.log("Boss turn count:", state.bossTurnCount, "interval:", config.turnInterval, "mod:", state.bossTurnCount % config.turnInterval);
   
   // Check if it's time for an event (every N boss turns)
   if (state.bossTurnCount % config.turnInterval !== 0) return;
   
-  console.log("TRIGGERING BOSS EVENT - TILES APPEAR NOW!");
   
   // Process based on event type
   if (boss.eventType === 'void_collapse') {
@@ -2830,6 +2859,8 @@ function processBossEventWarning(lobby) {
     processGhostTrainWarning(lobby, boss, config);
   } else if (boss.eventType === 'blood_chalice') {
     processBloodChaliceSpawn(lobby, boss, config);
+  } else if (boss.eventType === 'gem_rain') {
+    processGemRainWarning(lobby, boss, config);
   }
   // Add more event types here for other bosses
 }
@@ -2846,12 +2877,13 @@ function processBossEventExecute(lobby) {
   // If there's a warning zone, execute the effect
   if (!state.bossEventWarning) return;
   
-  console.log("EXECUTING BOSS EVENT!");
   
   if (boss.eventType === 'void_collapse') {
     processVoidCollapseExecution(lobby);
   } else if (boss.eventType === 'ghost_train') {
     processGhostTrainExecution(lobby);
+  } else if (boss.eventType === 'gem_rain') {
+    processGemRainExecution(lobby);
   }
   // Add more event types here for other bosses
 }
@@ -2880,18 +2912,18 @@ function processBossEventCountdown(lobby) {
       logToLobby(lobby, `⚠️ GHOST TRAIN APPROACHING: ${turnsUntilEvent}`);
     } else if (boss.eventType === 'blood_chalice') {
       logToLobby(lobby, `🍷 BLOOD CHALICE RITUAL: ${turnsUntilEvent}`, "boss-benefit");
+    } else if (boss.eventType === 'gem_rain') {
+      logToLobby(lobby, `💎 GEM RAIN INCOMING: ${turnsUntilEvent}`);
     }
   }
 }
 
 // Void Collapse - Create warning zone
 function processVoidCollapseWarning(lobby, boss, config) {
-  console.log("=== VOID COLLAPSE WARNING TRIGGERED ===");
   const { state } = lobby.gameState;
   
   // Calculate size based on occurrence (starts at startSize, grows by growthRate each time, max at maxSize)
   const size = Math.min(config.startSize + (state.bossEventOccurrence * config.growthRate), config.maxSize);
-  console.log("Size:", size, "Occurrence:", state.bossEventOccurrence);
   
   // Find valid positions for the box (must fit entirely on board)
   const maxRow = ROWS - size;
@@ -2900,7 +2932,6 @@ function processVoidCollapseWarning(lobby, boss, config) {
   // Random top-left corner
   const startRow = Math.floor(Math.random() * (maxRow + 1));
   const startCol = Math.floor(Math.random() * (maxCol + 1));
-  console.log("Position: row", startRow, "col", startCol);
   
   // Create list of affected tiles
   const tiles = [];
@@ -2909,7 +2940,6 @@ function processVoidCollapseWarning(lobby, boss, config) {
       tiles.push({ r, c });
     }
   }
-  console.log("Tiles:", JSON.stringify(tiles));
   
   // Store warning in state
   state.bossEventWarning = {
@@ -2919,7 +2949,6 @@ function processVoidCollapseWarning(lobby, boss, config) {
     startRow: startRow,
     startCol: startCol
   };
-  console.log("bossEventWarning set:", JSON.stringify(state.bossEventWarning));
   
   // Increment occurrence counter
   state.bossEventOccurrence++;
@@ -2940,63 +2969,95 @@ function processVoidCollapseWarning(lobby, boss, config) {
 
 // Void Collapse - Execute destruction
 function processVoidCollapseExecution(lobby) {
+  processVoidCollapseExecuteEvent(lobby);
+  processVoidCollapseRemoveUnits(lobby);
+}
+
+// Send the void collapse event to client (units still visible on board)
+function processVoidCollapseExecuteEvent(lobby) {
   const { state } = lobby.gameState;
   const warning = state.bossEventWarning;
   
   if (!warning || warning.type !== 'void_collapse') return;
   
-  let destroyedCount = 0;
-  const destroyedNames = [];
+  // Collect units that will be destroyed (but don't remove yet)
+  const destroyedUnits = [];
   
-  // Void Collapse destroys ALL units in the warning zone - both player AND boss!
   for (const tile of warning.tiles) {
     const unitId = state.board[tile.r][tile.c];
     if (unitId && state.units[unitId]) {
       const unit = state.units[unitId];
-      destroyedNames.push(`${unit.name} (${unit.owner})`);
-      // Send card to discard pile
-      discardUnitCard(lobby, unit);
-      delete state.units[unitId];
-      state.board[tile.r][tile.c] = null;
-      destroyedCount++;
+      destroyedUnits.push({
+        id: unitId,
+        name: unit.name,
+        owner: unit.owner,
+        art: unit.art,
+        r: tile.r,
+        c: tile.c
+      });
     }
   }
   
-  // Emit execution event for visual effects
+  // Store destroyed units for later removal
+  state.pendingVoidDestroyedUnits = destroyedUnits;
+  
+  // Emit execution event with unit info for dramatic effect
   if (lobby.hostSocket) {
     lobby.hostSocket.emit("bossEventExecute", {
       type: 'void_collapse',
       tiles: warning.tiles,
-      destroyed: destroyedCount
+      destroyed: destroyedUnits.length,
+      destroyedUnits: destroyedUnits
     });
   }
   
   // Log results
-  if (destroyedCount > 0) {
-    logToLobby(lobby, `💀 VOID COLLAPSE! ${destroyedCount} unit(s) consumed: ${destroyedNames.join(', ')}`);
-    combatLogToLobby(lobby, `VOID COLLAPSE DETONATED! ${destroyedCount} unit(s) obliterated!`, "boss-execute");
+  if (destroyedUnits.length > 0) {
+    const destroyedNames = destroyedUnits.map(u => `${u.name} (${u.owner})`);
+    logToLobby(lobby, `💀 VOID COLLAPSE! ${destroyedUnits.length} unit(s) consumed: ${destroyedNames.join(', ')}`);
   } else {
     logToLobby(lobby, `🌀 Void Collapse fizzles - no units caught!`);
-    combatLogToLobby(lobby, `VOID COLLAPSE - All units escaped!`, "boss-execute");
+  }
+}
+
+// Remove units from state after animation completes
+function processVoidCollapseRemoveUnits(lobby) {
+  const { state } = lobby.gameState;
+  
+  const destroyedUnits = state.pendingVoidDestroyedUnits || [];
+  
+  // Remove units from state
+  for (const unitInfo of destroyedUnits) {
+    const unit = state.units[unitInfo.id];
+    if (unit) {
+      discardUnitCard(lobby, unit);
+      delete state.units[unitInfo.id];
+      state.board[unitInfo.r][unitInfo.c] = null;
+    }
   }
   
-  // Clear warning
+  // Clear pending and warning
+  state.pendingVoidDestroyedUnits = null;
   state.bossEventWarning = null;
   
   // Recompute row ownership
   recomputeOwners(state);
+  
+  if (destroyedUnits.length > 0) {
+    combatLogToLobby(lobby, `VOID COLLAPSE DETONATED! ${destroyedUnits.length} unit(s) obliterated!`, "boss-execute");
+  } else {
+    combatLogToLobby(lobby, `VOID COLLAPSE - All units escaped!`, "boss-execute");
+  }
 }
 
 // ==================== GHOST TRAIN EVENT ====================
 
 // Ghost Train - Create warning zone (marks rows/columns)
 function processGhostTrainWarning(lobby, boss, config) {
-  console.log("=== GHOST TRAIN WARNING TRIGGERED ===");
   const { state } = lobby.gameState;
   
   // Calculate number of lines based on occurrence
   const lineCount = Math.min(config.startLines + (state.bossEventOccurrence * config.growthRate), config.maxLines);
-  console.log("Line count:", lineCount, "Occurrence:", state.bossEventOccurrence);
   
   // Select random lines (mix of rows and columns)
   const lines = [];
@@ -3050,8 +3111,6 @@ function processGhostTrainWarning(lobby, boss, config) {
     }
   }
   
-  console.log("Lines:", JSON.stringify(lines));
-  console.log("Tiles:", tiles.length);
   
   // Store warning in state
   state.bossEventWarning = {
@@ -3139,12 +3198,10 @@ function processGhostTrainExecution(lobby) {
 
 // Blood Chalice - Spawn chalices on random open tiles
 function processBloodChaliceSpawn(lobby, boss, config) {
-  console.log("=== BLOOD CHALICE SPAWN TRIGGERED ===");
   const { state } = lobby.gameState;
   
   // Calculate count based on occurrence
   const count = Math.min(config.startCount + (state.bossEventOccurrence * config.growthRate), config.maxCount);
-  console.log("Chalice count:", count, "Occurrence:", state.bossEventOccurrence);
   
   // Find all open tiles (not occupied by units, not spawn tiles, not already a chalice)
   const openTiles = [];
@@ -3191,7 +3248,6 @@ function processBloodChaliceSpawn(lobby, boss, config) {
     }
   }
   
-  console.log("Selected chalice tiles:", JSON.stringify(selectedTiles));
   
   // Add new chalices to state
   state.chaliceTiles = [...state.chaliceTiles, ...selectedTiles];
@@ -3269,6 +3325,175 @@ function checkChaliceConsumption(lobby, unitId, row, col) {
 
 // ==================== END BLOOD CHALICE EVENT ====================
 
+// ==================== GEM RAIN EVENT (Garnet Queen) ====================
+
+const GEM_TYPES = ['ruby', 'emerald', 'topaz', 'obsidian', 'diamond'];
+
+// Gem Rain - Create warning tiles that will receive gems next turn
+function processGemRainWarning(lobby, boss, config) {
+  const { state } = lobby.gameState;
+  
+  // Calculate count based on occurrence (starts at startCount, grows by growthRate each time, max at maxCount)
+  const count = Math.min(config.startCount + (state.bossEventOccurrence * config.growthRate), config.maxCount);
+  
+  // Find all tiles (can target any tile, including empty ones)
+  const allTiles = [];
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      allTiles.push({ r, c });
+    }
+  }
+  
+  // Shuffle and select random tiles (don't assign gem types yet - that happens on execution)
+  const shuffled = allTiles.sort(() => Math.random() - 0.5);
+  const selectedTiles = shuffled.slice(0, count).map(tile => ({ r: tile.r, c: tile.c }));
+  
+  
+  // Store warning in state (gem types will be assigned on execution)
+  state.bossEventWarning = {
+    type: 'gem_rain',
+    tiles: selectedTiles
+  };
+  
+  // Increment occurrence counter
+  state.bossEventOccurrence++;
+  
+  // Log the warning
+  logToLobby(lobby, `💎 GEM RAIN INCOMING! ${count} tiles are glowing...`);
+  combatLogToLobby(lobby, `💎 The Garnet Queen summons gems from the sky!`, "boss-event");
+  
+  // Emit warning to clients for visual effects
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("gemRainWarning", { tiles: selectedTiles });
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("gemRainWarning", { tiles: selectedTiles });
+  }
+}
+
+// Gem Rain - Execute the gem effects on units
+function processGemRainExecution(lobby) {
+  const { state } = lobby.gameState;
+  const warning = state.bossEventWarning;
+  
+  if (!warning || warning.type !== 'gem_rain') return;
+  
+  
+  const results = [];
+  
+  // Now assign random gem types and apply effects
+  for (const tile of warning.tiles) {
+    const gemType = GEM_TYPES[Math.floor(Math.random() * GEM_TYPES.length)];
+    const unitId = state.board[tile.r][tile.c];
+    
+    // If no unit on this tile, gem does nothing
+    if (!unitId || !state.units[unitId]) {
+      results.push({
+        r: tile.r,
+        c: tile.c,
+        gemType: gemType,
+        effect: 'miss',
+        unitName: null
+      });
+      continue;
+    }
+    
+    const unit = state.units[unitId];
+    let effectDesc = '';
+    
+    switch (gemType) {
+      case 'ruby':
+        // +1 ATK (permanent, stacks)
+        unit.atk = (unit.atk || 0) + 1;
+        if (!unit.gemBuffs) unit.gemBuffs = {};
+        unit.gemBuffs.atk = (unit.gemBuffs.atk || 0) + 1;
+        effectDesc = '+1 ATK';
+        logToLobby(lobby, `💎 Ruby gem hits ${unit.name}! ${effectDesc}`);
+        break;
+        
+      case 'emerald':
+        // +1 HP (permanent, stacks)
+        unit.hp = (unit.hp || 1) + 1;
+        unit.maxHp = (unit.maxHp || unit.hp) + 1;
+        if (!unit.gemBuffs) unit.gemBuffs = {};
+        unit.gemBuffs.hp = (unit.gemBuffs.hp || 0) + 1;
+        effectDesc = '+1 HP';
+        logToLobby(lobby, `💎 Emerald gem hits ${unit.name}! ${effectDesc}`);
+        break;
+        
+      case 'topaz':
+        // +1 Extra attack per turn (permanent, stacks)
+        if (!unit.gemBuffs) unit.gemBuffs = {};
+        unit.gemBuffs.extraAttacks = (unit.gemBuffs.extraAttacks || 0) + 1;
+        console.log(`[GEM] TOPAZ: Set ${unit.name} (${unitId}) extraAttacks = ${unit.gemBuffs.extraAttacks}`);
+        effectDesc = '+1 extra attack';
+        logToLobby(lobby, `💎 Topaz gem hits ${unit.name}! ${effectDesc}`);
+        break;
+        
+      case 'obsidian':
+        // Frozen for 2 turns (can't move or attack)
+        unit.frozen = 2;
+        console.log(`[GEM] OBSIDIAN: Set ${unit.name} (${unitId}) frozen = ${unit.frozen}`);
+        effectDesc = 'FROZEN for 2 turns';
+        logToLobby(lobby, `💎 Obsidian gem hits ${unit.name}! ${effectDesc}`);
+        break;
+        
+      case 'diamond':
+        // Unlimited moves for the unit's owner's next turn
+        if (!unit.gemBuffs) unit.gemBuffs = {};
+        unit.gemBuffs.unlimitedMoves = true;
+        unit.gemBuffs.unlimitedMovesOwner = unit.owner; // Track whose turn it should last
+        console.log(`[GEM] DIAMOND: Set ${unit.name} (${unitId}) unlimitedMoves = true, owner = ${unit.owner}, current activeSide = ${state.activeSide}`);
+        effectDesc = 'unlimited moves next turn';
+        logToLobby(lobby, `💎 Diamond gem hits ${unit.name}! ${effectDesc}`);
+        break;
+    }
+    
+    results.push({
+      r: tile.r,
+      c: tile.c,
+      gemType: gemType,
+      effect: effectDesc,
+      unitId: unitId,
+      unitName: unit.name
+    });
+    
+    combatLogToLobby(lobby, `💎 ${gemType.toUpperCase()} → ${unit.name}: ${effectDesc}`, 
+      gemType === 'obsidian' ? 'damage' : 'buff');
+  }
+  
+  // Clear the warning
+  state.bossEventWarning = null;
+  
+  // Emit execution results to clients
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("gemRainExecute", { results });
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("gemRainExecute", { results });
+  }
+}
+
+// Clear diamond buff (unlimited moves) at end of turn for units owned by the given role
+function clearDiamondBuffs(state, role) {
+  console.log(`[DIAMOND] clearDiamondBuffs called for role=${role}, activeSide=${state.activeSide}`);
+  for (const unitId in state.units) {
+    const unit = state.units[unitId];
+    if (unit.gemBuffs && unit.gemBuffs.unlimitedMoves) {
+      console.log(`[DIAMOND] Found unit ${unit.name} with unlimitedMoves, owner=${unit.owner}, clearing for role=${role}`);
+      if (unit.owner === role) {
+        console.log(`[DIAMOND] CLEARING unlimitedMoves from ${unit.name}`);
+        delete unit.gemBuffs.unlimitedMoves;
+        delete unit.gemBuffs.unlimitedMovesOwner;
+      } else {
+        console.log(`[DIAMOND] NOT clearing - owner ${unit.owner} != role ${role}`);
+      }
+    }
+  }
+}
+
+// ==================== END GEM RAIN EVENT ====================
+
 function emitLobbyState(lobby) {
   const info = { code: lobby.code, hostDeck: lobby.hostDeck, guestDeck: lobby.guestDeck, hostReady: lobby.hostReady, guestReady: lobby.guestReady, guestJoined: !!lobby.guestSocket, gameStarted: lobby.gameStarted };
   if (lobby.hostSocket) lobby.hostSocket.emit("lobbyState", { ...info, isHost: true });
@@ -3333,6 +3558,7 @@ function emitGameState(lobby) {
     firstTurn: state.firstTurn,
     buffTiles: state.buffTiles,
     moveCountThisTurn: state.moveCountThisTurn,
+    attackCountThisTurn: state.attackCountThisTurn || {},
     bossEventWarning: state.bossEventWarning, // For boss event visual warnings
     chaliceTiles: state.chaliceTiles || [] // For blood chalice tiles
   };
@@ -3345,6 +3571,7 @@ function emitGameState(lobby) {
     energy: players.gold.energy, 
     maxEnergy: players.gold.maxEnergy, 
     canDraw: !players.gold.hasDrawn && players.gold.hand.length < MAX_HAND_SIZE,
+    freeWizard: state.freeWizard && state.freeWizard.gold, // Wizard's Rune buff indicator
     // Opponent info (silver)
     enemyHandCount: players.silver.hand.length,
     enemyDeckCount: players.silver.deck.length,
@@ -3361,6 +3588,7 @@ function emitGameState(lobby) {
     energy: players.silver.energy, 
     maxEnergy: players.silver.maxEnergy, 
     canDraw: !players.silver.hasDrawn && players.silver.hand.length < MAX_HAND_SIZE,
+    freeWizard: state.freeWizard && state.freeWizard.silver, // Wizard's Rune buff indicator
     // Opponent info (gold)
     enemyHandCount: players.gold.hand.length,
     enemyDeckCount: players.gold.deck.length,
@@ -3378,31 +3606,30 @@ function logBoardState(state, perspective) {
   const goldUnits = Object.values(units).filter(u => u.owner === 'gold');
   const silverUnits = Object.values(units).filter(u => u.owner === 'silver');
   
-  console.log(`\n[BOARD] Hearts: G=${heartHP.gold} S=${heartHP.silver} | Walls: R0=${rowHP[0]} R1=${rowHP[1]} R5=${rowHP[5]} R6=${rowHP[6]}`);
-  console.log(`[UNITS] Gold(${goldUnits.length}): ${goldUnits.map(u => `${u.name.substring(0,8)} ${u.atk}/${u.hp}`).join(', ') || 'none'}`);
-  console.log(`[UNITS] Silver(${silverUnits.length}): ${silverUnits.map(u => `${u.name.substring(0,8)} ${u.atk}/${u.hp}`).join(', ') || 'none'}`);
   
   // Show buff tiles if any
   if (buffTiles && Object.keys(buffTiles).length > 0) {
     const buffInfo = Object.values(buffTiles).map(b => `${b.id}@(${b.row},${b.col})`).join(', ');
-    console.log(`[BUFFS] ${buffInfo}`);
   }
   
   // Show boss event warning if any
   if (state.bossEventWarning) {
-    console.log(`[WARNING] ${state.bossEventWarning.type} - ${state.bossEventWarning.tiles.length} tiles`);
   }
 }
 
 // Process AI turn for campaign mode
 async function processAITurn(lobby) {
+  // Check if AI was stopped (player left)
+  if (lobby.aiStopped) {
+    return;
+  }
+  
   const { state, players } = lobby.gameState;
   const ai = lobby.ai;
   if (!ai) return;
   
   // Prevent multiple AI loops from running simultaneously
   if (lobby.aiProcessing) {
-    console.log("AI already processing, skipping duplicate call");
     return;
   }
   lobby.aiProcessing = true;
@@ -3411,17 +3638,37 @@ async function processAITurn(lobby) {
   const aiPlayer = players[aiRole];
   
   // Log board state at start of turn (condensed)
-  console.log("\n=== BOSS TURN ===");
   logBoardState(state, "SILVER");
   
   // *** BOSS EVENT: Execute pending warning at START of boss turn ***
   if (state.bossEventWarning) {
-    console.log("=== EXECUTING BOSS EVENT AT START OF BOSS TURN ===");
-    processBossEventExecute(lobby);
-    emitGameState(lobby); // Update client to show destruction
     
-    // Wait for dramatic countdown sequence (3s countdown + 0.5s fade + implosions + buffer)
-    await new Promise(resolve => setTimeout(resolve, 6000));
+    // For void collapse, we need to delay unit removal until animation completes
+    const eventType = state.bossEventWarning.type;
+    
+    if (eventType === 'void_collapse') {
+      // Send the execute event but DON'T remove units yet
+      processVoidCollapseExecuteEvent(lobby);
+      
+      // Wait for countdown (3s) + fade (0.5s) + implosions (tiles * 150ms + buffer)
+      const tiles = state.bossEventWarning.tiles || [];
+      const animationTime = 3500 + (tiles.length * 150) + 500;
+      await new Promise(resolve => setTimeout(resolve, animationTime));
+      
+      // NOW remove units and update state
+      processVoidCollapseRemoveUnits(lobby);
+      emitGameState(lobby);
+      
+      // Small buffer after state update
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } else {
+      // Other events work as before
+      processBossEventExecute(lobby);
+      emitGameState(lobby); // Update client to show destruction
+      
+      // Wait for dramatic countdown sequence (3s countdown + 0.5s fade + implosions + buffer)
+      await new Promise(resolve => setTimeout(resolve, 6000));
+    }
   }
   
   // Use same speed setting as player AI (if auto-play is enabled)
@@ -3437,6 +3684,12 @@ async function processAITurn(lobby) {
   
   const executeAIAction = async () => {
     try {
+      // Check if AI was stopped (player left)
+      if (lobby.aiStopped) {
+        lobby.aiProcessing = false;
+        return;
+      }
+      
       if (state.gameOver || state.activeSide !== aiRole) {
         lobby.aiProcessing = false;
         return;
@@ -3445,7 +3698,6 @@ async function processAITurn(lobby) {
       // Safety check - force end turn if too many actions
       actionCount++;
       if (actionCount > MAX_ACTIONS_PER_TURN) {
-        console.log("AI reached max actions, forcing end turn");
         forceAIEndTurn();
         return;
       }
@@ -3466,7 +3718,6 @@ async function processAITurn(lobby) {
         
         // Increment boss turn count and check for NEW warning
         state.bossTurnCount++;
-        console.log("=== BOSS TURN COUNT INCREMENTED TO:", state.bossTurnCount, "===");
         processBossEventWarning(lobby);
         
         for (const uid in state.units) {
@@ -3482,6 +3733,8 @@ async function processAITurn(lobby) {
         state.movedThisTurn.clear();
         state.attackedThisTurn.clear();
         state.moveCountThisTurn = {};
+        state.attackCountThisTurn = {};
+        clearDiamondBuffs(state, "silver"); // Clear silver's diamond buffs (their turn ended)
         
         const goldPlayer = players.gold;
         let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
@@ -3521,24 +3774,8 @@ async function processAITurn(lobby) {
         const stateAfterAction = JSON.stringify(state.board);
         if (stateBeforeAction === stateAfterAction) {
           consecutiveFailedMoves++;
-          // Log why the move might have failed
-          const unit = state.units[action.unitId];
-          const moveCount = state.moveCountThisTurn[action.unitId] || 0;
-          const actualPos = getUnitPos(state, action.unitId);
-          console.log("AI move failed:", {
-            unitId: action.unitId,
-            unitName: unit?.name,
-            actionFrom: { r: action.fromRow, c: action.fromCol },
-            actualPos: actualPos,
-            actionTo: { r: action.toRow, c: action.toCol },
-            targetOccupied: !!state.board[action.toRow]?.[action.toCol],
-            moveCount: moveCount,
-            inMovedSet: state.movedThisTurn.has(action.unitId),
-            consecutiveFailures: consecutiveFailedMoves
-          });
           
           if (consecutiveFailedMoves >= MAX_CONSECUTIVE_FAILED_MOVES) {
-            console.log("Too many failed moves, forcing end turn");
             forceAIEndTurn();
             return;
           }
@@ -3578,6 +3815,8 @@ async function processAITurn(lobby) {
     state.movedThisTurn.clear();
     state.attackedThisTurn.clear();
     state.moveCountThisTurn = {};
+    state.attackCountThisTurn = {};
+    clearDiamondBuffs(state, "silver"); // Clear silver's diamond buffs (their turn ended)
     const goldPlayer = players.gold;
     let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
     if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
@@ -3621,7 +3860,6 @@ async function processPlayerAITurn(lobby) {
   lobby.playerAIProcessing = true;
   
   // Log board state at start of turn (condensed)
-  console.log("\n=== PLAYER TURN ===");
   logBoardState(state, "GOLD");
   
   const player = players[playerRole];
@@ -3648,7 +3886,6 @@ async function processPlayerAITurn(lobby) {
       
       actionCount++;
       if (actionCount > MAX_ACTIONS) {
-        console.log("Player AI max actions, forcing end turn");
         forcePlayerEndTurn();
         return;
       }
@@ -3661,7 +3898,6 @@ async function processPlayerAITurn(lobby) {
         true // Enable logging
       );
       
-      console.log("Player AI action:", action.type);
       
       if (action.type === "endTurn") {
         forcePlayerEndTurn();
@@ -3707,6 +3943,8 @@ async function processPlayerAITurn(lobby) {
     state.movedThisTurn.clear();
     state.attackedThisTurn.clear();
     state.moveCountThisTurn = {};
+    state.attackCountThisTurn = {};
+    clearDiamondBuffs(state, "gold"); // Clear gold's diamond buffs (their turn ended)
     
     const silverPlayer = players.silver;
     // Challenge mode: AI starts with 4 energy per turn, scales normally
@@ -3781,8 +4019,28 @@ async function executeAction(lobby, role, action) {
         }
         if (card.effectId === "phantom") unitData.untargetable = true;
         if (card.stolen) unitData.stolen = true;
+        if (card.isHolo) unitData.isHolo = true;
         state.units[id] = unitData;
         state.spawn[role] = id;
+        
+        // Process on-deploy effects for spawn deployment
+        if (card.effectId === "wizard_rune") {
+          const wizardsInDeck = p.deck.filter(c => WIZARD_CARDS.includes(c.key) && c.type === 'monster');
+          if (wizardsInDeck.length > 0 && p.hand.length < MAX_HAND_SIZE) {
+            const randomWizard = wizardsInDeck[Math.floor(Math.random() * wizardsInDeck.length)];
+            const wizardIndex = p.deck.findIndex(c => c.id === randomWizard.id);
+            if (wizardIndex !== -1) {
+              p.deck.splice(wizardIndex, 1);
+              p.hand.push(randomWizard);
+              logToLobby(lobby, "Wizard's Rune draws " + randomWizard.name + " from the deck!");
+            }
+          } else if (wizardsInDeck.length === 0) {
+            logToLobby(lobby, "Wizard's Rune finds no wizards in the deck!");
+          } else {
+            logToLobby(lobby, "Wizard's Rune - hand is full!");
+          }
+        }
+        
         logToLobby(lobby, role.toUpperCase() + " deployed " + card.name + " to spawn");
         emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       } else if (action.row !== undefined && action.col !== undefined) {
@@ -3799,6 +4057,7 @@ async function executeAction(lobby, role, action) {
         }
         if (card.effectId === "phantom") unitData.untargetable = true;
         if (card.stolen) unitData.stolen = true;
+        if (card.isHolo) unitData.isHolo = true;
         state.units[id] = unitData;
         state.board[action.row][action.col] = id;
         
@@ -3841,6 +4100,26 @@ async function executeAction(lobby, role, action) {
           logToLobby(lobby, "Rune Scribe enchants - your next spell costs 1 less!");
         }
         
+        // Wizard's Rune - draw a random wizard from deck
+        if (card.effectId === "wizard_rune") {
+          const player = lobby.gameState.players[role];
+          const wizardsInDeck = player.deck.filter(c => WIZARD_CARDS.includes(c.key) && c.type === 'monster');
+          if (wizardsInDeck.length > 0 && player.hand.length < MAX_HAND_SIZE) {
+            const randomWizard = wizardsInDeck[Math.floor(Math.random() * wizardsInDeck.length)];
+            // Remove from deck and add to hand
+            const wizardIndex = player.deck.findIndex(c => c.id === randomWizard.id);
+            if (wizardIndex !== -1) {
+              player.deck.splice(wizardIndex, 1);
+              player.hand.push(randomWizard);
+              logToLobby(lobby, "Wizard's Rune draws " + randomWizard.name + " from the deck!");
+            }
+          } else if (wizardsInDeck.length === 0) {
+            logToLobby(lobby, "Wizard's Rune finds no wizards in the deck!");
+          } else {
+            logToLobby(lobby, "Wizard's Rune - hand is full!");
+          }
+        }
+        
         // Chrono Drake - freeze target enemy for 2 turns (handled via requiresTarget)
         if (card.effectId === "temporal_stasis" && action.targetUnitId) {
           const target = state.units[action.targetUnitId];
@@ -3870,8 +4149,13 @@ async function executeAction(lobby, role, action) {
       // Check if unit is channeling (Meditation Monk can't move)
       if (u.effectId === "channeling_energy") return;
       
-      // Check if unit is frozen (Temporal Stasis)
-      if (u.frozen) return;
+      // Check if unit is frozen (Temporal Stasis or Obsidian gem)
+      console.log(`[MOVE] ${u.name} (${action.unitId}) attempting move, frozen = ${u.frozen}`);
+      if (u.frozen) {
+        console.log(`[MOVE] BLOCKED - ${u.name} is frozen!`);
+        logToLobby(lobby, `${u.name} is frozen and cannot move!`);
+        return;
+      }
       
       // Check if unit is adjacent to Coffin Trapper (root_aura)
       const fromPos = getUnitPos(state, action.unitId);
@@ -3892,7 +4176,9 @@ async function executeAction(lobby, role, action) {
       const moveCount = state.moveCountThisTurn[action.unitId] || 0;
       const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
       const canLongMove = u.effectId === "stampede"; // 2 tiles cardinal, 1 move per turn
-      const maxMoves = canDoubleMove ? 2 : 1;
+      const hasUnlimitedMoves = u.gemBuffs && u.gemBuffs.unlimitedMoves; // Diamond gem buff
+      const maxMoves = hasUnlimitedMoves ? 999 : (canDoubleMove ? 2 : 1);
+      console.log(`[MOVE] ${u.name}: moveCount=${moveCount}, maxMoves=${maxMoves}, unlimitedMoves=${hasUnlimitedMoves}, gemBuffs=${JSON.stringify(u.gemBuffs)}`);
       if (moveCount >= maxMoves) return;
       
       const from = getUnitPos(state, action.unitId);
@@ -3996,10 +4282,23 @@ async function executeAction(lobby, role, action) {
       const a = state.units[action.attackerId];
       const t = state.units[action.targetId];
       if (!a || !t || a.owner !== role) return;
-      if (state.attackedThisTurn.has(action.attackerId)) return;
+      
+      // Check attack count - base 1 attack, +1 for canDoubleAttack (spell), +N for topaz gem buffs
+      const attackCount = state.attackCountThisTurn?.[action.attackerId] || 0;
+      const baseAttacks = 1;
+      const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
+      const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
+      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      
+      console.log(`[ATTACK] ${a.name} (${action.attackerId}): attackCount=${attackCount}, maxAttacks=${maxAttacks} (base=${baseAttacks}, double=${doubleAttackBonus}, topaz=${topazBonus}), frozen=${a.frozen}`);
+      
+      if (attackCount >= maxAttacks) return;
       
       // Check if attacker is frozen
-      if (a.frozen) return;
+      if (a.frozen) {
+        console.log(`[ATTACK] BLOCKED - ${a.name} is frozen!`);
+        return;
+      }
       
       const ap = getUnitPos(state, action.attackerId);
       const tp = getUnitPos(state, action.targetId);
@@ -4025,12 +4324,26 @@ async function executeAction(lobby, role, action) {
       
       combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
+      // Emit attack animation (attacker budges toward target, target shakes)
+      const attackAnim = { type: "attack", attackerRow: ap.r, attackerCol: ap.c, targetRow: tp.r, targetCol: tp.c };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", attackAnim);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", attackAnim);
+      
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "damage", row: tp.r, col: tp.c });
       
       // Play attack sound for attacker
       emitSFX(lobby, a.key, 'attack');
       
-      state.attackedThisTurn.add(action.attackerId);
+      // Track attack count
+      if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+      state.attackCountThisTurn[action.attackerId] = (state.attackCountThisTurn[action.attackerId] || 0) + 1;
+      
+      // Add to attackedThisTurn set if at max attacks (for UI highlighting)
+      const newAttackCount = state.attackCountThisTurn[action.attackerId];
+      if (newAttackCount >= maxAttacks) {
+        state.attackedThisTurn.add(action.attackerId);
+      }
+      
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name);
       
       // Cinderwing splash_random - deal 1 damage to another random enemy on attack
@@ -4110,8 +4423,18 @@ async function executeAction(lobby, role, action) {
     case "attackRow": {
       const a = state.units[action.attackerId];
       if (!a || a.owner !== role) return;
-      if (state.attackedThisTurn.has(action.attackerId)) return;
+      
+      // Check attack count - base 1 attack, +1 for canDoubleAttack (spell), +N for topaz gem buffs
+      const attackCount = state.attackCountThisTurn?.[action.attackerId] || 0;
+      const baseAttacks = 1;
+      const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
+      const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
+      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      
+      if (attackCount >= maxAttacks) return;
       if (state.rowHP[action.row] <= 0) return;
+      
+      const ap = getUnitPos(state, action.attackerId);
       
       let dmg = getEffectiveAtk(state, action.attackerId);
       const rowLetter = String.fromCharCode(65 + action.row);
@@ -4127,10 +4450,26 @@ async function executeAction(lobby, role, action) {
       
       const beforeRowHP = state.rowHP[action.row];
       state.rowHP[action.row] = Math.max(0, state.rowHP[action.row] - dmg);
-      state.attackedThisTurn.add(action.attackerId);
+      
+      // Track attack count
+      if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+      state.attackCountThisTurn[action.attackerId] = (state.attackCountThisTurn[action.attackerId] || 0) + 1;
+      
+      // Add to attackedThisTurn set if at max attacks (for UI highlighting)
+      const newAttackCount = state.attackCountThisTurn[action.attackerId];
+      if (newAttackCount >= maxAttacks) {
+        state.attackedThisTurn.add(action.attackerId);
+      }
       
       // Play attack sound
       emitSFX(lobby, a.key, 'attack');
+      
+      // Emit attack animation (attacker budges toward the row)
+      if (ap) {
+        const attackAnim = { type: "attack", attackerRow: ap.r, attackerCol: ap.c, targetRow: action.row, targetCol: ap.c };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", attackAnim);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", attackAnim);
+      }
       
       combatLogToLobby(lobby, `Row ${rowLetter}: ${beforeRowHP} HP - ${dmg} damage = ${state.rowHP[action.row]} HP`, "combat-result");
       logToLobby(lobby, a.name + " attacks row for " + dmg);
@@ -4162,7 +4501,15 @@ async function executeAction(lobby, role, action) {
       const a = state.units[attackerId];
       const t = state.units[action.targetId];
       if (!a || !t || a.owner !== role || t.owner === role) return;
-      if (state.attackedThisTurn.has(attackerId)) return;
+      
+      // Check attack count - base 1 attack, +1 for canDoubleAttack (spell), +N for topaz gem buffs
+      const attackCount = state.attackCountThisTurn?.[attackerId] || 0;
+      const baseAttacks = 1;
+      const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
+      const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
+      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      
+      if (attackCount >= maxAttacks) return;
       
       const tp = getUnitPos(state, action.targetId);
       if (!tp) return;
@@ -4188,7 +4535,16 @@ async function executeAction(lobby, role, action) {
       
       const before = t.hp;
       t.hp -= dmg;
-      state.attackedThisTurn.add(attackerId);
+      
+      // Track attack count
+      if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+      state.attackCountThisTurn[attackerId] = (state.attackCountThisTurn[attackerId] || 0) + 1;
+      
+      // Add to attackedThisTurn set if at max attacks (for UI highlighting)
+      const newAttackCount = state.attackCountThisTurn[attackerId];
+      if (newAttackCount >= maxAttacks) {
+        state.attackedThisTurn.add(attackerId);
+      }
       
       combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
@@ -4217,7 +4573,15 @@ async function executeAction(lobby, role, action) {
     case "attackHeart": {
       const a = state.units[action.attackerId];
       if (!a || a.owner !== role) return;
-      if (state.attackedThisTurn.has(action.attackerId)) return;
+      
+      // Check attack count - base 1 attack, +1 for canDoubleAttack (spell), +N for topaz gem buffs
+      const attackCount = state.attackCountThisTurn?.[action.attackerId] || 0;
+      const baseAttacks = 1;
+      const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
+      const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
+      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      
+      if (attackCount >= maxAttacks) return;
       
       const target = action.target; // 'gold' or 'silver'
       if (target === role) return; // Can't attack own heart
@@ -4247,11 +4611,26 @@ async function executeAction(lobby, role, action) {
       }
       
       const beforeHP = state.heartHP[target];
-      state.attackedThisTurn.add(action.attackerId);
+      
+      // Track attack count
+      if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+      state.attackCountThisTurn[action.attackerId] = (state.attackCountThisTurn[action.attackerId] || 0) + 1;
+      
+      // Add to attackedThisTurn set if at max attacks (for UI highlighting)
+      const newAttackCount = state.attackCountThisTurn[action.attackerId];
+      if (newAttackCount >= maxAttacks) {
+        state.attackedThisTurn.add(action.attackerId);
+      }
+      
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
       
       // Play attack sound
       emitSFX(lobby, a.key, 'attack');
+      
+      // Emit attack animation (attacker budges toward the heart)
+      const attackAnim = { type: "attack", attackerRow: pos.r, attackerCol: pos.c, targetRow: heartRow, targetCol: pos.c };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", attackAnim);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", attackAnim);
       
       combatLogToLobby(lobby, `${target.toUpperCase()} Heart: ${beforeHP} HP - ${dmg} damage = ${state.heartHP[target]} HP`, "combat-result");
       logToLobby(lobby, a.name + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
@@ -4273,8 +4652,10 @@ async function executeAction(lobby, role, action) {
 }
 
 io.on("connection", (socket) => {
-  console.log("Connected:", socket.id);
-  socket.emit("deckList", Object.entries(DECKS).map(([id, d]) => ({ id, name: d.name, description: d.description })));
+  // Filter out challenge decks (they end with -challenge)
+  socket.emit("deckList", Object.entries(DECKS)
+    .filter(([id, d]) => !id.endsWith('-challenge'))
+    .map(([id, d]) => ({ id, name: d.name, description: d.description })));
   socket.emit("campaignBosses", CAMPAIGN_BOSSES);
 
   socket.on("createLobby", (data) => {
@@ -4300,7 +4681,6 @@ io.on("connection", (socket) => {
     socket.data.lobbyCode = code; 
     socket.data.isHost = true;
     socket.data.username = data.username || "Guest";
-    console.log("Lobby " + code + " created by " + socket.data.username);
     emitLobbyState(lobbies[code]);
   });
 
@@ -4313,13 +4693,11 @@ io.on("connection", (socket) => {
     // Use client-selected difficulty (1=easy, 2=medium, 3=hard, 4=challenge), default to medium
     const aiLevel = difficulty || 2;
     const isChallenge = aiLevel === 4;
-    console.log('Starting campaign with AI difficulty:', aiLevel, 'Challenge mode:', isChallenge);
 
     // Determine which deck the boss will use
     let bossDeckId = boss.deckId;
     if (isChallenge && boss.challengeDeckId) {
       bossDeckId = boss.challengeDeckId;
-      console.log('Using challenge deck:', bossDeckId);
     }
 
     // Check if auto-play is allowed (must have beaten this boss at this difficulty)
@@ -4333,7 +4711,6 @@ io.on("connection", (socket) => {
           // For challenge mode (4), they need to have beaten challenge mode
           if (starsEarned >= aiLevel) {
             canAutoPlay = true;
-            console.log('Auto-play available for user', userId, 'on boss', bossId);
           }
         }
       } catch (err) {
@@ -4348,16 +4725,12 @@ io.on("connection", (socket) => {
     if (userId) {
       try {
         const user = await User.findById(userId);
-        console.log('Looking up custom deck for user:', userId, 'deckId:', deckId);
         if (user) {
-          console.log('User customDecks:', JSON.stringify(user.customDecks));
           const customDeck = user.customDecks.find(d => d.id === deckId);
-          console.log('Found custom deck:', customDeck ? 'yes' : 'no');
           if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
             customDeckCards = customDeck.cards;
             deckMusic = customDeck.music || 'default';
             deckBackground = customDeck.background || 'default';
-            console.log('Using custom deck with', customDeckCards.length, 'cards, music:', deckMusic, 'background:', deckBackground);
           }
         }
       } catch (err) {
@@ -4530,7 +4903,6 @@ io.on("connection", (socket) => {
     socket.data.lobbyCode = code; 
     socket.data.isHost = false;
     socket.data.username = data.username || "Guest";
-    console.log(socket.data.username + " joined lobby " + code);
     emitLobbyState(lobby);
   });
 
@@ -4587,15 +4959,12 @@ io.on("connection", (socket) => {
   socket.on("rejoinGame", (data) => {
     const code = data.code?.toUpperCase();
     const lobby = lobbies[code];
-    console.log("Rejoin attempt for lobby " + code + " as " + (data.isHost ? "host" : "guest"));
     
     if (!lobby) {
-      console.log("Lobby " + code + " not found!");
       return socket.emit("lobbyError", "Game not found. Return to home.");
     }
     
     if (!lobby.gameStarted) {
-      console.log("Lobby " + code + " game not started yet");
       return socket.emit("lobbyError", "Game not started yet.");
     }
     
@@ -4606,17 +4975,14 @@ io.on("connection", (socket) => {
     if (data.isHost) {
       lobby.hostSocket = socket;
       socket.emit("role", "gold");
-      console.log("Host rejoined lobby " + code);
       
       // If it's AI's turn and this is a campaign game, restart AI processing
       if (lobby.isAIGame && lobby.ai && lobby.gameState.state.activeSide === "silver" && !lobby.gameState.state.gameOver) {
-        console.log("Restarting AI turn after host rejoin");
         setTimeout(() => processAITurn(lobby), 1000);
       }
     } else {
       lobby.guestSocket = socket;
       socket.emit("role", "silver");
-      console.log("Guest rejoined lobby " + code);
     }
     
     emitGameState(lobby);
@@ -4627,6 +4993,10 @@ io.on("connection", (socket) => {
     const lobby = lobbies[code];
     if (!lobby) return;
     
+    // Stop any running AI
+    lobby.aiStopped = true;
+    lobby.aiProcessing = false;
+    
     // Notify other player and close lobby
     if (socket.data.isHost) {
       if (lobby.guestSocket) lobby.guestSocket.emit("lobbyError", "Host left the game.");
@@ -4634,7 +5004,6 @@ io.on("connection", (socket) => {
       if (lobby.hostSocket) lobby.hostSocket.emit("lobbyError", "Opponent left the game.");
     }
     delete lobbies[code];
-    console.log("Lobby " + code + " closed by player");
   });
 
   socket.on("restartGame", () => {
@@ -4944,6 +5313,13 @@ io.on("connection", (socket) => {
         logToLobby(lobby, "Rune Scribe's enchantment reduces spell cost!");
       }
       
+      // Apply free wizard from Wizard's Rune death effect
+      if (WIZARD_CARDS.includes(card.key) && card.type === "monster" && state.freeWizard && state.freeWizard[role]) {
+        cost = 0;
+        state.freeWizard[role] = false; // Consume the free wizard
+        logToLobby(lobby, "Wizard's Rune enchantment - " + card.name + " costs 0 energy!");
+      }
+      
       if (p.energy < cost) return socket.emit("log", "Not enough energy.");
 
       if (card.effect === "instant") {
@@ -5022,6 +5398,8 @@ io.on("connection", (socket) => {
         const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
         // Preserve stolen flag for Soul Collector cards
         if (card.stolen) unitData.stolen = true;
+        // Preserve holo flag for holographic cards
+        if (card.isHolo) unitData.isHolo = true;
         // Burrower Beast - untargetable for 2 turns
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
@@ -5077,6 +5455,8 @@ io.on("connection", (socket) => {
       const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
       // Preserve stolen flag for Soul Collector cards
       if (card.stolen) unitData.stolen = true;
+      // Preserve holo flag for holographic cards
+      if (card.isHolo) unitData.isHolo = true;
       // Burrower Beast - untargetable for 2 turns (deploy turn + next turn)
       if (card.effectId === "burrow") {
         unitData.untargetable = true;
@@ -5095,9 +5475,7 @@ io.on("connection", (socket) => {
       recomputeOwners(state); // Update row ownership after placing unit
       
       // Process on-deploy effects
-      console.log("Processing deploy for card:", card.name, "effectId:", card.effectId);
       if (card.effectId === "gem_spawn") {
-        console.log("gem_spawn triggered for", card.name);
         // Emerald Forager - spawn a Gem Shard in adjacent empty tile
         const adjacentTiles = [
           { r: row - 1, c: col }, { r: row + 1, c: col },
@@ -5123,11 +5501,9 @@ io.on("connection", (socket) => {
           state.board[tile.r][tile.c] = gemId;
           logToLobby(lobby, card.name + " summons a Gem Shard!");
           spawned = true;
-          console.log("Gem Shard spawned at", tile.r, tile.c);
           break;
         }
         if (!spawned) {
-          console.log("No empty adjacent tile for gem spawn");
         }
       }
       
@@ -5188,6 +5564,12 @@ io.on("connection", (socket) => {
       const { unitId, toRow, toCol } = payload; const u = state.units[unitId];
       if (!u || u.owner !== role) return;
       
+      // Check if unit is frozen (Obsidian gem)
+      if (u.frozen) {
+        console.log(`[PLAYER MOVE] BLOCKED - ${u.name} is frozen (${u.frozen} turns)`);
+        return socket.emit("log", `${u.name} is frozen and cannot move!`);
+      }
+      
       // Check if unit is rooted by Moon Shadow Warden's shadow_root
       if (u.rooted) {
         return socket.emit("log", "Can't move - rooted by shadow magic!");
@@ -5213,7 +5595,10 @@ io.on("connection", (socket) => {
       const moveCount = state.moveCountThisTurn[unitId] || 0;
       const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
       const canLongMove = u.effectId === "stampede"; // Can move 2 tiles but only once
-      const maxMoves = canDoubleMove ? 2 : 1;
+      const hasUnlimitedMoves = u.gemBuffs && u.gemBuffs.unlimitedMoves; // Diamond gem buff
+      const maxMoves = hasUnlimitedMoves ? 999 : (canDoubleMove ? 2 : 1);
+      
+      console.log(`[PLAYER MOVE] ${u.name}: moveCount=${moveCount}, maxMoves=${maxMoves}, frozen=${u.frozen}, unlimitedMoves=${hasUnlimitedMoves}`);
       
       if (moveCount >= maxMoves) return socket.emit("log", "No more moves for this unit.");
       if (toRow < 0 || toRow >= ROWS || toCol < 0 || toCol >= COLS || state.board[toRow][toCol]) return socket.emit("log", "Invalid.");
@@ -5310,6 +5695,12 @@ io.on("connection", (socket) => {
       const a = state.units[attackerId], t = state.units[targetId];
       if (!a || !t || a.owner !== role) return;
       
+      // Check if attacker is frozen (Obsidian gem)
+      if (a.frozen) {
+        console.log(`[PLAYER ATTACK] BLOCKED - ${a.name} is frozen (${a.frozen} turns)`);
+        return socket.emit("log", `${a.name} is frozen and cannot attack!`);
+      }
+      
       // UFO Scraper can attack friendly aliens to absorb stats
       const isAbsorbAttack = a.effectId === "absorb_ally" && t.owner === role;
       
@@ -5325,10 +5716,15 @@ io.on("connection", (socket) => {
       // Check if target is untargetable (Burrower Beast on deploy turn)
       if (t.untargetable && !isAbsorbAttack && !isConsumeGem) return socket.emit("log", t.name + " is untargetable this turn.");
       
-      // Check if unit has already attacked (considering double attack buff)
-      // Must check this BEFORE the attackedThisTurn set, since Rally Cry can be cast after first attack
-      const attackCount = a.attackCountThisTurn || 0;
-      const maxAttacks = a.canDoubleAttack ? 2 : 1;
+      // Check if unit has already attacked (considering double attack buff and topaz gem buff)
+      const attackCount = state.attackCountThisTurn?.[attackerId] || 0;
+      const baseAttacks = 1;
+      const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
+      const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
+      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      
+      console.log(`[PLAYER ATTACK] ${a.name}: attackCount=${attackCount}, maxAttacks=${maxAttacks}, frozen=${a.frozen}, topazBonus=${topazBonus}`);
+      
       if (attackCount >= maxAttacks) return socket.emit("log", "Already attacked.");
       
       const ap = getUnitPos(state, attackerId), tp = getUnitPos(state, targetId);
@@ -5419,8 +5815,11 @@ io.on("connection", (socket) => {
         state.board[tp.r][tp.c] = null;
         discardUnitCard(lobby, t);
         delete state.units[targetId];
-        state.attackedThisTurn.add(attackerId);
-        a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
+        if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+        state.attackCountThisTurn[attackerId] = (state.attackCountThisTurn[attackerId] || 0) + 1;
+        if (state.attackCountThisTurn[attackerId] >= maxAttacks) {
+          state.attackedThisTurn.add(attackerId);
+        }
         return emitGameState(lobby);
       }
       
@@ -5439,8 +5838,11 @@ io.on("connection", (socket) => {
         state.board[tp.r][tp.c] = null;
         discardUnitCard(lobby, t);
         delete state.units[targetId];
-        state.attackedThisTurn.add(attackerId);
-        a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
+        if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+        state.attackCountThisTurn[attackerId] = (state.attackCountThisTurn[attackerId] || 0) + 1;
+        if (state.attackCountThisTurn[attackerId] >= maxAttacks) {
+          state.attackedThisTurn.add(attackerId);
+        }
         return emitGameState(lobby);
       }
       
@@ -5452,8 +5854,11 @@ io.on("connection", (socket) => {
         t.hp = Math.min(t.hp + healAmount, t.maxHp || t.hp + healAmount);
         const actualHeal = t.hp - oldHp;
         logToLobby(lobby, a.name + " blesses " + t.name + " with lunar light! +" + actualHeal + " HP (now " + t.hp + ")");
-        state.attackedThisTurn.add(attackerId);
-        a.attackCountThisTurn = (a.attackCountThisTurn || 0) + 1;
+        if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+        state.attackCountThisTurn[attackerId] = (state.attackCountThisTurn[attackerId] || 0) + 1;
+        if (state.attackCountThisTurn[attackerId] >= maxAttacks) {
+          state.attackedThisTurn.add(attackerId);
+        }
         return emitGameState(lobby);
       }
       
@@ -5514,6 +5919,11 @@ io.on("connection", (socket) => {
       
       combatLogToLobby(lobby, `${t.name}: ${before} HP - ${dmg} damage = ${t.hp} HP`, "combat-result");
       
+      // Emit attack animation (attacker budges toward target, target shakes)
+      const attackAnim = { type: "attack", attackerRow: ap.r, attackerCol: ap.c, targetRow: tp.r, targetCol: tp.c };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", attackAnim);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", attackAnim);
+      
       // Amethyst Enchanter reflect_damage - reflects 1 damage back to attacker
       if (t.effectId === "reflect_damage" && dmg > 0 && state.units[attackerId]) {
         a.hp -= 1;
@@ -5547,12 +5957,14 @@ io.on("connection", (socket) => {
       }
       
       // Track attack count
-      a.attackCountThisTurn = attackCount + 1;
-      if (a.attackCountThisTurn >= maxAttacks) {
+      if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+      state.attackCountThisTurn[attackerId] = (state.attackCountThisTurn[attackerId] || 0) + 1;
+      const newAttackCount = state.attackCountThisTurn[attackerId];
+      if (newAttackCount >= maxAttacks) {
         state.attackedThisTurn.add(attackerId);
       }
       
-      logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name + (a.canDoubleAttack && a.attackCountThisTurn < maxAttacks ? " (can attack again)" : ""));
+      logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name + (newAttackCount < maxAttacks ? " (can attack again)" : ""));
       
       // === LIFESTEAL EFFECTS ===
       // Check if attacker has lifesteal
@@ -5750,6 +6162,16 @@ io.on("connection", (socket) => {
       if (a.effectId === "stampede") dmg += 2;
       state.attackedThisTurn.add(attackerId); state.rowHP[row] = Math.max(0, state.rowHP[row] - dmg);
       emitSFX(lobby, a.key, 'attack'); // Play attack sound
+      
+      // Emit attack animation (attacker budges toward the row)
+      const attackAnim = { type: "attack", attackerRow: ap.r, attackerCol: ap.c, targetRow: row, targetCol: ap.c };
+      if (lobby.hostSocket) {
+        lobby.hostSocket.emit("animate", attackAnim);
+      }
+      if (lobby.guestSocket) {
+        lobby.guestSocket.emit("animate", attackAnim);
+      }
+      
       logToLobby(lobby, a.name + " hits row for " + dmg + " (HP: " + state.rowHP[row] + ")");
       return emitGameState(lobby);
     }
@@ -5779,6 +6201,12 @@ io.on("connection", (socket) => {
       state.attackedThisTurn.add(attackerId);
       state.heartHP[target] = Math.max(0, state.heartHP[target] - dmg);
       emitSFX(lobby, u.key, 'attack'); // Play attack sound
+      
+      // Emit attack animation (attacker budges toward the heart)
+      const attackAnim = { type: "attack", attackerRow: pos.r, attackerCol: pos.c, targetRow: heartRow, targetCol: pos.c };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", attackAnim);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", attackAnim);
+      
       logToLobby(lobby, role.toUpperCase() + " hits " + target.toUpperCase() + " HEART for " + dmg + "!");
       if (state.heartHP[target] <= 0) { 
         state.gameOver = true; 
@@ -5809,6 +6237,14 @@ io.on("connection", (socket) => {
       let dmg = getEffectiveAtk(state, attackerId, targetId); dmg = applyDamageReduction(state, targetId, dmg, attackerId, lobby);
       const before = t.hp; t.hp -= dmg; state.attackedThisTurn.add(attackerId);
       emitSFX(lobby, a.key, 'attack'); // Play attack sound
+      
+      // Emit attack animation (spawn unit budges toward target)
+      // Spawn position is off-board, so use row -1 for gold spawn, row 7 for silver spawn
+      const spawnRow = role === "gold" ? -1 : 7;
+      const attackAnim = { type: "attack", attackerRow: spawnRow, attackerCol: 2, targetRow: tp.r, targetCol: tp.c };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", attackAnim);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", attackAnim);
+      
       logToLobby(lobby, a.name + " (from spawn) deals " + dmg + " to " + t.name);
       if (t.hp <= 0 && shouldUnitDie(lobby, t)) {
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
@@ -5834,7 +6270,6 @@ io.on("connection", (socket) => {
     // If game has started, give time for rejoin (page redirect)
     if (lobby.gameStarted) {
       const wasHost = socket.data.isHost;
-      console.log((wasHost ? "Host" : "Guest") + " disconnected from " + code + " - waiting for rejoin...");
       
       // Clear the socket reference
       if (wasHost) {
@@ -5852,12 +6287,10 @@ io.on("connection", (socket) => {
           // Host didn't rejoin
           if (currentLobby.guestSocket) currentLobby.guestSocket.emit("lobbyError", "Host disconnected.");
           delete lobbies[code];
-          console.log("Lobby " + code + " closed - host didn't rejoin");
         } else if (!wasHost && !currentLobby.guestSocket) {
           // Guest didn't rejoin
           if (currentLobby.hostSocket) currentLobby.hostSocket.emit("lobbyError", "Opponent disconnected.");
           delete lobbies[code];
-          console.log("Lobby " + code + " closed - guest didn't rejoin");
         }
       }, 5000);
       return;
@@ -5867,7 +6300,6 @@ io.on("connection", (socket) => {
     if (socket.data.isHost) { 
       if (lobby.guestSocket) lobby.guestSocket.emit("lobbyError", "Host left."); 
       delete lobbies[code]; 
-      console.log("Lobby " + code + " closed"); 
     } else { 
       lobby.guestSocket = null; 
       lobby.guestDeck = null; 
@@ -5877,4 +6309,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => console.log("Server on http://localhost:" + PORT));
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
