@@ -5227,6 +5227,7 @@ io.on("connection", (socket) => {
       state.movedThisTurn.clear(); 
       state.attackedThisTurn.clear();
       state.moveCountThisTurn = {}; // Reset move counts for new turn
+      state.attackCountThisTurn = {}; // Reset attack counts for new turn
       const np = players[state.activeSide]; 
       
       // Calculate passive energy: +1 base, +1 more every 3 turns
