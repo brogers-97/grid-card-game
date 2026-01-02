@@ -997,7 +997,8 @@ let S = {
   firstTurn: true,
   buffTiles: {},
   moveCountThisTurn: {},
-  attackCountThisTurn: {}
+  attackCountThisTurn: {},
+  turnNumber: 1
 };
 
 // Track cells that are currently showing damage animation
@@ -4067,6 +4068,7 @@ socket.on("state", (st) => {
   S.attackCountThisTurn = st.attackCountThisTurn || {};
   S.bossEventWarning = st.bossEventWarning || null;
   S.chaliceTiles = st.chaliceTiles || [];
+  S.turnNumber = st.turnNumber || 1;
   
   // Debug log boss event warning
   if (st.bossEventWarning) {
