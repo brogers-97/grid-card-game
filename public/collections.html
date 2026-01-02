@@ -109,46 +109,215 @@
     .empty-icon { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
     .empty-text { font-size: 14px; }
     
-    /* Achievements styles */
-    .gallery-grid.achievements { display: flex; justify-content: center; align-items: center; min-height: 400px; }
-    .achievements-container { 
-      text-align: center; 
-      padding: 40px; 
-      max-width: 600px;
-      background: linear-gradient(145deg, rgba(30, 30, 60, 0.8), rgba(20, 20, 40, 0.9));
-      border: 2px solid rgba(251, 191, 36, 0.3);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    /* Achievements styles - Grid of achievement tiles */
+    .gallery-grid.achievements { 
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      padding: 20px;
     }
-    .achievements-header { margin-bottom: 30px; }
-    .achievements-icon { font-size: 64px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6)); }
-    .achievements-title { 
-      font-family: 'Cinzel', serif; 
-      font-size: 28px; 
-      color: #fbbf24; 
-      margin-bottom: 8px;
-      text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+    
+    .achievements-summary {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      padding: 20px;
+      background: linear-gradient(145deg, rgba(30, 30, 60, 0.6), rgba(20, 20, 40, 0.7));
+      border-radius: 12px;
+      border: 1px solid rgba(100, 116, 139, 0.3);
     }
-    .achievements-subtitle { 
-      font-size: 16px; 
-      color: #a78bfa; 
-      font-weight: 600;
-      letter-spacing: 2px;
+    .summary-stat {
+      text-align: center;
+    }
+    .summary-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fbbf24;
+      text-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+    }
+    .summary-label {
+      font-size: 11px;
+      color: #94a3b8;
       text-transform: uppercase;
+      letter-spacing: 1px;
     }
-    .achievements-preview { display: flex; flex-direction: column; gap: 15px; }
-    .achievement-placeholder {
+    
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 15px;
+    }
+    
+    .achievement-tile {
+      position: relative;
+      aspect-ratio: 1;
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(20, 30, 45, 0.9));
+      border: 2px solid rgba(100, 116, 139, 0.4);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+    .achievement-tile:hover {
+      transform: translateY(-3px);
+      border-color: rgba(148, 163, 184, 0.6);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Unlocked achievement */
+    .achievement-tile.unlocked {
+      background: linear-gradient(145deg, rgba(34, 197, 94, 0.2), rgba(20, 83, 45, 0.3));
+      border-color: rgba(34, 197, 94, 0.6);
+    }
+    .achievement-tile.unlocked:hover {
+      border-color: rgba(34, 197, 94, 0.9);
+      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
+    }
+    
+    /* Mystery achievement (has reward) */
+    .achievement-tile.mystery {
+      background: linear-gradient(145deg, rgba(147, 51, 234, 0.2), rgba(88, 28, 135, 0.3));
+      border-color: rgba(167, 139, 250, 0.5);
+    }
+    .achievement-tile.mystery:hover {
+      border-color: rgba(167, 139, 250, 0.8);
+      box-shadow: 0 8px 25px rgba(147, 51, 234, 0.3);
+    }
+    .achievement-tile.mystery.unlocked {
+      background: linear-gradient(145deg, rgba(251, 191, 36, 0.2), rgba(180, 130, 20, 0.3));
+      border-color: rgba(251, 191, 36, 0.7);
+    }
+    .achievement-tile.mystery.unlocked:hover {
+      border-color: rgba(251, 191, 36, 1);
+      box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+    }
+    
+    .achievement-tile-icon {
+      font-size: 36px;
+      margin-bottom: 5px;
+    }
+    .achievement-tile.locked .achievement-tile-icon {
+      filter: grayscale(0.7) brightness(0.7);
+    }
+    
+    .achievement-tile-name {
+      font-size: 10px;
+      color: #e2e8f0;
+      text-align: center;
+      padding: 0 5px;
+      line-height: 1.2;
+      max-height: 24px;
+      overflow: hidden;
+    }
+    .achievement-tile.mystery:not(.unlocked) .achievement-tile-name {
+      color: #a78bfa;
+    }
+    
+    /* Progress bar */
+    .achievement-progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .achievement-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      transition: width 0.3s ease;
+    }
+    .achievement-tile.unlocked .achievement-progress-fill {
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      width: 100% !important;
+    }
+    .achievement-tile.mystery .achievement-progress-fill {
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    }
+    .achievement-tile.mystery.unlocked .achievement-progress-fill {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+    
+    /* Checkmark for completed */
+    .achievement-complete-badge {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 20px;
+      height: 20px;
+      background: #22c55e;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 15px;
-      padding: 15px 20px;
-      background: rgba(100, 116, 139, 0.1);
-      border: 1px dashed rgba(100, 116, 139, 0.4);
-      border-radius: 10px;
-      text-align: left;
+      justify-content: center;
+      font-size: 12px;
+      color: white;
+      box-shadow: 0 2px 6px rgba(34, 197, 94, 0.5);
     }
-    .achievement-placeholder-icon { font-size: 28px; opacity: 0.5; }
-    .achievement-placeholder-text { font-size: 13px; color: #94a3b8; line-height: 1.4; }
+    .achievement-tile.mystery.unlocked .achievement-complete-badge {
+      background: #f59e0b;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.5);
+    }
+    
+    /* Reward badge */
+    .achievement-reward-badge {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      font-size: 14px;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+    }
+    
+    /* Tooltip */
+    .achievement-tooltip {
+      position: fixed;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.98);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      max-width: 250px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .achievement-tooltip.visible {
+      opacity: 1;
+    }
+    .tooltip-title {
+      font-weight: 600;
+      color: #f1f5f9;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .tooltip-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+    .tooltip-progress {
+      font-size: 11px;
+      color: #60a5fa;
+      margin-top: 6px;
+    }
+    .tooltip-reward {
+      font-size: 11px;
+      color: #fbbf24;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tooltip-mystery {
+      font-size: 12px;
+      color: #a78bfa;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -407,7 +576,7 @@
       if (currentTab === 'cards' || currentTab === 'holo') {
         filterBar.style.display = 'flex';
         rarityFilter.style.display = 'block';
-      } else if (currentTab === 'backgrounds' || currentTab === 'mats' || currentTab === 'music') {
+      } else if (currentTab === 'backgrounds' || currentTab === 'mats' || currentTab === 'music' || currentTab === 'achievements') {
         filterBar.style.display = 'none';
       }
     }
@@ -622,29 +791,236 @@
       filterBar.style.display = 'none';
       
       galleryGrid.className = 'gallery-grid achievements';
-      galleryGrid.innerHTML = `
-        <div class="achievements-container">
-          <div class="achievements-header">
-            <div class="achievements-icon">🏆</div>
-            <h2 class="achievements-title">Achievements</h2>
-            <p class="achievements-subtitle">Coming Soon!</p>
+      
+      // Achievement definitions (matching database.js)
+      const ACHIEVEMENTS = {
+        // Boss Victories
+        boss_void: { name: 'Void Vanquisher', desc: 'Defeat The Void Scout', icon: '👽', category: 'boss' },
+        boss_skeleton: { name: 'Sheriff Slayer', desc: 'Defeat The Dead Sheriff', icon: '🤠', category: 'boss' },
+        boss_vampire: { name: 'Countess Crusher', desc: 'Defeat The Blood Countess', icon: '🧛', category: 'boss' },
+        boss_fairy: { name: 'Gem Breaker', desc: 'Defeat The Garnet Queen', icon: '🧚', category: 'boss' },
+        boss_elf: { name: "Moon's Eclipse", desc: 'Defeat Moon Shadow Sentinel', icon: '🌙', category: 'boss' },
+        boss_dragon: { name: 'Dragon Slayer', desc: 'Defeat The Arcane Dragonlord', icon: '🐉', category: 'boss' },
+        
+        // Challenge Mode
+        challenge_first: { name: 'Challenger', desc: 'Beat your first Challenge Boss', icon: '⚔️', category: 'challenge' },
+        challenge_three: { name: 'Challenge Accepted', desc: 'Beat 3 Challenge Bosses', icon: '⚔️', category: 'challenge', threshold: 3 },
+        challenge_all: { name: 'Ultimate Champion', desc: 'Beat ALL Challenge Bosses', icon: '👑', category: 'challenge', reward: '🎴 Golden Mat' },
+        
+        // Campaign
+        campaign_half: { name: 'Halfway There', desc: 'Beat 3 Campaign Bosses', icon: '🏆', category: 'campaign' },
+        campaign_complete: { name: 'Campaign Victor', desc: 'Beat all 6 Campaign Bosses', icon: '🏆', category: 'campaign', reward: '🖼️ Champion BG' },
+        campaign_perfect: { name: 'Perfectionist', desc: 'Get 3 stars on all Campaign Bosses', icon: '⭐', category: 'campaign', reward: '🎵 Starlight Music' },
+        
+        // Wins
+        wins_1: { name: 'First Blood', desc: 'Win your first game', icon: '🎯', category: 'wins', threshold: 1 },
+        wins_10: { name: 'Getting Started', desc: 'Win 10 games', icon: '🎯', category: 'wins', threshold: 10 },
+        wins_25: { name: 'Competitor', desc: 'Win 25 games', icon: '🎯', category: 'wins', threshold: 25 },
+        wins_50: { name: 'Veteran', desc: 'Win 50 games', icon: '🎯', category: 'wins', threshold: 50 },
+        wins_100: { name: 'Centurion', desc: 'Win 100 games', icon: '🎯', category: 'wins', threshold: 100, reward: '🖼️ Warrior BG' },
+        wins_250: { name: 'Elite', desc: 'Win 250 games', icon: '🎯', category: 'wins', threshold: 250 },
+        wins_500: { name: 'Legendary', desc: 'Win 500 games', icon: '🎯', category: 'wins', threshold: 500, reward: '🎵 Legend Music' },
+        wins_1000: { name: 'Immortal', desc: 'Win 1000 games', icon: '🎯', category: 'wins', threshold: 1000 },
+        
+        // Games Played
+        games_50: { name: 'Regular', desc: 'Play 50 games', icon: '🎮', category: 'games', threshold: 50 },
+        games_100: { name: 'Dedicated', desc: 'Play 100 games', icon: '🎮', category: 'games', threshold: 100 },
+        games_250: { name: 'Committed', desc: 'Play 250 games', icon: '🎮', category: 'games', threshold: 250 },
+        games_500: { name: 'Devoted', desc: 'Play 500 games', icon: '🎮', category: 'games', threshold: 500, reward: '🖼️ Veteran BG' },
+        
+        // Kills
+        kills_10: { name: 'First Kills', desc: 'Kill 10 enemy units', icon: '💀', category: 'kills', threshold: 10 },
+        kills_50: { name: 'Soldier', desc: 'Kill 50 enemy units', icon: '💀', category: 'kills', threshold: 50 },
+        kills_100: { name: 'Warrior', desc: 'Kill 100 enemy units', icon: '💀', category: 'kills', threshold: 100 },
+        kills_250: { name: 'Slayer', desc: 'Kill 250 enemy units', icon: '💀', category: 'kills', threshold: 250 },
+        kills_500: { name: 'Destroyer', desc: 'Kill 500 enemy units', icon: '💀', category: 'kills', threshold: 500 },
+        kills_1000: { name: 'Annihilator', desc: 'Kill 1000 enemy units', icon: '💀', category: 'kills', threshold: 1000 },
+        kills_2500: { name: 'Death Incarnate', desc: 'Kill 2500 enemy units', icon: '💀', category: 'kills', threshold: 2500 },
+        kills_5000: { name: 'Genocide', desc: 'Kill 5000 enemy units', icon: '💀', category: 'kills', threshold: 5000, reward: '🖼️ Crimson BG' },
+        
+        // Damage
+        damage_500: { name: 'Damage Dealer', desc: 'Deal 500 total damage', icon: '💥', category: 'damage', threshold: 500 },
+        damage_1000: { name: 'Heavy Hitter', desc: 'Deal 1000 total damage', icon: '💥', category: 'damage', threshold: 1000 },
+        damage_2500: { name: 'Devastator', desc: 'Deal 2500 total damage', icon: '💥', category: 'damage', threshold: 2500 },
+        damage_5000: { name: 'Cataclysm', desc: 'Deal 5000 total damage', icon: '💥', category: 'damage', threshold: 5000, reward: '🎴 Inferno Mat' },
+        
+        // Cards Played
+        cards_100: { name: 'Card Slinger', desc: 'Play 100 cards', icon: '🃏', category: 'cards', threshold: 100 },
+        cards_250: { name: 'Card Shark', desc: 'Play 250 cards', icon: '🃏', category: 'cards', threshold: 250 },
+        cards_500: { name: 'Card Master', desc: 'Play 500 cards', icon: '🃏', category: 'cards', threshold: 500 },
+        cards_1000: { name: 'Card Legend', desc: 'Play 1000 cards', icon: '🃏', category: 'cards', threshold: 1000, reward: '🎴 Arcane Mat' },
+        
+        // Collection
+        collect_25: { name: 'Card Collector', desc: 'Collect 25 unique cards', icon: '📚', category: 'collection', threshold: 25 },
+        collect_50: { name: 'Archivist', desc: 'Collect 50 unique cards', icon: '📚', category: 'collection', threshold: 50 },
+        collect_all: { name: 'Complete Collection', desc: 'Collect all cards in the game', icon: '📚', category: 'collection' },
+        holo_first: { name: 'Shiny!', desc: 'Get your first holographic card', icon: '✨', category: 'collection' },
+        holo_10: { name: 'Holo Hunter', desc: 'Collect 10 holographic cards', icon: '✨', category: 'collection', threshold: 10, reward: '🎴 Prismatic Mat' },
+        
+        // PvP
+        pvp_first: { name: 'Duelist', desc: 'Win your first PvP game', icon: '🤺', category: 'pvp' },
+        pvp_10: { name: 'Gladiator', desc: 'Win 10 PvP games', icon: '🤺', category: 'pvp', threshold: 10 },
+        pvp_25: { name: 'Champion', desc: 'Win 25 PvP games', icon: '🤺', category: 'pvp', threshold: 25 },
+        pvp_50: { name: 'Arena Master', desc: 'Win 50 PvP games', icon: '🤺', category: 'pvp', threshold: 50, reward: '🖼️ Arena BG' },
+        
+        // Special Feats
+        perfect_win: { name: 'Flawless Victory', desc: 'Win without losing any row HP', icon: '🌟', category: 'special' },
+        quick_win: { name: 'Speed Demon', desc: 'Win a game in under 10 turns', icon: '⚡', category: 'special' },
+        comeback: { name: 'Comeback King', desc: 'Win after being reduced to 5 or less Heart HP', icon: '🔥', category: 'special' },
+        overkill: { name: 'Overkill', desc: 'Deal 20+ damage to enemy heart in a single turn', icon: '💢', category: 'special' },
+        board_clear: { name: 'Board Wipe', desc: 'Destroy 5+ enemy units in a single turn', icon: '🧹', category: 'special' },
+        big_unit: { name: 'Juggernaut', desc: 'Have a unit with 15+ ATK', icon: '💪', category: 'special' },
+        survivor: { name: 'Survivor', desc: 'Have a unit with 20+ HP', icon: '🛡️', category: 'special' },
+        energy_hoarder: { name: 'Energy Hoarder', desc: 'End a turn with 10 energy', icon: '⚡', category: 'special' },
+        win_streak_5: { name: 'Hot Streak', desc: 'Win 5 games in a row', icon: '🔥', category: 'special', threshold: 5 },
+        win_streak_10: { name: 'Unstoppable', desc: 'Win 10 games in a row', icon: '🔥', category: 'special', threshold: 10, reward: '🎴 Dominator Mat' },
+        deck_builder: { name: 'Architect', desc: 'Create a custom deck', icon: '🏗️', category: 'special' },
+        phoenix_win: { name: 'Phoenix', desc: 'Win with exactly 1 Heart HP remaining', icon: '🔥', category: 'special', reward: '🎴 Phoenix Mat' },
+        executioner: { name: 'Executioner', desc: 'One-shot the enemy heart (30+ damage)', icon: '⚔️', category: 'special', reward: '🖼️ Executioner BG' },
+        spell_only_win: { name: 'Mystic', desc: 'Win using only spells (no unit attacks)', icon: '🔮', category: 'special', reward: '🎵 Mystic Music' }
+      };
+      
+      // Get user data
+      const userAchievements = currentUser?.achievements || {};
+      const userStats = currentUser?.stats || {};
+      
+      // Count achievements
+      const totalAchievements = Object.keys(ACHIEVEMENTS).length;
+      const unlockedCount = Object.keys(userAchievements).filter(k => userAchievements[k] === true).length;
+      
+      // Helper to get progress for threshold achievements
+      function getProgress(achievementId, achievement) {
+        if (!achievement.threshold) return { current: 0, max: 1 };
+        
+        const statMap = {
+          wins: userStats.gamesWon || 0,
+          games: userStats.gamesPlayed || 0,
+          kills: userStats.totalKills || 0,
+          damage: userStats.totalDamage || 0,
+          cards: userStats.cardsPlayed || 0,
+          pvp: userStats.pvpWins || 0,
+          challenge: userStats.challengeBossesBeaten || 0
+        };
+        
+        let current = 0;
+        if (achievementId.startsWith('win_streak')) {
+          current = userStats.bestWinStreak || 0;
+        } else if (achievementId.startsWith('holo')) {
+          current = currentUser?.holoCollection ? Object.values(currentUser.holoCollection).reduce((a, b) => a + b, 0) : 0;
+        } else if (achievementId.startsWith('collect')) {
+          current = currentUser?.cardCollection ? Object.keys(currentUser.cardCollection).length : 0;
+        } else {
+          current = statMap[achievement.category] || 0;
+        }
+        
+        return { current: Math.min(current, achievement.threshold), max: achievement.threshold };
+      }
+      
+      // Build HTML
+      let html = `
+        <div class="achievements-summary">
+          <div class="summary-stat">
+            <div class="summary-value">${unlockedCount}</div>
+            <div class="summary-label">Unlocked</div>
           </div>
-          <div class="achievements-preview">
-            <div class="achievement-placeholder">
-              <div class="achievement-placeholder-icon">⚔️</div>
-              <div class="achievement-placeholder-text">Battle achievements will track your combat prowess</div>
-            </div>
-            <div class="achievement-placeholder">
-              <div class="achievement-placeholder-icon">📖</div>
-              <div class="achievement-placeholder-text">Collection achievements will reward card collectors</div>
-            </div>
-            <div class="achievement-placeholder">
-              <div class="achievement-placeholder-icon">👑</div>
-              <div class="achievement-placeholder-text">Campaign achievements will honor boss slayers</div>
-            </div>
+          <div class="summary-stat">
+            <div class="summary-value">${totalAchievements}</div>
+            <div class="summary-label">Total</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-value">${Math.round((unlockedCount / totalAchievements) * 100)}%</div>
+            <div class="summary-label">Complete</div>
           </div>
         </div>
+        <div class="achievements-grid">
       `;
+      
+      // Render all achievements as tiles
+      for (const [id, ach] of Object.entries(ACHIEVEMENTS)) {
+        const isUnlocked = userAchievements[id] === true;
+        const hasReward = !!ach.reward;
+        const isMystery = hasReward && !isUnlocked;
+        const progress = getProgress(id, ach);
+        const progressPercent = Math.round((progress.current / progress.max) * 100);
+        
+        // For mystery achievements, show ? icon and hide details
+        const displayIcon = isMystery ? '❓' : ach.icon;
+        const displayName = isMystery ? '???' : ach.name;
+        
+        // Build classes
+        let classes = 'achievement-tile';
+        if (isUnlocked) classes += ' unlocked';
+        else classes += ' locked';
+        if (hasReward) classes += ' mystery';
+        
+        // Data attributes for tooltip
+        const tooltipData = isUnlocked || !hasReward 
+          ? `data-name="${ach.name}" data-desc="${ach.desc}" data-progress="${progress.current}/${progress.max}" data-reward="${ach.reward || ''}" data-unlocked="${isUnlocked}"`
+          : `data-name="???" data-desc="Complete a secret challenge to unlock this reward!" data-progress="${progress.current}/${progress.max}" data-reward="🎁 Mystery Reward" data-unlocked="false" data-mystery="true"`;
+        
+        html += `
+          <div class="${classes}" ${tooltipData}>
+            ${hasReward ? '<div class="achievement-reward-badge">🎁</div>' : ''}
+            ${isUnlocked ? '<div class="achievement-complete-badge">✓</div>' : ''}
+            <div class="achievement-tile-icon">${displayIcon}</div>
+            <div class="achievement-tile-name">${displayName}</div>
+            <div class="achievement-progress-bar">
+              <div class="achievement-progress-fill" style="width: ${progressPercent}%"></div>
+            </div>
+          </div>
+        `;
+      }
+      
+      html += '</div>';
+      
+      // Add tooltip element
+      html += '<div class="achievement-tooltip" id="achievementTooltip"></div>';
+      
+      galleryGrid.innerHTML = html;
+      
+      // Setup tooltip handlers
+      const tooltip = document.getElementById('achievementTooltip');
+      const tiles = galleryGrid.querySelectorAll('.achievement-tile');
+      
+      tiles.forEach(tile => {
+        tile.addEventListener('mouseenter', (e) => {
+          const name = tile.dataset.name;
+          const desc = tile.dataset.desc;
+          const progress = tile.dataset.progress;
+          const reward = tile.dataset.reward;
+          const isUnlocked = tile.dataset.unlocked === 'true';
+          const isMystery = tile.dataset.mystery === 'true';
+          
+          let tooltipHtml = '';
+          if (isMystery) {
+            tooltipHtml = `
+              <div class="tooltip-title">???</div>
+              <div class="tooltip-mystery">Complete a secret challenge to unlock this reward!</div>
+              <div class="tooltip-progress">Progress: ${progress}</div>
+              <div class="tooltip-reward">🎁 Mystery Reward</div>
+            `;
+          } else {
+            tooltipHtml = `
+              <div class="tooltip-title">${name}</div>
+              <div class="tooltip-desc">${desc}</div>
+              ${!isUnlocked ? `<div class="tooltip-progress">Progress: ${progress}</div>` : ''}
+              ${reward ? `<div class="tooltip-reward">🎁 ${reward}</div>` : ''}
+            `;
+          }
+          
+          tooltip.innerHTML = tooltipHtml;
+          tooltip.classList.add('visible');
+        });
+        
+        tile.addEventListener('mousemove', (e) => {
+          tooltip.style.left = (e.clientX + 15) + 'px';
+          tooltip.style.top = (e.clientY + 15) + 'px';
+        });
+        
+        tile.addEventListener('mouseleave', () => {
+          tooltip.classList.remove('visible');
+        });
+      });
     }
     
     function toggleMusic(key) {

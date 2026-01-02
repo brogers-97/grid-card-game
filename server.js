@@ -2913,7 +2913,7 @@ function processBossEventCountdown(lobby) {
     } else if (boss.eventType === 'blood_chalice') {
       logToLobby(lobby, `🍷 BLOOD CHALICE RITUAL: ${turnsUntilEvent}`, "boss-benefit");
     } else if (boss.eventType === 'gem_rain') {
-      logToLobby(lobby, `💎 GEM RAIN INCOMING: ${turnsUntilEvent}`);
+      logToLobby(lobby, `💎 GEM RAIN: ${turnsUntilEvent}`, "gem-rain-warning");
     }
   }
 }
@@ -3358,8 +3358,8 @@ function processGemRainWarning(lobby, boss, config) {
   // Increment occurrence counter
   state.bossEventOccurrence++;
   
-  // Log the warning
-  logToLobby(lobby, `💎 GEM RAIN INCOMING! ${count} tiles are glowing...`);
+  // Log the warning with special gem-rain-warning type
+  logToLobby(lobby, `💎 GEM RAIN INCOMING! ${count} gems are falling...`, "gem-rain-warning");
   combatLogToLobby(lobby, `💎 The Garnet Queen summons gems from the sky!`, "boss-event");
   
   // Emit warning to clients for visual effects
@@ -5186,6 +5186,9 @@ io.on("connection", (socket) => {
 
     if (payload.type === "endTurn") {
       processEndOfTurnEffects(lobby, role);
+      
+      // Clear diamond buff (unlimited moves) for the player ending their turn
+      clearDiamondBuffs(state, role);
       
       // Clear firstTurn after gold's first turn
       if (state.firstTurn && role === "gold") {

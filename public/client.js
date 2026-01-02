@@ -899,7 +899,15 @@ function log(msg, type = "system") {
     .replace(/\+(\d+) (HP|energy)/g, '<span class="log-heal">+$1</span> <span class="log-energy">$2</span>')
     .replace(/-(\d+) (HP|damage)/g, '<span class="log-damage">-$1</span> $2')
     .replace(/\((\d+)\/(\d+)\)/g, '(<span class="log-damage">$1</span>/<span class="log-heal">$2</span>)')
-    .replace(/Row ([A-E])/g, 'Row <span class="log-row">$1</span>');
+    .replace(/Row ([A-E])/g, 'Row <span class="log-row">$1</span>')
+    // Gem colors
+    .replace(/\bRuby\b/gi, '<span class="gem-ruby">Ruby</span>')
+    .replace(/\bEmerald\b/gi, '<span class="gem-emerald">Emerald</span>')
+    .replace(/\bTopaz\b/gi, '<span class="gem-topaz">Topaz</span>')
+    .replace(/\bObsidian\b/gi, '<span class="gem-obsidian">Obsidian</span>')
+    .replace(/\bDiamond\b/gi, '<span class="gem-diamond">Diamond</span>')
+    // Card names in gem hits (captures the pattern "hits CardName!")
+    .replace(/hits ([A-Z][a-zA-Z\s]+)!/g, 'hits <span class="gem-target">$1</span>!');
   
   entry.innerHTML = html;
   logEl.appendChild(entry);
@@ -2928,14 +2936,29 @@ socket.on("bloodChaliceConsumed", (data) => {
 });
 
 // Handle gem rain warning
+// Gem rain warning sound (loops until gems fall)
+let gemWarningSound = null;
+
 socket.on("gemRainWarning", (data) => {
   console.log("Gem rain warning:", data);
   combatLog(`💎 GEM RAIN: ${data.tiles.length} tiles are glowing!`, "boss-event");
+  
+  // Play warning sound (looping)
+  gemWarningSound = new Audio('/audio/sfx/gem-warning.mp3');
+  gemWarningSound.volume = 0.5;
+  gemWarningSound.loop = true;
+  gemWarningSound.play().catch(() => {});
 });
 
 // Handle gem rain execution
 socket.on("gemRainExecute", (data) => {
   console.log("Gem rain execute:", data);
+  
+  // Stop the warning sound
+  if (gemWarningSound) {
+    gemWarningSound.pause();
+    gemWarningSound = null;
+  }
   
   // Clear warning tiles immediately when gems start falling
   S.bossEventWarning = null;
@@ -2945,6 +2968,11 @@ socket.on("gemRainExecute", (data) => {
   data.results.forEach((result, index) => {
     setTimeout(() => {
       animateGemFall(result.r, result.c, result.gemType, result.effect, result.unitName);
+      
+      // Play impact sound for each gem
+      const impactSound = new Audio('/audio/sfx/gem-impact.mp3');
+      impactSound.volume = 0.2;
+      impactSound.play().catch(() => {});
     }, index * 300);
   });
 });

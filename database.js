@@ -102,7 +102,39 @@ const userSchema = new mongoose.Schema({
   stats: {
     gamesPlayed: { type: Number, default: 0 },
     gamesWon: { type: Number, default: 0 },
-    campaignWins: { type: Number, default: 0 }
+    campaignWins: { type: Number, default: 0 },
+    pvpWins: { type: Number, default: 0 },
+    totalKills: { type: Number, default: 0 },
+    totalDamage: { type: Number, default: 0 },
+    cardsPlayed: { type: Number, default: 0 },
+    spellsPlayed: { type: Number, default: 0 },
+    winStreak: { type: Number, default: 0 },
+    bestWinStreak: { type: Number, default: 0 },
+    challengeBossesBeaten: { type: Number, default: 0 },
+    lowestWinHp: { type: Number, default: 999 }, // Lowest HP when winning
+    highestSingleAttack: { type: Number, default: 0 }, // Highest damage in one attack
+    spellOnlyWins: { type: Number, default: 0 }, // Wins using only spells
+    turnsInGamesWon: { type: Number, default: 0 }, // Total turns in won games
+    gamesWonCount: { type: Number, default: 0 } // For calculating average
+  },
+  
+  // Achievements - boolean flags for each achievement
+  achievements: {
+    type: Map,
+    of: Boolean,
+    default: () => new Map()
+  },
+  
+  // Unlocked Mats
+  unlockedMats: {
+    type: [String],
+    default: ['default'] // Start with default mat
+  },
+  
+  // Selected cosmetics
+  selectedMat: {
+    type: String,
+    default: 'default'
   }
 });
 
@@ -129,9 +161,12 @@ userSchema.methods.toPublicJSON = function() {
     unlockedDecks: this.unlockedDecks,
     unlockedMusic: this.unlockedMusic,
     unlockedBackgrounds: this.unlockedBackgrounds,
+    unlockedMats: this.unlockedMats || ['default'],
+    selectedMat: this.selectedMat || 'default',
     customDecks: this.customDecks,
     preferences: this.preferences,
     stats: this.stats,
+    achievements: Object.fromEntries(this.achievements || new Map()),
     createdAt: this.createdAt
   };
 };
@@ -597,9 +632,550 @@ function getAllCards() {
   return allCards;
 }
 
+// ==================== ACHIEVEMENTS SYSTEM ====================
+
+const ACHIEVEMENTS = {
+  // ===== BOSS VICTORIES (6) =====
+  boss_void: {
+    id: 'boss_void',
+    name: 'Void Vanquisher',
+    description: 'Defeat The Void Scout',
+    icon: '👽',
+    category: 'boss'
+  },
+  boss_skeleton: {
+    id: 'boss_skeleton',
+    name: 'Sheriff Slayer',
+    description: 'Defeat The Dead Sheriff',
+    icon: '🤠',
+    category: 'boss'
+  },
+  boss_vampire: {
+    id: 'boss_vampire',
+    name: 'Countess Crusher',
+    description: 'Defeat The Blood Countess',
+    icon: '🧛',
+    category: 'boss'
+  },
+  boss_fairy: {
+    id: 'boss_fairy',
+    name: 'Gem Breaker',
+    description: 'Defeat The Garnet Queen',
+    icon: '🧚',
+    category: 'boss'
+  },
+  boss_elf: {
+    id: 'boss_elf',
+    name: "Moon's Eclipse",
+    description: 'Defeat Moon Shadow Sentinel',
+    icon: '🌙',
+    category: 'boss'
+  },
+  boss_dragon: {
+    id: 'boss_dragon',
+    name: 'Dragon Slayer',
+    description: 'Defeat The Arcane Dragonlord',
+    icon: '🐉',
+    category: 'boss'
+  },
+
+  // ===== CHALLENGE MODE (3) =====
+  challenge_first: {
+    id: 'challenge_first',
+    name: 'Challenger',
+    description: 'Beat your first Challenge Boss',
+    icon: '⚔️',
+    category: 'challenge'
+  },
+  challenge_three: {
+    id: 'challenge_three',
+    name: 'Challenge Accepted',
+    description: 'Beat 3 Challenge Bosses',
+    icon: '⚔️',
+    category: 'challenge',
+    threshold: 3
+  },
+  challenge_all: {
+    id: 'challenge_all',
+    name: 'Ultimate Champion',
+    description: 'Beat ALL Challenge Bosses',
+    icon: '👑',
+    category: 'challenge',
+    reward: { type: 'mat', id: 'golden' }
+  },
+
+  // ===== CAMPAIGN COMPLETION (3) =====
+  campaign_half: {
+    id: 'campaign_half',
+    name: 'Halfway There',
+    description: 'Beat 3 Campaign Bosses',
+    icon: '🏆',
+    category: 'campaign'
+  },
+  campaign_complete: {
+    id: 'campaign_complete',
+    name: 'Campaign Victor',
+    description: 'Beat all 6 Campaign Bosses',
+    icon: '🏆',
+    category: 'campaign',
+    reward: { type: 'background', id: 'champion' }
+  },
+  campaign_perfect: {
+    id: 'campaign_perfect',
+    name: 'Perfectionist',
+    description: 'Get 3 stars on all Campaign Bosses',
+    icon: '⭐',
+    category: 'campaign',
+    reward: { type: 'music', id: 'starlight' }
+  },
+
+  // ===== WINS (8) =====
+  wins_1: {
+    id: 'wins_1',
+    name: 'First Blood',
+    description: 'Win your first game',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 1
+  },
+  wins_10: {
+    id: 'wins_10',
+    name: 'Getting Started',
+    description: 'Win 10 games',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 10
+  },
+  wins_25: {
+    id: 'wins_25',
+    name: 'Competitor',
+    description: 'Win 25 games',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 25
+  },
+  wins_50: {
+    id: 'wins_50',
+    name: 'Veteran',
+    description: 'Win 50 games',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 50
+  },
+  wins_100: {
+    id: 'wins_100',
+    name: 'Centurion',
+    description: 'Win 100 games',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 100,
+    reward: { type: 'background', id: 'warrior' }
+  },
+  wins_250: {
+    id: 'wins_250',
+    name: 'Elite',
+    description: 'Win 250 games',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 250
+  },
+  wins_500: {
+    id: 'wins_500',
+    name: 'Legendary',
+    description: 'Win 500 games',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 500,
+    reward: { type: 'music', id: 'legend' }
+  },
+  wins_1000: {
+    id: 'wins_1000',
+    name: 'Immortal',
+    description: 'Win 1000 games',
+    icon: '🎯',
+    category: 'wins',
+    threshold: 1000
+  },
+
+  // ===== GAMES PLAYED (4) =====
+  games_50: {
+    id: 'games_50',
+    name: 'Regular',
+    description: 'Play 50 games',
+    icon: '🎮',
+    category: 'games',
+    threshold: 50
+  },
+  games_100: {
+    id: 'games_100',
+    name: 'Dedicated',
+    description: 'Play 100 games',
+    icon: '🎮',
+    category: 'games',
+    threshold: 100
+  },
+  games_250: {
+    id: 'games_250',
+    name: 'Committed',
+    description: 'Play 250 games',
+    icon: '🎮',
+    category: 'games',
+    threshold: 250
+  },
+  games_500: {
+    id: 'games_500',
+    name: 'Devoted',
+    description: 'Play 500 games',
+    icon: '🎮',
+    category: 'games',
+    threshold: 500,
+    reward: { type: 'background', id: 'veteran' }
+  },
+
+  // ===== KILLS (8) =====
+  kills_10: {
+    id: 'kills_10',
+    name: 'First Kills',
+    description: 'Kill 10 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 10
+  },
+  kills_50: {
+    id: 'kills_50',
+    name: 'Soldier',
+    description: 'Kill 50 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 50
+  },
+  kills_100: {
+    id: 'kills_100',
+    name: 'Warrior',
+    description: 'Kill 100 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 100
+  },
+  kills_250: {
+    id: 'kills_250',
+    name: 'Slayer',
+    description: 'Kill 250 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 250
+  },
+  kills_500: {
+    id: 'kills_500',
+    name: 'Destroyer',
+    description: 'Kill 500 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 500
+  },
+  kills_1000: {
+    id: 'kills_1000',
+    name: 'Annihilator',
+    description: 'Kill 1000 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 1000
+  },
+  kills_2500: {
+    id: 'kills_2500',
+    name: 'Death Incarnate',
+    description: 'Kill 2500 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 2500
+  },
+  kills_5000: {
+    id: 'kills_5000',
+    name: 'Genocide',
+    description: 'Kill 5000 enemy units',
+    icon: '💀',
+    category: 'kills',
+    threshold: 5000,
+    reward: { type: 'background', id: 'crimson' }
+  },
+
+  // ===== DAMAGE (4) =====
+  damage_500: {
+    id: 'damage_500',
+    name: 'Damage Dealer',
+    description: 'Deal 500 total damage',
+    icon: '💥',
+    category: 'damage',
+    threshold: 500
+  },
+  damage_1000: {
+    id: 'damage_1000',
+    name: 'Heavy Hitter',
+    description: 'Deal 1000 total damage',
+    icon: '💥',
+    category: 'damage',
+    threshold: 1000
+  },
+  damage_2500: {
+    id: 'damage_2500',
+    name: 'Devastator',
+    description: 'Deal 2500 total damage',
+    icon: '💥',
+    category: 'damage',
+    threshold: 2500
+  },
+  damage_5000: {
+    id: 'damage_5000',
+    name: 'Cataclysm',
+    description: 'Deal 5000 total damage',
+    icon: '💥',
+    category: 'damage',
+    threshold: 5000,
+    reward: { type: 'mat', id: 'inferno' }
+  },
+
+  // ===== CARDS PLAYED (4) =====
+  cards_100: {
+    id: 'cards_100',
+    name: 'Card Slinger',
+    description: 'Play 100 cards',
+    icon: '🃏',
+    category: 'cards',
+    threshold: 100
+  },
+  cards_250: {
+    id: 'cards_250',
+    name: 'Card Shark',
+    description: 'Play 250 cards',
+    icon: '🃏',
+    category: 'cards',
+    threshold: 250
+  },
+  cards_500: {
+    id: 'cards_500',
+    name: 'Card Master',
+    description: 'Play 500 cards',
+    icon: '🃏',
+    category: 'cards',
+    threshold: 500
+  },
+  cards_1000: {
+    id: 'cards_1000',
+    name: 'Card Legend',
+    description: 'Play 1000 cards',
+    icon: '🃏',
+    category: 'cards',
+    threshold: 1000,
+    reward: { type: 'mat', id: 'arcane' }
+  },
+
+  // ===== COLLECTION (5) =====
+  collect_25: {
+    id: 'collect_25',
+    name: 'Card Collector',
+    description: 'Collect 25 unique cards',
+    icon: '📚',
+    category: 'collection',
+    threshold: 25
+  },
+  collect_50: {
+    id: 'collect_50',
+    name: 'Archivist',
+    description: 'Collect 50 unique cards',
+    icon: '📚',
+    category: 'collection',
+    threshold: 50
+  },
+  collect_all: {
+    id: 'collect_all',
+    name: 'Complete Collection',
+    description: 'Collect all cards in the game',
+    icon: '📚',
+    category: 'collection'
+  },
+  holo_first: {
+    id: 'holo_first',
+    name: 'Shiny!',
+    description: 'Get your first holographic card',
+    icon: '✨',
+    category: 'collection'
+  },
+  holo_10: {
+    id: 'holo_10',
+    name: 'Holo Hunter',
+    description: 'Collect 10 holographic cards',
+    icon: '✨',
+    category: 'collection',
+    threshold: 10,
+    reward: { type: 'mat', id: 'prismatic' }
+  },
+
+  // ===== PVP (4) =====
+  pvp_first: {
+    id: 'pvp_first',
+    name: 'Duelist',
+    description: 'Win your first PvP game',
+    icon: '🤺',
+    category: 'pvp'
+  },
+  pvp_10: {
+    id: 'pvp_10',
+    name: 'Gladiator',
+    description: 'Win 10 PvP games',
+    icon: '🤺',
+    category: 'pvp',
+    threshold: 10
+  },
+  pvp_25: {
+    id: 'pvp_25',
+    name: 'Champion',
+    description: 'Win 25 PvP games',
+    icon: '🤺',
+    category: 'pvp',
+    threshold: 25
+  },
+  pvp_50: {
+    id: 'pvp_50',
+    name: 'Arena Master',
+    description: 'Win 50 PvP games',
+    icon: '🤺',
+    category: 'pvp',
+    threshold: 50,
+    reward: { type: 'background', id: 'arena' }
+  },
+
+  // ===== SPECIAL FEATS (11) =====
+  perfect_win: {
+    id: 'perfect_win',
+    name: 'Flawless Victory',
+    description: 'Win a game without losing any row HP',
+    icon: '🌟',
+    category: 'special'
+  },
+  quick_win: {
+    id: 'quick_win',
+    name: 'Speed Demon',
+    description: 'Win a game in under 10 turns',
+    icon: '⚡',
+    category: 'special'
+  },
+  comeback: {
+    id: 'comeback',
+    name: 'Comeback King',
+    description: 'Win a game after being reduced to 5 or less Heart HP',
+    icon: '🔥',
+    category: 'special'
+  },
+  overkill: {
+    id: 'overkill',
+    name: 'Overkill',
+    description: 'Deal 20+ damage to the enemy heart in a single turn',
+    icon: '💢',
+    category: 'special'
+  },
+  board_clear: {
+    id: 'board_clear',
+    name: 'Board Wipe',
+    description: 'Destroy 5 or more enemy units in a single turn',
+    icon: '🧹',
+    category: 'special'
+  },
+  big_unit: {
+    id: 'big_unit',
+    name: 'Juggernaut',
+    description: 'Have a unit with 15+ ATK',
+    icon: '💪',
+    category: 'special'
+  },
+  survivor: {
+    id: 'survivor',
+    name: 'Survivor',
+    description: 'Have a unit with 20+ HP',
+    icon: '🛡️',
+    category: 'special'
+  },
+  energy_hoarder: {
+    id: 'energy_hoarder',
+    name: 'Energy Hoarder',
+    description: 'End a turn with 10 energy',
+    icon: '⚡',
+    category: 'special'
+  },
+  win_streak_5: {
+    id: 'win_streak_5',
+    name: 'Hot Streak',
+    description: 'Win 5 games in a row',
+    icon: '🔥',
+    category: 'special',
+    threshold: 5
+  },
+  win_streak_10: {
+    id: 'win_streak_10',
+    name: 'Unstoppable',
+    description: 'Win 10 games in a row',
+    icon: '🔥',
+    category: 'special',
+    threshold: 10,
+    reward: { type: 'mat', id: 'dominator' }
+  },
+  deck_builder: {
+    id: 'deck_builder',
+    name: 'Architect',
+    description: 'Create a custom deck',
+    icon: '🏗️',
+    category: 'special'
+  },
+
+  // ===== UNIQUE FEATS (with rewards) =====
+  phoenix_win: {
+    id: 'phoenix_win',
+    name: 'Phoenix',
+    description: 'Win with exactly 1 Heart HP remaining',
+    icon: '🔥',
+    category: 'special',
+    reward: { type: 'mat', id: 'phoenix' }
+  },
+  executioner: {
+    id: 'executioner',
+    name: 'Executioner',
+    description: 'One-shot the enemy heart (30+ damage in one attack)',
+    icon: '⚔️',
+    category: 'special',
+    reward: { type: 'background', id: 'executioner' }
+  },
+  spell_only_win: {
+    id: 'spell_only_win',
+    name: 'Mystic',
+    description: 'Win a game using only spells (no unit attacks)',
+    icon: '🔮',
+    category: 'special',
+    reward: { type: 'music', id: 'mystic' }
+  }
+};
+
+// Helper to get all achievements as array
+function getAllAchievements() {
+  return Object.values(ACHIEVEMENTS);
+}
+
+// Helper to get achievements by category
+function getAchievementsByCategory(category) {
+  return Object.values(ACHIEVEMENTS).filter(a => a.category === category);
+}
+
+// Helper to check if achievement has reward
+function getAchievementReward(achievementId) {
+  const achievement = ACHIEVEMENTS[achievementId];
+  return achievement ? achievement.reward : null;
+}
+
 module.exports = {
   connectDB,
   User,
   CAMPAIGN_BOSSES,
+  ACHIEVEMENTS,
+  getAllAchievements,
+  getAchievementsByCategory,
+  getAchievementReward,
   authHelpers
 };
