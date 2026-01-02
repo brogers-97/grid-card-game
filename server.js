@@ -957,6 +957,10 @@ function discardUnitCard(lobby, unit) {
   const player = lobby.gameState.players[unit.owner];
   if (!player) return;
   
+  // Don't discard Gem Shards - they're tokens, not cards in the deck
+  // Only Ruby Sprite adds a Gem Shard CARD to hand (not from discard)
+  if (unit.key === "gemshard") return;
+  
   // Use originalCard if stored, otherwise reconstruct from unit data
   if (unit.originalCard) {
     player.discard.push(unit.originalCard);
@@ -1959,12 +1963,6 @@ function triggerStatGainEffects(lobby, statType, amount, sourceUnitId) {
 function processEndOfTurnEffects(lobby, role) {
   const state = lobby.gameState.state;
   
-  // Clear Twilight's Respite damage reduction at end of turn
-  if (state.damageReduction && state.damageReduction[role]) {
-    delete state.damageReduction[role];
-    logToLobby(lobby, role.toUpperCase() + "'s Twilight's Respite fades.");
-  }
-  
   // Clear Hunter's Blessing bonus range at end of turn
   for (const id in state.units) {
     const u = state.units[id];
@@ -2022,6 +2020,13 @@ function processEndOfTurnEffects(lobby, role) {
 
 function processStartOfTurnEffects(lobby, role) {
   const state = lobby.gameState.state;
+  
+  // Clear Twilight's Respite damage reduction at start of the caster's next turn
+  // (It lasts through opponent's turn)
+  if (state.damageReduction && state.damageReduction[role]) {
+    delete state.damageReduction[role];
+    logToLobby(lobby, role.toUpperCase() + "'s Twilight's Respite fades.");
+  }
   
   // Resurrect any pending Coffins
   if (state.pendingCoffinResurrects && state.pendingCoffinResurrects[role]) {
@@ -4283,6 +4288,31 @@ async function executeAction(lobby, role, action) {
       const t = state.units[action.targetId];
       if (!a || !t || a.owner !== role) return;
       
+      // Handle Opal Devourer consuming friendly Gem Shards
+      const isConsumeGem = a.effectId === "consume_gem" && t.owner === role && t.key === "gemshard";
+      if (isConsumeGem) {
+        const tp = getUnitPos(state, action.targetId);
+        if (!tp) return;
+        
+        // Opal Devourer consumes friendly Gem Shard for +2/+2
+        a.atk += 2;
+        a.hp += 2;
+        a.maxHp = (a.maxHp || a.hp) + 2;
+        logToLobby(lobby, a.name + " devours " + t.name + "! +2/+2 (now " + a.atk + "/" + a.hp + ")");
+        
+        // Process death effects (Prismatic Fairy triggers)
+        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
+        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
+        
+        state.board[tp.r][tp.c] = null;
+        discardUnitCard(lobby, t);
+        delete state.units[action.targetId];
+        if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
+        state.attackCountThisTurn[action.attackerId] = (state.attackCountThisTurn[action.attackerId] || 0) + 1;
+        state.attackedThisTurn.add(action.attackerId);
+        return;
+      }
+      
       // Check attack count - base 1 attack, +1 for canDoubleAttack (spell), +N for topaz gem buffs
       const attackCount = state.attackCountThisTurn?.[action.attackerId] || 0;
       const baseAttacks = 1;
@@ -5827,29 +5857,6 @@ io.on("connection", (socket) => {
         return emitGameState(lobby);
       }
       
-      // Handle Opal Devourer consuming a Gem Shard
-      if (isConsumeGem) {
-        // Opal Devourer gains +2/+2 from consuming gem
-        a.atk += 2;
-        a.hp += 2;
-        a.maxHp = (a.maxHp || a.hp) + 2;
-        logToLobby(lobby, a.name + " devours " + t.name + "! Now " + a.atk + "/" + a.hp);
-        
-        // Process death effects (Prismatic Fairy gem death AOE, etc.)
-        processOnDeathEffect(lobby, t, t.owner, { r: tp.r, c: tp.c });
-        processAllyDeathTriggers(lobby, t.owner, t, { r: tp.r, c: tp.c });
-        
-        state.board[tp.r][tp.c] = null;
-        discardUnitCard(lobby, t);
-        delete state.units[targetId];
-        if (!state.attackCountThisTurn) state.attackCountThisTurn = {};
-        state.attackCountThisTurn[attackerId] = (state.attackCountThisTurn[attackerId] || 0) + 1;
-        if (state.attackCountThisTurn[attackerId] >= maxAttacks) {
-          state.attackedThisTurn.add(attackerId);
-        }
-        return emitGameState(lobby);
-      }
-      
       // Handle Lunar Priestess heal attack
       if (isHealAttack) {
         // Heal ally for ATK amount
@@ -6151,7 +6158,7 @@ io.on("connection", (socket) => {
       const ap = getUnitPos(state, attackerId); if (!ap) return;
       
       // Check range - archers can attack from 2 tiles away, others must be adjacent
-      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce";
+      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged";
       const maxRange = isRanged ? 2 : 1;
       const rowDistance = Math.abs(ap.r - row);
       
@@ -6192,7 +6199,7 @@ io.on("connection", (socket) => {
       // - Archers (ranged): can attack from 1 additional row away (so rows 0-1 for gold heart, rows 5-6 for silver heart)
       const heartRow = target === "gold" ? 0 : 6; 
       const distance = Math.abs(pos.r - heartRow);
-      const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce";
+      const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce" || u.effectId === "starweave_ranged";
       const maxRange = isRanged ? 1 : 0;
       
       if (distance > maxRange) {

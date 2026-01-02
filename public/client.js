@@ -1057,18 +1057,19 @@ function highlightDeployTiles(){
   }
 
   if (card.effect === "instant" && card.requiresTarget === "enemy_unit") {
-    // Assimilation - highlight enemy units with 2 or less HP
+    // Highlight enemy units (some spells have HP restrictions, check effectId)
     for (let vr = 0; vr < ROWS; vr++) {
       const sr = toServerRow(vr);
       for (let c = 0; c < COLS; c++) {
         const unitId = S.board[sr][c];
         if (unitId && S.units[unitId] && S.units[unitId].owner !== myRole) {
           const u = S.units[unitId];
-          // Only highlight if HP <= 2 and not untargetable
-          if (u.hp <= 2 && !u.untargetable) {
-            const el = document.getElementById(cellId(vr, c));
-            if (el) el.classList.add("attack-valid"); // Red highlight for enemy target
-          }
+          // Check if untargetable
+          if (u.untargetable) continue;
+          // Assimilation only works on units with 2 or less HP
+          if (card.effectId === "destroy_weak" && u.hp > 2) continue;
+          const el = document.getElementById(cellId(vr, c));
+          if (el) el.classList.add("attack-valid"); // Red highlight for enemy target
         }
       }
     }
@@ -2577,12 +2578,13 @@ function onCellClick(viewRow, col) {
     }
     
     if (card.effect === "instant" && card.requiresTarget === "enemy_unit") {
-      // Assimilation - target an enemy unit with 2 or less HP
+      // Target an enemy unit (some spells have HP restrictions)
       if (!occId || !S.units[occId] || S.units[occId].owner === myRole) {
         return log("Select an enemy unit.");
       }
       const target = S.units[occId];
-      if (target.hp > 2) {
+      // Assimilation only works on units with 2 or less HP
+      if (card.effectId === "destroy_weak" && target.hp > 2) {
         return log("Target must have 2 or less HP.");
       }
       if (target.untargetable) {
@@ -2822,7 +2824,7 @@ function onCellClick(viewRow, col) {
   }
   
   // Ranged units (archer) can attack rows from 2 tiles away
-  const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce";
+  const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged";
   const bonusRange = a.bonusRange || 0;
   const totalRange = (isRanged ? 2 : 1) + bonusRange;
   const rowDist = Math.abs(ap.r - row);
