@@ -4078,6 +4078,50 @@ function polymorphUnit(state, unitId) {
   unit.isPolymorphed = true;
 }
 
+// Helper to polymorph a unit into a dragon (4/4)
+function polymorphToDragon(state, unitId) {
+  const unit = state.units[unitId];
+  if (!unit) return;
+  
+  // Skip real structures (not gem shards)
+  if (unit.type === 'structure' && unit.key !== 'gemshard') return;
+  
+  // Skip if already polymorphed
+  if (unit.isPolymorphed) return;
+  
+  // Initialize polymorphedUnits if needed
+  if (!state.polymorphedUnits) state.polymorphedUnits = {};
+  
+  // Store original data
+  state.polymorphedUnits[unitId] = {
+    key: unit.key,
+    name: unit.name,
+    atk: unit.atk,
+    hp: unit.hp,
+    maxHp: unit.maxHp,
+    art: unit.art,
+    effect: unit.effect,
+    effectId: unit.effectId,
+    effectDesc: unit.effectDesc,
+    type: unit.type,
+    stationary: unit.stationary || false
+  };
+  
+  // Transform to dragon (4/4, no effects, can move)
+  unit.key = 'polymorph-dragon';
+  unit.name = 'Polymorphed Dragon';
+  unit.atk = 4;
+  unit.hp = 4;
+  unit.maxHp = 4;
+  unit.art = '/images/polymorph-dragon.png';
+  unit.effect = null;
+  unit.effectId = null;
+  unit.effectDesc = null;
+  unit.type = 'monster';
+  unit.stationary = false;
+  unit.isPolymorphed = true;
+}
+
 function processPolymorphStart(lobby, boss, config) {
   const { state } = lobby.gameState;
   
@@ -4088,13 +4132,38 @@ function processPolymorphStart(lobby, boss, config) {
   // Store original unit data and transform all units to sheep
   state.polymorphedUnits = {};
   
+  // Collect units by owner
+  const goldUnits = [];
+  const silverUnits = [];
+  
   for (const unitId in state.units) {
-    polymorphUnit(state, unitId);
+    const unit = state.units[unitId];
+    // Skip real structures (not gem shards)
+    if (unit.type === 'structure' && unit.key !== 'gemshard') continue;
+    
+    if (unit.owner === 'gold') {
+      goldUnits.push(unitId);
+    } else if (unit.owner === 'silver') {
+      silverUnits.push(unitId);
+    }
   }
   
-  combatLogToLobby(lobby, `🐑 The Arcane Dragonlord - POLYMORPH WAVE`, "boss-event");
-  combatLogToLobby(lobby, `All units transformed into Sheep!`, "combat-result");
-  logToLobby(lobby, `🐑 POLYMORPH WAVE! All units become 1/1 Sheep for ${config.duration} turns!`);
+  // Pick one random unit from each side to become a dragon
+  const goldDragonId = goldUnits.length > 0 ? goldUnits[Math.floor(Math.random() * goldUnits.length)] : null;
+  const silverDragonId = silverUnits.length > 0 ? silverUnits[Math.floor(Math.random() * silverUnits.length)] : null;
+  
+  // Transform all units - dragons for the lucky ones, sheep for the rest
+  for (const unitId in state.units) {
+    if (unitId === goldDragonId || unitId === silverDragonId) {
+      polymorphToDragon(state, unitId);
+    } else {
+      polymorphUnit(state, unitId);
+    }
+  }
+  
+  combatLogToLobby(lobby, `🐑🐲 The Arcane Dragonlord - POLYMORPH WAVE`, "boss-event");
+  combatLogToLobby(lobby, `Units transformed! One dragon per side, the rest are Sheep!`, "combat-result");
+  logToLobby(lobby, `🐲 POLYMORPH WAVE! Each side gets one 4/4 Dragon, the rest become 1/1 Sheep for ${config.duration} turns!`);
   
   // Emit polymorph event to clients
   if (lobby.hostSocket) {
