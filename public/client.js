@@ -3061,6 +3061,65 @@ socket.on("eclipseEnd", (data) => {
   renderAll();
 });
 
+// Polymorph event handlers
+socket.on("polymorphStart", (data) => {
+  console.log("Polymorph starts:", data);
+  S.polymorphActive = true;
+  S.polymorphTurnsLeft = data.turnsLeft;
+  
+  // Play polymorph sound (use a magic sound)
+  const polymorphSound = new Audio('/audio/sfx/polymorph.mp3');
+  polymorphSound.volume = 0.5;
+  polymorphSound.play().catch(() => {});
+  
+  // Show polymorph indicator
+  showPolymorphOverlay(data.turnsLeft);
+  renderAll();
+});
+
+socket.on("polymorphEnd", (data) => {
+  console.log("Polymorph ends");
+  S.polymorphActive = false;
+  S.polymorphTurnsLeft = 0;
+  
+  // Play restore sound
+  const restoreSound = new Audio('/audio/sfx/polymorph-end.mp3');
+  restoreSound.volume = 0.5;
+  restoreSound.play().catch(() => {});
+  
+  // Hide polymorph indicator
+  hidePolymorphOverlay();
+  renderAll();
+});
+
+function showPolymorphOverlay(turnsLeft) {
+  // Add polymorph class to game container for visual effect
+  const gameContainer = document.getElementById('gameContainer') || document.body;
+  gameContainer.classList.add('polymorph-active');
+  document.body.classList.add('polymorph-active');
+  
+  // Create or update polymorph indicator
+  let indicator = document.getElementById('polymorphIndicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'polymorphIndicator';
+    document.body.appendChild(indicator);
+  }
+  indicator.innerHTML = `🐑 POLYMORPH (${turnsLeft} turns)`;
+  indicator.classList.add('visible');
+}
+
+function hidePolymorphOverlay() {
+  const gameContainer = document.getElementById('gameContainer') || document.body;
+  gameContainer.classList.remove('polymorph-active');
+  document.body.classList.remove('polymorph-active');
+  
+  const indicator = document.getElementById('polymorphIndicator');
+  if (indicator) {
+    indicator.classList.remove('visible');
+  }
+}
+
 // Rune characters for eclipse obfuscation
 const RUNE_CHARS = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟᚳᚴᚵᚶᚸᚻᚼᚽᚿᛀᛂᛄᛅᛆᛋᛍᛎᛐᛑᛓᛔᛕᛖᛘᛙᛛᛝᛠᛡᛢᛣᛤᛥᛦᛧᛨᛩᛪ';
 
@@ -4330,7 +4389,7 @@ function showTimeRiftModal(units, deployPos) {
     modal.innerHTML = `
       <div class="modalContent timeRiftContent">
         <h2>⏳ Time Rift - Resurrect a Unit!</h2>
-        <p>Choose a unit from your discard to bring back at 1 HP.</p>
+        <p>Choose a unit from your discard to bring back with full stats.</p>
         <div id="timeRiftCards" class="discardCards"></div>
         <button id="skipTimeRift" class="modalBtn">Skip</button>
       </div>
@@ -4361,7 +4420,6 @@ function showTimeRiftModal(units, deployPos) {
     
     el.innerHTML = `
       <div class="cardArt" style="${artStyle}">${artContent}</div>
-      <div class="resurrectTag">1 HP</div>
       <div class="cardInfoOverlay">
         <div class="cardName">${unit.name}</div>
         <div class="cardStats">
@@ -4547,6 +4605,24 @@ socket.on("state", (st) => {
     showEclipseOverlay(S.eclipseEffect);
   } else if (!S.eclipseActive && wasEclipseActive) {
     hideEclipseOverlay();
+  }
+  
+  // Handle polymorph state
+  const wasPolymorphActive = S.polymorphActive;
+  S.polymorphActive = st.polymorphActive || false;
+  S.polymorphTurnsLeft = st.polymorphTurnsLeft || 0;
+  
+  // Update polymorph overlay based on state
+  if (S.polymorphActive && !wasPolymorphActive) {
+    showPolymorphOverlay(S.polymorphTurnsLeft);
+  } else if (!S.polymorphActive && wasPolymorphActive) {
+    hidePolymorphOverlay();
+  } else if (S.polymorphActive && S.polymorphTurnsLeft) {
+    // Update turns left display
+    const indicator = document.getElementById('polymorphIndicator');
+    if (indicator) {
+      indicator.innerHTML = `🐑 POLYMORPH (${S.polymorphTurnsLeft} turns)`;
+    }
   }
   
   // Debug log boss event warning

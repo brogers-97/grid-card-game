@@ -1006,10 +1006,10 @@ const DECKS = {
     description: "Wizards and dragons unite with spell synergy and anti-buff tech",
     archetype: "dragon",
     cards: [
-      // Meditation Monk x3 (channeling energy ramp)
-      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP.", art: "/images/Meditation Monk.png", rarity: "common" },
-      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP.", art: "/images/Meditation Monk.png", rarity: "common" },
-      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP.", art: "/images/Meditation Monk.png", rarity: "common" },
+      // Meditation Monk x3 (channeling energy ramp) - stationary unit
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP. Cannot move.", art: "/images/Meditation Monk.png", rarity: "common", stationary: true },
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP. Cannot move.", art: "/images/Meditation Monk.png", rarity: "common", stationary: true },
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP. Cannot move.", art: "/images/Meditation Monk.png", rarity: "common", stationary: true },
       // Wyrm Whelp x3 (anti-effect tech)
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
@@ -1042,7 +1042,7 @@ const DECKS = {
       // Blue Wizard x1 (gains ATK when any unit gains ATK)
       { key: "bluewizard", name: "Blue Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "blue_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains ATK, this unit gains +1 ATK.", art: "/images/Blue Wizard.png", rarity: "legendary" },
       // Chrono Drake x1 (time rift resurrection)
-      { key: "chronodrake", name: "Chrono Drake", atk: 3, hp: 5, cost: 5, type: "monster", effect: "onDeploy", effectId: "time_rift", effectDesc: "ON DEPLOY: Choose a unit from your discard to resurrect adjacent to Chrono Drake at 1 HP.", art: "/images/Chrono Drake.png", rarity: "legendary" },
+      { key: "chronodrake", name: "Chrono Drake", atk: 3, hp: 5, cost: 5, type: "monster", effect: "onDeploy", effectId: "time_rift", effectDesc: "ON DEPLOY: Choose a unit from your discard to resurrect adjacent to Chrono Drake with full stats.", art: "/images/Chrono Drake.png", rarity: "legendary" },
       // Polymorph x2
       { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
       { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
@@ -1846,6 +1846,12 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
       art: "/images/Gem Shard.png"
     };
     state.board[killedUnitPos.r][killedUnitPos.c] = gemId;
+    
+    // Apply polymorph to spawned gem if polymorph is active
+    if (state.polymorphActive) {
+      polymorphUnit(state, gemId);
+    }
+    
     logToLobby(lobby, a.name + " transforms " + killedUnit.name + " into a Gem Shard!");
   }
   
@@ -2933,6 +2939,12 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
             art: "/images/Gem Shard.png"
           };
           state.board[row][c] = gemId;
+          
+          // Apply polymorph to spawned gem if polymorph is active
+          if (state.polymorphActive) {
+            polymorphUnit(state, gemId);
+          }
+          
           spawned++;
         }
       }
@@ -3262,6 +3274,8 @@ function processBossEventWarning(lobby) {
     processGemRainWarning(lobby, boss, config);
   } else if (boss.eventType === 'eclipse') {
     processEclipseStart(lobby, boss, config);
+  } else if (boss.eventType === 'polymorph') {
+    processPolymorphStart(lobby, boss, config);
   }
   // Add more event types here for other bosses
 }
@@ -3317,6 +3331,8 @@ function processBossEventCountdown(lobby) {
       logToLobby(lobby, `💎 GEM RAIN: ${turnsUntilEvent}`, "gem-rain-warning");
     } else if (boss.eventType === 'eclipse') {
       logToLobby(lobby, `🌑 ECLIPSE APPROACHING: ${turnsUntilEvent}`, "eclipse-warning");
+    } else if (boss.eventType === 'polymorph') {
+      logToLobby(lobby, `🐑 POLYMORPH WAVE: ${turnsUntilEvent}`, "polymorph-warning");
     }
   }
 }
@@ -4016,6 +4032,129 @@ function processEclipseEnd(lobby) {
 
 // ==================== END ECLIPSE EVENT ====================
 
+// ==================== POLYMORPH EVENT (The Arcane Dragonlord) ====================
+
+// Helper to polymorph a single unit
+function polymorphUnit(state, unitId) {
+  const unit = state.units[unitId];
+  if (!unit) return;
+  
+  // Skip real structures (not gem shards) - they can't be polymorphed
+  if (unit.type === 'structure' && unit.key !== 'gemshard') return;
+  
+  // Skip if already polymorphed
+  if (unit.isPolymorphed) return;
+  
+  // Initialize polymorphedUnits if needed
+  if (!state.polymorphedUnits) state.polymorphedUnits = {};
+  
+  // Store original data
+  state.polymorphedUnits[unitId] = {
+    key: unit.key,
+    name: unit.name,
+    atk: unit.atk,
+    hp: unit.hp,
+    maxHp: unit.maxHp,
+    art: unit.art,
+    effect: unit.effect,
+    effectId: unit.effectId,
+    effectDesc: unit.effectDesc,
+    type: unit.type,
+    stationary: unit.stationary || false
+  };
+  
+  // Transform to sheep (1/1, no effects, can move)
+  unit.key = 'sheep';
+  unit.name = 'Sheep';
+  unit.atk = 1;
+  unit.hp = 1;
+  unit.maxHp = 1;
+  unit.art = '/images/Sheep.png';
+  unit.effect = null;
+  unit.effectId = null;
+  unit.effectDesc = null;
+  unit.type = 'monster'; // Sheep are monsters, not structures
+  unit.stationary = false; // Sheep can move
+  unit.isPolymorphed = true;
+}
+
+function processPolymorphStart(lobby, boss, config) {
+  const { state } = lobby.gameState;
+  
+  // Set polymorph active state
+  state.polymorphActive = true;
+  state.polymorphTurnsLeft = config.duration || 2;
+  
+  // Store original unit data and transform all units to sheep
+  state.polymorphedUnits = {};
+  
+  for (const unitId in state.units) {
+    polymorphUnit(state, unitId);
+  }
+  
+  combatLogToLobby(lobby, `🐑 The Arcane Dragonlord - POLYMORPH WAVE`, "boss-event");
+  combatLogToLobby(lobby, `All units transformed into Sheep!`, "combat-result");
+  logToLobby(lobby, `🐑 POLYMORPH WAVE! All units become 1/1 Sheep for ${config.duration} turns!`);
+  
+  // Emit polymorph event to clients
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("polymorphStart", { turnsLeft: state.polymorphTurnsLeft });
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("polymorphStart", { turnsLeft: state.polymorphTurnsLeft });
+  }
+}
+
+function processPolymorphEnd(lobby) {
+  const { state } = lobby.gameState;
+  
+  if (!state.polymorphActive) return;
+  
+  state.polymorphTurnsLeft--;
+  
+  if (state.polymorphTurnsLeft <= 0) {
+    // Restore all polymorphed units
+    if (state.polymorphedUnits) {
+      for (const unitId in state.polymorphedUnits) {
+        const unit = state.units[unitId];
+        if (!unit) continue; // Unit may have died while polymorphed
+        
+        const original = state.polymorphedUnits[unitId];
+        
+        // Restore original stats
+        unit.key = original.key;
+        unit.name = original.name;
+        unit.atk = original.atk;
+        unit.maxHp = original.maxHp;
+        // Keep HP at 1 if they survived as sheep, otherwise restore proportionally
+        unit.hp = Math.min(original.hp, original.maxHp);
+        unit.art = original.art;
+        unit.effect = original.effect;
+        unit.effectId = original.effectId;
+        unit.effectDesc = original.effectDesc;
+        unit.type = original.type;
+        unit.stationary = original.stationary || false;
+        delete unit.isPolymorphed;
+      }
+    }
+    
+    state.polymorphActive = false;
+    delete state.polymorphedUnits;
+    
+    logToLobby(lobby, `✨ The polymorph wears off - units return to normal!`);
+    
+    // Emit polymorph end to clients
+    if (lobby.hostSocket) {
+      lobby.hostSocket.emit("polymorphEnd", {});
+    }
+    if (lobby.guestSocket) {
+      lobby.guestSocket.emit("polymorphEnd", {});
+    }
+  }
+}
+
+// ==================== END POLYMORPH EVENT ====================
+
 function emitLobbyState(lobby) {
   const info = { code: lobby.code, hostDeck: lobby.hostDeck, guestDeck: lobby.guestDeck, hostReady: lobby.hostReady, guestReady: lobby.guestReady, guestJoined: !!lobby.guestSocket, gameStarted: lobby.gameStarted };
   if (lobby.hostSocket) lobby.hostSocket.emit("lobbyState", { ...info, isHost: true });
@@ -4084,7 +4223,9 @@ function emitGameState(lobby) {
     bossEventWarning: state.bossEventWarning, // For boss event visual warnings
     chaliceTiles: state.chaliceTiles || [], // For blood chalice tiles
     eclipseActive: state.eclipseActive || false, // For eclipse event
-    eclipseEffect: state.eclipseEffect || null // Current eclipse effect (type, value, label)
+    eclipseEffect: state.eclipseEffect || null, // Current eclipse effect (type, value, label)
+    polymorphActive: state.polymorphActive || false, // For polymorph event
+    polymorphTurnsLeft: state.polymorphTurnsLeft || 0 // Turns until polymorph ends
   };
   if (lobby.hostSocket) lobby.hostSocket.emit("state", { 
     ...base, 
@@ -4242,6 +4383,9 @@ async function processAITurn(lobby) {
         
         // Process eclipse end (counts down each turn)
         processEclipseEnd(lobby);
+        
+        // Process polymorph end (counts down each turn)
+        processPolymorphEnd(lobby);
         
         // Increment boss turn count and check for NEW warning
         state.bossTurnCount++;
@@ -4454,6 +4598,9 @@ async function processPlayerAITurn(lobby) {
     // Process eclipse end (counts down each turn)
     processEclipseEnd(lobby);
     
+    // Process polymorph end (counts down each turn)
+    processPolymorphEnd(lobby);
+    
     // Clear firstTurn after gold's first turn
     if (state.firstTurn) {
       state.firstTurn = false;
@@ -4550,12 +4697,18 @@ async function executeAction(lobby, role, action) {
         if (card.effectId === "phantom") unitData.untargetable = true;
         if (card.stolen) unitData.stolen = true;
         if (card.isHolo) unitData.isHolo = true;
+        if (card.stationary) unitData.stationary = true;
         state.units[id] = unitData;
         state.spawn[role] = id;
         
         // Apply eclipse effect to newly deployed unit if eclipse is active
         if (state.eclipseActive && state.eclipseEffect) {
           applyEclipseEffectToUnit(state.units[id], state.eclipseEffect);
+        }
+        
+        // Apply polymorph to newly deployed unit if polymorph is active
+        if (state.polymorphActive) {
+          polymorphUnit(state, id);
         }
         
         // Process on-deploy effects for spawn deployment
@@ -4593,12 +4746,18 @@ async function executeAction(lobby, role, action) {
         if (card.effectId === "phantom") unitData.untargetable = true;
         if (card.stolen) unitData.stolen = true;
         if (card.isHolo) unitData.isHolo = true;
+        if (card.stationary) unitData.stationary = true;
         state.units[id] = unitData;
         state.board[action.row][action.col] = id;
         
         // Apply eclipse effect to newly deployed unit if eclipse is active
         if (state.eclipseActive && state.eclipseEffect) {
           applyEclipseEffectToUnit(state.units[id], state.eclipseEffect);
+        }
+        
+        // Apply polymorph to newly deployed unit if polymorph is active
+        if (state.polymorphActive) {
+          polymorphUnit(state, id);
         }
         
         // Check for blood chalice consumption
@@ -4628,6 +4787,12 @@ async function executeAction(lobby, role, action) {
               art: "/images/Gem Shard.png"
             };
             state.board[tile.r][tile.c] = gemId;
+            
+            // Apply polymorph to spawned gem if polymorph is active
+            if (state.polymorphActive) {
+              polymorphUnit(state, gemId);
+            }
+            
             logToLobby(lobby, card.name + " summons a Gem Shard!");
             break;
           }
@@ -4701,11 +4866,11 @@ async function executeAction(lobby, role, action) {
       const u = state.units[action.unitId];
       if (!u || u.owner !== role) return;
       
+      // Check if unit is stationary (cannot move at all)
+      if (u.stationary) return;
+      
       // Check if unit is rooted
       if (u.rooted) return;
-      
-      // Check if unit is meditating (Meditation Monk can't move)
-      if (u.effectId === "meditation_buff") return;
       
       // Check if unit is frozen (Temporal Stasis or Obsidian gem)
       console.log(`[MOVE] ${u.name} (${action.unitId}) attempting move, frozen = ${u.frozen}`);
@@ -4829,6 +4994,12 @@ async function executeAction(lobby, role, action) {
             art: "/images/Gem Shard.png"
           };
           state.board[tile.r][tile.c] = gemId;
+          
+          // Apply polymorph to spawned gem if polymorph is active
+          if (state.polymorphActive) {
+            polymorphUnit(state, gemId);
+          }
+          
           logToLobby(lobby, u.name + " summons a Gem Shard!");
           break;
         }
@@ -5799,6 +5970,12 @@ io.on("connection", (socket) => {
               atk: 1, hp: 1, maxHp: 1, type: "structure", art: "/images/Gem Shard.png"
             };
             state.board[tile.r][tile.c] = gemId;
+            
+            // Apply polymorph to spawned gem if polymorph is active
+            if (state.polymorphActive) {
+              polymorphUnit(state, gemId);
+            }
+            
             logToLobby(lobby, card.name + " summons a Gem Shard!");
             break;
           }
@@ -5928,16 +6105,17 @@ io.on("connection", (socket) => {
       // Remove from discard
       p.discard.splice(idx, 1);
       
-      // Resurrect the unit at 1 HP
+      // Resurrect the unit with full stats
       const id = genId();
+      const fullHp = card.maxHp || card.hp;
       state.units[id] = {
         id,
         owner: role,
         key: card.key,
         name: card.name,
         atk: card.atk,
-        hp: 1, // Resurrect at 1 HP
-        maxHp: card.maxHp || card.hp,
+        hp: fullHp,
+        maxHp: fullHp,
         cost: card.cost,
         type: card.type,
         effect: card.effect,
@@ -5946,13 +6124,15 @@ io.on("connection", (socket) => {
         art: card.art,
         originalCard: card
       };
+      // Preserve stationary flag
+      if (card.stationary) state.units[id].stationary = true;
       state.board[spawnPos.r][spawnPos.c] = id;
       state.movedThisTurn.add(id);
       
       // Clear pending time rift
       state.pendingTimeRift[role].active = false;
       
-      logToLobby(lobby, "Time Rift resurrects " + card.name + " at 1 HP!");
+      logToLobby(lobby, "Time Rift resurrects " + card.name + "!");
       emitSFX(lobby, card.key, 'deploy');
       return emitGameState(lobby);
     }
@@ -5971,6 +6151,9 @@ io.on("connection", (socket) => {
       
       // Process eclipse end (counts down each turn)
       processEclipseEnd(lobby);
+      
+      // Process polymorph end (counts down each turn)
+      processPolymorphEnd(lobby);
       
       // Clear diamond buff (unlimited moves) for the player ending their turn
       clearDiamondBuffs(state, role);
@@ -6182,6 +6365,8 @@ io.on("connection", (socket) => {
         if (card.stolen) unitData.stolen = true;
         // Preserve holo flag for holographic cards
         if (card.isHolo) unitData.isHolo = true;
+        // Preserve stationary flag
+        if (card.stationary) unitData.stationary = true;
         // Burrower Beast - untargetable for 2 turns
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
@@ -6248,12 +6433,19 @@ io.on("connection", (socket) => {
       if (card.effectId === "phantom") {
         unitData.untargetable = true;
       }
+      // Preserve stationary flag
+      if (card.stationary) unitData.stationary = true;
       state.units[id] = unitData;
       state.board[row][col] = id;
       
       // Apply eclipse effect to newly deployed unit if eclipse is active
       if (state.eclipseActive && state.eclipseEffect) {
         applyEclipseEffectToUnit(state.units[id], state.eclipseEffect);
+      }
+      
+      // Apply polymorph to newly deployed unit if polymorph is active
+      if (state.polymorphActive) {
+        polymorphUnit(state, id);
       }
       
       // Check for blood chalice consumption
@@ -6286,11 +6478,46 @@ io.on("connection", (socket) => {
             art: "/images/Gem Shard.png"
           };
           state.board[tile.r][tile.c] = gemId;
+          
+          // Apply polymorph to spawned gem if polymorph is active
+          if (state.polymorphActive) {
+            polymorphUnit(state, gemId);
+          }
+          
           logToLobby(lobby, card.name + " summons a Gem Shard!");
           spawned = true;
           break;
         }
         if (!spawned) {
+        }
+      }
+      
+      // Chrono Drake - Time Rift: show discard selection to resurrect a unit
+      if (card.effectId === "time_rift") {
+        const unitsInDiscard = p.discard.filter(c => c.type === "monster" || c.type === "structure");
+        
+        if (unitsInDiscard.length > 0) {
+          // Store the deploy position for resurrection
+          const deployPos = { r: row, c: col };
+          
+          // Set pending time rift state
+          if (!state.pendingTimeRift) state.pendingTimeRift = {};
+          state.pendingTimeRift[role] = {
+            active: true,
+            deployPos: deployPos
+          };
+          
+          logToLobby(lobby, "Chrono Drake opens a Time Rift! Choose a unit to resurrect.");
+          
+          // Emit event to client to show discard selection
+          if (socket) {
+            socket.emit("timeRiftTrigger", { 
+              units: unitsInDiscard.map(c => ({ id: c.id, key: c.key, name: c.name, atk: c.atk, hp: c.maxHp || c.hp, art: c.art })),
+              deployPos: deployPos
+            });
+          }
+        } else {
+          logToLobby(lobby, "Chrono Drake finds no units in discard to resurrect!");
         }
       }
       
@@ -6338,6 +6565,12 @@ io.on("connection", (socket) => {
             art: "/images/Gem Shard.png"
           };
           state.board[tile.r][tile.c] = gemId;
+          
+          // Apply polymorph to spawned gem if polymorph is active
+          if (state.polymorphActive) {
+            polymorphUnit(state, gemId);
+          }
+          
           logToLobby(lobby, u.name + " summons a Gem Shard!");
           break;
         }
@@ -6350,6 +6583,11 @@ io.on("connection", (socket) => {
     if (payload.type === "move") {
       const { unitId, toRow, toCol } = payload; const u = state.units[unitId];
       if (!u || u.owner !== role) return;
+      
+      // Check if unit is stationary (cannot move at all, like Meditation Monk)
+      if (u.stationary) {
+        return socket.emit("log", `${u.name} cannot move!`);
+      }
       
       // Check if unit is frozen (Obsidian gem)
       if (u.frozen) {

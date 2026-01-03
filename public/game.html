@@ -2979,6 +2979,50 @@
     
     /* ==================== END ECLIPSE EVENT ==================== */
 
+    /* ==================== POLYMORPH EVENT ==================== */
+    
+    /* Polymorph indicator */
+    #polymorphIndicator {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #4a3728 0%, #2d1f14 50%, #4a3728 100%);
+      border: 3px solid #b8860b;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #f4e4bc;
+      text-shadow: 0 0 10px rgba(184, 134, 11, 0.5);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      box-shadow: 0 0 30px rgba(184, 134, 11, 0.4), inset 0 0 20px rgba(184, 134, 11, 0.2);
+    }
+    
+    #polymorphIndicator.visible {
+      opacity: 1;
+    }
+    
+    /* Polymorph visual effect - soft golden/wool-like tint */
+    .polymorph-active .board {
+      filter: sepia(0.2) saturate(0.9);
+    }
+    
+    /* Polymorph log entry */
+    .log-entry.polymorph-warning {
+      color: #f4e4bc;
+      background: rgba(184, 134, 11, 0.15);
+      border-left-color: #b8860b;
+      text-shadow: 0 0 5px rgba(184, 134, 11, 0.5);
+      font-weight: bold;
+    }
+    
+    /* ==================== END POLYMORPH EVENT ==================== */
+
     /* Floating particles */
     .gem-particles {
       position: absolute;

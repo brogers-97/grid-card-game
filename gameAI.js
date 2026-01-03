@@ -404,7 +404,8 @@ class GameAI {
       }
       
       // Rooted units can't move, but CAN still attack!
-      const canMove = !isRootedByEffect && !isRootedByAura;
+      // Stationary units (like Meditation Monk) can never move
+      const canMove = !isRootedByEffect && !isRootedByAura && !unit.stationary;
 
       // Move actions - check both movedSet and moveCountThisTurn
       const canDoubleMove = unit.effectId === 'double_move' || unit.effectId === 'stampede';

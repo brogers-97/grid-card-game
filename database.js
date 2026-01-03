@@ -347,6 +347,11 @@ const CAMPAIGN_BOSSES = [
     unlocks: {
       music: 'dragon-wizard',
       background: 'dragon-wizard'
+    },
+    eventType: 'polymorph',
+    eventConfig: {
+      turnInterval: 3,    // Every 3 boss turns, polymorph activates
+      duration: 2         // Lasts for 2 turns
     }
   }
 ];
