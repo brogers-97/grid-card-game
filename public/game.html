@@ -2589,6 +2589,396 @@
         inset 0 0 10px rgba(255, 255, 255, 0.2);
     }
 
+    /* ==================== ECLIPSE EVENT ==================== */
+    
+    /* Dark overlay for background - fades in/out */
+    #eclipseBackgroundOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0);
+      pointer-events: none;
+      z-index: -1;
+      transition: background 1.5s ease;
+    }
+    
+    #eclipseBackgroundOverlay.active {
+      background: rgba(0, 0, 0, 0.7);
+    }
+    
+    /* Keep UI elements visible */
+    .eclipse-active #turnIndicator,
+    .eclipse-active #eclipseIndicator {
+      z-index: 1001 !important;
+    }
+    
+    /* Hand section */
+    .eclipse-active #handSection {
+      background: rgba(10, 10, 20, 0.98) !important;
+    }
+    
+    /* Board darkened */
+    .eclipse-active .board {
+      background: linear-gradient(135deg, #030305 0%, #080810 50%, #030305 100%) !important;
+    }
+    
+    /* All cells darkened */
+    .eclipse-active .cell {
+      background: rgba(5, 5, 12, 0.95) !important;
+    }
+    
+    /* Event log darkened */
+    .eclipse-active #eventLog {
+      background: rgba(5, 5, 12, 0.98) !important;
+    }
+    
+    /* Combat log darkened */
+    .eclipse-active #combatLog {
+      background: rgba(5, 5, 12, 0.85) !important;
+    }
+    
+    /* Deck and discard darkened */
+    .eclipse-active #deckTile,
+    .eclipse-active #discardTile,
+    .eclipse-active .deck-section {
+      background: rgba(10, 10, 20, 0.85) !important;
+    }
+    
+    /* ===== BRIGHT NEON WHITE BORDERS ON EVERYTHING ===== */
+    .eclipse-active .cell {
+      border: 2px solid rgba(255, 255, 255, 0.5) !important;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), inset 0 0 4px rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* Occupied cells get MUCH brighter glow to stand out */
+    .eclipse-active .cell.has-unit {
+      border: 3px solid #fff !important;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 50px rgba(255, 255, 255, 0.7), 0 0 75px rgba(255, 255, 255, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.3) !important;
+      background: rgba(30, 30, 50, 0.95) !important;
+    }
+    
+    .eclipse-active .handCard {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 50px rgba(255, 255, 255, 0.6), inset 0 0 12px rgba(255, 255, 255, 0.3) !important;
+      background: rgba(20, 20, 35, 0.95) !important;
+    }
+    
+    .eclipse-active .board {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.7), 0 0 60px rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    .eclipse-active #turnIndicator {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.2) !important;
+      background: rgba(10, 10, 20, 0.95) !important;
+    }
+    
+    .eclipse-active #eclipseIndicator {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    .eclipse-active .row-hp {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.7), 0 0 25px rgba(255, 255, 255, 0.4) !important;
+      background: rgba(10, 10, 20, 0.9) !important;
+    }
+    
+    .eclipse-active .tooltip-card {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.9), 0 0 50px rgba(255, 255, 255, 0.5) !important;
+    }
+    
+    .eclipse-active #deckTile,
+    .eclipse-active #discardTile,
+    .eclipse-active .deck-section {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 50px rgba(255, 255, 255, 0.6) !important;
+    }
+    
+    .eclipse-active #deckTile *,
+    .eclipse-active #discardTile *,
+    .eclipse-active .deck-section * {
+      color: #fff !important;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    .eclipse-active #combatLog {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 0 25px rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    .eclipse-active #eventLog {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 0 25px rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    /* Obfuscate event log text with glowing rune symbols during eclipse */
+    .eclipse-active #log .log-entry,
+    .eclipse-active #log .log-entry.system,
+    .eclipse-active #log .log-entry.gold-action,
+    .eclipse-active #log .log-entry.silver-action,
+    .eclipse-active #log .log-entry.combat,
+    .eclipse-active #log .log-entry.effect,
+    .eclipse-active #log .log-entry.turn,
+    .eclipse-active #combatLog .combat-entry,
+    .eclipse-active #combatLog .combat-entry.combat-step,
+    .eclipse-active #combatLog .combat-entry.combat-result,
+    .eclipse-active #combatLog .combat-entry.damage,
+    .eclipse-active #combatLog .combat-entry.buff {
+      font-family: 'Segoe UI Symbol', 'Noto Sans Symbols', sans-serif !important;
+      color: #ffffff !important;
+      text-shadow: 
+        0 0 10px #ffffff,
+        0 0 20px #ffffff,
+        0 0 30px #ffffff,
+        0 0 40px rgba(180, 180, 255, 1),
+        0 0 60px rgba(120, 120, 255, 0.9) !important;
+      animation: runeGlow 2s ease-in-out infinite alternate !important;
+      background: transparent !important;
+    }
+    
+    .eclipse-active #log .log-entry *,
+    .eclipse-active #combatLog .combat-entry *,
+    .eclipse-active #log .log-entry span,
+    .eclipse-active #log .log-entry .log-gold,
+    .eclipse-active #log .log-entry .log-silver,
+    .eclipse-active #log .log-entry .log-damage,
+    .eclipse-active #log .log-entry .log-heal,
+    .eclipse-active #combatLog .combat-entry span,
+    .eclipse-active #combatLog .combat-entry .combat-atk,
+    .eclipse-active #combatLog .combat-entry .combat-hp,
+    .eclipse-active #combatLog .combat-entry .combat-dmg,
+    .eclipse-active #combatLog .combat-entry .combat-heal {
+      color: #ffffff !important;
+      text-shadow: 
+        0 0 10px #ffffff,
+        0 0 20px #ffffff,
+        0 0 30px #ffffff,
+        0 0 40px rgba(180, 180, 255, 1) !important;
+    }
+    
+    /* Override the #log container color */
+    .eclipse-active #log,
+    .eclipse-active #combatLog,
+    .eclipse-active .logContent {
+      color: #ffffff !important;
+    }
+    
+    @keyframes runeGlow {
+      0% {
+        text-shadow: 
+          0 0 10px #ffffff,
+          0 0 20px #ffffff,
+          0 0 30px #ffffff,
+          0 0 40px rgba(180, 180, 255, 1),
+          0 0 60px rgba(120, 120, 255, 0.9);
+      }
+      100% {
+        text-shadow: 
+          0 0 15px #ffffff,
+          0 0 30px #ffffff,
+          0 0 45px #ffffff,
+          0 0 60px rgba(200, 200, 255, 1),
+          0 0 90px rgba(150, 150, 255, 1);
+      }
+    }
+    
+    .eclipse-active .heart-hp {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.4) !important;
+    }
+    
+    .eclipse-active .animating-card {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.5) !important;
+    }
+    
+    .eclipse-active .spawn-tile {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.4) !important;
+    }
+    
+    .eclipse-active button,
+    .eclipse-active .btn {
+      border: 2px solid #fff !important;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.7), 0 0 25px rgba(255, 255, 255, 0.4) !important;
+    }
+    /* ===== END NEON WHITE BORDERS ===== */
+    
+    /* Hide ALL card info during eclipse - hand cards */
+    .eclipse-active .handCard .cardInfoOverlay,
+    .eclipse-active .handCard .cardArt,
+    .eclipse-active .handCard .cardName,
+    .eclipse-active .handCard .cardStats,
+    .eclipse-active .handCard .cardCost,
+    .eclipse-active .handCard .effectLabel {
+      visibility: hidden !important;
+    }
+    
+    /* Eclipse tooltip - show custom image instead of card info */
+    .eclipse-active .tooltip-card {
+      background: #0a0a0a !important;
+    }
+    
+    .eclipse-active .tooltip-card > * {
+      visibility: hidden !important;
+    }
+    
+    .eclipse-active .tooltip-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('/images/eclipse-tooltip.png') center/contain no-repeat;
+      background-color: #0a0a0a;
+      visibility: visible !important;
+      z-index: 10;
+      border-radius: 12px;
+    }
+    
+    .eclipse-active .handCard {
+      background: #0a0a0a !important;
+    }
+    
+    .eclipse-active .handCard::before {
+      content: '';
+      position: absolute;
+      top: 5%;
+      left: 5%;
+      right: 5%;
+      bottom: 5%;
+      background: url('/images/eclipse-tooltip.png') center/contain no-repeat;
+      z-index: 10;
+    }
+    
+    /* Hide ALL unit info during eclipse - board units */
+    .eclipse-active .cell .unitCard,
+    .eclipse-active .cell .unitArt,
+    .eclipse-active .cell .unitName,
+    .eclipse-active .cell .unitStats,
+    .eclipse-active .cell .atkBadge,
+    .eclipse-active .cell .hpBadge,
+    .eclipse-active .cell .effectIcon,
+    .eclipse-active .cell .unit,
+    .eclipse-active .cell .unit * {
+      opacity: 0 !important;
+      visibility: hidden !important;
+    }
+    
+    .eclipse-active .cell.has-unit {
+      position: relative !important;
+      overflow: visible !important;
+    }
+    
+    .eclipse-active .cell.has-unit::after {
+      content: '' !important;
+      display: block !important;
+      position: absolute !important;
+      top: 5% !important;
+      left: 5% !important;
+      width: 90% !important;
+      height: 90% !important;
+      background: url('/images/eclipse-tooltip.png') center/contain no-repeat !important;
+      z-index: 9999 !important;
+      pointer-events: none !important;
+    }
+    
+    /* Hide spawn/home tile unit info during eclipse */
+    .eclipse-active .spawn.occupied .spawnUnit,
+    .eclipse-active .spawn.occupied .spawnUnit *,
+    .eclipse-active .spawn.occupied .unitArt,
+    .eclipse-active .spawn.occupied .unitName,
+    .eclipse-active .spawn.occupied .unitStats,
+    .eclipse-active .spawn.occupied .unitInfoOverlay {
+      opacity: 0 !important;
+      visibility: hidden !important;
+    }
+    
+    .eclipse-active .spawn.occupied {
+      position: relative !important;
+      overflow: visible !important;
+    }
+    
+    .eclipse-active .spawn.occupied::after {
+      content: '' !important;
+      display: block !important;
+      position: absolute !important;
+      top: 15% !important;
+      left: 15% !important;
+      width: 70% !important;
+      height: 70% !important;
+      background: url('/images/eclipse-tooltip.png') center/contain no-repeat !important;
+      z-index: 9999 !important;
+      pointer-events: none !important;
+    }
+    
+    /* Hide moving unit animation during eclipse */
+    .eclipse-active .moving-unit,
+    .eclipse-active .move-anim-unit,
+    .eclipse-active .unit-moving,
+    .eclipse-active .animating-card {
+      background: #0a0a0a !important;
+      border-color: #222 !important;
+    }
+    
+    .eclipse-active .animating-card .cardArt,
+    .eclipse-active .animating-card * {
+      visibility: hidden !important;
+    }
+    
+    .eclipse-active .animating-card::before {
+      content: '';
+      position: absolute;
+      top: 10%;
+      left: 10%;
+      right: 10%;
+      bottom: 10%;
+      background: url('/images/eclipse-tooltip.png') center/contain no-repeat;
+      visibility: visible !important;
+      z-index: 100;
+    }
+    
+    /* Eclipse indicator */
+    #eclipseIndicator {
+      position: fixed;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #1a1a2e, #0d0d15);
+      border: 2px solid #4a4a6a;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #8888aa;
+      text-shadow: 0 0 10px rgba(100, 100, 150, 0.5);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(50, 50, 80, 0.3);
+    }
+    
+    #eclipseIndicator.visible {
+      opacity: 1;
+    }
+    
+    /* Eclipse log entry */
+    .log-entry.eclipse-warning {
+      color: #8888aa;
+      text-shadow: 0 0 5px rgba(100, 100, 150, 0.5);
+      font-weight: bold;
+    }
+    
+    /* ==================== END ECLIPSE EVENT ==================== */
+
     /* Floating particles */
     .gem-particles {
       position: absolute;
@@ -3750,6 +4140,47 @@
       100% { transform: translate(0, 0); }
     }
 
+    /* Effect source animation - unit glows and pulses when casting AOE */
+    .unit.effect-source {
+      animation: effectSourcePulse 0.7s ease-out !important;
+      z-index: 100 !important;
+    }
+
+    @keyframes effectSourcePulse {
+      0% { 
+        transform: scale(1); 
+        filter: brightness(1) drop-shadow(0 0 0px transparent);
+      }
+      20% { 
+        transform: scale(1.25); 
+        filter: brightness(1.8) drop-shadow(0 0 25px rgba(255, 220, 100, 1));
+      }
+      50% { 
+        transform: scale(1.2); 
+        filter: brightness(1.5) drop-shadow(0 0 20px rgba(255, 180, 50, 0.9));
+      }
+      100% { 
+        transform: scale(1); 
+        filter: brightness(1) drop-shadow(0 0 0px transparent);
+      }
+    }
+
+    /* Effect hit animation - target shakes when hit by AOE */
+    .unit.effect-hit {
+      animation: effectHitShake 0.4s ease-out;
+    }
+
+    @keyframes effectHitShake {
+      0% { transform: translate(0, 0); }
+      15% { transform: translate(-4px, 0); }
+      30% { transform: translate(4px, -2px); }
+      45% { transform: translate(-3px, 2px); }
+      60% { transform: translate(3px, 0); }
+      75% { transform: translate(-2px, -1px); }
+      90% { transform: translate(2px, 1px); }
+      100% { transform: translate(0, 0); }
+    }
+
     /* ===== HIGHLIGHTS ===== */
     .cell.deploy-valid{
       outline: 3px solid #10b981 !important;
@@ -4768,6 +5199,165 @@
     }
 
     #discardModal.hidden { display: none; }
+    
+    #wizardSummonModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    #wizardSummonModal.hidden { display: none; }
+    
+    #wizardSummonModal .modalContent {
+      border-color: rgba(147, 51, 234, 0.7);
+      max-width: 600px;
+    }
+    
+    #wizardSummonModal h2 {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: #a78bfa;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    #wizardSummonModal p {
+      color: #c4b5fd;
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    
+    #wizardSummonCards {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    
+    #wizardSummonCards .handCard {
+      width: 90px;
+      height: 120px;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    #wizardSummonCards .handCard:hover {
+      border-color: #a78bfa;
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.6);
+    }
+    
+    #wizardSummonCards .handCard.selected {
+      border-color: #22c55e;
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.8);
+      transform: scale(1.05);
+    }
+    
+    .freeTag {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      font-weight: bold;
+      font-size: 10px;
+      padding: 3px 6px;
+      border-radius: 8px;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    .resurrectTag {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      font-weight: bold;
+      font-size: 10px;
+      padding: 3px 6px;
+      border-radius: 8px;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    #skipWizardSummon, #skipTimeRift {
+      display: block;
+      margin: 0 auto;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #4b5563, #374151);
+      border: 1px solid #6b7280;
+      border-radius: 8px;
+      color: #e5e7eb;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    #skipWizardSummon:hover, #skipTimeRift:hover {
+      background: linear-gradient(135deg, #6b7280, #4b5563);
+      border-color: #9ca3af;
+    }
+    
+    #timeRiftModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    #timeRiftModal.hidden { display: none; }
+    
+    #timeRiftModal .modalContent {
+      border-color: rgba(245, 158, 11, 0.7);
+      max-width: 600px;
+    }
+    
+    #timeRiftModal h2 {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: #fbbf24;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    #timeRiftModal p {
+      color: #fcd34d;
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    
+    #timeRiftCards {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    
+    #timeRiftCards .handCard {
+      width: 90px;
+      height: 120px;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    #timeRiftCards .handCard:hover {
+      border-color: #fbbf24;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+    }
 
     .modalContent {
       background: linear-gradient(145deg, rgba(30, 30, 60, 0.98), rgba(20, 20, 40, 0.98));

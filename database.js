@@ -299,6 +299,7 @@ const CAMPAIGN_BOSSES = [
     name: "The Garnet Queen",
     description: "A dazzling fairy monarch who commands the power of precious gems",
     deckId: "jeweled-court",
+    challengeDeckId: "jeweled-court-challenge",
     difficulty: "hard",
     aiLevel: 3,
     requiresBoss: 3,
@@ -320,6 +321,7 @@ const CAMPAIGN_BOSSES = [
     name: "Moon Shadow Sentinel",
     description: "An ancient guardian empowered by Elune's blessing, commanding the forces of the night",
     deckId: "elunes-chosen",
+    challengeDeckId: "elunes-chosen-challenge",
     difficulty: "hard",
     aiLevel: 3,
     requiresBoss: 4,
@@ -327,6 +329,10 @@ const CAMPAIGN_BOSSES = [
     unlocks: {
       music: 'elunes-chosen',
       background: 'elunes-chosen'
+    },
+    eventType: 'eclipse',
+    eventConfig: {
+      turnInterval: 3    // Every 3 boss turns
     }
   },
   {
@@ -459,15 +465,15 @@ const authHelpers = {
   
   async completeBoss(userId, bossId, stars, aiLevel = 2, isChallenge = false) {
     // Rarity chances based on difficulty
-    // Easy (1): 15% rare, 5% legendary
-    // Medium (2): 35% rare, 15% legendary  
-    // Hard (3): 50% rare, 30% legendary
-    // Challenge (4): 60% rare, 40% legendary (best odds for holo)
+    // Easy (1): 8% rare, 1% legendary
+    // Medium (2): 12% rare, 3% legendary  
+    // Hard (3): 18% rare, 5% legendary
+    // Challenge (4): 25% rare, 10% legendary (best odds, but still max 10% legendary)
     const rarityChances = {
-      1: { rare: 0.15, legendary: 0.05 },   // Easy
-      2: { rare: 0.35, legendary: 0.15 },   // Medium
-      3: { rare: 0.50, legendary: 0.30 },   // Hard
-      4: { rare: 0.60, legendary: 0.40 }    // Challenge
+      1: { rare: 0.08, legendary: 0.01 },   // Easy
+      2: { rare: 0.12, legendary: 0.03 },   // Medium
+      3: { rare: 0.18, legendary: 0.05 },   // Hard
+      4: { rare: 0.25, legendary: 0.10 }    // Challenge
     };
     
     const chances = rarityChances[aiLevel] || rarityChances[2];

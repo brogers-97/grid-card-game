@@ -909,7 +909,14 @@ function log(msg, type = "system") {
     // Card names in gem hits (captures the pattern "hits CardName!")
     .replace(/hits ([A-Z][a-zA-Z\s]+)!/g, 'hits <span class="gem-target">$1</span>!');
   
-  entry.innerHTML = html;
+  // Store original and show runes if eclipse is active
+  entry.dataset.originalText = html;
+  if (S.eclipseActive) {
+    entry.innerHTML = textToRunes(html);
+  } else {
+    entry.innerHTML = html;
+  }
+  
   logEl.appendChild(entry);
   logEl.scrollTop = logEl.scrollHeight;
 }
@@ -929,7 +936,14 @@ function combatLog(msg, type = "combat-step") {
     .replace(/heals? (\d+)/g, 'heals <span class="combat-heal">$1</span>')
     .replace(/Lifesteal/g, '<span class="combat-heal">Lifesteal</span>');
   
-  entry.innerHTML = html;
+  // Store original and show runes if eclipse is active
+  entry.dataset.originalText = html;
+  if (S.eclipseActive) {
+    entry.innerHTML = textToRunes(html);
+  } else {
+    entry.innerHTML = html;
+  }
+  
   combatLogEl.appendChild(entry);
   combatLogEl.scrollTop = combatLogEl.scrollHeight;
 }
@@ -1003,6 +1017,12 @@ let S = {
 
 // Track cells that are currently showing damage animation
 let damagingCells = new Set();
+
+// Track cells showing effect source animation (glowing)
+let effectSourceCells = new Set();
+
+// Track cells showing effect hit animation (shaking)
+let effectHitCells = new Set();
 
 // Track units being destroyed by void collapse (hide from render)
 let voidDestroyingUnits = new Set();
@@ -1616,11 +1636,6 @@ function updateActiveBuffsDisplay() {
   
   // Find which buff tiles have the player's units on them
   const activeBuffs = [];
-  
-  // Add Wizard's Rune free wizard buff if active
-  if (S.freeWizard) {
-    activeBuffs.push({ icon: '🧙', name: 'Free Wizard', class: 'wizard', id: 'freeWizard' });
-  }
   
   if (S.buffTiles) {
     for (const key in S.buffTiles) {
@@ -2353,6 +2368,9 @@ function renderAll() {
       if (u.effectId) wrap.classList.add("has-effect");
       if (u.type === "spell") wrap.classList.add("spell-unit");
       
+      // Add has-unit class to the cell for eclipse styling
+      cellEl.classList.add("has-unit");
+      
       // Add enemy class for visual distinction
       const isEnemy = u.owner !== myRole && myRole !== "spectator";
       if (isEnemy) wrap.classList.add("enemy-unit");
@@ -2382,6 +2400,17 @@ function renderAll() {
         wrap.style.setProperty('--budge-x', `${budgeX}px`);
         wrap.style.setProperty('--budge-y', `${budgeY}px`);
         wrap.classList.add("attacking");
+      }
+      
+      // Add effect source animation (AOE caster glowing)
+      const effectKey = `${sr}-${c}`;
+      if (effectSourceCells.has(effectKey)) {
+        wrap.classList.add("effect-source");
+      }
+      
+      // Add effect hit animation (AOE target shaking)
+      if (effectHitCells.has(effectKey)) {
+        wrap.classList.add("effect-hit");
       }
       
       // Calculate buffs
@@ -2513,11 +2542,37 @@ if (drawBtn) {
 
 function onCellClick(viewRow, col) {
   if (myRole !== "gold" && myRole !== "silver") return log("Spectator cannot act.");
-  if (!isMyTurn()) return log("Not your turn.");
   if (S.gameOver) return log("Game over.");
 
   const row = toServerRow(viewRow);
   const occId = S.board[row][col];
+
+  // Handle wizard summon from Wizard's Rune death
+  if (pendingWizardSummon && pendingWizardSummon.selectedCardId) {
+    if (occId) {
+      return log("Tile is occupied.");
+    }
+    
+    // Check if valid deployment tile
+    const isHomeRow = myRole === "gold" ? row <= 1 : row >= 5;
+    const isNeutral = row >= 2 && row <= 4;
+    const canDeploy = isHomeRow || (isNeutral && S.rowHP[row] <= 0);
+    
+    if (!canDeploy) {
+      return log("Cannot deploy there.");
+    }
+    
+    sendAction({ 
+      type: "summonFreeWizard", 
+      cardId: pendingWizardSummon.selectedCardId,
+      row: row,
+      col: col
+    });
+    hideWizardSummonModal();
+    return;
+  }
+
+  if (!isMyTurn()) return log("Not your turn.");
 
   // Handle spawn unit movement/attack
   if (selectedSpawnUnit) {
@@ -2979,6 +3034,165 @@ socket.on("gemRainExecute", (data) => {
     }, index * 300);
   });
 });
+
+// Eclipse event handlers
+socket.on("eclipseStart", (data) => {
+  console.log("Eclipse starts:", data);
+  S.eclipseActive = true;
+  S.eclipseEffect = data.effect;
+  
+  // Play eclipse sound
+  const eclipseSound = new Audio('/audio/sfx/eclipse.mp3');
+  eclipseSound.volume = 0.4;
+  eclipseSound.play().catch(() => {});
+  
+  // Show eclipse overlay with effect label
+  showEclipseOverlay(data.effect);
+  renderAll();
+});
+
+socket.on("eclipseEnd", (data) => {
+  console.log("Eclipse ends");
+  S.eclipseActive = false;
+  S.eclipseEffect = null;
+  
+  // Hide eclipse overlay
+  hideEclipseOverlay();
+  renderAll();
+});
+
+// Rune characters for eclipse obfuscation
+const RUNE_CHARS = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟᚳᚴᚵᚶᚸᚻᚼᚽᚿᛀᛂᛄᛅᛆᛋᛍᛎᛐᛑᛓᛔᛕᛖᛘᛙᛛᛝᛠᛡᛢᛣᛤᛥᛦᛧᛨᛩᛪ';
+
+function textToRunes(text) {
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === ' ' || char === '\n') {
+      result += char;
+    } else if (/[a-zA-Z0-9]/.test(char)) {
+      // Convert alphanumeric to runes
+      result += RUNE_CHARS[Math.floor(Math.random() * RUNE_CHARS.length)];
+    } else {
+      // Keep punctuation and emojis
+      result += char;
+    }
+  }
+  return result;
+}
+
+function obfuscateEventLog() {
+  // Obfuscate event log
+  const eventLog = document.getElementById('log');
+  if (eventLog) {
+    const entries = eventLog.querySelectorAll('.log-entry');
+    entries.forEach(entry => {
+      if (!entry.dataset.originalText) {
+        entry.dataset.originalText = entry.innerHTML;
+      }
+      entry.innerHTML = textToRunes(entry.dataset.originalText);
+    });
+  }
+  
+  // Obfuscate combat log too
+  const combatLog = document.getElementById('combatLog');
+  if (combatLog) {
+    const entries = combatLog.querySelectorAll('.combat-entry');
+    entries.forEach(entry => {
+      if (!entry.dataset.originalText) {
+        entry.dataset.originalText = entry.innerHTML;
+      }
+      entry.innerHTML = textToRunes(entry.dataset.originalText);
+    });
+  }
+}
+
+function restoreEventLog() {
+  // Restore event log
+  const eventLog = document.getElementById('log');
+  if (eventLog) {
+    const entries = eventLog.querySelectorAll('.log-entry');
+    entries.forEach(entry => {
+      if (entry.dataset.originalText) {
+        entry.innerHTML = entry.dataset.originalText;
+        delete entry.dataset.originalText;
+      }
+    });
+  }
+  
+  // Restore combat log too
+  const combatLog = document.getElementById('combatLog');
+  if (combatLog) {
+    const entries = combatLog.querySelectorAll('.combat-entry');
+    entries.forEach(entry => {
+      if (entry.dataset.originalText) {
+        entry.innerHTML = entry.dataset.originalText;
+        delete entry.dataset.originalText;
+      }
+    });
+  }
+}
+
+function showEclipseOverlay(effect) {
+  // Add eclipse class to game container, body, and animation layer for visual effect
+  const gameContainer = document.getElementById('gameContainer') || document.body;
+  gameContainer.classList.add('eclipse-active');
+  document.body.classList.add('eclipse-active');
+  
+  const animLayer = document.getElementById('cardAnimationLayer');
+  if (animLayer) animLayer.classList.add('eclipse-active');
+  
+  // Create or show background darkening overlay
+  let bgOverlay = document.getElementById('eclipseBackgroundOverlay');
+  if (!bgOverlay) {
+    bgOverlay = document.createElement('div');
+    bgOverlay.id = 'eclipseBackgroundOverlay';
+    document.body.insertBefore(bgOverlay, document.body.firstChild);
+  }
+  // Small delay to trigger CSS transition
+  requestAnimationFrame(() => {
+    bgOverlay.classList.add('active');
+  });
+  
+  // Obfuscate event log with runes
+  obfuscateEventLog();
+  
+  // Create or update eclipse indicator
+  let indicator = document.getElementById('eclipseIndicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'eclipseIndicator';
+    document.body.appendChild(indicator);
+  }
+  
+  // Display the effect label
+  const label = effect ? effect.label : '???';
+  indicator.innerHTML = `🌑 ECLIPSE ${label}`;
+  indicator.classList.add('visible');
+}
+
+function hideEclipseOverlay() {
+  const gameContainer = document.getElementById('gameContainer') || document.body;
+  gameContainer.classList.remove('eclipse-active');
+  document.body.classList.remove('eclipse-active');
+  
+  const animLayer = document.getElementById('cardAnimationLayer');
+  if (animLayer) animLayer.classList.remove('eclipse-active');
+  
+  // Fade out background overlay
+  const bgOverlay = document.getElementById('eclipseBackgroundOverlay');
+  if (bgOverlay) {
+    bgOverlay.classList.remove('active');
+  }
+  
+  // Restore event log text
+  restoreEventLog();
+  
+  const indicator = document.getElementById('eclipseIndicator');
+  if (indicator) {
+    indicator.classList.remove('visible');
+  }
+}
 
 // Animate chalice falling onto a tile
 function animateChaliceSpawn(serverRow, col) {
@@ -3737,6 +3951,9 @@ socket.on("animate", (data) => {
     animateUnitMove(data.unitId, data.fromRow, data.fromCol, data.toRow, data.toCol);
   } else if (data.type === "destroy") {
     animateDestruction(data.row, data.col);
+  } else if (data.type === "effect") {
+    // AOE/effect animation - source glows, targets shake
+    animateEffect(data);
   } else if (data.type === "attack") {
     console.log("Attack animation:", data);
     // Track attacker for budge animation
@@ -3813,6 +4030,60 @@ function applyDamageAnimation(cell, serverRow, col) {
       unitEl.classList.add('taking-damage');
     }
   }
+}
+
+// Animate AOE/effect - source unit glows/pulses, targets shake
+function animateEffect(data) {
+  const { effectType, sourcePos, sourceUnitId, targets } = data;
+  console.log("[EFFECT ANIM] effectType:", effectType, "sourcePos:", sourcePos, "targets:", targets);
+  
+  // If there's a source unit, add to tracking set so renderAll applies the animation
+  if (sourcePos) {
+    const key = `${sourcePos.r}-${sourcePos.c}`;
+    effectSourceCells.add(key);
+    console.log("[EFFECT ANIM] Added source to tracking:", key);
+    
+    // Remove after animation completes
+    setTimeout(() => {
+      effectSourceCells.delete(key);
+    }, 700);
+  }
+  
+  // Add targets to hit tracking set after a short delay (for source to glow first)
+  setTimeout(() => {
+    if (targets && targets.length > 0) {
+      targets.forEach((target, index) => {
+        setTimeout(() => {
+          const key = `${target.r}-${target.c}`;
+          effectHitCells.add(key);
+          console.log("[EFFECT ANIM] Added hit target to tracking:", key);
+          
+          // Also directly apply the class since no render will happen
+          const viewRow = toViewRow(target.r);
+          const targetCell = document.getElementById(cellId(viewRow, target.c));
+          if (targetCell) {
+            const unitEl = targetCell.querySelector('.unit');
+            if (unitEl) {
+              unitEl.classList.add('effect-hit');
+              console.log("[EFFECT ANIM] Applied effect-hit class to unit");
+            }
+          }
+          
+          // Remove after animation completes
+          setTimeout(() => {
+            effectHitCells.delete(key);
+            // Also remove class directly
+            if (targetCell) {
+              const unitEl = targetCell.querySelector('.unit');
+              if (unitEl) {
+                unitEl.classList.remove('effect-hit');
+              }
+            }
+          }, 400);
+        }, index * 50);
+      });
+    }
+  }, 200);
 }
 
 // Animate unit movement on board
@@ -3921,6 +4192,202 @@ function animateDestruction(row, col) {
 socket.on("mustDiscard", (data) => {
   showDiscardModal();
 });
+
+// Wizard's Rune death trigger - show wizard selection
+socket.on("wizardRuneTrigger", (data) => {
+  showWizardSummonModal(data.wizards, data.deathPos);
+});
+
+let pendingWizardSummon = null;
+
+function showWizardSummonModal(wizards, deathPos) {
+  pendingWizardSummon = { wizards, deathPos };
+  
+  // Create modal if it doesn't exist
+  let modal = document.getElementById("wizardSummonModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "wizardSummonModal";
+    modal.className = "modal";
+    modal.innerHTML = `
+      <div class="modalContent">
+        <h2>🧙 Wizards Rune - Summon a Wizard!</h2>
+        <p>Select a wizard to summon for free, then click a valid tile to place it.</p>
+        <div id="wizardSummonCards" class="discardCards"></div>
+        <button id="skipWizardSummon" class="modalBtn">Skip</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    document.getElementById("skipWizardSummon").onclick = () => {
+      sendAction({ type: "skipWizardSummon" });
+      hideWizardSummonModal();
+    };
+  }
+  
+  const cardsEl = document.getElementById("wizardSummonCards");
+  cardsEl.innerHTML = "";
+  
+  wizards.forEach(wizard => {
+    const card = myHand.find(c => c.id === wizard.id);
+    if (!card) return;
+    
+    const el = document.createElement("div");
+    el.className = "handCard";
+    
+    const icon = CARD_ICONS[card.key] || '🧙';
+    const hasArt = card.art;
+    const artStyle = hasArt ? `background: url('${card.art}') center/cover no-repeat` : '';
+    const artContent = hasArt ? '' : icon;
+    
+    el.innerHTML = `
+      <div class="cardArt" style="${artStyle}">${artContent}</div>
+      <div class="cardCost">${card.cost}</div>
+      <div class="freeTag">FREE!</div>
+      <div class="cardInfoOverlay">
+        <div class="cardName">${card.name}</div>
+        <div class="cardStats">
+          <div class="cardStat cardAtk"><span class="cardStatIcon">⚔</span>${card.atk}</div>
+          <div class="cardStat cardHp"><span class="cardStatIcon">♥</span>${card.hp}</div>
+        </div>
+      </div>
+    `;
+    
+    el.onclick = () => {
+      // Select this wizard for placement
+      pendingWizardSummon.selectedCardId = card.id;
+      pendingWizardSummon.selectedCard = card;
+      
+      // Highlight valid deployment tiles
+      highlightWizardDeployTiles();
+      
+      // Update UI to show selected
+      cardsEl.querySelectorAll(".handCard").forEach(c => c.classList.remove("selected"));
+      el.classList.add("selected");
+      
+      log("Click a valid tile to summon " + card.name);
+    };
+    
+    // Add tooltip on hover
+    el.onmouseenter = (e) => showCardTooltip(card, e.clientX, e.clientY);
+    el.onmousemove = (e) => {
+      if (tooltipEl?.classList.contains("visible")) {
+        positionTooltip(e.clientX, e.clientY);
+      }
+    };
+    el.onmouseleave = hideTooltip;
+    
+    cardsEl.appendChild(el);
+  });
+  
+  modal.classList.remove("hidden");
+}
+
+function highlightWizardDeployTiles() {
+  clearHighlights();
+  // Highlight valid deployment tiles (same as normal deploy)
+  for (let vr = 0; vr < ROWS; vr++) {
+    const sr = toServerRow(vr);
+    for (let c = 0; c < COLS; c++) {
+      if (S.board[sr][c]) continue; // Skip occupied
+      
+      // Check if this is a valid deploy row for player
+      const isHomeRow = myRole === "gold" ? sr <= 1 : sr >= 5;
+      const isNeutral = sr >= 2 && sr <= 4;
+      const canDeploy = isHomeRow || (isNeutral && S.rowHP[sr] <= 0);
+      
+      if (canDeploy) {
+        const el = document.getElementById(cellId(vr, c));
+        if (el) el.classList.add("deploy-valid");
+      }
+    }
+  }
+}
+
+function hideWizardSummonModal() {
+  const modal = document.getElementById("wizardSummonModal");
+  if (modal) modal.classList.add("hidden");
+  pendingWizardSummon = null;
+  clearHighlights();
+  hideTooltip();
+}
+
+// Time Rift - Chrono Drake resurrection
+socket.on("timeRiftTrigger", (data) => {
+  console.log("timeRiftTrigger received:", data);
+  showTimeRiftModal(data.units, data.deployPos);
+});
+
+function showTimeRiftModal(units, deployPos) {
+  console.log("showTimeRiftModal called with", units.length, "units");
+  
+  // Create modal if it doesn't exist
+  let modal = document.getElementById("timeRiftModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "timeRiftModal";
+    modal.className = "modal hidden";
+    modal.innerHTML = `
+      <div class="modalContent timeRiftContent">
+        <h2>⏳ Time Rift - Resurrect a Unit!</h2>
+        <p>Choose a unit from your discard to bring back at 1 HP.</p>
+        <div id="timeRiftCards" class="discardCards"></div>
+        <button id="skipTimeRift" class="modalBtn">Skip</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    document.getElementById("skipTimeRift").onclick = () => {
+      sendAction({ type: "skipTimeRift" });
+      hideTimeRiftModal();
+    };
+  }
+  
+  const cardsEl = document.getElementById("timeRiftCards");
+  cardsEl.innerHTML = "";
+  
+  if (units.length === 0) {
+    cardsEl.innerHTML = "<p>No units in discard!</p>";
+  }
+  
+  units.forEach(unit => {
+    const el = document.createElement("div");
+    el.className = "handCard";
+    
+    const icon = CARD_ICONS[unit.key] || '⚔️';
+    const hasArt = unit.art;
+    const artStyle = hasArt ? `background: url('${unit.art}') center/cover no-repeat` : '';
+    const artContent = hasArt ? '' : icon;
+    
+    el.innerHTML = `
+      <div class="cardArt" style="${artStyle}">${artContent}</div>
+      <div class="resurrectTag">1 HP</div>
+      <div class="cardInfoOverlay">
+        <div class="cardName">${unit.name}</div>
+        <div class="cardStats">
+          <div class="cardStat cardAtk"><span class="cardStatIcon">⚔</span>${unit.atk}</div>
+          <div class="cardStat cardHp"><span class="cardStatIcon">♥</span>${unit.hp}</div>
+        </div>
+      </div>
+    `;
+    
+    el.onclick = () => {
+      sendAction({ type: "timeRiftResurrect", cardId: unit.id });
+      hideTimeRiftModal();
+    };
+    
+    cardsEl.appendChild(el);
+  });
+  
+  // Show the modal
+  modal.classList.remove("hidden");
+  console.log("Modal should be visible now");
+}
+
+function hideTimeRiftModal() {
+  const modal = document.getElementById("timeRiftModal");
+  if (modal) modal.classList.add("hidden");
+}
 
 function showDiscardModal() {
   if (!discardModal || !discardCardsEl) return;
@@ -4069,6 +4536,18 @@ socket.on("state", (st) => {
   S.bossEventWarning = st.bossEventWarning || null;
   S.chaliceTiles = st.chaliceTiles || [];
   S.turnNumber = st.turnNumber || 1;
+  
+  // Handle eclipse state
+  const wasEclipseActive = S.eclipseActive;
+  S.eclipseActive = st.eclipseActive || false;
+  S.eclipseEffect = st.eclipseEffect || null;
+  
+  // Update eclipse overlay based on state
+  if (S.eclipseActive && !wasEclipseActive) {
+    showEclipseOverlay(S.eclipseEffect);
+  } else if (!S.eclipseActive && wasEclipseActive) {
+    hideEclipseOverlay();
+  }
   
   // Debug log boss event warning
   if (st.bossEventWarning) {
@@ -5045,7 +5524,7 @@ function showCampaignVictoryPopup(data) {
     // Dragon Wizard
     'meditationmonk': 'Meditation Monk',
     'wyrmwhelp': 'Wyrm Whelp',
-    'wizardsrune': "Wizard's Rune",
+    'wizardsrune': "Wizards Rune",
     'cinderwing': 'Cinderwing',
     'manasiphonmage': 'Mana Siphon Mage',
     'arcanetether': 'Arcane Tether',

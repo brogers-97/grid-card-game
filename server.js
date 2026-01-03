@@ -342,8 +342,8 @@ const MAX_ENERGY = 10;
 const START_HAND_SIZE = 5;
 const MAX_HAND_SIZE = 7;
 
-// Wizard unit keys for Wizard's Rune effect
-const WIZARD_CARDS = ['redwizard', 'bluewizard', 'mirrorwizard', 'manasiphonmage', 'wizardsrune'];
+// Wizard unit keys for Wizard's Rune effect (cards that can be drawn/summoned free)
+const WIZARD_CARDS = ['redwizard', 'bluewizard', 'mirrorwizard', 'arcanetether'];
 
 // Buff tile definitions
 const BUFF_TYPES = [
@@ -838,30 +838,193 @@ const DECKS = {
       { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
     ]
   },
+  "jeweled-court-challenge": {
+    name: "Jeweled Court (Challenge)",
+    description: "CHALLENGE MODE: Endless gem shards with devastating chain reactions",
+    archetype: "fairy",
+    isChallenge: true,
+    cards: [
+      // === LEGENDARY SPAM (The gem shard payoffs) ===
+      // Prismatic Fairy x4 (normally 1) - AOE damage when gems die
+      { key: "prismaticfairy", name: "Prismatic Fairy", atk: 3, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "gem_death_aoe", effectDesc: "PASSIVE: When a friendly Gem Shard dies, all enemies take 1 damage.", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
+      { key: "prismaticfairy", name: "Prismatic Fairy", atk: 3, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "gem_death_aoe", effectDesc: "PASSIVE: When a friendly Gem Shard dies, all enemies take 1 damage.", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
+      { key: "prismaticfairy", name: "Prismatic Fairy", atk: 3, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "gem_death_aoe", effectDesc: "PASSIVE: When a friendly Gem Shard dies, all enemies take 1 damage.", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
+      { key: "prismaticfairy", name: "Prismatic Fairy", atk: 3, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "gem_death_aoe", effectDesc: "PASSIVE: When a friendly Gem Shard dies, all enemies take 1 damage.", art: "/images/Prismatic Fairy.png", rarity: "legendary" },
+      // Garnet Queen x3 (normally 1) - ATK suppress + ally buff
+      { key: "garnetqueen", name: "Garnet Queen", atk: 3, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "garnet_aura", effectDesc: "PASSIVE: Adjacent enemies have ATK reduced to max 2. Adjacent friendlies gain +1 ATK.", art: "/images/Garnet Queen.png", rarity: "legendary" },
+      { key: "garnetqueen", name: "Garnet Queen", atk: 3, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "garnet_aura", effectDesc: "PASSIVE: Adjacent enemies have ATK reduced to max 2. Adjacent friendlies gain +1 ATK.", art: "/images/Garnet Queen.png", rarity: "legendary" },
+      { key: "garnetqueen", name: "Garnet Queen", atk: 3, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "garnet_aura", effectDesc: "PASSIVE: Adjacent enemies have ATK reduced to max 2. Adjacent friendlies gain +1 ATK.", art: "/images/Garnet Queen.png", rarity: "legendary" },
+      // Moonstone Witch x3 (normally 1) - transform kills + gem buff
+      { key: "moonstonewitch", name: "Moonstone Witch", atk: 2, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "gem_transform", effectDesc: "ON KILL: Transform killed unit into a 1/1 Gem Shard. PASSIVE: +1 ATK per Gem Shard on field.", art: "/images/Moonstone Witch.png", rarity: "legendary" },
+      { key: "moonstonewitch", name: "Moonstone Witch", atk: 2, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "gem_transform", effectDesc: "ON KILL: Transform killed unit into a 1/1 Gem Shard. PASSIVE: +1 ATK per Gem Shard on field.", art: "/images/Moonstone Witch.png", rarity: "legendary" },
+      { key: "moonstonewitch", name: "Moonstone Witch", atk: 2, hp: 4, cost: 4, type: "monster", effect: "onKill", effectId: "gem_transform", effectDesc: "ON KILL: Transform killed unit into a 1/1 Gem Shard. PASSIVE: +1 ATK per Gem Shard on field.", art: "/images/Moonstone Witch.png", rarity: "legendary" },
+      
+      // === GEM DEVOURING THREATS ===
+      // Opal Devourer x5 - consume gems for +2/+2
+      { key: "opaldevourer", name: "Opal Devourer", atk: 2, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "consume_gem", effectDesc: "PASSIVE: Can attack friendly Gem Shards to gain +2/+2.", art: "/images/Opal Devourer.png", rarity: "rare" },
+      { key: "opaldevourer", name: "Opal Devourer", atk: 2, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "consume_gem", effectDesc: "PASSIVE: Can attack friendly Gem Shards to gain +2/+2.", art: "/images/Opal Devourer.png", rarity: "rare" },
+      { key: "opaldevourer", name: "Opal Devourer", atk: 2, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "consume_gem", effectDesc: "PASSIVE: Can attack friendly Gem Shards to gain +2/+2.", art: "/images/Opal Devourer.png", rarity: "rare" },
+      { key: "opaldevourer", name: "Opal Devourer", atk: 2, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "consume_gem", effectDesc: "PASSIVE: Can attack friendly Gem Shards to gain +2/+2.", art: "/images/Opal Devourer.png", rarity: "rare" },
+      { key: "opaldevourer", name: "Opal Devourer", atk: 2, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "consume_gem", effectDesc: "PASSIVE: Can attack friendly Gem Shards to gain +2/+2.", art: "/images/Opal Devourer.png", rarity: "rare" },
+      
+      // === GEM SHARD SPAWNERS ===
+      // Emerald Forager x6 - spawn gem on deploy
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
+      // Ruby Sprite x6 - death adds gem card to hand
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      { key: "rubysprite", name: "Ruby Sprite", atk: 2, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "death_gem_card", effectDesc: "ON DEATH: Add a Gem Shard card to your hand.", art: "/images/Ruby Sprite.png", rarity: "common" },
+      
+      // === GEM SUMMON SPELLS ===
+      // Fairy Ring x4 (normally 1) - summon 2 gems
+      { key: "fairyring", name: "Fairy Ring", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "summon_gems", effectDesc: "INSTANT: Summon two 1/1 Gem Shards in your home rows.", art: "/images/Fairy Ring.png", rarity: "legendary" },
+      { key: "fairyring", name: "Fairy Ring", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "summon_gems", effectDesc: "INSTANT: Summon two 1/1 Gem Shards in your home rows.", art: "/images/Fairy Ring.png", rarity: "legendary" },
+      { key: "fairyring", name: "Fairy Ring", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "summon_gems", effectDesc: "INSTANT: Summon two 1/1 Gem Shards in your home rows.", art: "/images/Fairy Ring.png", rarity: "legendary" },
+      { key: "fairyring", name: "Fairy Ring", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "summon_gems", effectDesc: "INSTANT: Summon two 1/1 Gem Shards in your home rows.", art: "/images/Fairy Ring.png", rarity: "legendary" },
+      
+      // === SUPPORT & BUFFS ===
+      // Diamond Guardian x4 - bodyguard protects gems
+      { key: "diamondguardian", name: "Diamond Guardian", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "bodyguard", effectDesc: "PASSIVE: When an adjacent friendly takes damage, this unit takes 1 of that damage instead.", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      { key: "diamondguardian", name: "Diamond Guardian", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "bodyguard", effectDesc: "PASSIVE: When an adjacent friendly takes damage, this unit takes 1 of that damage instead.", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      { key: "diamondguardian", name: "Diamond Guardian", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "bodyguard", effectDesc: "PASSIVE: When an adjacent friendly takes damage, this unit takes 1 of that damage instead.", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      { key: "diamondguardian", name: "Diamond Guardian", atk: 1, hp: 5, cost: 3, type: "monster", effect: "passive", effectId: "bodyguard", effectDesc: "PASSIVE: When an adjacent friendly takes damage, this unit takes 1 of that damage instead.", art: "/images/Diamond Guardian.png", rarity: "rare" },
+      // Pearl Blessing x3 - mass buff all units
+      { key: "pearlblessing", name: "Pearl Blessing", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "fairy_blessing", effectDesc: "INSTANT: All friendly units gain +1 HP. Fairies also gain +1 ATK.", art: "/images/Pearl Blessing.png", rarity: "rare" },
+      { key: "pearlblessing", name: "Pearl Blessing", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "fairy_blessing", effectDesc: "INSTANT: All friendly units gain +1 HP. Fairies also gain +1 ATK.", art: "/images/Pearl Blessing.png", rarity: "rare" },
+      { key: "pearlblessing", name: "Pearl Blessing", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "fairy_blessing", effectDesc: "INSTANT: All friendly units gain +1 HP. Fairies also gain +1 ATK.", art: "/images/Pearl Blessing.png", rarity: "rare" },
+      
+      // === ATK DEBUFFS ===
+      // Gemstone Curse x3 - halve enemy ATK
+      { key: "gemstonecurse", name: "Gemstone Curse", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "halve_atk", effectDesc: "INSTANT: Reduce target enemy's ATK by half (rounded down, minimum 1).", art: "/images/Gemstone Curse.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      { key: "gemstonecurse", name: "Gemstone Curse", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "halve_atk", effectDesc: "INSTANT: Reduce target enemy's ATK by half (rounded down, minimum 1).", art: "/images/Gemstone Curse.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      { key: "gemstonecurse", name: "Gemstone Curse", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "halve_atk", effectDesc: "INSTANT: Reduce target enemy's ATK by half (rounded down, minimum 1).", art: "/images/Gemstone Curse.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      
+      // === POSITIONING & MOBILITY ===
+      // Sapphire Dancer x4 - swap with fairies
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+    ]
+  },
+  "elunes-chosen-challenge": {
+    name: "Elune's Chosen (Challenge)",
+    description: "CHALLENGE MODE: Overwhelming lunar synergies with mass healing and devastating AOE",
+    archetype: "night-elf",
+    isChallenge: true,
+    cards: [
+      // === LEGENDARY SPAM (The powerhouses) ===
+      // Starlit Champion x3 - energy + ATK on kill, snowballs hard
+      { key: "starlitchampion", name: "Starlit Champion", atk: 4, hp: 6, cost: 6, type: "monster", effect: "onKill", effectId: "starlit_slayer", effectDesc: "ON KILL: Gain 1 energy and +1 ATK permanently.", art: "/images/Starlit Champion.png", rarity: "legendary" },
+      { key: "starlitchampion", name: "Starlit Champion", atk: 4, hp: 6, cost: 6, type: "monster", effect: "onKill", effectId: "starlit_slayer", effectDesc: "ON KILL: Gain 1 energy and +1 ATK permanently.", art: "/images/Starlit Champion.png", rarity: "legendary" },
+      { key: "starlitchampion", name: "Starlit Champion", atk: 4, hp: 6, cost: 6, type: "monster", effect: "onKill", effectId: "starlit_slayer", effectDesc: "ON KILL: Gain 1 energy and +1 ATK permanently.", art: "/images/Starlit Champion.png", rarity: "legendary" },
+      // Star Invoker x3 - random 2 damage each turn
+      { key: "starinvoker", name: "Star Invoker", atk: 2, hp: 5, cost: 6, type: "monster", effect: "startOfTurn", effectId: "star_strike", effectDesc: "START OF TURN: Deal 2 damage to a random enemy.", art: "/images/Star Invoker.png", rarity: "legendary" },
+      { key: "starinvoker", name: "Star Invoker", atk: 2, hp: 5, cost: 6, type: "monster", effect: "startOfTurn", effectId: "star_strike", effectDesc: "START OF TURN: Deal 2 damage to a random enemy.", art: "/images/Star Invoker.png", rarity: "legendary" },
+      { key: "starinvoker", name: "Star Invoker", atk: 2, hp: 5, cost: 6, type: "monster", effect: "startOfTurn", effectId: "star_strike", effectDesc: "START OF TURN: Deal 2 damage to a random enemy.", art: "/images/Star Invoker.png", rarity: "legendary" },
+      // Temple of the Moon x3 - permanent ATK buffs
+      { key: "templeofthemoon", name: "Temple of the Moon", atk: 0, hp: 4, cost: 4, type: "structure", effect: "startOfTurn", effectId: "temple_blessing", effectDesc: "START OF TURN: If adjacent to 2+ allies, give them +1 ATK permanently.", art: "/images/Temple of the Moon.png", rarity: "legendary" },
+      { key: "templeofthemoon", name: "Temple of the Moon", atk: 0, hp: 4, cost: 4, type: "structure", effect: "startOfTurn", effectId: "temple_blessing", effectDesc: "START OF TURN: If adjacent to 2+ allies, give them +1 ATK permanently.", art: "/images/Temple of the Moon.png", rarity: "legendary" },
+      { key: "templeofthemoon", name: "Temple of the Moon", atk: 0, hp: 4, cost: 4, type: "structure", effect: "startOfTurn", effectId: "temple_blessing", effectDesc: "START OF TURN: If adjacent to 2+ allies, give them +1 ATK permanently.", art: "/images/Temple of the Moon.png", rarity: "legendary" },
+      
+      // === AOE DAMAGE ===
+      // Lunar Barrage x4 - mass AOE damage
+      { key: "lunarbarrage", name: "Lunar Barrage", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lunar_aoe", effectDesc: "INSTANT: Deal 2 damage to all enemies in and adjacent to target tile (not home rows).", art: "/images/Lunar Barrage.png", requiresTarget: "tile", rarity: "legendary" },
+      { key: "lunarbarrage", name: "Lunar Barrage", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lunar_aoe", effectDesc: "INSTANT: Deal 2 damage to all enemies in and adjacent to target tile (not home rows).", art: "/images/Lunar Barrage.png", requiresTarget: "tile", rarity: "legendary" },
+      { key: "lunarbarrage", name: "Lunar Barrage", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lunar_aoe", effectDesc: "INSTANT: Deal 2 damage to all enemies in and adjacent to target tile (not home rows).", art: "/images/Lunar Barrage.png", requiresTarget: "tile", rarity: "legendary" },
+      { key: "lunarbarrage", name: "Lunar Barrage", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lunar_aoe", effectDesc: "INSTANT: Deal 2 damage to all enemies in and adjacent to target tile (not home rows).", art: "/images/Lunar Barrage.png", requiresTarget: "tile", rarity: "legendary" },
+      
+      // === HEALING & SUSTAIN ===
+      // Lunar Priestess x5 - heal allies
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      { key: "lunarpriestess", name: "Lunar Priestess", atk: 3, hp: 2, cost: 3, type: "monster", effect: "passive", effectId: "heal_attack", effectDesc: "PASSIVE: Can attack allies to heal them for ATK instead of damage.", art: "/images/Lunar Priestess.png", rarity: "common" },
+      // Lunar Prayer x3 - death ward
+      { key: "lunarprayer", name: "Lunar Prayer", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "death_ward", effectDesc: "INSTANT: Target ally gains Death Ward - the next time it would die, it survives with 1 HP instead.", art: "/images/Lunar Prayer.png", requiresTarget: "unit", rarity: "rare" },
+      { key: "lunarprayer", name: "Lunar Prayer", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "death_ward", effectDesc: "INSTANT: Target ally gains Death Ward - the next time it would die, it survives with 1 HP instead.", art: "/images/Lunar Prayer.png", requiresTarget: "unit", rarity: "rare" },
+      { key: "lunarprayer", name: "Lunar Prayer", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "death_ward", effectDesc: "INSTANT: Target ally gains Death Ward - the next time it would die, it survives with 1 HP instead.", art: "/images/Lunar Prayer.png", requiresTarget: "unit", rarity: "rare" },
+      
+      // === ADJACENCY SYNERGY ===
+      // Moon Flare Sorceress x4 - +1 ATK/HP to adjacent allies
+      { key: "moonflaresorceress", name: "Moon Flare Sorceress", atk: 2, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "moonflare_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK and +1 HP.", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      { key: "moonflaresorceress", name: "Moon Flare Sorceress", atk: 2, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "moonflare_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK and +1 HP.", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      { key: "moonflaresorceress", name: "Moon Flare Sorceress", atk: 2, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "moonflare_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK and +1 HP.", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      { key: "moonflaresorceress", name: "Moon Flare Sorceress", atk: 2, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "moonflare_aura", effectDesc: "PASSIVE: Adjacent allies gain +1 ATK and +1 HP.", art: "/images/Moon Flare Sorceress.png", rarity: "rare" },
+      // Star Weave Archer x4 - ranged + ATK from adjacent allies
+      { key: "starweavearcher", name: "Star Weave Archer", atk: 1, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "starweave_ranged", effectDesc: "PASSIVE: Range 2. Gains +1 ATK for each adjacent ally.", art: "/images/Star Weave Archer.png", rarity: "common" },
+      { key: "starweavearcher", name: "Star Weave Archer", atk: 1, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "starweave_ranged", effectDesc: "PASSIVE: Range 2. Gains +1 ATK for each adjacent ally.", art: "/images/Star Weave Archer.png", rarity: "common" },
+      { key: "starweavearcher", name: "Star Weave Archer", atk: 1, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "starweave_ranged", effectDesc: "PASSIVE: Range 2. Gains +1 ATK for each adjacent ally.", art: "/images/Star Weave Archer.png", rarity: "common" },
+      { key: "starweavearcher", name: "Star Weave Archer", atk: 1, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "starweave_ranged", effectDesc: "PASSIVE: Range 2. Gains +1 ATK for each adjacent ally.", art: "/images/Star Weave Archer.png", rarity: "common" },
+      // Moon Sentinel x4 - gains HP if adjacent to 2 allies
+      { key: "moonsentinel", name: "Moon Sentinel", atk: 2, hp: 1, cost: 1, type: "monster", effect: "startOfTurn", effectId: "sentinel_growth", effectDesc: "START OF TURN: Gain +1 HP if adjacent to 2+ allies.", art: "/images/Moon Sentinel.png", rarity: "common" },
+      { key: "moonsentinel", name: "Moon Sentinel", atk: 2, hp: 1, cost: 1, type: "monster", effect: "startOfTurn", effectId: "sentinel_growth", effectDesc: "START OF TURN: Gain +1 HP if adjacent to 2+ allies.", art: "/images/Moon Sentinel.png", rarity: "common" },
+      { key: "moonsentinel", name: "Moon Sentinel", atk: 2, hp: 1, cost: 1, type: "monster", effect: "startOfTurn", effectId: "sentinel_growth", effectDesc: "START OF TURN: Gain +1 HP if adjacent to 2+ allies.", art: "/images/Moon Sentinel.png", rarity: "common" },
+      { key: "moonsentinel", name: "Moon Sentinel", atk: 2, hp: 1, cost: 1, type: "monster", effect: "startOfTurn", effectId: "sentinel_growth", effectDesc: "START OF TURN: Gain +1 HP if adjacent to 2+ allies.", art: "/images/Moon Sentinel.png", rarity: "common" },
+      
+      // === AGGRESSIVE UNITS ===
+      // Moonlit Blade Dancer x4 - move again on kill
+      { key: "moonlitbladedancer", name: "Moonlit Blade Dancer", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onKill", effectId: "blade_dance", effectDesc: "ON KILL: Can move again this turn.", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      { key: "moonlitbladedancer", name: "Moonlit Blade Dancer", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onKill", effectId: "blade_dance", effectDesc: "ON KILL: Can move again this turn.", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      { key: "moonlitbladedancer", name: "Moonlit Blade Dancer", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onKill", effectId: "blade_dance", effectDesc: "ON KILL: Can move again this turn.", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      { key: "moonlitbladedancer", name: "Moonlit Blade Dancer", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onKill", effectId: "blade_dance", effectDesc: "ON KILL: Can move again this turn.", art: "/images/Moonlit Blade Dancer.png", rarity: "common" },
+      // Night Shade Ambusher x3 - deploy in neutral zones
+      { key: "nightshadeambusher", name: "Night Shade Ambusher", atk: 4, hp: 2, cost: 4, type: "monster", effect: "passive", effectId: "ambush_deploy", effectDesc: "PASSIVE: Can be deployed in neutral zones (rows 2-4).", art: "/images/Night Shade Ambusher.png", rarity: "rare" },
+      { key: "nightshadeambusher", name: "Night Shade Ambusher", atk: 4, hp: 2, cost: 4, type: "monster", effect: "passive", effectId: "ambush_deploy", effectDesc: "PASSIVE: Can be deployed in neutral zones (rows 2-4).", art: "/images/Night Shade Ambusher.png", rarity: "rare" },
+      { key: "nightshadeambusher", name: "Night Shade Ambusher", atk: 4, hp: 2, cost: 4, type: "monster", effect: "passive", effectId: "ambush_deploy", effectDesc: "PASSIVE: Can be deployed in neutral zones (rows 2-4).", art: "/images/Night Shade Ambusher.png", rarity: "rare" },
+      
+      // === TANKS & PROTECTION ===
+      // Stone Giant x3 - absorbs damage for allies
+      { key: "stonegiant", name: "Stone Giant", atk: 3, hp: 8, cost: 5, type: "monster", effect: "passive", effectId: "stone_shield", effectDesc: "PASSIVE: When an adjacent ally would take damage, this unit takes it instead.", art: "/images/Stone Giant.png", rarity: "rare" },
+      { key: "stonegiant", name: "Stone Giant", atk: 3, hp: 8, cost: 5, type: "monster", effect: "passive", effectId: "stone_shield", effectDesc: "PASSIVE: When an adjacent ally would take damage, this unit takes it instead.", art: "/images/Stone Giant.png", rarity: "rare" },
+      { key: "stonegiant", name: "Stone Giant", atk: 3, hp: 8, cost: 5, type: "monster", effect: "passive", effectId: "stone_shield", effectDesc: "PASSIVE: When an adjacent ally would take damage, this unit takes it instead.", art: "/images/Stone Giant.png", rarity: "rare" },
+      
+      // === RESOURCE GENERATION ===
+      // Elune's Moonwell x3 - energy + draw
+      { key: "elunesmoonwell", name: "Elune's Moonwell", atk: 0, hp: 4, cost: 2, type: "structure", effect: "startOfTurn", effectId: "moonwell_power", effectDesc: "START OF TURN: If adjacent to 2+ allies, gain 1 energy and draw a card.", art: "/images/Elunes Moonwell.png", rarity: "rare" },
+      { key: "elunesmoonwell", name: "Elune's Moonwell", atk: 0, hp: 4, cost: 2, type: "structure", effect: "startOfTurn", effectId: "moonwell_power", effectDesc: "START OF TURN: If adjacent to 2+ allies, gain 1 energy and draw a card.", art: "/images/Elunes Moonwell.png", rarity: "rare" },
+      { key: "elunesmoonwell", name: "Elune's Moonwell", atk: 0, hp: 4, cost: 2, type: "structure", effect: "startOfTurn", effectId: "moonwell_power", effectDesc: "START OF TURN: If adjacent to 2+ allies, gain 1 energy and draw a card.", art: "/images/Elunes Moonwell.png", rarity: "rare" },
+      
+      // === CROWD CONTROL ===
+      // Moon Shadow Warden x3 - root on attack
+      { key: "moonshadowwarden", name: "Moon Shadow Warden", atk: 4, hp: 2, cost: 3, type: "monster", effect: "onAttack", effectId: "shadow_root", effectDesc: "ON ATTACK: Target cannot move next turn.", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
+      { key: "moonshadowwarden", name: "Moon Shadow Warden", atk: 4, hp: 2, cost: 3, type: "monster", effect: "onAttack", effectId: "shadow_root", effectDesc: "ON ATTACK: Target cannot move next turn.", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
+      { key: "moonshadowwarden", name: "Moon Shadow Warden", atk: 4, hp: 2, cost: 3, type: "monster", effect: "onAttack", effectId: "shadow_root", effectDesc: "ON ATTACK: Target cannot move next turn.", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
+    ]
+  },
   "dragon-wizard": {
     name: "Arcane Dragonflight",
     description: "Wizards and dragons unite with spell synergy and anti-buff tech",
     archetype: "dragon",
     cards: [
       // Meditation Monk x3 (channeling energy ramp)
-      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "passive", effectId: "channeling_energy", effectDesc: "CHANNELING: Can't move. Gain +1 Energy at start of your turn.", art: "/images/Meditation Monk.png", rarity: "common" },
-      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "passive", effectId: "channeling_energy", effectDesc: "CHANNELING: Can't move. Gain +1 Energy at start of your turn.", art: "/images/Meditation Monk.png", rarity: "common" },
-      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "passive", effectId: "channeling_energy", effectDesc: "CHANNELING: Can't move. Gain +1 Energy at start of your turn.", art: "/images/Meditation Monk.png", rarity: "common" },
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP.", art: "/images/Meditation Monk.png", rarity: "common" },
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP.", art: "/images/Meditation Monk.png", rarity: "common" },
+      { key: "meditationmonk", name: "Meditation Monk", atk: 1, hp: 3, cost: 1, type: "monster", effect: "startOfTurn", effectId: "meditation_buff", effectDesc: "START OF TURN: Give a random friendly unit +1 ATK or +1 HP.", art: "/images/Meditation Monk.png", rarity: "common" },
       // Wyrm Whelp x3 (anti-effect tech)
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
       { key: "wyrmwhelp", name: "Wyrm Whelp", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "anti_effect", effectDesc: "PASSIVE: +1 ATK when attacking units with effects.", art: "/images/Wyrm Whelp.png", rarity: "common" },
-      // Wizard's Rune x3 (draw wizard on deploy, free wizard on death)
-      { key: "wizardsrune", name: "Wizard's Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a Wizard. DEATH: Next Wizard costs 0.", art: "/images/Wizards Rune.png", rarity: "common" },
-      { key: "wizardsrune", name: "Wizard's Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a Wizard. DEATH: Next Wizard costs 0.", art: "/images/Wizards Rune.png", rarity: "common" },
-      { key: "wizardsrune", name: "Wizard's Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a Wizard. DEATH: Next Wizard costs 0.", art: "/images/Wizards Rune.png", rarity: "common" },
+      // Wizard's Rune x3 (draw wizard on deploy, free wizard summon from hand on death)
+      { key: "wizardsrune", name: "Wizards Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a random Wizard. DEATH: Summon a Wizard from hand for free.", art: "/images/Wizards Rune.png", rarity: "common" },
+      { key: "wizardsrune", name: "Wizards Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a random Wizard. DEATH: Summon a Wizard from hand for free.", art: "/images/Wizards Rune.png", rarity: "common" },
+      { key: "wizardsrune", name: "Wizards Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a random Wizard. DEATH: Summon a Wizard from hand for free.", art: "/images/Wizards Rune.png", rarity: "common" },
       // Cinderwing x3 (splash damage on attack)
       { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
       { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
       { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
       // Mana Siphon Mage x2 (energy drain on kill)
-      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 2, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
-      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 2, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
+      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 4, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
+      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 4, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
       // Arcane Tether x2 (damage reflection)
       { key: "arcanetether", name: "Arcane Tether", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_link", effectDesc: "ARCANE LINK: When this takes damage, deal 1 damage to the nearest enemy.", art: "/images/Arcane Tether.png", rarity: "rare" },
       { key: "arcanetether", name: "Arcane Tether", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_link", effectDesc: "ARCANE LINK: When this takes damage, deal 1 damage to the nearest enemy.", art: "/images/Arcane Tether.png", rarity: "rare" },
@@ -869,20 +1032,20 @@ const DECKS = {
       { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
       { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
       // Mirror Wizard x2 (copy buffs)
-      { key: "mirrorwizard", name: "Mirror Wizard", atk: 1, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "mirror_buffs", effectDesc: "PASSIVE: Copies any buffs applied to adjacent allies.", art: "/images/Mirror Wizard.png", rarity: "rare" },
-      { key: "mirrorwizard", name: "Mirror Wizard", atk: 1, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "mirror_buffs", effectDesc: "PASSIVE: Copies any buffs applied to adjacent allies.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_reflection", effectDesc: "PASSIVE: When this takes damage, deal that damage back to the attacker.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_reflection", effectDesc: "PASSIVE: When this takes damage, deal that damage back to the attacker.", art: "/images/Mirror Wizard.png", rarity: "rare" },
       // Volcanic Dragon x2 (death HP reset)
-      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units (friend and enemy) to 1 HP.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
-      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units (friend and enemy) to 1 HP.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
+      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units to 1 HP. Chains to their adjacent units too.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
+      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units to 1 HP. Chains to their adjacent units too.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
       // Red Wizard x1 (gains HP when any unit gains HP)
-      { key: "redwizard", name: "Red Wizard", atk: 2, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "red_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains HP, this unit gains +1 HP.", art: "/images/Red Wizard.png", rarity: "legendary" },
+      { key: "redwizard", name: "Red Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "red_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains HP, this unit gains +1 HP.", art: "/images/Red Wizard.png", rarity: "legendary" },
       // Blue Wizard x1 (gains ATK when any unit gains ATK)
-      { key: "bluewizard", name: "Blue Wizard", atk: 4, hp: 2, cost: 5, type: "monster", effect: "passive", effectId: "blue_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains ATK, this unit gains +1 ATK.", art: "/images/Blue Wizard.png", rarity: "legendary" },
-      // Chrono Drake x1 (temporal stasis)
-      { key: "chronodrake", name: "Chrono Drake", atk: 4, hp: 5, cost: 6, type: "monster", effect: "onDeploy", effectId: "temporal_stasis", effectDesc: "ON DEPLOY: Freeze target enemy for 2 turns (can't move, attack, or use effects).", art: "/images/Chrono Drake.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      { key: "bluewizard", name: "Blue Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "blue_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains ATK, this unit gains +1 ATK.", art: "/images/Blue Wizard.png", rarity: "legendary" },
+      // Chrono Drake x1 (time rift resurrection)
+      { key: "chronodrake", name: "Chrono Drake", atk: 3, hp: 5, cost: 5, type: "monster", effect: "onDeploy", effectId: "time_rift", effectDesc: "ON DEPLOY: Choose a unit from your discard to resurrect adjacent to Chrono Drake at 1 HP.", art: "/images/Chrono Drake.png", rarity: "legendary" },
       // Polymorph x2
-      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy into a 1/1 Sheep (loses all effects).", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
-      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy into a 1/1 Sheep (loses all effects).", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
       // Mana Drain x2
       { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
       { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
@@ -1357,6 +1520,9 @@ function getEffectiveAtk(state, uid, targetId) {
     }
   }
   // Ember Drake (Cinderwing) - bonus ATK when adjacent to Wizard (reserved for future)
+  
+  // Eclipse ATK effect is now applied directly to unit.atk, no need for calculation here
+  
   return atk;
 }
 
@@ -1550,6 +1716,23 @@ function emitSFX(lobby, cardKey, action) {
   if (lobby.guestSocket) lobby.guestSocket.emit("sfx", { cardKey, action, archetype });
 }
 
+// Emit AOE/effect animation - source unit glows, targets shake
+function emitEffectAnimation(lobby, sourceUnitId, targetPositions, effectType = "aoe") {
+  const state = lobby.gameState.state;
+  const sourcePos = getUnitPos(state, sourceUnitId);
+  
+  const animData = {
+    type: "effect",
+    effectType: effectType,
+    sourcePos: sourcePos,
+    sourceUnitId: sourceUnitId,
+    targets: targetPositions // Array of {r, c} positions
+  };
+  
+  if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+  if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+}
+
 // Combat log for detailed damage calculations
 function combatLogToLobby(lobby, msg, type = "combat-step") { 
   if (lobby.hostSocket) lobby.hostSocket.emit("combatLog", { msg, type }); 
@@ -1740,19 +1923,41 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
     ];
     let damaged = 0;
     const toRemove = [];
+    const targetPositions = [];
+    
+    // Combat log header
+    combatLogToLobby(lobby, `💥 ${deadUnit.name} - Death Explosion`, "combat-header");
+    
     for (const pos of adjacentPositions) {
       if (pos.r < 0 || pos.r >= ROWS || pos.c < 0 || pos.c >= COLS) continue;
       const targetId = state.board[pos.r][pos.c];
       if (targetId && state.units[targetId] && state.units[targetId].owner !== deadUnitOwner) {
         const target = state.units[targetId];
         if (target.untargetable) continue;
+        targetPositions.push({ r: pos.r, c: pos.c });
+        const before = target.hp;
         target.hp -= 2;
+        combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
         damaged++;
         if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
           toRemove.push({ id: targetId, r: pos.r, c: pos.c });
         }
       }
     }
+    
+    // Emit explosion animation (source is dead position, targets are adjacent enemies)
+    if (targetPositions.length > 0) {
+      const animData = {
+        type: "effect",
+        effectType: "death_explosion",
+        sourcePos: deadPos,
+        sourceUnitId: null, // Unit is already dead
+        targets: targetPositions
+      };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
+    
     for (const item of toRemove) {
       const deadTarget = state.units[item.id];
       if (!deadTarget) continue; // May have been saved by deathWard
@@ -1762,7 +1967,7 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
       state.board[item.r][item.c] = null;
       discardUnitCard(lobby, deadTarget);
       delete state.units[item.id];
-      logToLobby(lobby, deadTarget.name + " destroyed by " + deadUnit.name + "'s death explosion!");
+      combatLogToLobby(lobby, `💀 ${deadTarget.name} DESTROYED`, "combat-death");
     }
     if (damaged > 0) {
       logToLobby(lobby, deadUnit.name + " explodes, dealing 2 damage to " + damaged + " enemies!");
@@ -1797,34 +2002,96 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
   
   // Volcanic Dragon - set all adjacent units to 1 HP on death
   if (deadUnit.effectId === "volcanic_death" && deadPos) {
-    const adjacentPositions = [
-      { r: deadPos.r - 1, c: deadPos.c - 1 }, { r: deadPos.r - 1, c: deadPos.c }, { r: deadPos.r - 1, c: deadPos.c + 1 },
-      { r: deadPos.r, c: deadPos.c - 1 }, { r: deadPos.r, c: deadPos.c + 1 },
-      { r: deadPos.r + 1, c: deadPos.c - 1 }, { r: deadPos.r + 1, c: deadPos.c }, { r: deadPos.r + 1, c: deadPos.c + 1 }
-    ];
-    let affected = 0;
-    for (const pos of adjacentPositions) {
-      if (pos.r < 0 || pos.r >= ROWS || pos.c < 0 || pos.c >= COLS) continue;
-      const targetId = state.board[pos.r][pos.c];
-      if (targetId && state.units[targetId]) {
-        const target = state.units[targetId];
-        if (target.untargetable) continue;
-        if (target.hp > 1) {
-          target.hp = 1;
-          affected++;
+    // Chain effect - start from dead position and spread to adjacent units
+    const affectedUnits = new Set();
+    const toProcess = [deadPos];
+    const processed = new Set();
+    processed.add(`${deadPos.r}-${deadPos.c}`);
+    
+    while (toProcess.length > 0) {
+      const currentPos = toProcess.shift();
+      
+      // Get all 8 adjacent positions
+      const adjacentPositions = [
+        { r: currentPos.r - 1, c: currentPos.c - 1 }, { r: currentPos.r - 1, c: currentPos.c }, { r: currentPos.r - 1, c: currentPos.c + 1 },
+        { r: currentPos.r, c: currentPos.c - 1 }, { r: currentPos.r, c: currentPos.c + 1 },
+        { r: currentPos.r + 1, c: currentPos.c - 1 }, { r: currentPos.r + 1, c: currentPos.c }, { r: currentPos.r + 1, c: currentPos.c + 1 }
+      ];
+      
+      for (const pos of adjacentPositions) {
+        const key = `${pos.r}-${pos.c}`;
+        if (processed.has(key)) continue;
+        processed.add(key);
+        
+        if (pos.r < 0 || pos.r >= ROWS || pos.c < 0 || pos.c >= COLS) continue;
+        const targetId = state.board[pos.r][pos.c];
+        if (targetId && state.units[targetId]) {
+          const target = state.units[targetId];
+          if (target.untargetable) continue;
+          if (target.hp > 1) {
+            target.hp = 1;
+            affectedUnits.add(targetId);
+            // Chain to this unit's adjacent units
+            toProcess.push(pos);
+          }
         }
       }
     }
-    if (affected > 0) {
-      logToLobby(lobby, deadUnit.name + "'s volcanic eruption scorches " + affected + " units to 1 HP!");
+    
+    // Emit effect animation for all affected units
+    if (affectedUnits.size > 0) {
+      const targetPositions = [];
+      for (const uid of affectedUnits) {
+        const pos = getUnitPos(state, uid);
+        if (pos) targetPositions.push({ r: pos.r, c: pos.c });
+      }
+      if (targetPositions.length > 0) {
+        const animData = {
+          type: "effect",
+          effectType: "volcanic_chain",
+          sourcePos: deadPos,
+          sourceUnitId: null,
+          targets: targetPositions
+        };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
+      
+      logToLobby(lobby, deadUnit.name + "'s volcanic eruption chains through " + affectedUnits.size + " units, scorching them to 1 HP!");
+      combatLogToLobby(lobby, `🌋 ${deadUnit.name} - Volcanic Chain`, "combat-header");
+      for (const uid of affectedUnits) {
+        const u = state.units[uid];
+        if (u) combatLogToLobby(lobby, `${u.name} scorched to 1 HP!`, "combat-result");
+      }
     }
   }
   
-  // Wizard's Rune - grant free wizard play on death
+  // Wizard's Rune - allow player to summon a wizard from hand for free
   if (deadUnit.effectId === "wizard_rune") {
-    if (!state.freeWizard) state.freeWizard = {};
-    state.freeWizard[deadUnitOwner] = true;
-    logToLobby(lobby, "Wizard's Rune enchants - your next Wizard costs 0 energy!");
+    const player = lobby.gameState.players[deadUnitOwner];
+    // Find wizard cards in hand
+    const wizardsInHand = player.hand.filter(card => WIZARD_CARDS.includes(card.key));
+    
+    if (wizardsInHand.length > 0) {
+      // Set pending wizard summon state
+      if (!state.pendingWizardSummon) state.pendingWizardSummon = {};
+      state.pendingWizardSummon[deadUnitOwner] = {
+        active: true,
+        deathPos: deadPos // Store where the rune died for potential spawn location
+      };
+      logToLobby(lobby, "Wizards Rune shatters! " + deadUnitOwner.toUpperCase() + " may summon a Wizard from hand for free!");
+      
+      // Emit event to client to show wizard selection
+      const socket = deadUnitOwner === "gold" ? lobby.hostSocket : lobby.guestSocket;
+      if (socket) {
+        socket.emit("wizardRuneTrigger", { 
+          wizards: wizardsInHand.map(c => ({ id: c.id, key: c.key, name: c.name })),
+          deathPos: deadPos
+        });
+      }
+    } else {
+      logToLobby(lobby, "Wizards Rune shatters but no Wizards in hand!");
+    }
   }
 }
 
@@ -1868,18 +2135,31 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
     for (const uid in state.units) {
       const u = state.units[uid];
       if (u.owner === deadUnitOwner && u.effectId === "gem_death_aoe") {
-        // Deal 1 damage to all enemies
+        // Collect all enemy positions for animation
+        const targetPositions = [];
         const toRemove = [];
+        
+        // Combat log header
+        combatLogToLobby(lobby, `✨ ${u.name} - Gem Shatter`, "combat-header");
+        
+        // Deal 1 damage to all enemies
         for (const eid in state.units) {
           const enemy = state.units[eid];
           if (enemy.owner !== deadUnitOwner && !enemy.untargetable) {
+            const enemyPos = getUnitPos(state, eid);
+            if (enemyPos) targetPositions.push({ r: enemyPos.r, c: enemyPos.c });
+            const before = enemy.hp;
             enemy.hp -= 1;
+            combatLogToLobby(lobby, `${enemy.name}: ${before} HP - 1 = ${enemy.hp} HP`, "combat-result");
             if (enemy.hp <= 0) {
-              const enemyPos = getUnitPos(state, eid);
               toRemove.push({ id: eid, pos: enemyPos });
             }
           }
         }
+        
+        // Emit AOE animation - Prismatic Fairy glows, all enemies shake
+        emitEffectAnimation(lobby, uid, targetPositions, "gem_shatter");
+        
         logToLobby(lobby, u.name + "'s gem shatters! All enemies take 1 damage!");
         for (const item of toRemove) {
           const deadEnemy = state.units[item.id];
@@ -1888,7 +2168,7 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
           if (item.pos) state.board[item.pos.r][item.pos.c] = null;
           discardUnitCard(lobby, deadEnemy);
           delete state.units[item.id];
-          logToLobby(lobby, deadEnemy.name + " destroyed by gem shatter!");
+          combatLogToLobby(lobby, `💀 ${deadEnemy.name} DESTROYED`, "combat-death");
         }
         break; // Only trigger once even if multiple Prismatic Fairies
       }
@@ -1935,27 +2215,6 @@ function triggerStatGainEffects(lobby, statType, amount, sourceUnitId) {
     if (u.effectId === "blue_wizard" && statType === 'atk') {
       u.atk += amount;
       logToLobby(lobby, u.name + " absorbs arcane power! +" + amount + " ATK (now " + u.atk + ")");
-    }
-    
-    // Mirror Wizard - copies buffs from adjacent allies
-    if (u.effectId === "mirror_buffs") {
-      const mirrorPos = getUnitPos(state, uid);
-      const sourcePos = getUnitPos(state, sourceUnitId);
-      if (mirrorPos && sourcePos) {
-        const dist = Math.abs(mirrorPos.r - sourcePos.r) + Math.abs(mirrorPos.c - sourcePos.c);
-        if (dist === 1) { // Adjacent
-          const sourceUnit = state.units[sourceUnitId];
-          if (sourceUnit && sourceUnit.owner === u.owner) {
-            if (statType === 'hp') {
-              u.hp += amount;
-              u.maxHp = (u.maxHp || u.hp) + amount;
-            } else if (statType === 'atk') {
-              u.atk += amount;
-            }
-            logToLobby(lobby, u.name + " mirrors the buff! +" + amount + " " + statType.toUpperCase());
-          }
-        }
-      }
     }
   }
 }
@@ -2194,16 +2453,27 @@ function processStartOfTurnEffects(lobby, role) {
       if (enemies.length > 0) {
         const targetId = enemies[Math.floor(Math.random() * enemies.length)];
         const target = state.units[targetId];
+        const targetPos = getUnitPos(state, targetId);
+        
+        // Emit effect animation
+        if (targetPos) {
+          emitEffectAnimation(lobby, id, [{ r: targetPos.r, c: targetPos.c }], "star_strike");
+        }
+        
+        // Combat log
+        combatLogToLobby(lobby, `⭐ ${u.name} - Star Strike`, "combat-header");
+        const before = target.hp;
         target.hp -= 2;
+        combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
+        
         logToLobby(lobby, u.name + " calls down starfire on " + target.name + "! (2 damage)");
         if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
-          const targetPos = getUnitPos(state, targetId);
           processOnDeathEffect(lobby, target, target.owner, targetPos);
           processAllyDeathTriggers(lobby, target.owner, target, targetPos);
           if (targetPos) state.board[targetPos.r][targetPos.c] = null;
           discardUnitCard(lobby, target);
           delete state.units[targetId];
-          logToLobby(lobby, target.name + " is destroyed by starfire!");
+          combatLogToLobby(lobby, `💀 ${target.name} DESTROYED`, "combat-death");
         }
       }
     }
@@ -2214,11 +2484,35 @@ function processStartOfTurnEffects(lobby, role) {
     const u = state.units[id];
     if (u.owner !== role) continue;
     
-    // Meditation Monk - channeling energy (can't move, gains 1 energy at start of turn)
-    if (u.effectId === "channeling_energy") {
-      const player = lobby.gameState.players[role];
-      player.energy = Math.min(player.energy + 1, MAX_ENERGY);
-      logToLobby(lobby, u.name + " channels energy! (+1 energy)");
+    // Meditation Monk - give random friendly unit +1 ATK or +1 HP
+    if (u.effectId === "meditation_buff") {
+      // Find all friendly units on the board
+      const friendlyUnits = [];
+      for (const uid in state.units) {
+        if (state.units[uid].owner === role) {
+          friendlyUnits.push(uid);
+        }
+      }
+      
+      if (friendlyUnits.length > 0) {
+        // Pick a random friendly unit
+        const targetId = friendlyUnits[Math.floor(Math.random() * friendlyUnits.length)];
+        const target = state.units[targetId];
+        
+        // 50/50 chance for ATK or HP
+        if (Math.random() < 0.5) {
+          target.atk += 1;
+          logToLobby(lobby, u.name + " meditates... " + target.name + " gains +1 ATK!");
+          // Trigger Blue Wizard
+          triggerStatGainEffects(lobby, 'atk', 1, targetId);
+        } else {
+          target.hp += 1;
+          target.maxHp = (target.maxHp || target.hp) + 1;
+          logToLobby(lobby, u.name + " meditates... " + target.name + " gains +1 HP!");
+          // Trigger Red Wizard
+          triggerStatGainEffects(lobby, 'hp', 1, targetId);
+        }
+      }
     }
     
     // Decrement frozen counter (unit is blocked from acting THIS turn, then counter decreases)
@@ -2283,19 +2577,42 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
       let damaged = 0;
       const toRemove = [];
+      const targetPositions = [];
+      
+      // Combat log header
+      const rowLetter = String.fromCharCode(65 + targetRow);
+      combatLogToLobby(lobby, `🌀 Void Collapse - Row ${rowLetter}`, "combat-header");
+      
       for (let c = 0; c < COLS; c++) {
         const uid = state.board[targetRow][c];
         if (uid && state.units[uid] && state.units[uid].owner !== role) {
           const target = state.units[uid];
           // Check untargetable
           if (target.untargetable) continue;
+          targetPositions.push({ r: targetRow, c: c });
+          const before = target.hp;
           target.hp -= 1;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - 1 = ${target.hp} HP`, "combat-result");
           damaged++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, col: c });
           }
         }
       }
+      
+      // Emit row damage animation (spell effect, no source unit)
+      if (targetPositions.length > 0) {
+        const animData = {
+          type: "effect",
+          effectType: "void_collapse",
+          sourcePos: null,
+          sourceUnitId: null,
+          targets: targetPositions
+        };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
+      
       // Remove dead units
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
@@ -2306,8 +2623,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         state.board[targetRow][item.col] = null;
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
+        combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
       }
-      logToLobby(lobby, "Void Collapse hits " + damaged + " enemies in row " + String.fromCharCode(65 + targetRow) + "!");
+      logToLobby(lobby, "Void Collapse hits " + damaged + " enemies in row " + rowLetter + "!");
     }
   }
   if (effectId === "mass_buff") {
@@ -2379,18 +2697,41 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
       let damaged = 0;
       const toRemove = [];
+      const targetPositions = [];
+      
+      // Combat log header
+      const rowLetter = String.fromCharCode(65 + targetRow);
+      combatLogToLobby(lobby, `🤠 High Noon - Row ${rowLetter}`, "combat-header");
+      
       for (let c = 0; c < COLS; c++) {
         const uid = state.board[targetRow][c];
         if (uid && state.units[uid] && state.units[uid].owner !== role) {
           const target = state.units[uid];
           if (target.untargetable) continue;
+          targetPositions.push({ r: targetRow, c: c });
+          const before = target.hp;
           target.hp -= 2;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
           damaged++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, col: c });
           }
         }
       }
+      
+      // Emit High Noon animation
+      if (targetPositions.length > 0) {
+        const animData = {
+          type: "effect",
+          effectType: "high_noon",
+          sourcePos: null,
+          sourceUnitId: null,
+          targets: targetPositions
+        };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
+      
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
         if (!deadUnit) continue;
@@ -2399,8 +2740,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         state.board[targetRow][item.col] = null;
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
+        combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
       }
-      logToLobby(lobby, "High Noon! " + damaged + " enemies hit for 2 damage in row " + String.fromCharCode(65 + targetRow) + "!");
+      logToLobby(lobby, "High Noon! " + damaged + " enemies hit for 2 damage in row " + rowLetter + "!");
     }
   }
   
@@ -2479,18 +2821,41 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     if (targetRow !== undefined && targetRow >= 0 && targetRow < ROWS) {
       let hitCount = 0;
       const toRemove = [];
+      const targetPositions = [];
+      
+      // Combat log header
+      const rowLetter = String.fromCharCode(65 + targetRow);
+      combatLogToLobby(lobby, `🩸 Sanguine Feast - Row ${rowLetter}`, "combat-header");
+      
       for (let c = 0; c < COLS; c++) {
         const uid = state.board[targetRow][c];
         if (uid && state.units[uid] && state.units[uid].owner !== role) {
           const target = state.units[uid];
           if (target.untargetable) continue;
+          targetPositions.push({ r: targetRow, c: c });
+          const before = target.hp;
           target.hp -= 2;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
           hitCount++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, col: c });
           }
         }
       }
+      
+      // Emit Sanguine Feast animation
+      if (targetPositions.length > 0) {
+        const animData = {
+          type: "effect",
+          effectType: "sanguine_feast",
+          sourcePos: null,
+          sourceUnitId: null,
+          targets: targetPositions
+        };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
+      
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
         if (!deadUnit) continue;
@@ -2499,10 +2864,12 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         state.board[targetRow][item.col] = null;
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
+        combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
       }
       // Heal heart for each unit hit
       if (hitCount > 0) {
         state.heartHP[role] = Math.min(state.heartHP[role] + hitCount, 30);
+        combatLogToLobby(lobby, `❤️ Heart heals for ${hitCount}`, "heal");
         logToLobby(lobby, "Sanguine Feast hits " + hitCount + " enemies! Heart heals for " + hitCount + "!");
       } else {
         logToLobby(lobby, "Sanguine Feast finds no victims!");
@@ -2621,20 +2988,42 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         }
       }
       
+      // Combat log header
+      combatLogToLobby(lobby, `🌙 Lunar Barrage`, "combat-header");
+      
       let hitCount = 0;
       const toRemove = [];
+      const targetPositions = [];
+      
       for (const pos of hitPositions) {
         const uid = state.board[pos.r][pos.c];
         if (uid && state.units[uid] && state.units[uid].owner !== role) {
           const target = state.units[uid];
           if (target.untargetable) continue;
+          targetPositions.push({ r: pos.r, c: pos.c });
+          const before = target.hp;
           target.hp -= 2;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
           hitCount++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, pos: pos });
           }
         }
       }
+      
+      // Emit Lunar Barrage animation
+      if (targetPositions.length > 0) {
+        const animData = {
+          type: "effect",
+          effectType: "lunar_aoe",
+          sourcePos: { r: targetRow, c: targetCol },
+          sourceUnitId: null,
+          targets: targetPositions
+        };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
+      
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
         if (!deadUnit) continue;
@@ -2643,6 +3032,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         state.board[item.pos.r][item.pos.c] = null;
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
+        combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
       }
       logToLobby(lobby, "Lunar Barrage hits " + hitCount + " enemies for 2 damage!");
     }
@@ -2651,12 +3041,16 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
   // === DRAGON WIZARD SPELLS ===
   
   if (effectId === "polymorph") {
-    // Polymorph - transform target enemy into a 1/1 Sheep
+    // Polymorph - transform target enemy with 3 or less HP into a 1/1 Sheep
     if (targetUnitId && state.units[targetUnitId]) {
       const target = state.units[targetUnitId];
       if (target.owner !== role) {
         if (target.untargetable) {
           logToLobby(lobby, target.name + " is untargetable!");
+          return false;
+        }
+        if (target.hp > 3) {
+          logToLobby(lobby, target.name + " has too much HP to polymorph! (max 3 HP)");
           return false;
         }
         const oldName = target.name;
@@ -2866,6 +3260,8 @@ function processBossEventWarning(lobby) {
     processBloodChaliceSpawn(lobby, boss, config);
   } else if (boss.eventType === 'gem_rain') {
     processGemRainWarning(lobby, boss, config);
+  } else if (boss.eventType === 'eclipse') {
+    processEclipseStart(lobby, boss, config);
   }
   // Add more event types here for other bosses
 }
@@ -2919,6 +3315,8 @@ function processBossEventCountdown(lobby) {
       logToLobby(lobby, `🍷 BLOOD CHALICE RITUAL: ${turnsUntilEvent}`, "boss-benefit");
     } else if (boss.eventType === 'gem_rain') {
       logToLobby(lobby, `💎 GEM RAIN: ${turnsUntilEvent}`, "gem-rain-warning");
+    } else if (boss.eventType === 'eclipse') {
+      logToLobby(lobby, `🌑 ECLIPSE APPROACHING: ${turnsUntilEvent}`, "eclipse-warning");
     }
   }
 }
@@ -3499,6 +3897,125 @@ function clearDiamondBuffs(state, role) {
 
 // ==================== END GEM RAIN EVENT ====================
 
+// ==================== ECLIPSE EVENT (Moon Shadow Sentinel) ====================
+
+// Eclipse effect types
+const ECLIPSE_EFFECTS = [
+  { type: 'atk', value: 1, label: '+1 ATK', description: 'All units gain +1 ATK!' },
+  { type: 'atk', value: -1, label: '-1 ATK', description: 'All units lose 1 ATK!' },
+  { type: 'hp', value: 3, label: '+3 HP', description: 'All units gain +3 HP!' },
+  { type: 'atk', value: -4, label: '-4 ATK', description: 'All units lose 4 ATK!' },
+  { type: 'moves', value: 2, label: '+2 Moves', description: 'All units gain +2 moves!' }
+];
+
+function processEclipseStart(lobby, boss, config) {
+  const { state } = lobby.gameState;
+  
+  // Pick a random eclipse effect
+  const effect = ECLIPSE_EFFECTS[Math.floor(Math.random() * ECLIPSE_EFFECTS.length)];
+  
+  // Set eclipse active state
+  state.eclipseActive = true;
+  state.eclipseEffect = effect;
+  state.eclipseTurnsLeft = 2; // Lasts for player turn + boss turn
+  
+  // Apply the effect immediately to all units
+  applyEclipseEffect(state, effect);
+  
+  combatLogToLobby(lobby, `🌑 Moon Shadow Sentinel - ECLIPSE`, "boss-event");
+  combatLogToLobby(lobby, effect.description, "combat-result");
+  logToLobby(lobby, `🌑 ECLIPSE! Darkness falls - ${effect.description}`);
+  
+  // Emit eclipse event to clients
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("eclipseStart", { effect: effect, turnsLeft: 2 });
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("eclipseStart", { effect: effect, turnsLeft: 2 });
+  }
+}
+
+function applyEclipseEffectToUnit(unit, effect) {
+  if (effect.type === 'atk') {
+    // Store original ATK if not already stored (first eclipse application)
+    if (unit.originalAtk === undefined) {
+      unit.originalAtk = unit.atk;
+    }
+    unit.atk = Math.max(0, unit.atk + effect.value);
+  } else if (effect.type === 'hp') {
+    // Store original HP values if not already stored
+    if (unit.originalHp === undefined) {
+      unit.originalHp = unit.hp;
+      unit.originalMaxHp = unit.maxHp;
+    }
+    unit.hp += effect.value;
+    unit.maxHp += effect.value;
+  } else if (effect.type === 'moves') {
+    if (unit.eclipseMoveBonus === undefined) unit.eclipseMoveBonus = 0;
+    unit.eclipseMoveBonus += effect.value;
+  }
+}
+
+function applyEclipseEffect(state, effect) {
+  for (const unitId in state.units) {
+    applyEclipseEffectToUnit(state.units[unitId], effect);
+  }
+}
+
+function removeEclipseEffect(state) {
+  for (const unitId in state.units) {
+    const unit = state.units[unitId];
+    
+    // Restore original ATK
+    if (unit.originalAtk !== undefined) {
+      unit.atk = unit.originalAtk;
+      delete unit.originalAtk;
+    }
+    
+    // Restore original HP (but don't exceed current damage taken)
+    if (unit.originalMaxHp !== undefined) {
+      const damageTaken = unit.maxHp - unit.hp; // How much damage they've taken
+      unit.maxHp = unit.originalMaxHp;
+      unit.hp = Math.max(1, unit.originalMaxHp - damageTaken); // Restore but keep damage
+      delete unit.originalHp;
+      delete unit.originalMaxHp;
+    }
+    
+    // Remove move bonus
+    if (unit.eclipseMoveBonus !== undefined) {
+      delete unit.eclipseMoveBonus;
+    }
+  }
+}
+
+function processEclipseEnd(lobby) {
+  const { state } = lobby.gameState;
+  
+  if (!state.eclipseActive) return;
+  
+  state.eclipseTurnsLeft--;
+  
+  if (state.eclipseTurnsLeft <= 0) {
+    // Remove the eclipse effect from all units
+    removeEclipseEffect(state);
+    
+    state.eclipseActive = false;
+    state.eclipseEffect = null;
+    
+    logToLobby(lobby, `☀️ The eclipse ends - light returns!`);
+    
+    // Emit eclipse end to clients
+    if (lobby.hostSocket) {
+      lobby.hostSocket.emit("eclipseEnd", {});
+    }
+    if (lobby.guestSocket) {
+      lobby.guestSocket.emit("eclipseEnd", {});
+    }
+  }
+}
+
+// ==================== END ECLIPSE EVENT ====================
+
 function emitLobbyState(lobby) {
   const info = { code: lobby.code, hostDeck: lobby.hostDeck, guestDeck: lobby.guestDeck, hostReady: lobby.hostReady, guestReady: lobby.guestReady, guestJoined: !!lobby.guestSocket, gameStarted: lobby.gameStarted };
   if (lobby.hostSocket) lobby.hostSocket.emit("lobbyState", { ...info, isHost: true });
@@ -3565,7 +4082,9 @@ function emitGameState(lobby) {
     moveCountThisTurn: state.moveCountThisTurn,
     attackCountThisTurn: state.attackCountThisTurn || {},
     bossEventWarning: state.bossEventWarning, // For boss event visual warnings
-    chaliceTiles: state.chaliceTiles || [] // For blood chalice tiles
+    chaliceTiles: state.chaliceTiles || [], // For blood chalice tiles
+    eclipseActive: state.eclipseActive || false, // For eclipse event
+    eclipseEffect: state.eclipseEffect || null // Current eclipse effect (type, value, label)
   };
   if (lobby.hostSocket) lobby.hostSocket.emit("state", { 
     ...base, 
@@ -3576,7 +4095,7 @@ function emitGameState(lobby) {
     energy: players.gold.energy, 
     maxEnergy: players.gold.maxEnergy, 
     canDraw: !players.gold.hasDrawn && players.gold.hand.length < MAX_HAND_SIZE,
-    freeWizard: state.freeWizard && state.freeWizard.gold, // Wizard's Rune buff indicator
+    pendingWizardSummon: state.pendingWizardSummon && state.pendingWizardSummon.gold && state.pendingWizardSummon.gold.active,
     // Opponent info (silver)
     enemyHandCount: players.silver.hand.length,
     enemyDeckCount: players.silver.deck.length,
@@ -3593,7 +4112,7 @@ function emitGameState(lobby) {
     energy: players.silver.energy, 
     maxEnergy: players.silver.maxEnergy, 
     canDraw: !players.silver.hasDrawn && players.silver.hand.length < MAX_HAND_SIZE,
-    freeWizard: state.freeWizard && state.freeWizard.silver, // Wizard's Rune buff indicator
+    pendingWizardSummon: state.pendingWizardSummon && state.pendingWizardSummon.silver && state.pendingWizardSummon.silver.active,
     // Opponent info (gold)
     enemyHandCount: players.gold.hand.length,
     enemyDeckCount: players.gold.deck.length,
@@ -3720,6 +4239,9 @@ async function processAITurn(lobby) {
       if (action.type === "endTurn") {
         // AI ends turn - process end of turn
         processEndOfTurnEffects(lobby, aiRole);
+        
+        // Process eclipse end (counts down each turn)
+        processEclipseEnd(lobby);
         
         // Increment boss turn count and check for NEW warning
         state.bossTurnCount++;
@@ -3929,6 +4451,9 @@ async function processPlayerAITurn(lobby) {
     
     processEndOfTurnEffects(lobby, playerRole);
     
+    // Process eclipse end (counts down each turn)
+    processEclipseEnd(lobby);
+    
     // Clear firstTurn after gold's first turn
     if (state.firstTurn) {
       state.firstTurn = false;
@@ -4028,6 +4553,11 @@ async function executeAction(lobby, role, action) {
         state.units[id] = unitData;
         state.spawn[role] = id;
         
+        // Apply eclipse effect to newly deployed unit if eclipse is active
+        if (state.eclipseActive && state.eclipseEffect) {
+          applyEclipseEffectToUnit(state.units[id], state.eclipseEffect);
+        }
+        
         // Process on-deploy effects for spawn deployment
         if (card.effectId === "wizard_rune") {
           const wizardsInDeck = p.deck.filter(c => WIZARD_CARDS.includes(c.key) && c.type === 'monster');
@@ -4065,6 +4595,11 @@ async function executeAction(lobby, role, action) {
         if (card.isHolo) unitData.isHolo = true;
         state.units[id] = unitData;
         state.board[action.row][action.col] = id;
+        
+        // Apply eclipse effect to newly deployed unit if eclipse is active
+        if (state.eclipseActive && state.eclipseEffect) {
+          applyEclipseEffectToUnit(state.units[id], state.eclipseEffect);
+        }
         
         // Check for blood chalice consumption
         checkChaliceConsumption(lobby, id, action.row, action.col);
@@ -4125,16 +4660,34 @@ async function executeAction(lobby, role, action) {
           }
         }
         
-        // Chrono Drake - freeze target enemy for 2 turns (handled via requiresTarget)
-        if (card.effectId === "temporal_stasis" && action.targetUnitId) {
-          const target = state.units[action.targetUnitId];
-          if (target && target.owner !== role) {
-            if (target.untargetable) {
-              logToLobby(lobby, target.name + " is untargetable!");
-            } else {
-              target.frozen = 2; // Frozen for 2 turns
-              logToLobby(lobby, "Chrono Drake freezes " + target.name + " in temporal stasis for 2 turns!");
+        // Chrono Drake - Time Rift: show discard selection to resurrect a unit
+        if (card.effectId === "time_rift") {
+          const player = players[role];
+          const unitsInDiscard = player.discard.filter(c => c.type === "monster" || c.type === "structure");
+          
+          if (unitsInDiscard.length > 0) {
+            // Store the deploy position for resurrection
+            const deployPos = { r: action.row, c: action.col };
+            
+            // Set pending time rift state
+            if (!state.pendingTimeRift) state.pendingTimeRift = {};
+            state.pendingTimeRift[role] = {
+              active: true,
+              deployPos: deployPos
+            };
+            
+            logToLobby(lobby, "Chrono Drake opens a Time Rift! Choose a unit to resurrect.");
+            
+            // Emit event to client to show discard selection
+            const socket = role === "gold" ? lobby.hostSocket : lobby.guestSocket;
+            if (socket) {
+              socket.emit("timeRiftTrigger", { 
+                units: unitsInDiscard.map(c => ({ id: c.id, key: c.key, name: c.name, atk: c.atk, hp: c.maxHp || c.hp, art: c.art })),
+                deployPos: deployPos
+              });
             }
+          } else {
+            logToLobby(lobby, "Chrono Drake finds no units in discard to resurrect!");
           }
         }
         
@@ -4151,8 +4704,8 @@ async function executeAction(lobby, role, action) {
       // Check if unit is rooted
       if (u.rooted) return;
       
-      // Check if unit is channeling (Meditation Monk can't move)
-      if (u.effectId === "channeling_energy") return;
+      // Check if unit is meditating (Meditation Monk can't move)
+      if (u.effectId === "meditation_buff") return;
       
       // Check if unit is frozen (Temporal Stasis or Obsidian gem)
       console.log(`[MOVE] ${u.name} (${action.unitId}) attempting move, frozen = ${u.frozen}`);
@@ -4182,8 +4735,10 @@ async function executeAction(lobby, role, action) {
       const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
       const canLongMove = u.effectId === "stampede"; // 2 tiles cardinal, 1 move per turn
       const hasUnlimitedMoves = u.gemBuffs && u.gemBuffs.unlimitedMoves; // Diamond gem buff
-      const maxMoves = hasUnlimitedMoves ? 999 : (canDoubleMove ? 2 : 1);
-      console.log(`[MOVE] ${u.name}: moveCount=${moveCount}, maxMoves=${maxMoves}, unlimitedMoves=${hasUnlimitedMoves}, gemBuffs=${JSON.stringify(u.gemBuffs)}`);
+      const eclipseMoveBonus = u.eclipseMoveBonus || 0; // Eclipse +moves effect
+      const baseMoves = canDoubleMove ? 2 : 1;
+      const maxMoves = hasUnlimitedMoves ? 999 : (baseMoves + eclipseMoveBonus);
+      console.log(`[MOVE] ${u.name}: moveCount=${moveCount}, maxMoves=${maxMoves}, unlimitedMoves=${hasUnlimitedMoves}, eclipseBonus=${eclipseMoveBonus}, gemBuffs=${JSON.stringify(u.gemBuffs)}`);
       if (moveCount >= maxMoves) return;
       
       const from = getUnitPos(state, action.unitId);
@@ -4433,6 +4988,30 @@ async function executeAction(lobby, role, action) {
         }
       }
       
+      // Mirror Wizard - arcane reflection: deal damage back to attacker
+      if (t.effectId === "arcane_reflection" && t.hp > 0 && a && state.units[action.attackerId]) {
+        const reflectDmg = dmg;
+        const beforeAttacker = a.hp;
+        a.hp -= reflectDmg;
+        
+        combatLogToLobby(lobby, `🪞 ${t.name} - Arcane Reflection`, "combat-header");
+        combatLogToLobby(lobby, `${a.name}: ${beforeAttacker} HP - ${reflectDmg} = ${a.hp} HP`, "combat-result");
+        logToLobby(lobby, t.name + " reflects " + reflectDmg + " damage back to " + a.name + "!");
+        
+        // Emit animation for reflection damage
+        emitEffectAnimation(lobby, null, [{ r: ap.r, c: ap.c }], "arcane_reflection");
+        
+        if (a.hp <= 0 && shouldUnitDie(lobby, a)) {
+          combatLogToLobby(lobby, `💀 ${a.name} DESTROYED by reflection`, "combat-death");
+          processOnDeathEffect(lobby, a, a.owner, ap);
+          processAllyDeathTriggers(lobby, a.owner, a, ap);
+          state.board[ap.r][ap.c] = null;
+          discardUnitCard(lobby, a);
+          delete state.units[action.attackerId];
+          logToLobby(lobby, a.name + " destroyed by arcane reflection!");
+        }
+      }
+      
       if (t.hp <= 0 && shouldUnitDie(lobby, t)) {
         combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });
@@ -4584,6 +5163,23 @@ async function executeAction(lobby, role, action) {
       emitSFX(lobby, a.key, 'attack');
       
       logToLobby(lobby, a.name + " (from spawn) deals " + dmg + " to " + t.name);
+      
+      // Mirror Wizard - arcane reflection: deal FULL damage back to attacker in spawn
+      if (t.effectId === "arcane_reflection" && t.hp > 0 && dmg > 0 && state.spawn[role]) {
+        // Spawn unit takes reflection damage
+        const spawnUnit = state.spawn[role];
+        const beforeSpawn = spawnUnit.hp;
+        spawnUnit.hp -= dmg;
+        
+        combatLogToLobby(lobby, `🪞 ${t.name} - Arcane Reflection`, "combat-header");
+        combatLogToLobby(lobby, `${a.name}: ${beforeSpawn} HP - ${dmg} = ${spawnUnit.hp} HP`, "combat-result");
+        logToLobby(lobby, t.name + " reflects " + dmg + " damage back to " + a.name + " in spawn!");
+        
+        if (spawnUnit.hp <= 0) {
+          logToLobby(lobby, a.name + " destroyed by arcane reflection!");
+          delete state.spawn[role];
+        }
+      }
       
       if (t.hp <= 0 && shouldUnitDie(lobby, t)) {
         combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
@@ -5214,8 +5810,167 @@ io.on("connection", (socket) => {
       }
     }
 
+    // Handle free wizard summon from Wizard's Rune death
+    if (payload.type === "summonFreeWizard") {
+      const { cardId, row, col } = payload;
+      
+      // Check if player has pending wizard summon
+      if (!state.pendingWizardSummon || !state.pendingWizardSummon[role] || !state.pendingWizardSummon[role].active) {
+        return socket.emit("log", "No pending wizard summon.");
+      }
+      
+      const p = players[role];
+      const idx = p.hand.findIndex(c => c.id === cardId);
+      if (idx === -1) return socket.emit("log", "Card not found in hand.");
+      
+      const card = p.hand[idx];
+      if (!WIZARD_CARDS.includes(card.key)) {
+        return socket.emit("log", "Selected card is not a Wizard.");
+      }
+      
+      // Validate placement
+      if (row === undefined || col === undefined || row < 0 || row >= ROWS || col < 0 || col >= COLS) {
+        return socket.emit("log", "Invalid placement.");
+      }
+      if (state.board[row][col]) {
+        return socket.emit("log", "Tile is occupied.");
+      }
+      if (!canDeployOnRow(state, row, role)) {
+        return socket.emit("log", "Cannot deploy there.");
+      }
+      
+      // Summon the wizard for free
+      p.hand.splice(idx, 1);
+      const id = genId();
+      state.units[id] = {
+        id,
+        owner: role,
+        key: card.key,
+        name: card.name,
+        atk: card.atk,
+        hp: card.hp,
+        maxHp: card.hp,
+        cost: card.cost,
+        type: card.type,
+        effect: card.effect,
+        effectId: card.effectId,
+        effectDesc: card.effectDesc,
+        art: card.art,
+        originalCard: card
+      };
+      state.board[row][col] = id;
+      state.movedThisTurn.add(id);
+      
+      // Clear pending wizard summon
+      state.pendingWizardSummon[role].active = false;
+      
+      logToLobby(lobby, "Wizards Rune summons " + card.name + " for free!");
+      emitSFX(lobby, card.key, 'deploy');
+      return emitGameState(lobby);
+    }
+    
+    // Handle skipping wizard summon
+    if (payload.type === "skipWizardSummon") {
+      if (state.pendingWizardSummon && state.pendingWizardSummon[role]) {
+        state.pendingWizardSummon[role].active = false;
+        logToLobby(lobby, role.toUpperCase() + " declines to summon a wizard.");
+      }
+      return emitGameState(lobby);
+    }
+
+    // Handle Time Rift resurrection from Chrono Drake
+    if (payload.type === "timeRiftResurrect") {
+      const { cardId } = payload;
+      
+      // Check if player has pending time rift
+      if (!state.pendingTimeRift || !state.pendingTimeRift[role] || !state.pendingTimeRift[role].active) {
+        return socket.emit("log", "No pending Time Rift.");
+      }
+      
+      const p = players[role];
+      const idx = p.discard.findIndex(c => c.id === cardId);
+      if (idx === -1) return socket.emit("log", "Card not found in discard.");
+      
+      const card = p.discard[idx];
+      if (card.type !== "monster" && card.type !== "structure") {
+        return socket.emit("log", "Can only resurrect units.");
+      }
+      
+      const deployPos = state.pendingTimeRift[role].deployPos;
+      
+      // Find an adjacent empty tile to deploy the resurrected unit
+      const adjacentPositions = [
+        { r: deployPos.r - 1, c: deployPos.c },
+        { r: deployPos.r + 1, c: deployPos.c },
+        { r: deployPos.r, c: deployPos.c - 1 },
+        { r: deployPos.r, c: deployPos.c + 1 },
+        { r: deployPos.r - 1, c: deployPos.c - 1 },
+        { r: deployPos.r - 1, c: deployPos.c + 1 },
+        { r: deployPos.r + 1, c: deployPos.c - 1 },
+        { r: deployPos.r + 1, c: deployPos.c + 1 }
+      ];
+      
+      let spawnPos = null;
+      for (const pos of adjacentPositions) {
+        if (pos.r < 0 || pos.r >= ROWS || pos.c < 0 || pos.c >= COLS) continue;
+        if (!state.board[pos.r][pos.c]) {
+          spawnPos = pos;
+          break;
+        }
+      }
+      
+      if (!spawnPos) {
+        logToLobby(lobby, "No empty tile adjacent to Chrono Drake for resurrection!");
+        state.pendingTimeRift[role].active = false;
+        return emitGameState(lobby);
+      }
+      
+      // Remove from discard
+      p.discard.splice(idx, 1);
+      
+      // Resurrect the unit at 1 HP
+      const id = genId();
+      state.units[id] = {
+        id,
+        owner: role,
+        key: card.key,
+        name: card.name,
+        atk: card.atk,
+        hp: 1, // Resurrect at 1 HP
+        maxHp: card.maxHp || card.hp,
+        cost: card.cost,
+        type: card.type,
+        effect: card.effect,
+        effectId: card.effectId,
+        effectDesc: card.effectDesc,
+        art: card.art,
+        originalCard: card
+      };
+      state.board[spawnPos.r][spawnPos.c] = id;
+      state.movedThisTurn.add(id);
+      
+      // Clear pending time rift
+      state.pendingTimeRift[role].active = false;
+      
+      logToLobby(lobby, "Time Rift resurrects " + card.name + " at 1 HP!");
+      emitSFX(lobby, card.key, 'deploy');
+      return emitGameState(lobby);
+    }
+    
+    // Handle skipping time rift
+    if (payload.type === "skipTimeRift") {
+      if (state.pendingTimeRift && state.pendingTimeRift[role]) {
+        state.pendingTimeRift[role].active = false;
+        logToLobby(lobby, role.toUpperCase() + " declines to resurrect a unit.");
+      }
+      return emitGameState(lobby);
+    }
+
     if (payload.type === "endTurn") {
       processEndOfTurnEffects(lobby, role);
+      
+      // Process eclipse end (counts down each turn)
+      processEclipseEnd(lobby);
       
       // Clear diamond buff (unlimited moves) for the player ending their turn
       clearDiamondBuffs(state, role);
@@ -5345,13 +6100,6 @@ io.on("connection", (socket) => {
         cost = Math.max(0, cost - state.spellDiscount[role]);
         state.spellDiscount[role] = 0; // Consume the discount
         logToLobby(lobby, "Rune Scribe's enchantment reduces spell cost!");
-      }
-      
-      // Apply free wizard from Wizard's Rune death effect
-      if (WIZARD_CARDS.includes(card.key) && card.type === "monster" && state.freeWizard && state.freeWizard[role]) {
-        cost = 0;
-        state.freeWizard[role] = false; // Consume the free wizard
-        logToLobby(lobby, "Wizard's Rune enchantment - " + card.name + " costs 0 energy!");
       }
       
       if (p.energy < cost) return socket.emit("log", "Not enough energy.");
@@ -5502,6 +6250,11 @@ io.on("connection", (socket) => {
       }
       state.units[id] = unitData;
       state.board[row][col] = id;
+      
+      // Apply eclipse effect to newly deployed unit if eclipse is active
+      if (state.eclipseActive && state.eclipseEffect) {
+        applyEclipseEffectToUnit(state.units[id], state.eclipseEffect);
+      }
       
       // Check for blood chalice consumption
       checkChaliceConsumption(lobby, id, row, col);
@@ -5947,6 +6700,30 @@ io.on("connection", (socket) => {
           discardUnitCard(lobby, a);
           delete state.units[attackerId];
           logToLobby(lobby, a.name + " destroyed by reflected damage!");
+        }
+      }
+      
+      // Mirror Wizard - arcane reflection: deal FULL damage back to attacker
+      if (t.effectId === "arcane_reflection" && t.hp > 0 && dmg > 0 && state.units[attackerId]) {
+        const reflectDmg = dmg;
+        const beforeAttacker = a.hp;
+        a.hp -= reflectDmg;
+        
+        combatLogToLobby(lobby, `🪞 ${t.name} - Arcane Reflection`, "combat-header");
+        combatLogToLobby(lobby, `${a.name}: ${beforeAttacker} HP - ${reflectDmg} = ${a.hp} HP`, "combat-result");
+        logToLobby(lobby, t.name + " reflects " + reflectDmg + " damage back to " + a.name + "!");
+        
+        // Emit animation for reflection damage
+        emitEffectAnimation(lobby, null, [{ r: ap.r, c: ap.c }], "arcane_reflection");
+        
+        if (a.hp <= 0 && shouldUnitDie(lobby, a)) {
+          combatLogToLobby(lobby, `💀 ${a.name} DESTROYED by reflection`, "combat-death");
+          processOnDeathEffect(lobby, a, a.owner, ap);
+          processAllyDeathTriggers(lobby, a.owner, a, ap);
+          state.board[ap.r][ap.c] = null;
+          discardUnitCard(lobby, a);
+          delete state.units[attackerId];
+          logToLobby(lobby, a.name + " destroyed by arcane reflection!");
         }
       }
       
