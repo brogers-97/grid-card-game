@@ -123,6 +123,7 @@ const SOUND_FILES = {
   slash: '/audio/sfx/slash.mp3',      // Crimson Vampire
   twinkle: '/audio/sfx/twinkle.mp3',  // Gem Fairies
   laser: '/audio/sfx/laser.mp3',      // Aliens
+  retro: '/audio/sfx/retro.mp3',      // 8-Bit Battalion
   
   // Boss event sounds (wav for seamless looping)
   siren: '/audio/sfx/siren.wav',      // Void collapse countdown (loopable)
@@ -148,6 +149,7 @@ const DECK_ATTACK_SOUNDS = {
   vampire: 'slash',
   fairy: 'twinkle',
   alien: 'laser',
+  '8bit': 'retro',
 };
 
 // Audio cache for preloaded sounds
@@ -432,9 +434,18 @@ if (bossName) {
 // Get custom music and background from URL (from deck builder settings)
 const customMusic = urlParams.get('music');
 const customBackground = urlParams.get('background');
+const firstTimeBoss = urlParams.get('firstTimeBoss') === '1';
+const bossMusic = urlParams.get('bossMusic');
 
-// Determine which music to use: custom setting, or default to deck theme
+// Determine which music to use: 
+// - First time boss fight = boss's music (forced)
+// - Otherwise = custom setting or default to deck theme
 function getMusicDeckId() {
+  // First time fighting this boss - play boss's theme
+  if (firstTimeBoss && bossMusic) {
+    return bossMusic;
+  }
+  // Otherwise use player's custom music setting
   if (customMusic && customMusic !== 'default') {
     return customMusic;
   }
@@ -605,8 +616,12 @@ function positionOpponentDiscardTooltip(e) {
 
 // Rejoin lobby when connected
 socket.on('connect', () => {
+  console.log(`[SOCKET] Connected! Socket ID: ${socket.id}`);
   if (lobbyCode) {
+    console.log(`[SOCKET] Attempting to rejoin lobby: ${lobbyCode}, isHost: ${isHost}`);
     socket.emit('rejoinGame', { code: lobbyCode, isHost: isHost });
+  } else {
+    console.log(`[SOCKET] No lobby code found in URL`);
   }
 });
 
@@ -645,7 +660,12 @@ function showTooltip(unitId, x, y, buff) {
   // Calculate buffs
   const atkBuff = getAtkBuff(unitId);
   const effectiveAtk = u.atk + atkBuff;
-  const hpBuff = u.hpBuffed ? 1 : 0;
+  const hpBuff = getHpBuff(unitId);
+  
+  // Special handling for Final Boss rage mode - show in purple
+  const isRageMode = u.effectId === "rage_mode" && atkBuff > 0;
+  const atkClass = isRageMode ? "atk rage" : "atk";
+  const atkLabel = isRageMode ? `⚔ ATK (RAGE!)` : `⚔ ATK${atkBuff > 0 ? ` (+${atkBuff})` : ''}`;
   
   // HP display with max HP
   const maxHp = u.maxHp || u.hp;
@@ -694,8 +714,8 @@ function showTooltip(unitId, x, y, buff) {
         <div class="tooltip-owner ${u.owner}">${u.owner.toUpperCase()}'s Unit</div>
         <div class="tooltip-stats">
           <div class="tooltip-stat">
-            <div class="tooltip-stat-value atk">${effectiveAtk}</div>
-            <div class="tooltip-stat-label">⚔ ATK${atkBuff > 0 ? ` (+${atkBuff})` : ''}</div>
+            <div class="tooltip-stat-value ${atkClass}">${effectiveAtk}</div>
+            <div class="tooltip-stat-label">${atkLabel}</div>
           </div>
           <div class="tooltip-stat">
             <div class="tooltip-stat-value hp">${hpDisplay}</div>
@@ -1064,6 +1084,21 @@ function highlightDeployTiles(){
   // Handle targeted instant spells
   if (card.effect === "instant" && card.requiresTarget === "unit") {
     // Rallying Cry - highlight friendly units
+    for (let vr = 0; vr < ROWS; vr++) {
+      const sr = toServerRow(vr);
+      for (let c = 0; c < COLS; c++) {
+        const unitId = S.board[sr][c];
+        if (unitId && S.units[unitId] && S.units[unitId].owner === myRole) {
+          const el = document.getElementById(cellId(vr, c));
+          if (el) el.classList.add("deploy-valid");
+        }
+      }
+    }
+    return;
+  }
+
+  if (card.effect === "instant" && card.requiresTarget === "friendly_unit") {
+    // Save State, etc. - highlight friendly units
     for (let vr = 0; vr < ROWS; vr++) {
       const sr = toServerRow(vr);
       for (let c = 0; c < COLS; c++) {
@@ -1741,6 +1776,18 @@ function getEffectiveAtk(unitId) {
       }
     }
   }
+  // Wizard NPC - adjacent allies get +N/+N where N = wizardStacks (default 1)
+  const wizardBuffs = getAdjacentUnitsWithEffect(unitId, "stacking_aura");
+  for (const wizardId of wizardBuffs) {
+    const wizard = S.units[wizardId];
+    if (wizard) {
+      atk += (wizard.wizardStacks || 1);
+    }
+  }
+  // Final Boss - gains +1 ATK per HP lost (rage_mode)
+  if (u.effectId === "rage_mode" && u.maxHp) {
+    atk += (u.maxHp - u.hp);
+  }
   return atk;
 }
 
@@ -1765,10 +1812,48 @@ function getAtkBuff(unitId) {
       }
     }
   }
+  // Wizard NPC - adjacent allies get +N/+N where N = wizardStacks (default 1)
+  const wizardBuffs = getAdjacentUnitsWithEffect(unitId, "stacking_aura");
+  for (const wizardId of wizardBuffs) {
+    const wizard = S.units[wizardId];
+    if (wizard) {
+      buff += (wizard.wizardStacks || 1);
+    }
+  }
+  // Final Boss - gains +1 ATK per HP lost (rage_mode)
+  if (u.effectId === "rage_mode" && u.maxHp) {
+    buff += (u.maxHp - u.hp);
+  }
+  return buff;
+}
+
+// Get HP buff amount (for display purposes)
+function getHpBuff(unitId) {
+  const u = S.units[unitId];
+  if (!u) return 0;
+  
+  let buff = 0;
+  // Legacy hpBuffed flag
+  if (u.hpBuffed) buff += 1;
+  
+  // Wizard NPC - adjacent allies get +N/+N where N = wizardStacks (default 1)
+  const wizardBuffs = getAdjacentUnitsWithEffect(unitId, "stacking_aura");
+  for (const wizardId of wizardBuffs) {
+    const wizard = S.units[wizardId];
+    if (wizard) {
+      buff += (wizard.wizardStacks || 1);
+    }
+  }
   return buff;
 }
 
 function sendAction(payload) {
+  if (!socket.connected) {
+    console.error("[ACTION] Socket not connected! Payload:", payload);
+    log("Connection lost. Please refresh the page.", "system");
+    return;
+  }
+  console.log("[ACTION] Sending:", payload.type, payload);
   socket.emit("action", payload);
 }
 
@@ -1975,10 +2060,14 @@ function renderHand() {
     
     // Set background directly in style if art exists (use shorthand to override CSS)
     const artStyle = hasArt ? `background: url('${encodedArt}') center/cover no-repeat` : '';
+    
+    // GREEDISGOOD cheat: show cost as 1
+    const displayCost = S.cheatGreedActive ? 1 : card.cost;
+    const costClass = S.cheatGreedActive ? 'cardCost cheat-discount' : 'cardCost';
 
     el.innerHTML = `
       <div class="cardArt ${card.type === 'spell' ? 'spell-art' : ''}" style="${artStyle}">${artContent}</div>
-      <div class="cardCost">${card.cost}</div>
+      <div class="${costClass}">${displayCost}</div>
       ${card.type === 'spell' ? '<div class="cardType">SPELL</div>' : ''}
       ${card.stolen ? '<div class="stolenBadge">👻</div>' : ''}
       ${card.isHolo ? '<div class="holoBadge">✨</div>' : ''}
@@ -2005,8 +2094,9 @@ function renderHand() {
         return;
       }
       
-      // Check if we have enough energy
-      if (myEnergy < card.cost) {
+      // Check if we have enough energy (GREEDISGOOD makes all cards cost 1)
+      const effectiveCost = S.cheatGreedActive ? 1 : card.cost;
+      if (myEnergy < effectiveCost) {
         return log("Not enough energy.", "system");
       }
       
@@ -2415,8 +2505,18 @@ function renderAll() {
       
       // Calculate buffs
       const atkBuff = getAtkBuff(unitId);
-      const atkBuffHtml = atkBuff > 0 ? `<span class="buff">+${atkBuff}</span>` : '';
-      const hpBuffHtml = u.hpBuffed ? `<span class="buff">+1</span>` : '';
+      const hpBuff = getHpBuff(unitId);
+      const hpBuffHtml = hpBuff > 0 ? `<span class="buff">+${hpBuff}</span>` : '';
+      
+      // Special handling for Final Boss rage mode - show total ATK in purple instead of +X
+      let atkDisplayHtml;
+      if (u.effectId === "rage_mode" && atkBuff > 0) {
+        const totalAtk = u.atk + atkBuff;
+        atkDisplayHtml = `<span class="rage-atk">${totalAtk}</span>`;
+      } else {
+        const atkBuffHtml = atkBuff > 0 ? `<span class="buff">+${atkBuff}</span>` : '';
+        atkDisplayHtml = `${u.atk}${atkBuffHtml}`;
+      }
       
       // Art display
       const icon = CARD_ICONS[u.key] || '⚔️';
@@ -2429,14 +2529,37 @@ function renderAll() {
       // Shield overlay for untargetable units
       const shieldOverlay = u.untargetable ? '<div class="shield-overlay"><div class="shield-icon">🛡️</div></div>' : '';
       
+      // Save State glow overlay
+      const saveStateOverlay = u.saveState ? '<div class="save-state-overlay"></div>' : '';
+      if (u.saveState) {
+        wrap.classList.add('has-save-state');
+      }
+      
+      // Divine Judgment overlays
+      let judgmentOverlay = '';
+      if (u.judgedWrath) {
+        wrap.classList.add('judged-wrath');
+        judgmentOverlay += '<div class="judgment-wrath-overlay"></div>';
+      }
+      if (u.judgedPride) {
+        wrap.classList.add('judged-pride');
+        judgmentOverlay += '<div class="judgment-pride-overlay"></div>';
+      }
+      if (u.judgedViolence) {
+        wrap.classList.add('judged-violence');
+        judgmentOverlay += '<div class="judgment-violence-overlay"></div>';
+      }
+      
       wrap.innerHTML = `
         <div class="unitArt" style="${artStyle}">${artContent}</div>
         ${effectBadge}
         ${shieldOverlay}
+        ${saveStateOverlay}
+        ${judgmentOverlay}
         <div class="unitInfoOverlay">
           <div class="unitName">${u.name}</div>
           <div class="unitStats">
-            <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${u.atk}${atkBuffHtml}</div>
+            <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${atkDisplayHtml}</div>
             <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}${hpBuffHtml}</div>
           </div>
         </div>
@@ -2547,6 +2670,30 @@ function onCellClick(viewRow, col) {
   const row = toServerRow(viewRow);
   const occId = S.board[row][col];
 
+  // Handle Resurrection spell placement
+  if (S.resurrectionPending && pendingResurrectionCard) {
+    if (occId) {
+      return log("Tile is occupied.");
+    }
+    
+    // Can deploy anywhere except enemy home rows with HP
+    const enemy = myRole === "gold" ? "silver" : "gold";
+    const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+    if (isEnemyHomeRow && S.rowHP[row] > 0) {
+      return log("Cannot deploy in enemy home row with HP.");
+    }
+    
+    sendAction({ 
+      type: "resurrectionSelect", 
+      cardId: pendingResurrectionCard.id,
+      row: row,
+      col: col
+    });
+    pendingResurrectionCard = null;
+    S.resurrectionPending = false;
+    return;
+  }
+
   // Handle wizard summon from Wizard's Rune death
   if (pendingWizardSummon && pendingWizardSummon.selectedCardId) {
     if (occId) {
@@ -2621,6 +2768,20 @@ function onCellClick(viewRow, col) {
     // Handle targeted instant spells
     if (card.effect === "instant" && card.requiresTarget === "unit") {
       // Rallying Cry - target a friendly unit
+      if (!occId || !S.units[occId] || S.units[occId].owner !== myRole) {
+        return log("Select one of your units.");
+      }
+      const cardIdToPlay = deployCardId;
+      deployCardId = null;
+      selectedCardId = null;
+      clearHighlights();
+      sendAction({ type: "playCard", cardId: cardIdToPlay, targetUnitId: occId });
+      renderHand();
+      return;
+    }
+    
+    if (card.effect === "instant" && card.requiresTarget === "friendly_unit") {
+      // Save State, etc. - target a friendly unit
       if (!occId || !S.units[occId] || S.units[occId].owner !== myRole) {
         return log("Select one of your units.");
       }
@@ -3119,6 +3280,517 @@ function hidePolymorphOverlay() {
     indicator.classList.remove('visible');
   }
 }
+
+// ==================== DIVINE JUDGMENT EVENT ====================
+
+socket.on("divineJudgmentStart", (data) => {
+  console.log("Divine Judgment starts:", data);
+  S.divineJudgmentActive = true;
+  S.divineJudgmentTurnsLeft = data.turnsLeft;
+  
+  // Start cinematic sequence
+  playDivineJudgmentCinematic(data);
+});
+
+socket.on("divineJudgmentUpdate", (data) => {
+  console.log("Divine Judgment update:", data);
+  S.divineJudgmentTurnsLeft = data.turnsLeft;
+  updateDivineJudgmentOverlay(data.turnsLeft);
+});
+
+socket.on("divineJudgmentEnd", (data) => {
+  console.log("Divine Judgment ends");
+  S.divineJudgmentActive = false;
+  S.divineJudgmentTurnsLeft = 0;
+  
+  // Play restore sound
+  const restoreSound = new Audio('/audio/sfx/blessing.mp3');
+  restoreSound.volume = 0.5;
+  restoreSound.play().catch(() => {});
+  
+  // Fade out divine judgment indicator
+  hideDivineJudgmentOverlay();
+  renderAll();
+});
+
+function playDivineJudgmentCinematic(data) {
+  const gameContainer = document.getElementById('gameContainer') || document.body;
+  
+  // Block all game actions during cinematic
+  S.divineJudgmentCinematicActive = true;
+  
+  // Create cinematic overlay
+  let cinematicOverlay = document.getElementById('divineJudgmentCinematic');
+  if (!cinematicOverlay) {
+    cinematicOverlay = document.createElement('div');
+    cinematicOverlay.id = 'divineJudgmentCinematic';
+    document.body.appendChild(cinematicOverlay);
+  }
+  
+  cinematicOverlay.innerHTML = `
+    <div class="dj-cinematic-content">
+      <div class="dj-title">⚖️ DIVINE JUDGMENT ⚖️</div>
+      <div class="dj-subtitle">The Seraph passes judgment upon your forces...</div>
+      <div class="dj-phases">
+        <div class="dj-phase wrath" id="djPhaseWrath">
+          <span class="dj-phase-icon">🔥</span>
+          <span class="dj-phase-name">WRATH</span>
+          <span class="dj-phase-desc">High power units are burned</span>
+        </div>
+        <div class="dj-phase pride" id="djPhasePride">
+          <span class="dj-phase-icon">💚</span>
+          <span class="dj-phase-name">PRIDE</span>
+          <span class="dj-phase-desc">Buffed units lose their blessings</span>
+        </div>
+        <div class="dj-phase violence" id="djPhaseViolence">
+          <span class="dj-phase-icon">🖤</span>
+          <span class="dj-phase-name">VIOLENCE</span>
+          <span class="dj-phase-desc">Killers are silenced</span>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Play judgment sound
+  const judgmentSound = new Audio('/audio/sfx/divine-judgment.mp3');
+  judgmentSound.volume = 0.6;
+  judgmentSound.play().catch(() => {});
+  
+  // Start screen shake
+  gameContainer.classList.add('divine-judgment-shake');
+  document.body.classList.add('divine-judgment-shake');
+  
+  // Show cinematic overlay
+  cinematicOverlay.classList.add('visible');
+  
+  // Timeline of events
+  const timeline = {
+    titleFadeIn: 100,        // Title fades in
+    wrathStart: 1200,        // Wrath phase starts
+    wrathCardsEffect: 1500,  // Cards burn red
+    prideStart: 2800,        // Pride phase starts  
+    prideCardsEffect: 3100,  // Cards turn green
+    violenceStart: 4400,     // Violence phase starts
+    violenceCardsEffect: 4700, // Cards darken
+    shakeEnd: 5500,          // Screen stops shaking
+    cinematicEnd: 6000       // Cinematic fades, key appears
+  };
+  
+  // Render immediately so the judgment state from server is applied to cards
+  // This will apply the persistent judged-wrath/pride/violence classes
+  renderAll();
+  
+  // Title fade in (already visible from CSS animation)
+  
+  // WRATH phase
+  setTimeout(() => {
+    const wrathPhase = document.getElementById('djPhaseWrath');
+    if (wrathPhase) wrathPhase.classList.add('active');
+    
+    // Play wrath sound
+    const wrathSound = new Audio('/audio/sfx/fire-damage.mp3');
+    wrathSound.volume = 0.4;
+    wrathSound.play().catch(() => {});
+  }, timeline.wrathStart);
+  
+  // Apply wrath visual to cards
+  setTimeout(() => {
+    if (data.wrathful && data.wrathful.length > 0) {
+      data.wrathful.forEach(unit => {
+        applyJudgmentEffectToUnit(unit, 'wrath');
+      });
+    }
+  }, timeline.wrathCardsEffect);
+  
+  // PRIDE phase
+  setTimeout(() => {
+    const pridePhase = document.getElementById('djPhasePride');
+    if (pridePhase) pridePhase.classList.add('active');
+    
+    // Play pride sound
+    const prideSound = new Audio('/audio/sfx/debuff.mp3');
+    prideSound.volume = 0.4;
+    prideSound.play().catch(() => {});
+  }, timeline.prideStart);
+  
+  // Apply pride visual to cards
+  setTimeout(() => {
+    if (data.prideful && data.prideful.length > 0) {
+      data.prideful.forEach(unit => {
+        applyJudgmentEffectToUnit(unit, 'pride');
+      });
+    }
+  }, timeline.prideCardsEffect);
+  
+  // VIOLENCE phase
+  setTimeout(() => {
+    const violencePhase = document.getElementById('djPhaseViolence');
+    if (violencePhase) violencePhase.classList.add('active');
+    
+    // Play violence sound
+    const violenceSound = new Audio('/audio/sfx/stun.mp3');
+    violenceSound.volume = 0.4;
+    violenceSound.play().catch(() => {});
+  }, timeline.violenceStart);
+  
+  // Apply violence visual to cards
+  setTimeout(() => {
+    if (data.violent && data.violent.length > 0) {
+      data.violent.forEach(unit => {
+        applyJudgmentEffectToUnit(unit, 'violence');
+      });
+    }
+  }, timeline.violenceCardsEffect);
+  
+  // Stop screen shake
+  setTimeout(() => {
+    gameContainer.classList.remove('divine-judgment-shake');
+    document.body.classList.remove('divine-judgment-shake');
+  }, timeline.shakeEnd);
+  
+  // End cinematic, show persistent key
+  setTimeout(() => {
+    cinematicOverlay.classList.remove('visible');
+    cinematicOverlay.classList.add('fading');
+    
+    // Unblock game actions
+    S.divineJudgmentCinematicActive = false;
+    
+    setTimeout(() => {
+      cinematicOverlay.remove();
+    }, 500);
+    
+    // Show the persistent key indicator
+    gameContainer.classList.add('divine-judgment-active');
+    document.body.classList.add('divine-judgment-active');
+    showDivineJudgmentOverlay(data);
+    renderAll();
+  }, timeline.cinematicEnd);
+}
+
+function applyJudgmentEffectToUnit(unitData, effectType) {
+  // Find the unit on the board by searching through cells
+  const board = document.getElementById('board');
+  if (!board) return;
+  
+  // Find units that have the judgment class already applied (from renderAll)
+  // and add a flash effect on top
+  const units = board.querySelectorAll('.unit');
+  units.forEach(unitEl => {
+    const nameEl = unitEl.querySelector('.unitName');
+    if (nameEl && nameEl.textContent === unitData.name) {
+      // Apply cinematic flash effect class on top of persistent state
+      if (effectType === 'wrath' && unitEl.classList.contains('judged-wrath')) {
+        unitEl.classList.add('judgment-wrath-flash');
+        setTimeout(() => {
+          unitEl.classList.remove('judgment-wrath-flash');
+        }, 800);
+      } else if (effectType === 'pride' && unitEl.classList.contains('judged-pride')) {
+        unitEl.classList.add('judgment-pride-flash');
+        setTimeout(() => {
+          unitEl.classList.remove('judgment-pride-flash');
+        }, 800);
+      } else if (effectType === 'violence' && unitEl.classList.contains('judged-violence')) {
+        unitEl.classList.add('judgment-violence-flash');
+        setTimeout(() => {
+          unitEl.classList.remove('judgment-violence-flash');
+        }, 800);
+      }
+    }
+  });
+}
+
+function showDivineJudgmentOverlay(data) {
+  // Create or update divine judgment key indicator
+  let indicator = document.getElementById('divineJudgmentIndicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'divineJudgmentIndicator';
+    document.body.appendChild(indicator);
+  }
+  
+  indicator.innerHTML = `
+    <div class="divine-judgment-title">⚖️ DIVINE JUDGMENT (${data.turnsLeft} turns)</div>
+    <div class="divine-judgment-key">
+      <div class="judgment-key-item wrath">
+        <span class="judgment-icon">🔥</span>
+        <span class="judgment-label">WRATH</span>
+        <span class="judgment-desc">4+ ATK = 2 damage</span>
+      </div>
+      <div class="judgment-key-item pride">
+        <span class="judgment-icon">💚</span>
+        <span class="judgment-label">PRIDE</span>
+        <span class="judgment-desc">Buffed = Buffs suppressed</span>
+      </div>
+      <div class="judgment-key-item violence">
+        <span class="judgment-icon">🖤</span>
+        <span class="judgment-label">VIOLENCE</span>
+        <span class="judgment-desc">Killed = Stunned</span>
+      </div>
+    </div>
+  `;
+  indicator.classList.add('visible');
+}
+
+function updateDivineJudgmentOverlay(turnsLeft) {
+  const indicator = document.getElementById('divineJudgmentIndicator');
+  if (indicator) {
+    const title = indicator.querySelector('.divine-judgment-title');
+    if (title) {
+      title.innerHTML = `⚖️ DIVINE JUDGMENT (${turnsLeft} turns)`;
+    }
+  }
+}
+
+function hideDivineJudgmentOverlay() {
+  const gameContainer = document.getElementById('gameContainer') || document.body;
+  gameContainer.classList.remove('divine-judgment-active');
+  document.body.classList.remove('divine-judgment-active');
+  
+  const indicator = document.getElementById('divineJudgmentIndicator');
+  if (indicator) {
+    indicator.classList.remove('visible');
+  }
+}
+
+// ==================== END DIVINE JUDGMENT EVENT ====================
+
+// ==================== CHEAT CODE EVENT ====================
+
+socket.on("cheatCodeStart", (data) => {
+  console.log("Cheat Code activated:", data);
+  
+  // Store active cheat effects
+  if (data.cheat.code === 'HESOYAM') {
+    S.cheatHesoyamActive = true;
+    S.cheatHesoyamTurnsLeft = data.hesoyamTurnsLeft;
+  } else if (data.cheat.code === 'GREEDISGOOD') {
+    S.cheatGreedActive = true;
+    S.cheatGreedTurnsLeft = data.greedTurnsLeft;
+  }
+  
+  // Start cinematic sequence
+  playCheatCodeCinematic(data);
+});
+
+socket.on("cheatCodeUpdate", (data) => {
+  console.log("Cheat Code update:", data);
+  if (data.cheat === 'HESOYAM') {
+    S.cheatHesoyamTurnsLeft = data.turnsLeft;
+    updateCheatCodeIndicator();
+  } else if (data.cheat === 'GREEDISGOOD') {
+    S.cheatGreedTurnsLeft = data.turnsLeft;
+    updateCheatCodeIndicator();
+  }
+});
+
+socket.on("cheatCodeEnd", (data) => {
+  console.log("Cheat Code ended:", data);
+  if (data.cheat === 'HESOYAM') {
+    S.cheatHesoyamActive = false;
+    S.cheatHesoyamTurnsLeft = 0;
+  } else if (data.cheat === 'GREEDISGOOD') {
+    S.cheatGreedActive = false;
+    S.cheatGreedTurnsLeft = 0;
+  }
+  
+  updateCheatCodeIndicator();
+  renderAll();
+});
+
+function playCheatCodeCinematic(data) {
+  const gameContainer = document.getElementById('gameContainer') || document.body;
+  const cheat = data.cheat;
+  
+  // Block game actions during cinematic
+  S.cheatCodeCinematicActive = true;
+  
+  // Create cinematic overlay
+  let cinematicOverlay = document.getElementById('cheatCodeCinematic');
+  if (!cinematicOverlay) {
+    cinematicOverlay = document.createElement('div');
+    cinematicOverlay.id = 'cheatCodeCinematic';
+    document.body.appendChild(cinematicOverlay);
+  }
+  
+  cinematicOverlay.innerHTML = `
+    <div class="cc-cinematic-content">
+      <div class="cc-glitch-bg"></div>
+      <div class="cc-code-input" id="ccCodeInput"></div>
+      <div class="cc-activated">CHEAT ACTIVATED</div>
+      <div class="cc-effect-name" id="ccEffectName">${cheat.name}</div>
+      <div class="cc-effect-desc" id="ccEffectDesc">${cheat.description}</div>
+    </div>
+  `;
+  
+  // Play glitch sound
+  const glitchSound = new Audio('/audio/sfx/glitch.mp3');
+  glitchSound.volume = 0.5;
+  glitchSound.play().catch(() => {});
+  
+  // Start screen glitch effect
+  gameContainer.classList.add('cheat-code-glitch');
+  document.body.classList.add('cheat-code-glitch');
+  
+  // Show cinematic overlay
+  cinematicOverlay.classList.add('visible');
+  
+  // Type out the cheat code letter by letter
+  const codeInput = document.getElementById('ccCodeInput');
+  const code = cheat.code;
+  let charIndex = 0;
+  
+  const typeInterval = setInterval(() => {
+    if (charIndex < code.length) {
+      codeInput.textContent += code[charIndex];
+      // Play key press sound
+      const keySound = new Audio('/audio/sfx/key-press.mp3');
+      keySound.volume = 0.2;
+      keySound.play().catch(() => {});
+      charIndex++;
+    } else {
+      clearInterval(typeInterval);
+    }
+  }, 120);
+  
+  // Timeline
+  const timeline = {
+    codeTypeDone: code.length * 120 + 500,  // After code is typed + pause
+    activatedShow: code.length * 120 + 800,  // Show "CHEAT ACTIVATED"
+    effectShow: code.length * 120 + 1500,    // Show effect name/desc
+    applyEffect: code.length * 120 + 2000,   // Apply visual effect to cards
+    glitchEnd: code.length * 120 + 3500,     // Stop glitch
+    cinematicEnd: code.length * 120 + 4000   // End cinematic
+  };
+  
+  // Show "CHEAT ACTIVATED" text
+  setTimeout(() => {
+    const activated = cinematicOverlay.querySelector('.cc-activated');
+    if (activated) activated.classList.add('visible');
+    
+    // Play activation sound
+    const activateSound = new Audio('/audio/sfx/cheat-activate.mp3');
+    activateSound.volume = 0.6;
+    activateSound.play().catch(() => {});
+  }, timeline.activatedShow);
+  
+  // Show effect name and description
+  setTimeout(() => {
+    const effectName = document.getElementById('ccEffectName');
+    const effectDesc = document.getElementById('ccEffectDesc');
+    if (effectName) effectName.classList.add('visible');
+    if (effectDesc) effectDesc.classList.add('visible');
+  }, timeline.effectShow);
+  
+  // Apply visual effect to affected units
+  setTimeout(() => {
+    if (data.affectedUnits && data.affectedUnits.length > 0) {
+      data.affectedUnits.forEach(unit => {
+        applyCheatEffectToUnit(unit, cheat.code);
+      });
+    }
+    renderAll();
+  }, timeline.applyEffect);
+  
+  // Stop glitch effect
+  setTimeout(() => {
+    gameContainer.classList.remove('cheat-code-glitch');
+    document.body.classList.remove('cheat-code-glitch');
+  }, timeline.glitchEnd);
+  
+  // End cinematic
+  setTimeout(() => {
+    cinematicOverlay.classList.remove('visible');
+    cinematicOverlay.classList.add('fading');
+    
+    // Unblock game actions
+    S.cheatCodeCinematicActive = false;
+    
+    setTimeout(() => {
+      cinematicOverlay.remove();
+    }, 500);
+    
+    // Show persistent indicator if duration effect
+    if (cheat.code === 'HESOYAM' || cheat.code === 'GREEDISGOOD') {
+      showCheatCodeIndicator(cheat);
+    }
+    
+    renderAll();
+  }, timeline.cinematicEnd);
+}
+
+function applyCheatEffectToUnit(unitData, cheatCode) {
+  const board = document.getElementById('board');
+  if (!board) return;
+  
+  const units = board.querySelectorAll('.unit');
+  units.forEach(unitEl => {
+    const nameEl = unitEl.querySelector('.unitName');
+    if (nameEl && nameEl.textContent === unitData.name) {
+      // Flash effect based on cheat type
+      if (cheatCode === 'IDKFA' || cheatCode === 'BIGHEAD') {
+        unitEl.classList.add('cheat-buff-flash');
+        setTimeout(() => unitEl.classList.remove('cheat-buff-flash'), 800);
+      } else if (cheatCode === 'HOWDOITURNTHISON') {
+        unitEl.classList.add('cheat-swap-flash');
+        setTimeout(() => unitEl.classList.remove('cheat-swap-flash'), 800);
+      }
+    }
+  });
+}
+
+function showCheatCodeIndicator(cheat) {
+  let indicator = document.getElementById('cheatCodeIndicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'cheatCodeIndicator';
+    document.body.appendChild(indicator);
+  }
+  
+  updateCheatCodeIndicator();
+  indicator.classList.add('visible');
+}
+
+function updateCheatCodeIndicator() {
+  const indicator = document.getElementById('cheatCodeIndicator');
+  if (!indicator) return;
+  
+  let content = '<div class="cc-indicator-title">🎮 ACTIVE CHEATS</div>';
+  let hasActiveCheat = false;
+  
+  if (S.cheatHesoyamActive && S.cheatHesoyamTurnsLeft > 0) {
+    content += `<div class="cc-indicator-item hesoyam">
+      <span class="cc-indicator-code">HESOYAM</span>
+      <span class="cc-indicator-effect">Bankrupt (${S.cheatHesoyamTurnsLeft} turns)</span>
+    </div>`;
+    hasActiveCheat = true;
+  }
+  
+  if (S.cheatGreedActive && S.cheatGreedTurnsLeft > 0) {
+    content += `<div class="cc-indicator-item greed">
+      <span class="cc-indicator-code">GREEDISGOOD</span>
+      <span class="cc-indicator-effect">All cards cost 1 (${S.cheatGreedTurnsLeft} turns)</span>
+    </div>`;
+    hasActiveCheat = true;
+  }
+  
+  indicator.innerHTML = content;
+  
+  if (hasActiveCheat) {
+    indicator.classList.add('visible');
+  } else {
+    indicator.classList.remove('visible');
+  }
+}
+
+function hideCheatCodeIndicator() {
+  const indicator = document.getElementById('cheatCodeIndicator');
+  if (indicator) {
+    indicator.classList.remove('visible');
+  }
+}
+
+// ==================== END CHEAT CODE EVENT ====================
 
 // Rune characters for eclipse obfuscation
 const RUNE_CHARS = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟᚳᚴᚵᚶᚸᚻᚼᚽᚿᛀᛂᛄᛅᛆᛋᛍᛎᛐᛑᛓᛔᛕᛖᛘᛙᛛᛝᛠᛡᛢᛣᛤᛥᛦᛧᛨᛩᛪ';
@@ -4096,6 +4768,24 @@ function animateEffect(data) {
   const { effectType, sourcePos, sourceUnitId, targets } = data;
   console.log("[EFFECT ANIM] effectType:", effectType, "sourcePos:", sourcePos, "targets:", targets);
   
+  // Special handling for barrel explosion - ripple effect
+  if (effectType === "barrel_explosion" && sourcePos) {
+    animateBarrelExplosion(sourcePos, targets);
+    return;
+  }
+  
+  // Special handling for reset button - cards fly to deck
+  if (effectType === "reset_button" && data.units) {
+    animateResetButton(data.units);
+    return;
+  }
+  
+  // Special handling for save state resurrection - white glow
+  if (effectType === "save_state_revive" && data.targetPos) {
+    animateSaveStateRevive(data.targetPos);
+    return;
+  }
+  
   // If there's a source unit, add to tracking set so renderAll applies the animation
   if (sourcePos) {
     const key = `${sourcePos.r}-${sourcePos.c}`;
@@ -4143,6 +4833,205 @@ function animateEffect(data) {
       });
     }
   }, 200);
+}
+
+// Barrel explosion ripple animation
+function animateBarrelExplosion(sourcePos, targets) {
+  const sourceViewRow = toViewRow(sourcePos.r);
+  const sourceCell = document.getElementById(cellId(sourceViewRow, sourcePos.c));
+  
+  // Create explosion overlay on source
+  if (sourceCell) {
+    const explosionCenter = document.createElement('div');
+    explosionCenter.className = 'barrel-explosion-center';
+    sourceCell.appendChild(explosionCenter);
+    
+    setTimeout(() => {
+      explosionCenter.remove();
+    }, 600);
+  }
+  
+  // Animate ripple to all 8 adjacent tiles (whether they have targets or not)
+  const adjacentOffsets = [
+    { dr: -1, dc: 0 },  // up
+    { dr: 1, dc: 0 },   // down
+    { dr: 0, dc: -1 },  // left
+    { dr: 0, dc: 1 },   // right
+    { dr: -1, dc: -1 }, // up-left
+    { dr: -1, dc: 1 },  // up-right
+    { dr: 1, dc: -1 },  // down-left
+    { dr: 1, dc: 1 }    // down-right
+  ];
+  
+  adjacentOffsets.forEach((offset, index) => {
+    const adjRow = sourcePos.r + offset.dr;
+    const adjCol = sourcePos.c + offset.dc;
+    
+    if (adjRow < 0 || adjRow >= ROWS || adjCol < 0 || adjCol >= COLS) return;
+    
+    const viewRow = toViewRow(adjRow);
+    const adjCell = document.getElementById(cellId(viewRow, adjCol));
+    
+    if (adjCell) {
+      // Stagger the ripple slightly based on distance
+      const delay = 50 + (Math.abs(offset.dr) + Math.abs(offset.dc) === 2 ? 30 : 0);
+      
+      setTimeout(() => {
+        // Add ripple effect to tile
+        const ripple = document.createElement('div');
+        ripple.className = 'barrel-explosion-ripple';
+        adjCell.appendChild(ripple);
+        
+        setTimeout(() => {
+          ripple.remove();
+        }, 500);
+      }, delay);
+    }
+  });
+  
+  // Shake units that were hit
+  if (targets && targets.length > 0) {
+    setTimeout(() => {
+      targets.forEach((target) => {
+        const viewRow = toViewRow(target.r);
+        const targetCell = document.getElementById(cellId(viewRow, target.c));
+        if (targetCell) {
+          const unitEl = targetCell.querySelector('.unit');
+          if (unitEl) {
+            unitEl.classList.add('effect-hit');
+            setTimeout(() => {
+              unitEl.classList.remove('effect-hit');
+            }, 400);
+          }
+        }
+      });
+    }, 100);
+  }
+}
+
+// Reset Button animation - all cards fly off to their owner's deck
+function animateResetButton(units) {
+  console.log("[RESET BUTTON] Animating", units.length, "units flying to deck");
+  
+  // Get the deck positions (top-right for gold, bottom-right for silver from player's perspective)
+  const boardEl = document.getElementById('board');
+  if (!boardEl) return;
+  
+  const boardRect = boardEl.getBoundingClientRect();
+  
+  // Create a flash overlay on the whole board first
+  const flashOverlay = document.createElement('div');
+  flashOverlay.className = 'reset-button-flash';
+  flashOverlay.style.cssText = `
+    position: fixed;
+    top: ${boardRect.top}px;
+    left: ${boardRect.left}px;
+    width: ${boardRect.width}px;
+    height: ${boardRect.height}px;
+    pointer-events: none;
+    z-index: 1000;
+  `;
+  document.body.appendChild(flashOverlay);
+  
+  setTimeout(() => {
+    flashOverlay.remove();
+  }, 400);
+  
+  // Animate each unit flying to their deck
+  units.forEach((unit, index) => {
+    const viewRow = toViewRow(unit.r);
+    const sourceCell = document.getElementById(cellId(viewRow, unit.c));
+    if (!sourceCell) return;
+    
+    const sourceRect = sourceCell.getBoundingClientRect();
+    
+    // Determine target position based on owner and current player's perspective
+    // Gold deck is top-right, Silver deck is bottom-right (from viewer's perspective)
+    let targetX, targetY;
+    if (unit.owner === 'gold') {
+      // Fly to top-right (gold's deck area)
+      targetX = boardRect.right + 50;
+      targetY = boardRect.top - 50;
+    } else {
+      // Fly to bottom-right (silver's deck area)
+      targetX = boardRect.right + 50;
+      targetY = boardRect.bottom + 50;
+    }
+    
+    // Create flying card element
+    const flyingCard = document.createElement('div');
+    flyingCard.className = 'reset-flying-card';
+    
+    const artStyle = unit.art ? `background: url('${encodeURI(unit.art)}') center/cover no-repeat` : 'background: linear-gradient(135deg, #4a5568, #2d3748)';
+    const ownerColor = unit.owner === 'gold' ? 'rgba(251, 191, 36, 0.8)' : 'rgba(148, 163, 184, 0.8)';
+    
+    flyingCard.innerHTML = `<div class="flying-card-art" style="${artStyle}"></div>`;
+    flyingCard.style.cssText = `
+      position: fixed;
+      left: ${sourceRect.left}px;
+      top: ${sourceRect.top}px;
+      width: ${sourceRect.width}px;
+      height: ${sourceRect.height}px;
+      border-radius: 8px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: ${1001 + index};
+      border: 2px solid ${ownerColor};
+      box-shadow: 0 0 15px ${ownerColor};
+      transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    `;
+    
+    document.body.appendChild(flyingCard);
+    
+    // Stagger the animations slightly
+    setTimeout(() => {
+      flyingCard.style.left = `${targetX}px`;
+      flyingCard.style.top = `${targetY}px`;
+      flyingCard.style.transform = 'scale(0.3) rotate(360deg)';
+      flyingCard.style.opacity = '0';
+    }, 50 + index * 30);
+    
+    // Remove after animation
+    setTimeout(() => {
+      flyingCard.remove();
+    }, 700 + index * 30);
+  });
+  
+  // Play a whoosh sound if available
+  playSFX('cardDraw');
+}
+
+// Save State resurrection animation - bright white glow that fades
+function animateSaveStateRevive(targetPos) {
+  console.log("[SAVE STATE REVIVE] Animating resurrection at", targetPos);
+  
+  const viewRow = toViewRow(targetPos.r);
+  const targetCell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!targetCell) return;
+  
+  // Create the white glow overlay
+  const glowOverlay = document.createElement('div');
+  glowOverlay.className = 'save-state-revive-glow';
+  targetCell.appendChild(glowOverlay);
+  
+  // Also add a class to the unit for the white flash effect
+  const unitEl = targetCell.querySelector('.unit');
+  if (unitEl) {
+    unitEl.classList.add('save-state-reviving');
+    
+    // Remove the class after animation
+    setTimeout(() => {
+      unitEl.classList.remove('save-state-reviving');
+    }, 800);
+  }
+  
+  // Remove overlay after animation
+  setTimeout(() => {
+    glowOverlay.remove();
+  }, 800);
+  
+  // Play a sound effect
+  playSFX('heal');
 }
 
 // Animate unit movement on board
@@ -4447,6 +5336,87 @@ function hideTimeRiftModal() {
   if (modal) modal.classList.add("hidden");
 }
 
+// Resurrection spell handler
+socket.on("resurrectionTrigger", (data) => {
+  console.log("resurrectionTrigger received:", data);
+  showResurrectionModal(data.units);
+});
+
+let pendingResurrectionCard = null;
+
+function showResurrectionModal(units) {
+  console.log("showResurrectionModal called with", units.length, "units");
+  
+  // Create modal if it doesn't exist
+  let modal = document.getElementById("resurrectionModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "resurrectionModal";
+    modal.className = "modal hidden";
+    modal.innerHTML = `
+      <div class="modalContent resurrectionContent">
+        <h2>✨ Resurrection - Choose a Unit!</h2>
+        <p>Select a unit from your discard to resurrect anywhere. It gains Immune this turn.</p>
+        <div id="resurrectionCards" class="discardCards"></div>
+        <button id="skipResurrection" class="modalBtn">Skip</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    document.getElementById("skipResurrection").onclick = () => {
+      sendAction({ type: "skipResurrection" });
+      hideResurrectionModal();
+    };
+  }
+  
+  const cardsEl = document.getElementById("resurrectionCards");
+  cardsEl.innerHTML = "";
+  
+  if (units.length === 0) {
+    cardsEl.innerHTML = "<p>No units in discard!</p>";
+  }
+  
+  units.forEach(unit => {
+    const el = document.createElement("div");
+    el.className = "handCard";
+    
+    const icon = CARD_ICONS[unit.key] || '⚔️';
+    const hasArt = unit.art;
+    const artStyle = hasArt ? `background: url('${unit.art}') center/cover no-repeat` : '';
+    const artContent = hasArt ? '' : icon;
+    
+    el.innerHTML = `
+      <div class="cardArt" style="${artStyle}">${artContent}</div>
+      <div class="cardInfoOverlay">
+        <div class="cardName">${unit.name}</div>
+        <div class="cardStats">
+          <div class="cardStat cardAtk"><span class="cardStatIcon">⚔</span>${unit.atk}</div>
+          <div class="cardStat cardHp"><span class="cardStatIcon">♥</span>${unit.hp}</div>
+        </div>
+      </div>
+    `;
+    
+    el.onclick = () => {
+      // Store selected card, then let player click a tile
+      pendingResurrectionCard = unit;
+      hideResurrectionModal();
+      S.resurrectionPending = true;
+      addLogEntry("Click a tile to place " + unit.name);
+    };
+    
+    cardsEl.appendChild(el);
+  });
+  
+  // Show the modal
+  modal.classList.remove("hidden");
+  console.log("Resurrection modal should be visible now");
+}
+
+function hideResurrectionModal() {
+  const modal = document.getElementById("resurrectionModal");
+  if (modal) modal.classList.add("hidden");
+}
+
 function showDiscardModal() {
   if (!discardModal || !discardCardsEl) return;
   discardCardsEl.innerHTML = "";
@@ -4567,7 +5537,12 @@ socket.on("role", (role) => {
 // Private state now included in main state event
 
 socket.on("state", (st) => {
-  if (!st) return;
+  if (!st) {
+    console.log("[STATE] Received null/empty state");
+    return;
+  }
+  
+  console.log(`[STATE] Received state. Active side: ${st.activeSide}, Turn: ${st.turnNumber}`);
 
   // Store previous values before updating
   prevRowHP = [...S.rowHP];

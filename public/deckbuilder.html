@@ -556,7 +556,7 @@
         <div class="filters">
           <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search">
           <div class="filter-group"><label>Own:</label><select class="filter-select" id="ownedFilter"><option value="all">All</option><option value="owned">Owned</option><option value="not-owned">Not Owned</option></select></div>
-          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option><option value="elunes-chosen">Elune's Chosen</option><option value="dragon-wizard">Dragon Wizard</option></select></div>
+          <div class="filter-group"><label>Set:</label><select class="filter-select" id="archetypeFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option><option value="elunes-chosen">Elune's Chosen</option><option value="dragon-wizard">Dragon Wizard</option><option value="celestial-host">Celestial Host</option><option value="8bit-battalion">8-Bit Battalion</option></select></div>
           <div class="filter-group"><label>Type:</label><select class="filter-select" id="typeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option></select></div>
           <div class="filter-group"><label>Cost:</label><select class="filter-select" id="costFilter"><option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5+">5+</option></select></div>
           <div class="filter-group"><label>Rarity:</label><select class="filter-select" id="rarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
@@ -568,7 +568,7 @@
       <div class="panel deck-panel">
         <div class="panel-header"><div class="panel-title">🃏 Current Deck</div></div>
         <div class="deck-selector-section">
-          <select class="deck-select" id="deckSelect"><option value="medieval">Medieval Deck</option><option value="void-alien">Void Alien Deck 🔒</option><option value="western-skeleton">Western Skeleton Deck 🔒</option><option value="crimson-court">Crimson Court Deck 🔒</option><option value="jeweled-court">Jeweled Court Deck 🔒</option><option value="elunes-chosen">Elune's Chosen Deck 🔒</option><option value="dragon-wizard">Dragon Wizard Deck 🔒</option></select>
+          <select class="deck-select" id="deckSelect"><option value="deck-1">Your First Deck</option><option value="deck-2" disabled>— Deck Slot 2 🔒</option><option value="deck-3" disabled>— Deck Slot 3 🔒</option><option value="deck-4" disabled>— Deck Slot 4 🔒</option><option value="deck-5" disabled>— Deck Slot 5 🔒</option><option value="deck-6" disabled>— Deck Slot 6 🔒</option><option value="deck-7" disabled>— Deck Slot 7 🔒</option><option value="deck-8" disabled>— Deck Slot 8 🔒</option></select>
         </div>
         <div class="deck-name-section">
           <input type="text" class="deck-name-input" id="deckNameInput" placeholder="Deck name..." maxlength="25">
@@ -728,18 +728,55 @@
       polymorph: { name: "Polymorph", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Transform target enemy with 3 or less HP into a 1/1 Sheep", art: "/images/Polymorph.png", rarity: "rare" },
       manadrain: { name: "Mana Drain", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Deal 2 damage to target enemy. Enemy loses 1 energy", art: "/images/Mana Drain.png", rarity: "rare" },
       arcanesurge: { name: "Arcane Surge", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "dragon-wizard", effect: true, effectDesc: "Give target unit +2 ATK and can attack twice this turn", art: "/images/Arcane Surge.png", rarity: "rare" },
-      sheep: { name: "Sheep", cost: 0, atk: 1, hp: 1, type: "monster", archetype: "dragon-wizard", effect: false, effectDesc: "A harmless sheep", art: "/images/Sheep.png", rarity: "common" }
+      sheep: { name: "Sheep", cost: 0, atk: 1, hp: 1, type: "monster", archetype: "dragon-wizard", effect: false, effectDesc: "A harmless sheep", art: "/images/Sheep.png", rarity: "common" },
+      // Celestial Host cards
+      cherubhymnist: { name: "Cherub Hymnist", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "On Deploy: Draw a card", art: "/images/Cherub Hymnist.png", rarity: "common" },
+      angelicattendant: { name: "Angelic Attendant", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "Start of Turn: Heal adjacent allies 1 HP", art: "/images/Angelic Attendant.png", rarity: "common" },
+      maidenofvirtue: { name: "Maiden of Virtue", cost: 2, atk: 1, hp: 3, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "Start of Turn: Heal your heart 1 HP", art: "/images/Maiden of Virtue.png", rarity: "common" },
+      angelofdestruction: { name: "Angel of Destruction", cost: 3, atk: 3, hp: 4, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "On Kill: Deal 1 damage to enemy heart", art: "/images/Angel of Destruction.png", rarity: "rare" },
+      seraphichunter: { name: "Seraphic Hunter", cost: 4, atk: 4, hp: 3, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "Range 3. Can only move OR attack each turn, not both", art: "/images/Seraphic Hunter.png", rarity: "rare" },
+      archangelmichael: { name: "Archangel Michael", cost: 5, atk: 5, hp: 5, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "On Kill: First kill each turn, can move and attack again", art: "/images/Archangel Michael.png", rarity: "legendary" },
+      archangeluriel: { name: "Archangel Uriel", cost: 5, atk: 2, hp: 7, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "Gain 1 energy when you draw. Draw a card when I kill an enemy", art: "/images/Archangel Uriel.png", rarity: "legendary" },
+      archangelgabriel: { name: "Archangel Gabriel", cost: 6, atk: 6, hp: 5, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "On Attack: Deal 1 damage to all enemies in target's row", art: "/images/Archangel Gabriel.png", rarity: "legendary" },
+      archangelraphael: { name: "Archangel Raphael", cost: 6, atk: 3, hp: 7, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "Immune when played. Allies in 3 tiles behind take no damage", art: "/images/Archangel Raphael.png", rarity: "legendary" },
+      luciferfallenangel: { name: "Lucifer Fallen Angel", cost: 6, atk: 10, hp: 8, type: "monster", archetype: "celestial-host", effect: true, effectDesc: "Deploy anywhere. Start of Turn: Deal 3 damage to your heart", art: "/images/Lucifer Fallen Angel.png", rarity: "legendary" },
+      gardenofeden: { name: "Garden of Eden", cost: 4, atk: 0, hp: 5, type: "structure", archetype: "celestial-host", effect: true, effectDesc: "Start of Turn: Adjacent units heal 2 HP and gain +1 max HP", art: "/images/Garden of Eden.png", rarity: "legendary" },
+      blessingofmight: { name: "Blessing of Might", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack", art: "/images/Blessing of Might.png", rarity: "common" },
+      blessingofvigor: { name: "Blessing of Vigor", cost: 1, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Target ally: Whenever I attack or am attacked, gain 1 energy", art: "/images/Blessing of Vigor.png", rarity: "common" },
+      blessingofprotection: { name: "Blessing of Protection", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Target ally: Next time this would take damage, prevent it", art: "/images/Blessing of Protection.png", rarity: "rare" },
+      blessingofkings: { name: "Blessing of Kings", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Target ally: Whenever I attack or am attacked, draw a card", art: "/images/Blessing of Kings.png", rarity: "rare" },
+      angelicdescent: { name: "Angelic Descent", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Next unit can deploy to any row. Deal 1 to adjacent enemies when summoned", art: "/images/Angelic Descent.png", rarity: "rare" },
+      heavenlyrescue: { name: "Heavenly Rescue", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Move target ally to any empty tile in your back row", art: "/images/Heavenly Rescue.png", rarity: "rare" },
+      layonhands: { name: "Lay on Hands", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Heal target unit to full HP", art: "/images/Lay on Hands.png", rarity: "rare" },
+      resurrection: { name: "Resurrection", cost: 8, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Resummon an ally from discard to any space. It has Immune this turn", art: "/images/Resurrection.png", rarity: "legendary" },
+      wrathofgod: { name: "Wrath of God", cost: 10, atk: 0, hp: 0, type: "spell", archetype: "celestial-host", effect: true, effectDesc: "Destroy ALL units on the board", art: "/images/Wrath of God.png", rarity: "legendary" },
+      // 8-Bit Battalion
+      slimesprite: { name: "Slime Sprite", cost: 1, atk: 1, hp: 2, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "On Death: Spawn two 1/1 Slimelings in adjacent empty tiles", art: "/images/Slime Sprite.png", rarity: "common" },
+      skeletonwarrior8bit: { name: "Skeleton Warrior", cost: 2, atk: 2, hp: 2, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "On Death: Returns to your spawn once", art: "/images/Skeleton Warrior 8bit.png", rarity: "common" },
+      barrel: { name: "Barrel", cost: 1, atk: 1, hp: 1, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "On Death: Deal 3 damage to all adjacent enemies", art: "/images/Barrel.png", rarity: "common" },
+      healerfairy: { name: "Healer Fairy", cost: 2, atk: 1, hp: 2, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "End of Turn: Heal adjacent allies +1. On Death: Heal ALL allies +1", art: "/images/Healer Fairy.png", rarity: "common" },
+      bosskey: { name: "Boss Key", cost: 1, atk: 0, hp: 0, type: "spell", archetype: "8bit-battalion", effect: true, effectDesc: "Draw Final Boss from your deck. If already in hand, it costs 2 less this turn", art: "/images/Boss Key.png", rarity: "common" },
+      newgameplus: { name: "New Game+", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "8bit-battalion", effect: true, effectDesc: "Shuffle Final Boss from discard into deck. Draw a card", art: "/images/New Game+.png", rarity: "common" },
+      knighterrant: { name: "Knight Errant", cost: 3, atk: 2, hp: 3, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "Can move three times per turn", art: "/images/Knight Errant.png", rarity: "rare" },
+      pixelproducer: { name: "Pixel Producer", cost: 3, atk: 0, hp: 5, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "End of Turn: Spawn a 1/1 Pixel in a random adjacent empty tile", art: "/images/Pixel Producer.png", rarity: "rare" },
+      cheatcode: { name: "Cheat Code", cost: 3, atk: 0, hp: 0, type: "spell", archetype: "8bit-battalion", effect: true, effectDesc: "Target unit gets +3/+3 this turn. All other friendly units get +1/+1 this turn", art: "/images/Cheat Code.png", rarity: "rare" },
+      savestate: { name: "Save State", cost: 2, atk: 0, hp: 0, type: "spell", archetype: "8bit-battalion", effect: true, effectDesc: "Mark a unit. If it dies this turn or next, restore it to full HP at its position", art: "/images/Save State.png", rarity: "rare" },
+      wizardnpc: { name: "Wizard NPC", cost: 4, atk: 1, hp: 5, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "Buffs adjacent allies +1/+1. Increases each turn it doesn't move (max +4/+4). Resets if moved", art: "/images/Wizard NPC.png", rarity: "legendary" },
+      finalboss: { name: "Final Boss", cost: 6, atk: 2, hp: 8, type: "monster", archetype: "8bit-battalion", effect: true, effectDesc: "Gains +1 ATK for each HP lost", art: "/images/Final Boss.png", rarity: "legendary" },
+      resetbutton: { name: "Reset Button", cost: 5, atk: 0, hp: 0, type: "spell", archetype: "8bit-battalion", effect: true, effectDesc: "ALL units on the board are shuffled back into their owner's deck", art: "/images/Reset Button.png", rarity: "legendary" },
+      ragequit: { name: "Rage Quit", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "8bit-battalion", effect: true, effectDesc: "Deal damage to target enemy equal to the number of your units that died this game", art: "/images/Rage Quit.png", rarity: "legendary" }
     };
     const DEFAULT_DECKS = {
-      medieval: { name: "Medieval Kingdom", cards: ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','royalguard','royalguard','paladin','siegeram','siegeram','warbanner','warbanner','shrine','shrine','armory','castlewalls','treasury','rally'] },
-      'void-alien': { name: "Void Swarm", cards: ['voiddrone','voiddrone','voiddrone','scavengerlarva','scavengerlarva','scavengerlarva','spittercrawler','spittercrawler','spittercrawler','phaseskirmisher','phaseskirmisher','energyleech','energyleech','burrowerbeast','burrowerbeast','psionicoverseer','psionicoverseer','neuralharvester','neuralharvester','adaptivecolossus','sporetitan','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','assimilation','assimilation','voidcollapse','voidcollapse','hiveascension'] },
-      'western-skeleton': { name: "Boot Hill Outlaws", cards: ['bonedeputy','bonedeputy','bonedeputy','dustyrattler','dustyrattler','dustyrattler','graverobber','graverobber','phantomscout','phantomscout','phantomscout','bonerevolver','bonerevolver','undeadsheriff','undeadsheriff','coffintrapper','coffintrapper','undertaker','undertaker','thehangedman','ghostlystampede','bonecolossus','deadmanshand','deadmanshand','deadmanshand','mostwanted','mostwanted','shallowgrave','highnoon'] },
-      'crimson-court': { name: "Crimson Court", cards: ['thrall','thrall','thrall','bloodfamiliar','bloodfamiliar','bloodfamiliar','nightstalker','nightstalker','nightstalker','cryptkeeper','cryptkeeper','vampirespawn','vampirespawn','vampirespawn','bloodpriest','bloodpriest','soulcollector','soulcollector','nosferatu','nosferatu','coffin','coffin','bloodcountess','eldervampire','vampirelord','bloodpact','bloodpact','bloodtransfusion','bloodtransfusion','crimsonrevival','sanguinefeast'] },
-      'jeweled-court': { name: "Jeweled Court", cards: ['rubysprite','rubysprite','rubysprite','emeraldforager','emeraldforager','emeraldforager','sapphiredancer','sapphiredancer','sapphiredancer','topazminer','topazminer','topazminer','amethystenchanter','amethystenchanter','diamondguardian','diamondguardian','opaldevourer','opaldevourer','pearlblessing','pearlblessing','garnetqueen','moonstonewitch','prismaticfairy','gemstonecurse','fairyring'] },
-      'elunes-chosen': { name: "Elune's Chosen", cards: ['moonsentinel','moonsentinel','moonsentinel','starweavearcher','starweavearcher','starweavearcher','moonlitbladedancer','moonlitbladedancer','moonlitbladedancer','lunarpriestess','lunarpriestess','lunarpriestess','twilightsrespite','twilightsrespite','huntinggodsblessing','huntinggodsblessing','stonegiant','stonegiant','nightshadeambusher','nightshadeambusher','moonshadowwarden','moonshadowwarden','elunesmoonwell','elunesmoonwell','lunarprayer','lunarprayer','moonflaresorceress','moonflaresorceress','starlitchampion','starinvoker','templeofthemoon','lunarbarrage'] },
-      'dragon-wizard': { name: "Arcane Dragonflight", cards: ['wizardsrune','wizardsrune','wizardsrune','meditationmonk','meditationmonk','meditationmonk','wyrmwhelp','wyrmwhelp','wyrmwhelp','cinderwing','cinderwing','cinderwing','manasiphonmage','manasiphonmage','arcanetether','arcanetether','stormdrake','stormdrake','mirrorwizard','mirrorwizard','volcanicdragon','volcanicdragon','redwizard','bluewizard','chronodrake','polymorph','polymorph','manadrain','manadrain','arcanesurge','arcanesurge'] }
+      'deck-1': { name: "Your First Deck", cards: [] },
+      'deck-2': { name: "Custom Deck 2", cards: [] },
+      'deck-3': { name: "Custom Deck 3", cards: [] },
+      'deck-4': { name: "Custom Deck 4", cards: [] },
+      'deck-5': { name: "Custom Deck 5", cards: [] },
+      'deck-6': { name: "Custom Deck 6", cards: [] },
+      'deck-7': { name: "Custom Deck 7", cards: [] },
+      'deck-8': { name: "Custom Deck 8", cards: [] }
     };
-    let currentUser = null, userCollection = {}, holoCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
+    let currentUser = null, userCollection = {}, holoCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'deck-1', selectedCardKey = null, hasChanges = false, unlockedDeckSlots = ['deck-1'], unlockedCardSets = ['medieval'];
     let currentMusic = 'default', currentBackground = 'default';
     const MUSIC_OPTIONS = {
       'default': 'Default (Match Theme)',
@@ -748,7 +785,10 @@
       'western-skeleton': 'Western Skeleton',
       'crimson-court': 'Crimson Court',
       'jeweled-court': 'Jeweled Court',
-      'elunes-chosen': "Elune's Chosen"
+      'elunes-chosen': "Elune's Chosen",
+      'dragon-wizard': 'Arcane Dragonflight',
+      'celestial-host': 'Celestial Host',
+      '8bit-battalion': '8-Bit Battalion'
     };
     const BACKGROUND_OPTIONS = {
       'default': 'Default (Match Theme)',
@@ -757,7 +797,10 @@
       'western-skeleton': 'Ghost Town',
       'crimson-court': 'Vampire Manor',
       'jeweled-court': 'Crystal Cavern',
-      'elunes-chosen': 'Moon Temple'
+      'elunes-chosen': 'Moon Temple',
+      'dragon-wizard': 'Dragon Lair',
+      'celestial-host': 'Heavenly Realm',
+      '8bit-battalion': 'Pixel Dungeon'
     };
     const cardGrid = document.getElementById('cardGrid'), deckCards = document.getElementById('deckCards'), deckCount = document.getElementById('deckCount');
     const collectionCount = document.getElementById('collectionCount'), saveBtn = document.getElementById('saveBtn'), clearBtn = document.getElementById('clearBtn');
@@ -821,32 +864,43 @@
     function loadUserData() {
       userCollection = currentUser.cardCollection || {};
       holoCollection = currentUser.holoCollection || {};
-      unlockedDecks = currentUser.unlockedDecks || ['medieval'];
+      
+      // Count defeated bosses to determine unlocked slots (1 base + 1 per boss)
+      const defeatedBosses = currentUser.campaign?.defeatedBosses || [];
+      const numSlots = Math.min(1 + defeatedBosses.length, 8);
+      unlockedDeckSlots = [];
+      for (let i = 1; i <= numSlots; i++) {
+        unlockedDeckSlots.push('deck-' + i);
+      }
+      
+      // Card sets are unlocked based on defeated bosses (for card visibility)
+      unlockedCardSets = currentUser.unlockedDecks || ['medieval'];
+      
       populateCustomizationSelects();
       const customDecks = currentUser.customDecks || [];
-      const medievalCustom = customDecks.find(function(d) { return d.id === 'medieval'; });
-      const voidCustom = customDecks.find(function(d) { return d.id === 'void-alien'; });
-      const skeletonCustom = customDecks.find(function(d) { return d.id === 'western-skeleton'; });
-      const vampireCustom = customDecks.find(function(d) { return d.id === 'crimson-court'; });
-      const fairyCustom = customDecks.find(function(d) { return d.id === 'jeweled-court'; });
-      deckSelect.querySelector('option[value="medieval"]').textContent = medievalCustom ? medievalCustom.name : 'Medieval Deck';
-      const voidOption = deckSelect.querySelector('option[value="void-alien"]');
-      if (unlockedDecks.includes('void-alien')) { voidOption.disabled = false; voidOption.textContent = voidCustom ? voidCustom.name : 'Void Alien Deck'; }
-      else { voidOption.disabled = true; voidOption.textContent = 'Void Alien Deck 🔒'; }
-      const skeletonOption = deckSelect.querySelector('option[value="western-skeleton"]');
-      if (unlockedDecks.includes('western-skeleton')) { skeletonOption.disabled = false; skeletonOption.textContent = skeletonCustom ? skeletonCustom.name : 'Western Skeleton Deck'; }
-      else { skeletonOption.disabled = true; skeletonOption.textContent = 'Western Skeleton Deck 🔒'; }
-      const vampireOption = deckSelect.querySelector('option[value="crimson-court"]');
-      if (unlockedDecks.includes('crimson-court')) { vampireOption.disabled = false; vampireOption.textContent = vampireCustom ? vampireCustom.name : 'Crimson Court Deck'; }
-      else { vampireOption.disabled = true; vampireOption.textContent = 'Crimson Court Deck 🔒'; }
-      const fairyOption = deckSelect.querySelector('option[value="jeweled-court"]');
-      if (unlockedDecks.includes('jeweled-court')) { fairyOption.disabled = false; fairyOption.textContent = fairyCustom ? fairyCustom.name : 'Jeweled Court Deck'; }
-      else { fairyOption.disabled = true; fairyOption.textContent = 'Jeweled Court Deck 🔒'; }
-      const eluneCustom = customDecks.find(function(d) { return d.id === 'elunes-chosen'; });
-      const eluneOption = deckSelect.querySelector('option[value="elunes-chosen"]');
-      if (unlockedDecks.includes('elunes-chosen')) { eluneOption.disabled = false; eluneOption.textContent = eluneCustom ? eluneCustom.name : "Elune's Chosen Deck"; }
-      else { eluneOption.disabled = true; eluneOption.textContent = "Elune's Chosen Deck 🔒"; }
-      loadDeckType('medieval');
+      
+      // Update deck slot options
+      for (let i = 1; i <= 8; i++) {
+        const slotId = 'deck-' + i;
+        const option = deckSelect.querySelector('option[value="' + slotId + '"]');
+        const customDeck = customDecks.find(function(d) { return d.id === slotId; });
+        
+        if (unlockedDeckSlots.includes(slotId)) {
+          option.disabled = false;
+          if (customDeck && customDeck.name) {
+            option.textContent = customDeck.name;
+          } else if (i === 1) {
+            option.textContent = 'Your First Deck';
+          } else {
+            option.textContent = 'Custom Deck ' + i;
+          }
+        } else {
+          option.disabled = true;
+          option.textContent = '— Deck Slot ' + i + ' 🔒';
+        }
+      }
+      
+      loadDeckType('deck-1');
       renderCollection();
       const total = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k); }).length;
       const owned = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k) && (userCollection[k] || 0) > 0; }).length;
@@ -881,6 +935,8 @@
       if (archetype === 'crimson-court') return 'Crimson Court';
       if (archetype === 'jeweled-court') return 'Jeweled Court';
       if (archetype === 'elunes-chosen') return "Elune's Chosen";
+      if (archetype === 'dragon-wizard') return "Dragon Wizard";
+      if (archetype === 'celestial-host') return "Celestial Host";
       return 'Medieval';
     }
     function renderCardPreview() {
@@ -891,7 +947,7 @@
       const baseKey = isHolo ? selectedCardKey.replace('_holo', '') : selectedCardKey;
       
       const card = CARD_DATA[baseKey]; if (!card) return;
-      const owned = isHolo ? (holoCollection[baseKey] || 0) : (userCollection[baseKey] || 0);
+      const owned = (currentUser && currentUser.isAdmin) ? 3 : (isHolo ? (holoCollection[baseKey] || 0) : (userCollection[baseKey] || 0));
       const inDeck = currentDeck.filter(function(k) { return k === selectedCardKey; }).length;
       const rarity = card.rarity || 'common';
       const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
@@ -906,10 +962,12 @@
       cardPreview.innerHTML = '<div class="preview-card' + holoClass + '"><div class="preview-card-glow rarity-' + rarity + '"><div class="preview-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\')"></div></div><div class="preview-name">' + (isHolo ? '✨ ' : '') + card.name + '</div><div class="preview-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + ' • ' + archetypeName + ' • <span style="color:' + rarityColor + '">' + rarityLabel + holoLabel + '</span></div><div class="preview-stats"><div class="preview-stat"><div class="preview-stat-value stat-cost">' + card.cost + '</div><div class="preview-stat-label">Cost</div></div><div class="preview-stat"><div class="preview-stat-value stat-atk">' + card.atk + '</div><div class="preview-stat-label">ATK</div></div><div class="preview-stat"><div class="preview-stat-value stat-hp">' + card.hp + '</div><div class="preview-stat-label">HP</div></div></div><div class="preview-effect"><div class="preview-effect-label">Effect</div><div class="preview-effect-text ' + (!card.effectDesc ? 'preview-no-effect' : '') + '">' + (card.effectDesc || 'No special effect') + '</div></div><div class="preview-owned">Owned: <span>' + owned + '</span> • In deck: <span>' + inDeck + '</span> / <span>' + maxCopies + '</span></div><div class="preview-buttons"><button class="preview-btn btn-add" onclick="addToDeck(\'' + selectedCardKey + '\')" ' + (!canAdd || owned === 0 ? 'disabled' : '') + '>+ Add</button><button class="preview-btn btn-remove" onclick="removeFromDeck(\'' + selectedCardKey + '\')" ' + (!canRemove ? 'disabled' : '') + '>− Remove</button></div></div>';
     }
     function isCardUnlocked(cardKey) {
+      // Admin has everything unlocked
+      if (currentUser && currentUser.isAdmin) return true;
       const card = CARD_DATA[cardKey];
       if (!card) return false;
       if (card.archetype === 'medieval') return true;
-      return unlockedDecks.includes(card.archetype);
+      return unlockedCardSets.includes(card.archetype);
     }
     function getLockedBossName(archetype) {
       if (archetype === 'void-alien') return 'The Void Scout';
@@ -917,6 +975,9 @@
       if (archetype === 'crimson-court') return 'The Blood Countess';
       if (archetype === 'jeweled-court') return 'The Garnet Queen';
       if (archetype === 'elunes-chosen') return 'Moon Shadow Sentinel';
+      if (archetype === 'dragon-wizard') return 'The Arcane Dragonlord';
+      if (archetype === 'celestial-host') return 'The Seraph of Judgment';
+      if (archetype === '8bit-battalion') return 'The Final Boss';
       return 'Unknown Boss';
     }
     function renderCollection() {
@@ -940,8 +1001,8 @@
         return true;
       });
       cards.sort(function(a, b) { 
-        // Sort order: medieval first, then void-alien, then western-skeleton
-        const archOrder = { 'medieval': 0, 'void-alien': 1, 'western-skeleton': 2 };
+        // Sort order: medieval first, then by deck release order
+        const archOrder = { 'medieval': 0, 'void-alien': 1, 'western-skeleton': 2, 'crimson-court': 3, 'jeweled-court': 4, 'elunes-chosen': 5, 'dragon-wizard': 6, 'celestial-host': 7, '8bit-battalion': 8 };
         if (a[1].archetype !== b[1].archetype) return (archOrder[a[1].archetype] || 99) - (archOrder[b[1].archetype] || 99);
         if (a[1].cost !== b[1].cost) return a[1].cost - b[1].cost;
         return a[1].name.localeCompare(b[1].name);
@@ -952,7 +1013,8 @@
         const unlocked = isCardUnlocked(key);
         const rarity = card.rarity || 'common';
         const maxCopies = rarity === 'legendary' ? 1 : (rarity === 'rare' ? 2 : 3);
-        const owned = userCollection[key] || 0; // No cap on owned
+        const owned = (currentUser && currentUser.isAdmin) ? 3 : (userCollection[key] || 0); // Admin has 3 of everything
+        const holoOwned = (currentUser && currentUser.isAdmin) ? 3 : (holoCollection[key] || 0); // Admin has 3 holos too
         const inDeck = currentDeck.filter(function(k) { return k === key; }).length;
         const artUrl = encodeURI(card.art || '');
         
@@ -973,7 +1035,6 @@
         }
         
         // Add holo version if player owns any (skip if regular filter is set)
-        const holoOwned = holoCollection[key] || 0;
         if (holoOwned > 0 && holoVal !== 'regular') {
           const holoKey = key + '_holo';
           const holoInDeck = currentDeck.filter(function(k) { return k === holoKey; }).length;
@@ -1037,7 +1098,7 @@
       
       const card = CARD_DATA[baseKey]; if (!card) return;
       const maxCopies = getMaxCopies(card);
-      const owned = isHolo ? (holoCollection[baseKey] || 0) : (userCollection[baseKey] || 0);
+      const owned = (currentUser && currentUser.isAdmin) ? 3 : (isHolo ? (holoCollection[baseKey] || 0) : (userCollection[baseKey] || 0));
       const inDeck = currentDeck.filter(function(k) { return k === key; }).length;
       
       // Also count total of this card (regular + holo) toward the limit
@@ -1093,7 +1154,8 @@
     async function saveDeck() {
       if (currentDeck.length < 25 || currentDeck.length > 35) { showToast('Need 25-35 cards', true); return; }
       if (!currentDeckName.trim()) { showToast('Enter deck name', true); return; }
-      if (!currentUser || currentUser.id === 'admin') { showToast('Cannot save', true); return; }
+      if (!currentUser) { showToast('Not logged in', true); return; }
+      
       saveBtn.disabled = true; saveBtn.textContent = '💾 Saving...';
       try {
         const res = await fetch('/api/saveDeck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ 

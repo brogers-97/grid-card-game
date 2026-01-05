@@ -949,9 +949,29 @@
           <div class="update-header">
             <span class="update-icon">📜</span>
             <span class="update-title">Latest Update</span>
-            <span class="update-version">v0.9.6</span>
+            <span class="update-version">v0.9.7</span>
           </div>
           <div class="update-content" id="updateContent">
+            <div class="update-section">
+              <div class="update-date">January 4, 2025</div>
+              <ul class="update-list">
+                <li><span class="update-new">NEW</span> Celestial Host Challenge deck - army of Archangels!</li>
+                <li><span class="update-new">NEW</span> 8-Bit Battalion Challenge deck - infinite respawns!</li>
+                <li><span class="update-change">CHANGE</span> First-time boss fights now play boss's theme music</li>
+                <li><span class="update-fix">FIX</span> Styled event log messages for Ghost Train, Void Collapse, Eclipse, Polymorph</li>
+              </ul>
+            </div>
+            <div class="update-section">
+              <div class="update-date">January 3, 2025</div>
+              <ul class="update-list">
+                <li><span class="update-new">NEW</span> CHEAT CODE ACTIVATED boss event for The Final Boss!</li>
+                <li><span class="update-new">NEW</span> 5 cheat codes: IDKFA, BIGHEAD, HESOYAM, HOWDOITURNTHISON, GREEDISGOOD</li>
+                <li><span class="update-new">NEW</span> Retro cinematic with CRT scanlines and typewriter effect</li>
+                <li><span class="update-new">NEW</span> Divine Judgment boss event for Seraph of Judgment!</li>
+                <li><span class="update-new">NEW</span> 4-phase judgment: Warning → Repent → Smite → Spare</li>
+                <li><span class="update-fix">FIX</span> Divine Judgment cinematic blocking fixed</li>
+              </ul>
+            </div>
             <div class="update-section">
               <div class="update-date">January 2, 2025</div>
               <ul class="update-list">
@@ -965,11 +985,8 @@
               <div class="update-date">January 1, 2025</div>
               <ul class="update-list">
                 <li><span class="update-new">NEW</span> Gem Rain boss event for The Garnet Queen!</li>
-                <li><span class="update-new">NEW</span> 5 gem types: Ruby (+ATK), Emerald (+HP), Topaz (extra attacks), Obsidian (freeze), Diamond (unlimited moves)</li>
+                <li><span class="update-new">NEW</span> 5 gem types: Ruby, Emerald, Topaz, Obsidian, Diamond</li>
                 <li><span class="update-new">NEW</span> Warning phase with glowing tiles before gems fall</li>
-                <li><span class="update-new">NEW</span> Gem Rain sound effects</li>
-                <li><span class="update-fix">FIX</span> Gem effects now work properly for player units</li>
-                <li><span class="update-fix">FIX</span> Diamond buff now correctly lasts one turn</li>
               </ul>
             </div>
             <div class="update-section">
@@ -978,25 +995,6 @@
                 <li><span class="update-new">NEW</span> Blood Chalice boss event for Crimson Court!</li>
                 <li><span class="update-new">NEW</span> Crimson Court Challenge deck added</li>
                 <li><span class="update-new">NEW</span> Press Q/W to highlight units that can move/attack</li>
-                <li><span class="update-fix">FIX</span> Boss AI now actively pursues Blood Chalices</li>
-                <li><span class="update-fix">FIX</span> Improved sound system with archetype-based SFX</li>
-              </ul>
-            </div>
-            <div class="update-section">
-              <div class="update-date">December 28, 2024</div>
-              <ul class="update-list">
-                <li><span class="update-new">NEW</span> Ghost Train boss event for Western Skeleton</li>
-                <li><span class="update-new">NEW</span> Void Collapse boss event for Void Alien</li>
-                <li><span class="update-fix">FIX</span> Stone Giant HP now scales properly</li>
-                <li><span class="update-change">CHANGE</span> Game over screen improvements</li>
-              </ul>
-            </div>
-            <div class="update-section">
-              <div class="update-date">December 27, 2024</div>
-              <ul class="update-list">
-                <li><span class="update-new">NEW</span> Challenge mode for all bosses</li>
-                <li><span class="update-new">NEW</span> Buff tiles on the battlefield</li>
-                <li><span class="update-fix">FIX</span> AI targeting improvements</li>
               </ul>
             </div>
           </div>
@@ -1188,19 +1186,39 @@
     });
     
     function updateDeckSelects() {
-      const unlockedDecks = currentUser?.unlockedDecks || ['medieval'];
+      // Calculate unlocked slots based on defeated bosses (1 base + 1 per boss)
+      const defeatedBosses = currentUser?.campaign?.defeatedBosses || [];
+      const numSlots = Math.min(1 + defeatedBosses.length, 8);
+      const unlockedSlots = [];
+      for (let i = 1; i <= numSlots; i++) {
+        unlockedSlots.push('deck-' + i);
+      }
+      
       const customDecks = currentUser?.customDecks || [];
       
-      // Filter decks based on unlocked status and show custom names if available
+      // Filter decks based on unlocked slots and show custom names if available
       const options = deckList.map(d => {
-        const isLocked = !unlockedDecks.includes(d.id);
+        const isLocked = !unlockedSlots.includes(d.id);
+        const slotNum = parseInt(d.id.replace('deck-', ''));
         
-        // Check if user has a custom deck for this type
+        // Check if user has a custom deck for this slot
         const customDeck = customDecks.find(cd => cd.id === d.id);
-        const displayName = customDeck ? customDeck.name : d.name;
+        const hasValidDeck = customDeck && customDeck.cards && customDeck.cards.length >= 25;
+        
+        // Slot 1 special case: "Your First Deck" with starter deck fallback
+        if (d.id === 'deck-1') {
+          const displayName = hasValidDeck ? customDeck.name : 'Your First Deck';
+          return `<option value="${d.id}">${displayName}</option>`;
+        }
+        
+        // Other slots
+        const displayName = hasValidDeck ? customDeck.name : 'Custom Deck ' + slotNum;
         
         if (isLocked) {
-          return `<option value="${d.id}" disabled>🔒 ${d.name} (Beat Campaign to Unlock)</option>`;
+          return `<option value="${d.id}" disabled>🔒 Deck Slot ${slotNum} (Beat Boss to Unlock)</option>`;
+        }
+        if (!hasValidDeck) {
+          return `<option value="${d.id}" disabled>📝 ${displayName} (No deck built)</option>`;
         }
         return `<option value="${d.id}">${displayName}</option>`;
       }).join('');
@@ -1208,13 +1226,10 @@
       deckSelect.innerHTML = options;
       campaignDeckSelect.innerHTML = options;
       
-      // Make sure a valid deck is selected
-      const firstUnlocked = deckList.find(d => unlockedDecks.includes(d.id));
-      if (firstUnlocked) {
-        deckSelect.value = firstUnlocked.id;
-        campaignDeckSelect.value = firstUnlocked.id;
-        deckDescription.textContent = firstUnlocked.description;
-      }
+      // Default to deck-1 (always valid due to starter deck fallback)
+      deckSelect.value = 'deck-1';
+      campaignDeckSelect.value = 'deck-1';
+      deckDescription.textContent = 'Build your own deck with cards you\'ve collected!';
     }
     
     deckSelect.addEventListener('change', () => {
@@ -1591,7 +1606,9 @@
         background: data.background || 'default',
         bossId: data.bossId || '',
         difficulty: data.difficulty || '2',
-        canAutoPlay: data.canAutoPlay ? '1' : '0'
+        canAutoPlay: data.canAutoPlay ? '1' : '0',
+        firstTimeBoss: data.firstTimeBoss ? '1' : '0',
+        bossMusic: data.bossMusic || ''
       });
       window.location.href = '/game.html?' + params.toString();
     });

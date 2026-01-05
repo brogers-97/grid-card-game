@@ -224,7 +224,90 @@ const CARD_RARITIES = {
   'bloodpact': 'rare',
   'bloodtransfusion': 'rare',
   'crimsonrevival': 'rare',
-  'sanguinefeast': 'legendary'
+  'sanguinefeast': 'legendary',
+  // Jeweled Court
+  'rubysprite': 'common',
+  'emeraldforager': 'common',
+  'sapphiredancer': 'common',
+  'topazminer': 'common',
+  'amethystenchanter': 'rare',
+  'diamondguardian': 'rare',
+  'opaldevourer': 'rare',
+  'pearlblessing': 'rare',
+  'garnetqueen': 'legendary',
+  'moonstonewitch': 'legendary',
+  'prismaticfairy': 'legendary',
+  'gemstonecurse': 'legendary',
+  'fairyring': 'legendary',
+  // Elune's Chosen
+  'moonsentinel': 'common',
+  'starweavearcher': 'common',
+  'moonlitbladedancer': 'common',
+  'lunarpriestess': 'common',
+  'twilightsrespite': 'rare',
+  'huntinggodsblessing': 'rare',
+  'stonegiant': 'rare',
+  'nightshadeambusher': 'rare',
+  'moonshadowwarden': 'rare',
+  'elunesmoonwell': 'rare',
+  'lunarprayer': 'rare',
+  'moonflaresorceress': 'rare',
+  'starlitchampion': 'legendary',
+  'starinvoker': 'legendary',
+  'templeofthemoon': 'legendary',
+  'lunarbarrage': 'legendary',
+  // Dragon Wizard
+  'wizardsrune': 'common',
+  'meditationmonk': 'common',
+  'wyrmwhelp': 'common',
+  'cinderwing': 'common',
+  'manasiphonmage': 'rare',
+  'arcanetether': 'rare',
+  'stormdrake': 'rare',
+  'mirrorwizard': 'rare',
+  'volcanicdragon': 'rare',
+  'redwizard': 'legendary',
+  'bluewizard': 'legendary',
+  'chronodrake': 'legendary',
+  'polymorph': 'rare',
+  'manadrain': 'rare',
+  'arcanesurge': 'rare',
+  // Celestial Host
+  'cherubhymnist': 'common',
+  'angelicattendant': 'common',
+  'maidenofvirtue': 'common',
+  'angelofdestruction': 'rare',
+  'seraphichunter': 'rare',
+  'archangelmichael': 'legendary',
+  'archangeluriel': 'legendary',
+  'archangelgabriel': 'legendary',
+  'archangelraphael': 'legendary',
+  'luciferfallenangel': 'legendary',
+  'gardenofeden': 'legendary',
+  'blessingofmight': 'common',
+  'blessingofvigor': 'common',
+  'blessingofprotection': 'rare',
+  'blessingofkings': 'rare',
+  'angelicdescent': 'rare',
+  'heavenlyrescue': 'rare',
+  'layonhands': 'rare',
+  'resurrection': 'legendary',
+  'wrathofgod': 'legendary',
+  // 8-Bit Battalion
+  'slimesprite': 'common',
+  'skeletonwarrior8bit': 'common',
+  'barrel': 'common',
+  'healerfairy': 'common',
+  'bosskey': 'common',
+  'newgameplus': 'common',
+  'knighterrant': 'rare',
+  'pixelproducer': 'rare',
+  'cheatcode': 'rare',
+  'savestate': 'rare',
+  'wizardnpc': 'legendary',
+  'finalboss': 'legendary',
+  'resetbutton': 'legendary',
+  'ragequit': 'legendary'
 };
 
 // Campaign Bosses Definition
@@ -340,6 +423,7 @@ const CAMPAIGN_BOSSES = [
     name: "The Arcane Dragonlord",
     description: "A legendary wizard who has bonded with ancient dragons, wielding devastating spell-fire",
     deckId: "dragon-wizard",
+    challengeDeckId: "dragon-wizard-challenge",
     difficulty: "hard",
     aiLevel: 3,
     requiresBoss: 5,
@@ -352,6 +436,48 @@ const CAMPAIGN_BOSSES = [
     eventConfig: {
       turnInterval: 3,    // Every 3 boss turns, polymorph activates
       duration: 2         // Lasts for 2 turns
+    }
+  },
+  {
+    id: 7,
+    name: "The Seraph of Judgment",
+    description: "A divine archangel who commands the celestial host with righteous fury and holy protection",
+    deckId: "celestial-host",
+    challengeDeckId: "celestial-host-challenge",
+    difficulty: "hard",
+    aiLevel: 3,
+    requiresBoss: 6,
+    cardRewards: ['cherubhymnist', 'angelicattendant', 'maidenofvirtue', 'angelofdestruction', 'seraphichunter', 'archangelmichael', 'archangeluriel', 'archangelgabriel', 'archangelraphael', 'luciferfallenangel', 'gardenofeden', 'blessingofmight', 'blessingofvigor', 'blessingofprotection', 'blessingofkings', 'angelicdescent', 'heavenlyrescue', 'layonhands', 'resurrection', 'wrathofgod'],
+    unlocks: {
+      music: 'celestial-host',
+      background: 'celestial-host'
+    },
+    eventType: 'divine_judgment',
+    eventConfig: {
+      turnInterval: 3,    // Every 3 boss turns
+      duration: 2,        // Pride/Violence effects last 2 turns
+      wrathDamage: 2,     // Damage dealt to Wrathful units (4+ ATK)
+      atkThreshold: 4     // ATK threshold for Wrath
+    }
+  },
+  {
+    id: 8,
+    name: "The Final Boss",
+    description: "A glitched-out retro nightmare that gets stronger the more you hurt it. Good luck!",
+    deckId: "8bit-battalion",
+    challengeDeckId: "8bit-battalion-challenge",
+    difficulty: "hard",
+    aiLevel: 3,
+    requiresBoss: 7,
+    cardRewards: ['slimesprite', 'skeletonwarrior8bit', 'barrel', 'healerfairy', 'bosskey', 'newgameplus', 'knighterrant', 'pixelproducer', 'cheatcode', 'savestate', 'wizardnpc', 'finalboss', 'resetbutton', 'ragequit'],
+    unlocks: {
+      music: '8bit-battalion',
+      background: '8bit-battalion'
+    },
+    eventType: 'cheat_code',
+    eventConfig: {
+      turnInterval: 3,    // Every 3 boss turns
+      duration: 2         // Duration for HESOYAM and GREEDISGOOD effects
     }
   }
 ];
@@ -405,17 +531,20 @@ const authHelpers = {
         isAdmin: true,
         campaign: {
           currentLevel: 999,
-          completedLevels: [1],
-          stars: { '1': 3 },
-          defeatedBosses: ['void-alien']
+          completedLevels: [1, 2, 3, 4, 5, 6, 7, 8],
+          stars: { '1': 3, '2': 3, '3': 3, '4': 3, '5': 3, '6': 3, '7': 3, '8': 3 },
+          defeatedBosses: ['void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host', '8bit-battalion'],
+          challengeCompleted: { '1': true, '2': true, '3': true, '4': true, '5': true, '6': true, '7': true, '8': true }
         },
         cardCollection: getAllCards(),
-        unlockedDecks: ['medieval', 'void-alien'],
-        unlockedMusic: ['medieval', 'void-alien'],
-        unlockedBackgrounds: ['medieval', 'void-alien'],
+        holoCollection: getAllHolos(),
+        unlockedDecks: ['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host', '8bit-battalion'],
+        unlockedMusic: ['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host', '8bit-battalion'],
+        unlockedBackgrounds: ['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host', '8bit-battalion'],
         customDecks: [],
         preferences: { selectedDeck: 'medieval' },
-        stats: { gamesPlayed: 999, gamesWon: 999, campaignWins: 999 }
+        stats: { gamesPlayed: 999, gamesWon: 999, campaignWins: 999, challengeWins: 24 },
+        achievements: getAllAchievementsUnlocked()
       };
     }
     
@@ -640,7 +769,45 @@ function getAllCards() {
    'burrowerbeast', 'psionicoverseer', 'neuralharvester', 'adaptivecolossus', 'sporetitan',
    'voidbroodmother', 'eclipsedevourer', 'ufoscraper', 'assimilation', 'voidcollapse', 
    'hiveascension'].forEach(c => allCards[c] = 10);
+  // Western Skeleton cards
+  ['bonedeputy', 'dustyrattler', 'graverobber', 'phantomscout', 'bonerevolver', 'undeadsheriff',
+   'coffintrapper', 'undertaker', 'thehangedman', 'ghostlystampede', 'bonecolossus',
+   'deadmanshand', 'mostwanted', 'shallowgrave', 'highnoon'].forEach(c => allCards[c] = 10);
+  // Crimson Court cards
+  ['thrall', 'bloodfamiliar', 'nightstalker', 'cryptkeeper', 'vampirespawn', 'bloodpriest',
+   'soulcollector', 'nosferatu', 'coffin', 'bloodcountess', 'eldervampire', 'vampirelord',
+   'bloodpact', 'bloodtransfusion', 'crimsonrevival', 'sanguinefeast'].forEach(c => allCards[c] = 10);
+  // Jeweled Court cards
+  ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 'amethystenchanter',
+   'diamondguardian', 'opaldevourer', 'pearlblessing', 'garnetqueen', 'moonstonewitch',
+   'prismaticfairy', 'gemstonecurse', 'fairyring'].forEach(c => allCards[c] = 10);
+  // Elune's Chosen cards
+  ['moonsentinel', 'starweavearcher', 'moonlitbladedancer', 'lunarpriestess', 'twilightsrespite',
+   'huntinggodsblessing', 'stonegiant', 'nightshadeambusher', 'moonshadowwarden', 'elunesmoonwell',
+   'lunarprayer', 'moonflaresorceress', 'starlitchampion', 'starinvoker', 'templeofthemoon',
+   'lunarbarrage'].forEach(c => allCards[c] = 10);
+  // Dragon Wizard cards
+  ['wizardsrune', 'meditationmonk', 'wyrmwhelp', 'cinderwing', 'manasiphonmage', 'arcanetether',
+   'stormdrake', 'mirrorwizard', 'volcanicdragon', 'redwizard', 'bluewizard', 'chronodrake',
+   'polymorph', 'manadrain', 'arcanesurge'].forEach(c => allCards[c] = 10);
+  // Celestial Host cards
+  ['cherubhymnist', 'angelicattendant', 'maidenofvirtue', 'angelofdestruction', 'seraphichunter',
+   'archangelmichael', 'archangeluriel', 'archangelgabriel', 'archangelraphael', 'luciferfallenangel',
+   'gardenofeden', 'blessingofmight', 'blessingofvigor', 'blessingofprotection', 'blessingofkings',
+   'angelicdescent', 'heavenlyrescue', 'layonhands', 'resurrection', 'wrathofgod'].forEach(c => allCards[c] = 10);
+  // 8-Bit Battalion cards
+  ['slimesprite', 'skeletonwarrior8bit', 'barrel', 'healerfairy', 'bosskey', 'newgameplus',
+   'knighterrant', 'pixelproducer', 'cheatcode', 'savestate', 'wizardnpc', 'finalboss',
+   'resetbutton', 'ragequit'].forEach(c => allCards[c] = 10);
   return allCards;
+}
+
+// Helper to get all holos for admin
+function getAllHolos() {
+  const allHolos = {};
+  // Give admin 3 holos of every card
+  Object.keys(getAllCards()).forEach(c => allHolos[c] = 3);
+  return allHolos;
 }
 
 // ==================== ACHIEVEMENTS SYSTEM ====================
@@ -1167,6 +1334,14 @@ const ACHIEVEMENTS = {
 // Helper to get all achievements as array
 function getAllAchievements() {
   return Object.values(ACHIEVEMENTS);
+}
+
+// Helper to get all achievements unlocked (for admin)
+function getAllAchievementsUnlocked() {
+  return Object.keys(ACHIEVEMENTS).reduce((acc, key) => {
+    acc[key] = { unlockedAt: new Date().toISOString() };
+    return acc;
+  }, {});
 }
 
 // Helper to get achievements by category

@@ -161,7 +161,16 @@ app.post("/api/fixCollection", async (req, res) => {
       // Elune's Chosen - Legendary
       starlitchampion: 'legendary', starinvoker: 'legendary', templeofthemoon: 'legendary', lunarbarrage: 'legendary',
       // Token/Spawnable
-      gemshard: 'common'
+      gemshard: 'common',
+      // 8-Bit Battalion - Common
+      slimesprite: 'common', skeletonwarrior8bit: 'common', barrel: 'common', healerfairy: 'common',
+      bosskey: 'common', newgameplus: 'rare',
+      // 8-Bit Battalion - Rare
+      knighterrant: 'rare', pixelproducer: 'rare', cheatcode: 'rare', savestate: 'rare',
+      // 8-Bit Battalion - Legendary
+      wizardnpc: 'legendary', finalboss: 'legendary', resetbutton: 'legendary', ragequit: 'legendary',
+      // 8-Bit Battalion - Tokens
+      pixel: 'common', slimeling: 'common'
     };
     
     // Get max copies based on rarity - all rarities can have 3 in deck
@@ -195,15 +204,49 @@ app.post("/api/fixCollection", async (req, res) => {
 });
 
 // Save deck endpoint - saves to medieval or void-alien slot
+// Admin custom decks storage (in-memory, persists while server runs)
+const adminCustomDecks = [];
+
 app.post("/api/saveDeck", async (req, res) => {
   try {
     const { userId, deckType, deckName, cards, music, background } = req.body;
     
-    if (!userId || userId === 'admin') {
+    // Handle admin deck saving
+    if (userId === 'admin') {
+      if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host', '8bit-battalion'].includes(deckType)) {
+        return res.status(400).json({ success: false, error: 'Invalid deck type' });
+      }
+      if (!cards || !Array.isArray(cards) || cards.length < 25 || cards.length > 35) {
+        return res.status(400).json({ success: false, error: 'Deck must have 25-35 cards' });
+      }
+      
+      const existingIdx = adminCustomDecks.findIndex(d => d.id === deckType);
+      const deckData = { id: deckType, name: deckName.trim(), cards: cards, music: music || 'default', background: background || 'default' };
+      if (existingIdx >= 0) { adminCustomDecks[existingIdx] = deckData; }
+      else { adminCustomDecks.push(deckData); }
+      
+      // Return updated admin user object
+      return res.json({ 
+        success: true, 
+        user: {
+          id: 'admin',
+          username: 'Admin',
+          isAdmin: true,
+          campaign: { currentLevel: 999, completedLevels: [1,2,3,4,5,6,7,8], stars: {'1':3,'2':3,'3':3,'4':3,'5':3,'6':3,'7':3,'8':3}, defeatedBosses: ['void-alien','western-skeleton','crimson-court','jeweled-court','elunes-chosen','dragon-wizard','celestial-host','8bit-battalion'], challengeCompleted: {'1':true,'2':true,'3':true,'4':true,'5':true,'6':true,'7':true,'8':true} },
+          unlockedDecks: ['medieval','void-alien','western-skeleton','crimson-court','jeweled-court','elunes-chosen','dragon-wizard','celestial-host','8bit-battalion'],
+          unlockedMusic: ['medieval','void-alien','western-skeleton','crimson-court','jeweled-court','elunes-chosen','dragon-wizard','celestial-host','8bit-battalion'],
+          unlockedBackgrounds: ['medieval','void-alien','western-skeleton','crimson-court','jeweled-court','elunes-chosen','dragon-wizard','celestial-host','8bit-battalion'],
+          customDecks: adminCustomDecks,
+          stats: { gamesPlayed: 999, gamesWon: 999, campaignWins: 999 }
+        }
+      });
+    }
+    
+    if (!userId) {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
     
-    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard'].includes(deckType)) {
+    if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host', '8bit-battalion'].includes(deckType)) {
       return res.status(400).json({ success: false, error: 'Invalid deck type' });
     }
     
@@ -1001,6 +1044,82 @@ const DECKS = {
       { key: "moonshadowwarden", name: "Moon Shadow Warden", atk: 4, hp: 2, cost: 3, type: "monster", effect: "onAttack", effectId: "shadow_root", effectDesc: "ON ATTACK: Target cannot move next turn.", art: "/images/Moon Shadow Warden.png", rarity: "rare" },
     ]
   },
+  "dragon-wizard-challenge": {
+    name: "Dragon Wizard (Challenge)",
+    description: "CHALLENGE MODE: The Arcane Dragonlord unleashes devastating spell-fire and polymorph chaos",
+    archetype: "dragon",
+    isChallenge: true,
+    cards: [
+      // === LEGENDARY SPAM (The unfair stuff) ===
+      // Chrono Drake x3 (normally 1) - resurrection from discard
+      { key: "chronodrake", name: "Chrono Drake", atk: 3, hp: 5, cost: 5, type: "monster", effect: "onDeploy", effectId: "time_rift", effectDesc: "ON DEPLOY: Choose a unit from your discard to resurrect adjacent to Chrono Drake with full stats.", art: "/images/Chrono Drake.png", rarity: "legendary" },
+      { key: "chronodrake", name: "Chrono Drake", atk: 3, hp: 5, cost: 5, type: "monster", effect: "onDeploy", effectId: "time_rift", effectDesc: "ON DEPLOY: Choose a unit from your discard to resurrect adjacent to Chrono Drake with full stats.", art: "/images/Chrono Drake.png", rarity: "legendary" },
+      { key: "chronodrake", name: "Chrono Drake", atk: 3, hp: 5, cost: 5, type: "monster", effect: "onDeploy", effectId: "time_rift", effectDesc: "ON DEPLOY: Choose a unit from your discard to resurrect adjacent to Chrono Drake with full stats.", art: "/images/Chrono Drake.png", rarity: "legendary" },
+      // Red Wizard x3 (normally 1) - gains HP when any unit gains HP
+      { key: "redwizard", name: "Red Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "red_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains HP, this unit gains +1 HP.", art: "/images/Red Wizard.png", rarity: "legendary" },
+      { key: "redwizard", name: "Red Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "red_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains HP, this unit gains +1 HP.", art: "/images/Red Wizard.png", rarity: "legendary" },
+      { key: "redwizard", name: "Red Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "red_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains HP, this unit gains +1 HP.", art: "/images/Red Wizard.png", rarity: "legendary" },
+      // Blue Wizard x3 (normally 1) - gains ATK when any unit gains ATK
+      { key: "bluewizard", name: "Blue Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "blue_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains ATK, this unit gains +1 ATK.", art: "/images/Blue Wizard.png", rarity: "legendary" },
+      { key: "bluewizard", name: "Blue Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "blue_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains ATK, this unit gains +1 ATK.", art: "/images/Blue Wizard.png", rarity: "legendary" },
+      { key: "bluewizard", name: "Blue Wizard", atk: 4, hp: 4, cost: 5, type: "monster", effect: "passive", effectId: "blue_wizard", effectDesc: "PASSIVE: Whenever ANY unit on the field gains ATK, this unit gains +1 ATK.", art: "/images/Blue Wizard.png", rarity: "legendary" },
+      // Dragon's Fury x3 (normally 1) - mass dragon buff
+      { key: "dragonsfury", name: "Dragon's Fury", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "dragons_fury", effectDesc: "INSTANT: All friendly Dragons gain +2 ATK permanently.", art: "/images/Dragons Fury.png", rarity: "legendary" },
+      { key: "dragonsfury", name: "Dragon's Fury", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "dragons_fury", effectDesc: "INSTANT: All friendly Dragons gain +2 ATK permanently.", art: "/images/Dragons Fury.png", rarity: "legendary" },
+      { key: "dragonsfury", name: "Dragon's Fury", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "dragons_fury", effectDesc: "INSTANT: All friendly Dragons gain +2 ATK permanently.", art: "/images/Dragons Fury.png", rarity: "legendary" },
+      
+      // === SPELL DAMAGE SYNERGY ===
+      // Storm Drake x4 - spell echo damage
+      { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
+      { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
+      { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
+      { key: "stormdrake", name: "Storm Drake", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "spell_echo", effectDesc: "SPELL ECHO: When you cast a spell, deal 1 damage to a random enemy.", art: "/images/Storm Drake.png", rarity: "rare" },
+      
+      // === DAMAGE REFLECTION ===
+      // Mirror Wizard x4 - reflect all damage taken
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_reflection", effectDesc: "PASSIVE: When this takes damage, deal that damage back to the attacker.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_reflection", effectDesc: "PASSIVE: When this takes damage, deal that damage back to the attacker.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_reflection", effectDesc: "PASSIVE: When this takes damage, deal that damage back to the attacker.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      { key: "mirrorwizard", name: "Mirror Wizard", atk: 2, hp: 4, cost: 3, type: "monster", effect: "passive", effectId: "arcane_reflection", effectDesc: "PASSIVE: When this takes damage, deal that damage back to the attacker.", art: "/images/Mirror Wizard.png", rarity: "rare" },
+      
+      // === POLYMORPH SPAM ===
+      // Polymorph x5 - turn enemies into sheep
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "polymorph", name: "Polymorph", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "polymorph", effectDesc: "INSTANT: Transform target enemy with 3 or less HP into a 1/1 Sheep.", art: "/images/Polymorph.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      
+      // === MANA DRAIN ===
+      // Mana Drain x4 - damage + energy steal
+      { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      { key: "manadrain", name: "Mana Drain", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "mana_drain", effectDesc: "INSTANT: Deal 2 damage to target enemy. Enemy loses 1 energy.", art: "/images/Mana Drain.png", requiresTarget: "enemy_unit", rarity: "rare" },
+      // Mana Siphon Mage x3 - energy drain on kill
+      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 4, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
+      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 4, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
+      { key: "manasiphonmage", name: "Mana Siphon Mage", atk: 4, hp: 3, cost: 3, type: "monster", effect: "onKill", effectId: "mana_drain_kill", effectDesc: "ON KILL: Enemy loses 1 energy.", art: "/images/Mana Siphon Mage.png", rarity: "rare" },
+      
+      // === VOLCANIC DESTRUCTION ===
+      // Volcanic Dragon x3 - chain HP reset on death
+      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units to 1 HP. Chains to their adjacent units too.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
+      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units to 1 HP. Chains to their adjacent units too.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
+      { key: "volcanicdragon", name: "Volcanic Dragon", atk: 4, hp: 3, cost: 4, type: "monster", effect: "onDeath", effectId: "volcanic_death", effectDesc: "ON DEATH: Set all adjacent units to 1 HP. Chains to their adjacent units too.", art: "/images/Volcanic Dragon.png", rarity: "rare" },
+      
+      // === FODDER FOR BUFFING ===
+      // Wizard's Rune x4 - draws wizards, summons on death
+      { key: "wizardsrune", name: "Wizards Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a random Wizard. DEATH: Summon a Wizard from hand for free.", art: "/images/Wizards Rune.png", rarity: "common" },
+      { key: "wizardsrune", name: "Wizards Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a random Wizard. DEATH: Summon a Wizard from hand for free.", art: "/images/Wizards Rune.png", rarity: "common" },
+      { key: "wizardsrune", name: "Wizards Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a random Wizard. DEATH: Summon a Wizard from hand for free.", art: "/images/Wizards Rune.png", rarity: "common" },
+      { key: "wizardsrune", name: "Wizards Rune", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeployDeath", effectId: "wizard_rune", effectDesc: "DEPLOY: Draw a random Wizard. DEATH: Summon a Wizard from hand for free.", art: "/images/Wizards Rune.png", rarity: "common" },
+      // Cinderwing x4 - splash damage on attack
+      { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
+      { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
+      { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
+      { key: "cinderwing", name: "Cinderwing", atk: 3, hp: 1, cost: 2, type: "monster", effect: "onAttack", effectId: "splash_random", effectDesc: "ON ATTACK: Deal 1 damage to another random enemy.", art: "/images/Cinderwing.png", rarity: "common" },
+    ]
+  },
   "dragon-wizard": {
     name: "Arcane Dragonflight",
     description: "Wizards and dragons unite with spell synergy and anti-buff tech",
@@ -1056,6 +1175,265 @@ const DECKS = {
       { key: "arcanerift", name: "Arcane Rift", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "swap_positions", effectDesc: "INSTANT: Swap positions of any two units on the field.", art: "/images/Arcane Rift.png", requiresTarget: "any_unit", rarity: "legendary" },
       // Dragon's Fury x1
       { key: "dragonsfury", name: "Dragon's Fury", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "dragons_fury", effectDesc: "INSTANT: All friendly Dragons gain +2 ATK permanently.", art: "/images/Dragons Fury.png", rarity: "legendary" },
+    ]
+  },
+  
+  "celestial-host-challenge": {
+    name: "Celestial Host (Challenge)",
+    description: "CHALLENGE MODE: The Seraph unleashes an army of archangels with overwhelming divine power",
+    archetype: "celestial",
+    isChallenge: true,
+    cards: [
+      // === ARCHANGEL SPAM (4x of each legendary archangel) ===
+      // Archangel Michael x4 - rampage on kill
+      { key: "archangelmichael", name: "Archangel Michael", atk: 5, hp: 5, cost: 5, type: "monster", effect: "onKill", effectId: "michael_rampage", effectDesc: "ON KILL: The first kill each turn, can move and attack again.", art: "/images/Archangel Michael.png", rarity: "legendary" },
+      { key: "archangelmichael", name: "Archangel Michael", atk: 5, hp: 5, cost: 5, type: "monster", effect: "onKill", effectId: "michael_rampage", effectDesc: "ON KILL: The first kill each turn, can move and attack again.", art: "/images/Archangel Michael.png", rarity: "legendary" },
+      { key: "archangelmichael", name: "Archangel Michael", atk: 5, hp: 5, cost: 5, type: "monster", effect: "onKill", effectId: "michael_rampage", effectDesc: "ON KILL: The first kill each turn, can move and attack again.", art: "/images/Archangel Michael.png", rarity: "legendary" },
+      { key: "archangelmichael", name: "Archangel Michael", atk: 5, hp: 5, cost: 5, type: "monster", effect: "onKill", effectId: "michael_rampage", effectDesc: "ON KILL: The first kill each turn, can move and attack again.", art: "/images/Archangel Michael.png", rarity: "legendary" },
+      // Archangel Gabriel x3 - row damage on attack
+      { key: "archangelgabriel", name: "Archangel Gabriel", atk: 6, hp: 5, cost: 6, type: "monster", effect: "onAttack", effectId: "gabriel_wrath", effectDesc: "ON ATTACK: Deal 1 damage to all enemies in the same row as the target.", art: "/images/Archangel Gabriel.png", rarity: "legendary" },
+      { key: "archangelgabriel", name: "Archangel Gabriel", atk: 6, hp: 5, cost: 6, type: "monster", effect: "onAttack", effectId: "gabriel_wrath", effectDesc: "ON ATTACK: Deal 1 damage to all enemies in the same row as the target.", art: "/images/Archangel Gabriel.png", rarity: "legendary" },
+      { key: "archangelgabriel", name: "Archangel Gabriel", atk: 6, hp: 5, cost: 6, type: "monster", effect: "onAttack", effectId: "gabriel_wrath", effectDesc: "ON ATTACK: Deal 1 damage to all enemies in the same row as the target.", art: "/images/Archangel Gabriel.png", rarity: "legendary" },
+      // Archangel Raphael x3 - immune on deploy, shields allies behind
+      { key: "archangelraphael", name: "Archangel Raphael", atk: 3, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "raphael_shield", effectDesc: "IMMUNE when played. Allies in 3 tiles behind me take no damage.", art: "/images/Archangel Raphael.png", rarity: "legendary" },
+      { key: "archangelraphael", name: "Archangel Raphael", atk: 3, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "raphael_shield", effectDesc: "IMMUNE when played. Allies in 3 tiles behind me take no damage.", art: "/images/Archangel Raphael.png", rarity: "legendary" },
+      { key: "archangelraphael", name: "Archangel Raphael", atk: 3, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "raphael_shield", effectDesc: "IMMUNE when played. Allies in 3 tiles behind me take no damage.", art: "/images/Archangel Raphael.png", rarity: "legendary" },
+      // Archangel Uriel x2 - energy on draw, draw on kill
+      { key: "archangeluriel", name: "Archangel Uriel", atk: 2, hp: 7, cost: 5, type: "monster", effect: "passive", effectId: "uriel_wisdom", effectDesc: "PASSIVE: Gain 1 energy when you draw. Draw a card when I kill an enemy.", art: "/images/Archangel Uriel.png", rarity: "legendary" },
+      { key: "archangeluriel", name: "Archangel Uriel", atk: 2, hp: 7, cost: 5, type: "monster", effect: "passive", effectId: "uriel_wisdom", effectDesc: "PASSIVE: Gain 1 energy when you draw. Draw a card when I kill an enemy.", art: "/images/Archangel Uriel.png", rarity: "legendary" },
+      
+      // === RESURRECTION SPAM ===
+      // Resurrection x4 - resummon from discard anywhere with immune
+      { key: "resurrection", name: "Resurrection", atk: 0, hp: 0, cost: 8, type: "spell", effect: "instant", effectId: "resurrection", effectDesc: "Resummon an ally from your discard to any space. It has Immune this turn.", art: "/images/Resurrection.png", rarity: "legendary" },
+      { key: "resurrection", name: "Resurrection", atk: 0, hp: 0, cost: 8, type: "spell", effect: "instant", effectId: "resurrection", effectDesc: "Resummon an ally from your discard to any space. It has Immune this turn.", art: "/images/Resurrection.png", rarity: "legendary" },
+      { key: "resurrection", name: "Resurrection", atk: 0, hp: 0, cost: 8, type: "spell", effect: "instant", effectId: "resurrection", effectDesc: "Resummon an ally from your discard to any space. It has Immune this turn.", art: "/images/Resurrection.png", rarity: "legendary" },
+      { key: "resurrection", name: "Resurrection", atk: 0, hp: 0, cost: 8, type: "spell", effect: "instant", effectId: "resurrection", effectDesc: "Resummon an ally from your discard to any space. It has Immune this turn.", art: "/images/Resurrection.png", rarity: "legendary" },
+      
+      // === BLESSING BUFFS ===
+      // Blessing of Might x4 - +ATK that scales on attack
+      { key: "blessingofmight", name: "Blessing of Might", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "blessing_might", effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack.", art: "/images/Blessing of Might.png", requiresTarget: "friendly_unit", rarity: "common" },
+      { key: "blessingofmight", name: "Blessing of Might", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "blessing_might", effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack.", art: "/images/Blessing of Might.png", requiresTarget: "friendly_unit", rarity: "common" },
+      { key: "blessingofmight", name: "Blessing of Might", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "blessing_might", effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack.", art: "/images/Blessing of Might.png", requiresTarget: "friendly_unit", rarity: "common" },
+      { key: "blessingofmight", name: "Blessing of Might", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "blessing_might", effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack.", art: "/images/Blessing of Might.png", requiresTarget: "friendly_unit", rarity: "common" },
+      // Blessing of Protection x4 - damage prevention
+      { key: "blessingofprotection", name: "Blessing of Protection", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blessing_protection", effectDesc: "Target ally: The next time this would take damage, prevent it.", art: "/images/Blessing of Protection.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "blessingofprotection", name: "Blessing of Protection", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blessing_protection", effectDesc: "Target ally: The next time this would take damage, prevent it.", art: "/images/Blessing of Protection.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "blessingofprotection", name: "Blessing of Protection", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blessing_protection", effectDesc: "Target ally: The next time this would take damage, prevent it.", art: "/images/Blessing of Protection.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "blessingofprotection", name: "Blessing of Protection", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blessing_protection", effectDesc: "Target ally: The next time this would take damage, prevent it.", art: "/images/Blessing of Protection.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      
+      // === HEALING SPAM ===
+      // Garden of Eden x3 - structure that heals and buffs max HP
+      { key: "gardenofeden", name: "Garden of Eden", atk: 0, hp: 5, cost: 4, type: "structure", effect: "startOfTurn", effectId: "eden_blessing", effectDesc: "START OF TURN: Adjacent units heal 2 HP and gain +1 max HP.", art: "/images/Garden of Eden.png", rarity: "legendary" },
+      { key: "gardenofeden", name: "Garden of Eden", atk: 0, hp: 5, cost: 4, type: "structure", effect: "startOfTurn", effectId: "eden_blessing", effectDesc: "START OF TURN: Adjacent units heal 2 HP and gain +1 max HP.", art: "/images/Garden of Eden.png", rarity: "legendary" },
+      { key: "gardenofeden", name: "Garden of Eden", atk: 0, hp: 5, cost: 4, type: "structure", effect: "startOfTurn", effectId: "eden_blessing", effectDesc: "START OF TURN: Adjacent units heal 2 HP and gain +1 max HP.", art: "/images/Garden of Eden.png", rarity: "legendary" },
+      // Lay on Hands x4 - full heal
+      { key: "layonhands", name: "Lay on Hands", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lay_on_hands", effectDesc: "Heal target unit to full HP.", art: "/images/Lay on Hands.png", requiresTarget: "any_unit", rarity: "rare" },
+      { key: "layonhands", name: "Lay on Hands", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lay_on_hands", effectDesc: "Heal target unit to full HP.", art: "/images/Lay on Hands.png", requiresTarget: "any_unit", rarity: "rare" },
+      { key: "layonhands", name: "Lay on Hands", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lay_on_hands", effectDesc: "Heal target unit to full HP.", art: "/images/Lay on Hands.png", requiresTarget: "any_unit", rarity: "rare" },
+      { key: "layonhands", name: "Lay on Hands", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lay_on_hands", effectDesc: "Heal target unit to full HP.", art: "/images/Lay on Hands.png", requiresTarget: "any_unit", rarity: "rare" },
+      
+      // === AGGRESSIVE UNITS ===
+      // Angel of Destruction x4 - heart damage on kill
+      { key: "angelofdestruction", name: "Angel of Destruction", atk: 3, hp: 4, cost: 3, type: "monster", effect: "onKill", effectId: "destruction_heart", effectDesc: "ON KILL: Deal 1 damage to the enemy heart.", art: "/images/Angel of Destruction.png", rarity: "rare" },
+      { key: "angelofdestruction", name: "Angel of Destruction", atk: 3, hp: 4, cost: 3, type: "monster", effect: "onKill", effectId: "destruction_heart", effectDesc: "ON KILL: Deal 1 damage to the enemy heart.", art: "/images/Angel of Destruction.png", rarity: "rare" },
+      { key: "angelofdestruction", name: "Angel of Destruction", atk: 3, hp: 4, cost: 3, type: "monster", effect: "onKill", effectId: "destruction_heart", effectDesc: "ON KILL: Deal 1 damage to the enemy heart.", art: "/images/Angel of Destruction.png", rarity: "rare" },
+      { key: "angelofdestruction", name: "Angel of Destruction", atk: 3, hp: 4, cost: 3, type: "monster", effect: "onKill", effectId: "destruction_heart", effectDesc: "ON KILL: Deal 1 damage to the enemy heart.", art: "/images/Angel of Destruction.png", rarity: "rare" },
+      // Seraphic Hunter x3 - ranged attacker
+      { key: "seraphichunter", name: "Seraphic Hunter", atk: 4, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "seraphic_range", effectDesc: "RANGE 3. Can only move OR attack each turn, not both.", art: "/images/Seraphic Hunter.png", rarity: "rare", range: 3 },
+      { key: "seraphichunter", name: "Seraphic Hunter", atk: 4, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "seraphic_range", effectDesc: "RANGE 3. Can only move OR attack each turn, not both.", art: "/images/Seraphic Hunter.png", rarity: "rare", range: 3 },
+      { key: "seraphichunter", name: "Seraphic Hunter", atk: 4, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "seraphic_range", effectDesc: "RANGE 3. Can only move OR attack each turn, not both.", art: "/images/Seraphic Hunter.png", rarity: "rare", range: 3 },
+      
+      // === WRATH OF GOD ===
+      // Wrath of God x2 - board wipe
+      { key: "wrathofgod", name: "Wrath of God", atk: 0, hp: 0, cost: 10, type: "spell", effect: "instant", effectId: "wrath_of_god", effectDesc: "Destroy ALL units on the board.", art: "/images/Wrath of God.png", rarity: "legendary" },
+      { key: "wrathofgod", name: "Wrath of God", atk: 0, hp: 0, cost: 10, type: "spell", effect: "instant", effectId: "wrath_of_god", effectDesc: "Destroy ALL units on the board.", art: "/images/Wrath of God.png", rarity: "legendary" },
+    ]
+  },
+  "celestial-host": {
+    name: "Celestial Host",
+    description: "Angelic forces with powerful healing, protection, and divine wrath",
+    archetype: "celestial",
+    cards: [
+      // Cherub Hymnist x3 (draw on deploy)
+      { key: "cherubhymnist", name: "Cherub Hymnist", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "cherub_draw", effectDesc: "ON DEPLOY: Draw a card.", art: "/images/Cherub Hymnist.png", rarity: "common" },
+      { key: "cherubhymnist", name: "Cherub Hymnist", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "cherub_draw", effectDesc: "ON DEPLOY: Draw a card.", art: "/images/Cherub Hymnist.png", rarity: "common" },
+      { key: "cherubhymnist", name: "Cherub Hymnist", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "cherub_draw", effectDesc: "ON DEPLOY: Draw a card.", art: "/images/Cherub Hymnist.png", rarity: "common" },
+      // Angelic Attendant x3 (heal adjacent allies each turn)
+      { key: "angelicattendant", name: "Angelic Attendant", atk: 1, hp: 3, cost: 2, type: "monster", effect: "startOfTurn", effectId: "attendant_heal", effectDesc: "START OF TURN: Heal adjacent allies 1 HP.", art: "/images/Angelic Attendant.png", rarity: "common" },
+      { key: "angelicattendant", name: "Angelic Attendant", atk: 1, hp: 3, cost: 2, type: "monster", effect: "startOfTurn", effectId: "attendant_heal", effectDesc: "START OF TURN: Heal adjacent allies 1 HP.", art: "/images/Angelic Attendant.png", rarity: "common" },
+      { key: "angelicattendant", name: "Angelic Attendant", atk: 1, hp: 3, cost: 2, type: "monster", effect: "startOfTurn", effectId: "attendant_heal", effectDesc: "START OF TURN: Heal adjacent allies 1 HP.", art: "/images/Angelic Attendant.png", rarity: "common" },
+      // Maiden of Virtue x3 (heal heart each turn)
+      { key: "maidenofvirtue", name: "Maiden of Virtue", atk: 1, hp: 3, cost: 2, type: "monster", effect: "startOfTurn", effectId: "maiden_heal", effectDesc: "START OF TURN: Heal your heart 1 HP.", art: "/images/Maiden of Virtue.png", rarity: "common" },
+      { key: "maidenofvirtue", name: "Maiden of Virtue", atk: 1, hp: 3, cost: 2, type: "monster", effect: "startOfTurn", effectId: "maiden_heal", effectDesc: "START OF TURN: Heal your heart 1 HP.", art: "/images/Maiden of Virtue.png", rarity: "common" },
+      { key: "maidenofvirtue", name: "Maiden of Virtue", atk: 1, hp: 3, cost: 2, type: "monster", effect: "startOfTurn", effectId: "maiden_heal", effectDesc: "START OF TURN: Heal your heart 1 HP.", art: "/images/Maiden of Virtue.png", rarity: "common" },
+      // Angel of Destruction x2 (damage heart on kill)
+      { key: "angelofdestruction", name: "Angel of Destruction", atk: 3, hp: 4, cost: 3, type: "monster", effect: "onKill", effectId: "destruction_heart", effectDesc: "ON KILL: Deal 1 damage to the enemy heart.", art: "/images/Angel of Destruction.png", rarity: "rare" },
+      { key: "angelofdestruction", name: "Angel of Destruction", atk: 3, hp: 4, cost: 3, type: "monster", effect: "onKill", effectId: "destruction_heart", effectDesc: "ON KILL: Deal 1 damage to the enemy heart.", art: "/images/Angel of Destruction.png", rarity: "rare" },
+      // Seraphic Hunter x2 (ranged 3, can only move OR attack)
+      { key: "seraphichunter", name: "Seraphic Hunter", atk: 4, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "seraphic_range", effectDesc: "RANGE 3. Can only move OR attack each turn, not both.", art: "/images/Seraphic Hunter.png", rarity: "rare", range: 3 },
+      { key: "seraphichunter", name: "Seraphic Hunter", atk: 4, hp: 3, cost: 4, type: "monster", effect: "passive", effectId: "seraphic_range", effectDesc: "RANGE 3. Can only move OR attack each turn, not both.", art: "/images/Seraphic Hunter.png", rarity: "rare", range: 3 },
+      // Archangel Michael x1 (move+attack again on first kill each turn)
+      { key: "archangelmichael", name: "Archangel Michael", atk: 5, hp: 5, cost: 5, type: "monster", effect: "onKill", effectId: "michael_rampage", effectDesc: "ON KILL: The first kill each turn, can move and attack again.", art: "/images/Archangel Michael.png", rarity: "legendary" },
+      // Archangel Uriel x1 (energy on draw, draw on kill)
+      { key: "archangeluriel", name: "Archangel Uriel", atk: 2, hp: 7, cost: 5, type: "monster", effect: "passive", effectId: "uriel_wisdom", effectDesc: "PASSIVE: Gain 1 energy when you draw. Draw a card when I kill an enemy.", art: "/images/Archangel Uriel.png", rarity: "legendary" },
+      // Archangel Gabriel x1 (row damage on attack)
+      { key: "archangelgabriel", name: "Archangel Gabriel", atk: 6, hp: 5, cost: 6, type: "monster", effect: "onAttack", effectId: "gabriel_wrath", effectDesc: "ON ATTACK: Deal 1 damage to all enemies in the same row as the target.", art: "/images/Archangel Gabriel.png", rarity: "legendary" },
+      // Archangel Raphael x1 (immune on deploy, allies behind take no damage)
+      { key: "archangelraphael", name: "Archangel Raphael", atk: 3, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "raphael_shield", effectDesc: "IMMUNE when played. Allies in 3 tiles behind me take no damage.", art: "/images/Archangel Raphael.png", rarity: "legendary" },
+      // Lucifer Fallen Angel x1 (deploy anywhere, damages own heart)
+      { key: "luciferfallenangel", name: "Lucifer Fallen Angel", atk: 10, hp: 8, cost: 6, type: "monster", effect: "startOfTurn", effectId: "lucifer_curse", effectDesc: "Can deploy to any space. START OF TURN: Deal 3 damage to your heart.", art: "/images/Lucifer Fallen Angel.png", rarity: "legendary", deployAnywhere: true },
+      // Garden of Eden x1 (structure - heal and +max hp to adjacent)
+      { key: "gardenofeden", name: "Garden of Eden", atk: 0, hp: 5, cost: 4, type: "structure", effect: "startOfTurn", effectId: "eden_blessing", effectDesc: "START OF TURN: Adjacent units heal 2 HP and gain +1 max HP.", art: "/images/Garden of Eden.png", rarity: "legendary" },
+      // Blessing of Might x3 (permanent +1 ATK, +1 ATK on attack)
+      { key: "blessingofmight", name: "Blessing of Might", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "blessing_might", effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack.", art: "/images/Blessing of Might.png", requiresTarget: "friendly_unit", rarity: "common" },
+      { key: "blessingofmight", name: "Blessing of Might", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "blessing_might", effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack.", art: "/images/Blessing of Might.png", requiresTarget: "friendly_unit", rarity: "common" },
+      { key: "blessingofmight", name: "Blessing of Might", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "blessing_might", effectDesc: "Target ally gains +1 ATK. Gains +1 ATK every time they attack.", art: "/images/Blessing of Might.png", requiresTarget: "friendly_unit", rarity: "common" },
+      // Blessing of Vigor x3 (gain energy on attack/attacked)
+      { key: "blessingofvigor", name: "Blessing of Vigor", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "blessing_vigor", effectDesc: "Target ally gains: Whenever I attack or am attacked, gain 1 energy.", art: "/images/Blessing of Vigor.png", requiresTarget: "friendly_unit", rarity: "common" },
+      { key: "blessingofvigor", name: "Blessing of Vigor", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "blessing_vigor", effectDesc: "Target ally gains: Whenever I attack or am attacked, gain 1 energy.", art: "/images/Blessing of Vigor.png", requiresTarget: "friendly_unit", rarity: "common" },
+      { key: "blessingofvigor", name: "Blessing of Vigor", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "blessing_vigor", effectDesc: "Target ally gains: Whenever I attack or am attacked, gain 1 energy.", art: "/images/Blessing of Vigor.png", requiresTarget: "friendly_unit", rarity: "common" },
+      // Blessing of Protection x2 (prevent next damage)
+      { key: "blessingofprotection", name: "Blessing of Protection", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blessing_protection", effectDesc: "Target ally: The next time this would take damage, prevent it.", art: "/images/Blessing of Protection.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "blessingofprotection", name: "Blessing of Protection", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "blessing_protection", effectDesc: "Target ally: The next time this would take damage, prevent it.", art: "/images/Blessing of Protection.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      // Blessing of Kings x2 (draw on attack/attacked)
+      { key: "blessingofkings", name: "Blessing of Kings", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "blessing_kings", effectDesc: "Target ally gains: Whenever I attack or am attacked, draw a card.", art: "/images/Blessing of Kings.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "blessingofkings", name: "Blessing of Kings", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "blessing_kings", effectDesc: "Target ally gains: Whenever I attack or am attacked, draw a card.", art: "/images/Blessing of Kings.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      // Angelic Descent x2 (next unit deploys anywhere, deal 1 to adjacent on summon)
+      { key: "angelicdescent", name: "Angelic Descent", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "angelic_descent", effectDesc: "Your next unit can deploy to any row. Deal 1 damage to adjacent enemies when summoned.", art: "/images/Angelic Descent.png", rarity: "rare" },
+      { key: "angelicdescent", name: "Angelic Descent", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "angelic_descent", effectDesc: "Your next unit can deploy to any row. Deal 1 damage to adjacent enemies when summoned.", art: "/images/Angelic Descent.png", rarity: "rare" },
+      // Heavenly Rescue x2 (move ally to back row)
+      { key: "heavenlyrescue", name: "Heavenly Rescue", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "heavenly_rescue", effectDesc: "Move target ally to any empty tile in your back row.", art: "/images/Heavenly Rescue.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "heavenlyrescue", name: "Heavenly Rescue", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "heavenly_rescue", effectDesc: "Move target ally to any empty tile in your back row.", art: "/images/Heavenly Rescue.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      // Lay on Hands x2 (heal to full)
+      { key: "layonhands", name: "Lay on Hands", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lay_on_hands", effectDesc: "Heal target unit to full HP.", art: "/images/Lay on Hands.png", requiresTarget: "any_unit", rarity: "rare" },
+      { key: "layonhands", name: "Lay on Hands", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "lay_on_hands", effectDesc: "Heal target unit to full HP.", art: "/images/Lay on Hands.png", requiresTarget: "any_unit", rarity: "rare" },
+      // Resurrection x1 (resummon from discard anywhere with immune)
+      { key: "resurrection", name: "Resurrection", atk: 0, hp: 0, cost: 8, type: "spell", effect: "instant", effectId: "resurrection", effectDesc: "Resummon an ally from your discard to any space. It has Immune this turn.", art: "/images/Resurrection.png", rarity: "legendary" },
+      // Wrath of God x1 (destroy all units)
+      { key: "wrathofgod", name: "Wrath of God", atk: 0, hp: 0, cost: 10, type: "spell", effect: "instant", effectId: "wrath_of_god", effectDesc: "Destroy ALL units on the board.", art: "/images/Wrath of God.png", rarity: "legendary" },
+    ]
+  },
+  "8bit-battalion-challenge": {
+    name: "8-Bit Battalion (Challenge)",
+    description: "CHALLENGE MODE: Infinite lives, endless respawns, and rage-fueled chaos",
+    archetype: "8bit",
+    isChallenge: true,
+    cards: [
+      // === FINAL BOSS SPAM (4x) - Multiple rage machines ===
+      { key: "finalboss", name: "Final Boss", atk: 2, hp: 8, cost: 6, type: "monster", effect: "passive", effectId: "rage_mode", effectDesc: "PASSIVE: Gains +1 ATK for each HP lost.", art: "/images/Final Boss.png", rarity: "legendary" },
+      { key: "finalboss", name: "Final Boss", atk: 2, hp: 8, cost: 6, type: "monster", effect: "passive", effectId: "rage_mode", effectDesc: "PASSIVE: Gains +1 ATK for each HP lost.", art: "/images/Final Boss.png", rarity: "legendary" },
+      { key: "finalboss", name: "Final Boss", atk: 2, hp: 8, cost: 6, type: "monster", effect: "passive", effectId: "rage_mode", effectDesc: "PASSIVE: Gains +1 ATK for each HP lost.", art: "/images/Final Boss.png", rarity: "legendary" },
+      { key: "finalboss", name: "Final Boss", atk: 2, hp: 8, cost: 6, type: "monster", effect: "passive", effectId: "rage_mode", effectDesc: "PASSIVE: Gains +1 ATK for each HP lost.", art: "/images/Final Boss.png", rarity: "legendary" },
+      
+      // === NEW GAME+ SPAM (5x) - Keep recycling Final Bosses ===
+      { key: "newgameplus", name: "New Game+", atk: 3, hp: 3, cost: 2, type: "monster", effect: "onDeath", effectId: "recycle_final_boss", effectDesc: "ON DEATH: Shuffle Final Boss from discard into deck.", art: "/images/New Game+.png", rarity: "rare" },
+      { key: "newgameplus", name: "New Game+", atk: 3, hp: 3, cost: 2, type: "monster", effect: "onDeath", effectId: "recycle_final_boss", effectDesc: "ON DEATH: Shuffle Final Boss from discard into deck.", art: "/images/New Game+.png", rarity: "rare" },
+      { key: "newgameplus", name: "New Game+", atk: 3, hp: 3, cost: 2, type: "monster", effect: "onDeath", effectId: "recycle_final_boss", effectDesc: "ON DEATH: Shuffle Final Boss from discard into deck.", art: "/images/New Game+.png", rarity: "rare" },
+      { key: "newgameplus", name: "New Game+", atk: 3, hp: 3, cost: 2, type: "monster", effect: "onDeath", effectId: "recycle_final_boss", effectDesc: "ON DEATH: Shuffle Final Boss from discard into deck.", art: "/images/New Game+.png", rarity: "rare" },
+      { key: "newgameplus", name: "New Game+", atk: 3, hp: 3, cost: 2, type: "monster", effect: "onDeath", effectId: "recycle_final_boss", effectDesc: "ON DEATH: Shuffle Final Boss from discard into deck.", art: "/images/New Game+.png", rarity: "rare" },
+      
+      // === BOSS KEY SPAM (6x) - Draw and discount Final Boss constantly ===
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      
+      // === SAVE STATE SPAM (5x) - Auto-resurrect key units ===
+      { key: "savestate", name: "Save State", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "save_state", effectDesc: "INSTANT: Mark a unit. If it dies, restore it to full HP (debuffs removed) at its position.", art: "/images/Save State.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "savestate", name: "Save State", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "save_state", effectDesc: "INSTANT: Mark a unit. If it dies, restore it to full HP (debuffs removed) at its position.", art: "/images/Save State.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "savestate", name: "Save State", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "save_state", effectDesc: "INSTANT: Mark a unit. If it dies, restore it to full HP (debuffs removed) at its position.", art: "/images/Save State.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "savestate", name: "Save State", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "save_state", effectDesc: "INSTANT: Mark a unit. If it dies, restore it to full HP (debuffs removed) at its position.", art: "/images/Save State.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "savestate", name: "Save State", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "save_state", effectDesc: "INSTANT: Mark a unit. If it dies, restore it to full HP (debuffs removed) at its position.", art: "/images/Save State.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      
+      // === PIXEL PRODUCER SPAM (4x) - Flood the board with tokens ===
+      { key: "pixelproducer", name: "Pixel Producer", atk: 0, hp: 5, cost: 3, type: "monster", effect: "endOfTurn", effectId: "spawn_pixel", effectDesc: "END OF TURN: Spawn a 1/1 Pixel in a random adjacent empty tile.", art: "/images/Pixel Producer.png", rarity: "rare" },
+      { key: "pixelproducer", name: "Pixel Producer", atk: 0, hp: 5, cost: 3, type: "monster", effect: "endOfTurn", effectId: "spawn_pixel", effectDesc: "END OF TURN: Spawn a 1/1 Pixel in a random adjacent empty tile.", art: "/images/Pixel Producer.png", rarity: "rare" },
+      { key: "pixelproducer", name: "Pixel Producer", atk: 0, hp: 5, cost: 3, type: "monster", effect: "endOfTurn", effectId: "spawn_pixel", effectDesc: "END OF TURN: Spawn a 1/1 Pixel in a random adjacent empty tile.", art: "/images/Pixel Producer.png", rarity: "rare" },
+      { key: "pixelproducer", name: "Pixel Producer", atk: 0, hp: 5, cost: 3, type: "monster", effect: "endOfTurn", effectId: "spawn_pixel", effectDesc: "END OF TURN: Spawn a 1/1 Pixel in a random adjacent empty tile.", art: "/images/Pixel Producer.png", rarity: "rare" },
+      
+      // === SLIME SPRITE SPAM (5x) - Deaths spawn more units ===
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      
+      // === BARREL SPAM (6x) - Walking bombs everywhere ===
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      
+      // === RAGE QUIT SPAM (4x) - Punish for killing anything ===
+      { key: "ragequit", name: "Rage Quit", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "rage_quit", effectDesc: "INSTANT: Deal damage to target enemy equal to the number of your units that died this game.", art: "/images/Rage Quit.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      { key: "ragequit", name: "Rage Quit", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "rage_quit", effectDesc: "INSTANT: Deal damage to target enemy equal to the number of your units that died this game.", art: "/images/Rage Quit.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      { key: "ragequit", name: "Rage Quit", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "rage_quit", effectDesc: "INSTANT: Deal damage to target enemy equal to the number of your units that died this game.", art: "/images/Rage Quit.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      { key: "ragequit", name: "Rage Quit", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "rage_quit", effectDesc: "INSTANT: Deal damage to target enemy equal to the number of your units that died this game.", art: "/images/Rage Quit.png", requiresTarget: "enemy_unit", rarity: "legendary" },
+      
+      // === RESET BUTTON (2x) - Board wipe when losing ===
+      { key: "resetbutton", name: "Reset Button", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "reset_board", effectDesc: "INSTANT: ALL units on the board are shuffled back into their owner's deck.", art: "/images/Reset Button.png", rarity: "legendary" },
+      { key: "resetbutton", name: "Reset Button", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "reset_board", effectDesc: "INSTANT: ALL units on the board are shuffled back into their owner's deck.", art: "/images/Reset Button.png", rarity: "legendary" },
+      
+      // === WIZARD NPC (2x) - Stacking buff aura ===
+      { key: "wizardnpc", name: "Wizard NPC", atk: 1, hp: 5, cost: 4, type: "monster", effect: "passive", effectId: "stacking_aura", effectDesc: "PASSIVE: Buffs adjacent allies. Starts +1/+1, increases by +1/+1 each turn it doesn't move (max +4/+4). Resets if moved.", art: "/images/Wizard NPC.png", rarity: "legendary" },
+      { key: "wizardnpc", name: "Wizard NPC", atk: 1, hp: 5, cost: 4, type: "monster", effect: "passive", effectId: "stacking_aura", effectDesc: "PASSIVE: Buffs adjacent allies. Starts +1/+1, increases by +1/+1 each turn it doesn't move (max +4/+4). Resets if moved.", art: "/images/Wizard NPC.png", rarity: "legendary" },
+    ]
+  },
+  "8bit-battalion": {
+    name: "8-Bit Battalion",
+    description: "Retro pixel warriors with obnoxious board control and endless respawns",
+    archetype: "8bit",
+    cards: [
+      // ===== COMMONS (3 copies each) =====
+      // Slime Sprite x3 (spawns 2 Slimelings on death)
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      { key: "slimesprite", name: "Slime Sprite", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "spawn_slimelings", effectDesc: "ON DEATH: Spawn two 1/1 Slimelings in adjacent empty tiles.", art: "/images/Slime Sprite.png", rarity: "common" },
+      // Skeleton Warrior x3 (respawns once)
+      { key: "skeletonwarrior8bit", name: "Skeleton Warrior", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onDeath", effectId: "respawn_once", effectDesc: "ON DEATH: Returns to your spawn once.", art: "/images/Skeleton Warrior 8bit.png", rarity: "common" },
+      { key: "skeletonwarrior8bit", name: "Skeleton Warrior", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onDeath", effectId: "respawn_once", effectDesc: "ON DEATH: Returns to your spawn once.", art: "/images/Skeleton Warrior 8bit.png", rarity: "common" },
+      { key: "skeletonwarrior8bit", name: "Skeleton Warrior", atk: 2, hp: 2, cost: 2, type: "monster", effect: "onDeath", effectId: "respawn_once", effectDesc: "ON DEATH: Returns to your spawn once.", art: "/images/Skeleton Warrior 8bit.png", rarity: "common" },
+      // Barrel x3 (explodes for 3 AOE damage)
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      { key: "barrel", name: "Barrel", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "explode_aoe", effectDesc: "ON DEATH: Deal 3 damage to all adjacent enemies.", art: "/images/Barrel.png", rarity: "common" },
+      // Healer Fairy x3 (heals adjacent each turn, heals all on death)
+      { key: "healerfairy", name: "Healer Fairy", atk: 1, hp: 2, cost: 2, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent_and_death", effectDesc: "END OF TURN: Heal adjacent allies +1. ON DEATH: Heal ALL allies +1.", art: "/images/Healer Fairy.png", rarity: "common" },
+      { key: "healerfairy", name: "Healer Fairy", atk: 1, hp: 2, cost: 2, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent_and_death", effectDesc: "END OF TURN: Heal adjacent allies +1. ON DEATH: Heal ALL allies +1.", art: "/images/Healer Fairy.png", rarity: "common" },
+      { key: "healerfairy", name: "Healer Fairy", atk: 1, hp: 2, cost: 2, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent_and_death", effectDesc: "END OF TURN: Heal adjacent allies +1. ON DEATH: Heal ALL allies +1.", art: "/images/Healer Fairy.png", rarity: "common" },
+      // Boss Key x3 (draw Final Boss or reduce cost)
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      { key: "bosskey", name: "Boss Key", atk: 0, hp: 0, cost: 1, type: "spell", effect: "instant", effectId: "draw_final_boss", effectDesc: "INSTANT: Draw Final Boss from your deck. If already in hand, it costs 2 less this turn.", art: "/images/Boss Key.png", rarity: "common" },
+      // New Game+ x2 (on death shuffle Final Boss into deck)
+      { key: "newgameplus", name: "New Game+", atk: 3, hp: 3, cost: 2, type: "monster", effect: "onDeath", effectId: "recycle_final_boss", effectDesc: "ON DEATH: Shuffle Final Boss from discard into deck.", art: "/images/New Game+.png", rarity: "rare" },
+      { key: "newgameplus", name: "New Game+", atk: 3, hp: 3, cost: 2, type: "monster", effect: "onDeath", effectId: "recycle_final_boss", effectDesc: "ON DEATH: Shuffle Final Boss from discard into deck.", art: "/images/New Game+.png", rarity: "rare" },
+      // ===== RARES (2 copies each) =====
+      // Knight Errant x2 (triple move)
+      { key: "knighterrant", name: "Knight Errant", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "triple_move", effectDesc: "PASSIVE: Can move three times per turn.", art: "/images/Knight Errant.png", rarity: "rare" },
+      { key: "knighterrant", name: "Knight Errant", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "triple_move", effectDesc: "PASSIVE: Can move three times per turn.", art: "/images/Knight Errant.png", rarity: "rare" },
+      // Pixel Producer x2 (spawns 1/1 Pixel each turn)
+      { key: "pixelproducer", name: "Pixel Producer", atk: 0, hp: 5, cost: 3, type: "monster", effect: "endOfTurn", effectId: "spawn_pixel", effectDesc: "END OF TURN: Spawn a 1/1 Pixel in a random adjacent empty tile.", art: "/images/Pixel Producer.png", rarity: "rare" },
+      { key: "pixelproducer", name: "Pixel Producer", atk: 0, hp: 5, cost: 3, type: "monster", effect: "endOfTurn", effectId: "spawn_pixel", effectDesc: "END OF TURN: Spawn a 1/1 Pixel in a random adjacent empty tile.", art: "/images/Pixel Producer.png", rarity: "rare" },
+      // Cheat Code x2 (target +3/+3, others +1/+1 this turn)
+      { key: "cheatcode", name: "Cheat Code", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "cheat_code_buff", effectDesc: "INSTANT: Target unit gets +3/+3 this turn. All other friendly units get +1/+1 this turn.", art: "/images/Cheat Code.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "cheatcode", name: "Cheat Code", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "cheat_code_buff", effectDesc: "INSTANT: Target unit gets +3/+3 this turn. All other friendly units get +1/+1 this turn.", art: "/images/Cheat Code.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      // Save State x2 (mark unit, if dies restore to full HP)
+      { key: "savestate", name: "Save State", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "save_state", effectDesc: "INSTANT: Mark a unit. If it dies, restore it to full HP (debuffs removed) at its position.", art: "/images/Save State.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      { key: "savestate", name: "Save State", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "save_state", effectDesc: "INSTANT: Mark a unit. If it dies, restore it to full HP (debuffs removed) at its position.", art: "/images/Save State.png", requiresTarget: "friendly_unit", rarity: "rare" },
+      // ===== LEGENDARIES (1 copy each) =====
+      // Wizard NPC x1 (stacking adjacent buff)
+      { key: "wizardnpc", name: "Wizard NPC", atk: 1, hp: 5, cost: 4, type: "monster", effect: "passive", effectId: "stacking_aura", effectDesc: "PASSIVE: Buffs adjacent allies. Starts +1/+1, increases by +1/+1 each turn it doesn't move (max +4/+4). Resets if moved.", art: "/images/Wizard NPC.png", rarity: "legendary" },
+      // Final Boss x1 (gains ATK as HP drops)
+      { key: "finalboss", name: "Final Boss", atk: 2, hp: 8, cost: 6, type: "monster", effect: "passive", effectId: "rage_mode", effectDesc: "PASSIVE: Gains +1 ATK for each HP lost.", art: "/images/Final Boss.png", rarity: "legendary" },
+      // Reset Button x1 (all units back to deck)
+      { key: "resetbutton", name: "Reset Button", atk: 0, hp: 0, cost: 5, type: "spell", effect: "instant", effectId: "reset_board", effectDesc: "INSTANT: ALL units on the board are shuffled back into their owner's deck.", art: "/images/Reset Button.png", rarity: "legendary" },
+      // Rage Quit x1 (damage based on deaths)
+      { key: "ragequit", name: "Rage Quit", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "rage_quit", effectDesc: "INSTANT: Deal damage to target enemy equal to the number of your units that died this game.", art: "/images/Rage Quit.png", requiresTarget: "enemy_unit", rarity: "legendary" },
     ]
   }
 };
@@ -1120,9 +1498,10 @@ function discardUnitCard(lobby, unit) {
   const player = lobby.gameState.players[unit.owner];
   if (!player) return;
   
-  // Don't discard Gem Shards - they're tokens, not cards in the deck
-  // Only Ruby Sprite adds a Gem Shard CARD to hand (not from discard)
-  if (unit.key === "gemshard") return;
+  // Don't discard tokens - they're not cards in the deck
+  // Tokens: Gem Shard, Pixel, Slimeling
+  const TOKEN_KEYS = ['gemshard', 'pixel', 'slimeling'];
+  if (TOKEN_KEYS.includes(unit.key)) return;
   
   // Use originalCard if stored, otherwise reconstruct from unit data
   if (unit.originalCard) {
@@ -1162,6 +1541,32 @@ function shouldUnitDie(lobby, unit) {
     unit.hp = unit.maxHp || 6;
     unit.immortalUsed = true;
     logToLobby(lobby, unit.name + " refuses to die! Heals to full HP!");
+    return false; // Unit survives
+  }
+  
+  // Save State (8-Bit Battalion) - restore to full HP with debuffs removed
+  if (unit.saveState) {
+    unit.hp = unit.saveState.maxHp;
+    unit.atk = unit.saveState.atk;
+    delete unit.marked;
+    delete unit.frozen;
+    delete unit.rooted;
+    delete unit.saveState;
+    logToLobby(lobby, unit.name + " restored by Save State!");
+    
+    // Emit resurrection animation
+    const state = lobby.gameState.state;
+    const unitPos = getUnitPos(state, unit.id);
+    if (unitPos) {
+      const animData = {
+        type: "effect",
+        effectType: "save_state_revive",
+        targetPos: unitPos
+      };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
+    
     return false; // Unit survives
   }
   
@@ -1523,6 +1928,26 @@ function getEffectiveAtk(state, uid, targetId) {
   
   // Eclipse ATK effect is now applied directly to unit.atk, no need for calculation here
   
+  // ===== 8-BIT BATTALION PASSIVE EFFECTS =====
+  
+  // Final Boss - rage_mode: gains +1 ATK for each HP lost
+  if (u.effectId === "rage_mode") {
+    const hpLost = (u.maxHp || 8) - u.hp;
+    atk += hpLost;
+  }
+  
+  // Wizard NPC - stacking_aura: adjacent allies gain +N/+N based on wizard stacks
+  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { 
+    if (dr === 0 && dc === 0) continue; 
+    const nr = pos.r + dr, nc = pos.c + dc; 
+    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue; 
+    const aid = state.board[nr][nc]; 
+    if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "stacking_aura") {
+      const wizard = state.units[aid];
+      atk += (wizard.wizardStacks || 1);
+    }
+  }
+  
   return atk;
 }
 
@@ -1532,6 +1957,40 @@ function applyDamageReduction(state, tid, dmg, attackerId, lobby = null) {
   
   // Bone Revolver - ranged_pierce ignores shield effects
   const ignoresShields = attacker && attacker.effectId === "ranged_pierce";
+  
+  // Divine Shield (Blessing of Protection) - prevent next damage completely
+  if (t.divineShield) {
+    delete t.divineShield;
+    logToLobby(lobby, t.name + "'s Divine Shield absorbs the damage!");
+    return 0;
+  }
+  
+  // Archangel Raphael - allies in 3 tiles behind take no damage
+  // Check if there's a Raphael in front protecting this unit
+  const raphaelOwner = t.owner;
+  const behindDirection = raphaelOwner === "gold" ? 1 : -1; // Gold's back is higher rows, Silver's is lower
+  for (const uid in state.units) {
+    const u = state.units[uid];
+    if (u.owner === raphaelOwner && u.effectId === "raphael_shield") {
+      const raphaelPos = getUnitPos(state, uid);
+      if (raphaelPos) {
+        // Check if target is in the 3 tiles "behind" Raphael (toward owner's heart)
+        const behindRow = raphaelPos.r + behindDirection;
+        // Three tiles: directly behind, and left/right of directly behind
+        const protectedTiles = [
+          { r: behindRow, c: raphaelPos.c },
+          { r: behindRow, c: raphaelPos.c - 1 },
+          { r: behindRow, c: raphaelPos.c + 1 }
+        ];
+        for (const tile of protectedTiles) {
+          if (pos.r === tile.r && pos.c === tile.c) {
+            logToLobby(lobby, u.name + " shields " + t.name + " from damage!");
+            return 0;
+          }
+        }
+      }
+    }
+  }
   
   // Twilight's Respite - all player's units take -1 damage
   if (state.damageReduction && state.damageReduction[t.owner]) {
@@ -1741,7 +2200,28 @@ function combatLogToLobby(lobby, msg, type = "combat-step") {
 
 function drawCards(lobby, role, count) {
   const p = lobby.gameState.players[role];
-  for (let i = 0; i < count; i++) { if (p.hand.length >= MAX_HAND_SIZE) break; if (p.deck.length === 0) { if (p.discard.length === 0) break; p.deck = shuffle([...p.discard]); p.discard = []; logToLobby(lobby, role.toUpperCase() + " reshuffles"); } if (p.deck.length > 0) p.hand.push(p.deck.pop()); }
+  const state = lobby.gameState.state;
+  for (let i = 0; i < count; i++) { 
+    if (p.hand.length >= MAX_HAND_SIZE) break; 
+    if (p.deck.length === 0) { 
+      if (p.discard.length === 0) break; 
+      p.deck = shuffle([...p.discard]); 
+      p.discard = []; 
+      logToLobby(lobby, role.toUpperCase() + " reshuffles"); 
+    } 
+    if (p.deck.length > 0) {
+      p.hand.push(p.deck.pop());
+      
+      // Archangel Uriel - gain 1 energy when drawing
+      for (const uid in state.units) {
+        const u = state.units[uid];
+        if (u.owner === role && u.effectId === "uriel_wisdom") {
+          p.energy = Math.min(p.energy + 1, p.maxEnergy);
+          logToLobby(lobby, u.name + " grants 1 energy on draw!");
+        }
+      }
+    }
+  }
 }
 
 function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
@@ -1868,6 +2348,36 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY);
     logToLobby(lobby, a.name + " is empowered by the stars! +1 ATK, +1 energy (now " + a.atk + " ATK)");
   }
+  
+  // Angel of Destruction - deal 1 damage to enemy heart on kill
+  if (a.effectId === "destruction_heart") {
+    const enemyHeartRow = role === "gold" ? 6 : 0;
+    state.rowHP[enemyHeartRow] -= 1;
+    logToLobby(lobby, a.name + " damages the enemy heart!");
+    if (state.rowHP[enemyHeartRow] <= 0) {
+      state.gameOver = true;
+      state.winner = role;
+      logToLobby(lobby, "💀 " + enemyOf(role).toUpperCase() + "'s heart is destroyed!");
+    }
+  }
+  
+  // Archangel Michael - first kill each turn, can move and attack again
+  if (a.effectId === "michael_rampage") {
+    if (!a.michaelUsedThisTurn) {
+      a.michaelUsedThisTurn = true;
+      state.movedThisTurn.delete(aid);
+      state.moveCountThisTurn[aid] = 0;
+      state.attackedThisTurn.delete(aid);
+      state.attackCountThisTurn[aid] = 0;
+      logToLobby(lobby, a.name + "'s divine fury! Can move and attack again!");
+    }
+  }
+  
+  // Archangel Uriel - draw a card on kill
+  if (a.effectId === "uriel_wisdom") {
+    drawCards(lobby, role, 1);
+    logToLobby(lobby, a.name + "'s wisdom reveals a card!");
+  }
 }
 
 // Process on-death effects (for the dying unit's owner)
@@ -1899,6 +2409,29 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
   if (deadUnit.effectId === "energy_on_death") {
     lobby.gameState.players[deadUnitOwner].energy = Math.min(lobby.gameState.players[deadUnitOwner].energy + 1, MAX_ENERGY);
     logToLobby(lobby, deadUnit.name + " grants " + deadUnitOwner.toUpperCase() + " 1 energy on death");
+  }
+  
+  // New Game+ - shuffle Final Boss from discard into deck
+  if (deadUnit.effectId === "recycle_final_boss") {
+    const player = lobby.gameState.players[deadUnitOwner];
+    
+    const discardIndex = player.discard.findIndex(c => c.key === "finalboss");
+    if (discardIndex !== -1) {
+      const bossCard = player.discard.splice(discardIndex, 1)[0];
+      if (bossCard.originalCost) {
+        bossCard.cost = bossCard.originalCost;
+        delete bossCard.originalCost;
+        delete bossCard.costReduced;
+      }
+      player.deck.push(bossCard);
+      for (let i = player.deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [player.deck[i], player.deck[j]] = [player.deck[j], player.deck[i]];
+      }
+      logToLobby(lobby, deadUnit.name + " shuffles Final Boss back into deck!");
+    } else {
+      logToLobby(lobby, deadUnit.name + ": No Final Boss in discard pile!");
+    }
   }
   
   // Bone Deputy - spawn a 1/1 Bone Pile
@@ -2069,6 +2602,191 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
         const u = state.units[uid];
         if (u) combatLogToLobby(lobby, `${u.name} scorched to 1 HP!`, "combat-result");
       }
+    }
+  }
+  
+  // ===== 8-BIT BATTALION DEATH EFFECTS =====
+  
+  // Slime Sprite - spawn two 1/1 Slimelings in adjacent empty tiles
+  if (deadUnit.effectId === "spawn_slimelings" && deadPos) {
+    const adjacentTiles = [
+      { r: deadPos.r - 1, c: deadPos.c },
+      { r: deadPos.r + 1, c: deadPos.c },
+      { r: deadPos.r, c: deadPos.c - 1 },
+      { r: deadPos.r, c: deadPos.c + 1 },
+      { r: deadPos.r - 1, c: deadPos.c - 1 },
+      { r: deadPos.r - 1, c: deadPos.c + 1 },
+      { r: deadPos.r + 1, c: deadPos.c - 1 },
+      { r: deadPos.r + 1, c: deadPos.c + 1 }
+    ];
+    
+    let spawned = 0;
+    for (const tile of adjacentTiles) {
+      if (spawned >= 2) break;
+      if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
+      if (state.board[tile.r][tile.c]) continue;
+      
+      const slimelingId = genId();
+      state.units[slimelingId] = {
+        id: slimelingId,
+        owner: deadUnitOwner,
+        key: "slimeling",
+        name: "Slimeling",
+        atk: 1,
+        hp: 1,
+        maxHp: 1,
+        type: "monster",
+        effect: "onDeath",
+        effectId: "draw_on_death",
+        effectDesc: "ON DEATH: Draw a card.",
+        art: "/images/Slimeling.png"
+      };
+      state.board[tile.r][tile.c] = slimelingId;
+      spawned++;
+    }
+    if (spawned > 0) {
+      logToLobby(lobby, deadUnit.name + " splits into " + spawned + " Slimeling(s)!");
+    }
+  }
+  
+  // Slimeling - draw a card on death
+  if (deadUnit.effectId === "draw_on_death") {
+    drawCards(lobby, deadUnitOwner, 1);
+    logToLobby(lobby, deadUnit.name + " grants a card on death!");
+  }
+  
+  // Skeleton Warrior 8bit - respawn once
+  if (deadUnit.effectId === "respawn_once" && !deadUnit.hasRespawned) {
+    const spawnId = genId();
+    const respawnUnit = {
+      id: spawnId,
+      owner: deadUnitOwner,
+      key: deadUnit.key,
+      name: deadUnit.name,
+      atk: deadUnit.atk,
+      hp: 2,
+      maxHp: 2,
+      type: "monster",
+      effect: "onDeath",
+      effectId: "respawn_once",
+      effectDesc: deadUnit.effectDesc,
+      art: deadUnit.art,
+      hasRespawned: true
+    };
+    
+    if (!state.spawn[deadUnitOwner]) {
+      state.spawn[deadUnitOwner] = spawnId;
+      state.units[spawnId] = respawnUnit;
+      logToLobby(lobby, deadUnit.name + " respawns in the spawn area!");
+    } else {
+      const homeRows = deadUnitOwner === "gold" ? [0, 1] : [5, 6];
+      let placed = false;
+      for (const row of homeRows) {
+        for (let c = 0; c < COLS; c++) {
+          if (!state.board[row][c]) {
+            state.units[spawnId] = respawnUnit;
+            state.board[row][c] = spawnId;
+            logToLobby(lobby, deadUnit.name + " respawns on the battlefield!");
+            placed = true;
+            break;
+          }
+        }
+        if (placed) break;
+      }
+      if (!placed) {
+        logToLobby(lobby, deadUnit.name + " tried to respawn but no room!");
+      }
+    }
+  }
+  
+  // Barrel - explode for 3 damage to adjacent enemies
+  // Use a flag to prevent infinite chain explosions
+  if (deadUnit.effectId === "explode_aoe" && deadPos && !deadUnit.hasExploded) {
+    deadUnit.hasExploded = true; // Mark as exploded to prevent re-triggering
+    
+    const adjacentPositions = [
+      { r: deadPos.r - 1, c: deadPos.c },
+      { r: deadPos.r + 1, c: deadPos.c },
+      { r: deadPos.r, c: deadPos.c - 1 },
+      { r: deadPos.r, c: deadPos.c + 1 },
+      { r: deadPos.r - 1, c: deadPos.c - 1 },
+      { r: deadPos.r - 1, c: deadPos.c + 1 },
+      { r: deadPos.r + 1, c: deadPos.c - 1 },
+      { r: deadPos.r + 1, c: deadPos.c + 1 }
+    ];
+    let damaged = 0;
+    const toRemove = [];
+    const targetPositions = [];
+    
+    combatLogToLobby(lobby, `💥 ${deadUnit.name} - EXPLOSION!`, "combat-header");
+    
+    for (const pos of adjacentPositions) {
+      if (pos.r < 0 || pos.r >= ROWS || pos.c < 0 || pos.c >= COLS) continue;
+      const targetId = state.board[pos.r][pos.c];
+      if (targetId && state.units[targetId] && state.units[targetId].owner !== deadUnitOwner) {
+        const target = state.units[targetId];
+        if (target.untargetable) continue;
+        targetPositions.push({ r: pos.r, c: pos.c });
+        const before = target.hp;
+        target.hp -= 3;
+        combatLogToLobby(lobby, `${target.name}: ${before} HP - 3 = ${target.hp} HP`, "combat-result");
+        damaged++;
+        if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
+          toRemove.push({ id: targetId, r: pos.r, c: pos.c });
+        }
+      }
+    }
+    
+    if (targetPositions.length > 0) {
+      const animData = {
+        type: "effect",
+        effectType: "barrel_explosion",
+        sourcePos: deadPos,
+        sourceUnitId: null,
+        targets: targetPositions
+      };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
+    
+    // Process deaths but skip explosion effects for barrels killed by this explosion
+    // to prevent infinite chain reactions
+    for (const item of toRemove) {
+      const deadTarget = state.units[item.id];
+      if (!deadTarget) continue;
+      
+      // Mark barrels killed by explosion so they don't chain-explode
+      if (deadTarget.effectId === "explode_aoe") {
+        deadTarget.hasExploded = true;
+      }
+      
+      processOnDeathEffect(lobby, deadTarget, deadTarget.owner, { r: item.r, c: item.c });
+      processAllyDeathTriggers(lobby, deadTarget.owner, deadTarget, { r: item.r, c: item.c });
+      state.board[item.r][item.c] = null;
+      discardUnitCard(lobby, deadTarget);
+      delete state.units[item.id];
+      combatLogToLobby(lobby, `💀 ${deadTarget.name} DESTROYED`, "combat-death");
+    }
+    if (damaged > 0) {
+      logToLobby(lobby, deadUnit.name + " explodes, dealing 3 damage to " + damaged + " enemies!");
+    }
+  }
+  
+  // Healer Fairy - on death heal ALL allies +1
+  if (deadUnit.effectId === "heal_adjacent_and_death") {
+    let healed = 0;
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      if (u.owner === deadUnitOwner) {
+        const maxHp = u.maxHp || u.hp; // If no maxHp set, current HP is max (can't heal)
+        if (u.hp < maxHp) {
+          u.hp = Math.min(u.hp + 1, maxHp);
+          healed++;
+        }
+      }
+    }
+    if (healed > 0) {
+      logToLobby(lobby, deadUnit.name + "'s final blessing heals " + healed + " allies!");
     }
   }
   
@@ -2280,6 +2998,103 @@ function processEndOfTurnEffects(lobby, role) {
         }
       }
     }
+    
+    // ===== 8-BIT BATTALION END OF TURN EFFECTS =====
+    
+    // Healer Fairy - heal adjacent allies each turn
+    if (u.effectId === "heal_adjacent_and_death") {
+      const allies = getAdjacentAllies(state, id);
+      let healedCount = 0;
+      allies.forEach(aid => {
+        const ally = state.units[aid];
+        if (ally) {
+          const maxHp = ally.maxHp || ally.hp; // If no maxHp set, current HP is max (can't heal)
+          if (ally.hp < maxHp) {
+            ally.hp = Math.min(ally.hp + 1, maxHp);
+            healedCount++;
+          }
+        }
+      });
+      if (healedCount > 0) logToLobby(lobby, u.name + " heals " + healedCount + " adjacent allies");
+    }
+    
+    // Pixel Producer - spawn a 1/1 Pixel in adjacent empty tile
+    if (u.effectId === "spawn_pixel") {
+      const pos = getUnitPos(state, id);
+      if (pos) {
+        const adjacentTiles = [
+          { r: pos.r - 1, c: pos.c },
+          { r: pos.r + 1, c: pos.c },
+          { r: pos.r, c: pos.c - 1 },
+          { r: pos.r, c: pos.c + 1 },
+          { r: pos.r - 1, c: pos.c - 1 },
+          { r: pos.r - 1, c: pos.c + 1 },
+          { r: pos.r + 1, c: pos.c - 1 },
+          { r: pos.r + 1, c: pos.c + 1 }
+        ].filter(t => t.r >= 0 && t.r < ROWS && t.c >= 0 && t.c < COLS && !state.board[t.r][t.c]);
+        
+        if (adjacentTiles.length > 0) {
+          const tile = adjacentTiles[Math.floor(Math.random() * adjacentTiles.length)];
+          const pixelId = genId();
+          state.units[pixelId] = {
+            id: pixelId,
+            owner: u.owner,
+            key: "pixel",
+            name: "Pixel",
+            atk: 1,
+            hp: 1,
+            maxHp: 1,
+            type: "monster",
+            art: "/images/Pixel.png"
+          };
+          state.board[tile.r][tile.c] = pixelId;
+          logToLobby(lobby, u.name + " generates a Pixel!");
+        }
+      }
+    }
+  }
+  
+  // Wizard NPC - track turns stationary and apply stacking buff (separate loop since it's passive, not endOfTurn)
+  for (const id in state.units) {
+    const u = state.units[id];
+    if (u.owner !== role || u.effectId !== "stacking_aura") continue;
+    
+    const pos = getUnitPos(state, id);
+    if (pos) {
+      if (u.wizardStacks === undefined) u.wizardStacks = 1;
+      if (u.lastPos === undefined) u.lastPos = { r: pos.r, c: pos.c };
+      
+      if (u.lastPos.r !== pos.r || u.lastPos.c !== pos.c) {
+        u.wizardStacks = 1;
+        u.lastPos = { r: pos.r, c: pos.c };
+        logToLobby(lobby, u.name + " moved! Buff reset to +1/+1");
+      } else {
+        if (u.wizardStacks < 4) {
+          u.wizardStacks += 1;
+          logToLobby(lobby, u.name + " channels power! Now buffing +" + u.wizardStacks + "/+" + u.wizardStacks);
+        }
+      }
+    }
+  }
+  
+  // ===== CHEAT CODE BUFF CLEANUP =====
+  if (state.cheatCodeBuffs && state.cheatCodeBuffs[role]) {
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      if (u.owner === role) {
+        if (u.tempAtkBonus) {
+          u.atk -= u.tempAtkBonus;
+          delete u.tempAtkBonus;
+        }
+        if (u.tempHpBonus) {
+          u.hp -= u.tempHpBonus;
+          if (u.hp < 1) u.hp = 1;
+          delete u.tempHpBonus;
+        }
+        delete u.cheatCodeTarget;
+      }
+    }
+    delete state.cheatCodeBuffs[role];
   }
 }
 
@@ -2518,6 +3333,82 @@ function processStartOfTurnEffects(lobby, role) {
           // Trigger Red Wizard
           triggerStatGainEffects(lobby, 'hp', 1, targetId);
         }
+      }
+    }
+    
+    // Angelic Attendant - heal adjacent allies 1 HP
+    if (u.effectId === "attendant_heal") {
+      const pos = getUnitPos(state, id);
+      if (pos) {
+        let healed = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = pos.r + dr, nc = pos.c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            const adjId = state.board[nr][nc];
+            if (adjId && state.units[adjId] && state.units[adjId].owner === role) {
+              const ally = state.units[adjId];
+              if (ally.hp < ally.maxHp) {
+                ally.hp = Math.min(ally.hp + 1, ally.maxHp);
+                healed++;
+              }
+            }
+          }
+        }
+        if (healed > 0) logToLobby(lobby, u.name + " heals " + healed + " adjacent allies!");
+      }
+    }
+    
+    // Maiden of Virtue - heal heart 1 HP
+    if (u.effectId === "maiden_heal") {
+      const players = lobby.gameState.players;
+      const heartHP = role === "gold" ? state.rowHP[0] : state.rowHP[6];
+      const maxHeart = 20; // Assume max heart HP is 20
+      if (heartHP < maxHeart) {
+        if (role === "gold") {
+          state.rowHP[0] = Math.min(state.rowHP[0] + 1, maxHeart);
+        } else {
+          state.rowHP[6] = Math.min(state.rowHP[6] + 1, maxHeart);
+        }
+        logToLobby(lobby, u.name + " heals your heart for 1 HP!");
+      }
+    }
+    
+    // Lucifer Fallen Angel - deal 3 damage to own heart
+    if (u.effectId === "lucifer_curse") {
+      const heartRow = role === "gold" ? 0 : 6;
+      state.rowHP[heartRow] -= 3;
+      logToLobby(lobby, "Lucifer's curse deals 3 damage to your heart!");
+      if (state.rowHP[heartRow] <= 0) {
+        state.gameOver = true;
+        state.winner = role === "gold" ? "silver" : "gold";
+        logToLobby(lobby, "💀 " + role.toUpperCase() + " is destroyed by Lucifer's curse!");
+      }
+    }
+    
+    // Garden of Eden - heal adjacent units 2 HP and gain +1 max HP
+    if (u.effectId === "eden_blessing") {
+      const pos = getUnitPos(state, id);
+      if (pos) {
+        let blessed = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = pos.r + dr, nc = pos.c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            const adjId = state.board[nr][nc];
+            if (adjId && state.units[adjId] && state.units[adjId].type !== 'structure') {
+              const ally = state.units[adjId];
+              ally.maxHp = (ally.maxHp || ally.hp) + 1;
+              ally.hp = Math.min(ally.hp + 2, ally.maxHp);
+              blessed++;
+              // Trigger Red Wizard for max HP gain
+              triggerStatGainEffects(lobby, 'hp', 1, adjId);
+            }
+          }
+        }
+        if (blessed > 0) logToLobby(lobby, "Garden of Eden blesses " + blessed + " units!");
       }
     }
     
@@ -3195,6 +4086,370 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     }
     logToLobby(lobby, "Dragon's Fury empowers " + buffed + " Dragons with +2 ATK!");
   }
+  
+  // === CELESTIAL HOST SPELLS ===
+  
+  if (effectId === "blessing_might") {
+    // Blessing of Might - target ally gains +1 ATK, +1 ATK on every attack
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        target.atk += 1;
+        target.mightBlessing = true; // Track for on-attack buff
+        logToLobby(lobby, target.name + " receives Blessing of Might! (+1 ATK, +1 ATK on attack)");
+        triggerStatGainEffects(lobby, 'atk', 1, targetUnitId);
+      }
+    }
+  }
+  
+  if (effectId === "blessing_vigor") {
+    // Blessing of Vigor - gain 1 energy when attacking or attacked
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        target.vigorBlessing = true;
+        logToLobby(lobby, target.name + " receives Blessing of Vigor! (Gain 1 energy on attack/attacked)");
+      }
+    }
+  }
+  
+  if (effectId === "blessing_protection") {
+    // Blessing of Protection - prevent next damage
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        target.divineShield = true;
+        logToLobby(lobby, target.name + " receives Blessing of Protection! (Next damage prevented)");
+      }
+    }
+  }
+  
+  if (effectId === "blessing_kings") {
+    // Blessing of Kings - draw a card when attacking or attacked
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        target.kingsBlessing = true;
+        logToLobby(lobby, target.name + " receives Blessing of Kings! (Draw on attack/attacked)");
+      }
+    }
+  }
+  
+  if (effectId === "angelic_descent") {
+    // Angelic Descent - next unit can deploy anywhere, deal 1 to adjacent enemies
+    if (!state.angelicDescent) state.angelicDescent = {};
+    state.angelicDescent[role] = true;
+    logToLobby(lobby, "Angelic Descent! Your next unit can deploy to any row and deals 1 to adjacent enemies!");
+  }
+  
+  if (effectId === "heavenly_rescue") {
+    // Heavenly Rescue - move target ally to back row
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner === role) {
+        const currentPos = getUnitPos(state, targetUnitId);
+        if (currentPos) {
+          // Find empty tile in back row
+          const backRows = role === "gold" ? [0, 1] : [5, 6];
+          let rescued = false;
+          for (const row of backRows) {
+            for (let c = 0; c < COLS; c++) {
+              if (!state.board[row][c]) {
+                state.board[currentPos.r][currentPos.c] = null;
+                state.board[row][c] = targetUnitId;
+                logToLobby(lobby, target.name + " is rescued to safety!");
+                rescued = true;
+                break;
+              }
+            }
+            if (rescued) break;
+          }
+          if (!rescued) {
+            logToLobby(lobby, "No empty tile in back row for Heavenly Rescue!");
+          }
+        }
+      }
+    }
+  }
+  
+  if (effectId === "lay_on_hands") {
+    // Lay on Hands - heal target unit to full HP
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      const healed = target.maxHp - target.hp;
+      target.hp = target.maxHp;
+      logToLobby(lobby, "Lay on Hands heals " + target.name + " to full HP! (+" + healed + " HP)");
+    }
+  }
+  
+  if (effectId === "resurrection") {
+    // Resurrection - handled separately like time_rift
+    // Set pending resurrection state
+    const players = lobby.gameState.players;
+    const p = players[role];
+    const unitsInDiscard = p.discard.filter(c => c.type === "monster" || c.type === "structure");
+    
+    if (unitsInDiscard.length > 0) {
+      if (!state.pendingResurrection) state.pendingResurrection = {};
+      state.pendingResurrection[role] = { active: true };
+      
+      logToLobby(lobby, "Resurrection! Choose a unit from your discard to return!");
+      
+      const socket = role === "gold" ? lobby.hostSocket : lobby.guestSocket;
+      if (socket) {
+        socket.emit("resurrectionTrigger", { 
+          units: unitsInDiscard.map(c => ({ id: c.id, key: c.key, name: c.name, atk: c.atk, hp: c.maxHp || c.hp, art: c.art }))
+        });
+      }
+    } else {
+      logToLobby(lobby, "No units in discard to resurrect!");
+    }
+  }
+  
+  if (effectId === "wrath_of_god") {
+    // Wrath of God - destroy ALL units
+    const toRemove = [];
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      const pos = getUnitPos(state, uid);
+      if (pos) {
+        toRemove.push({ uid, unit: u, pos });
+      }
+    }
+    
+    combatLogToLobby(lobby, `⚡ WRATH OF GOD`, "combat-header");
+    
+    for (const { uid, unit, pos } of toRemove) {
+      processOnDeathEffect(lobby, unit, unit.owner, pos);
+      processAllyDeathTriggers(lobby, unit.owner, unit, pos);
+      state.board[pos.r][pos.c] = null;
+      discardUnitCard(lobby, unit);
+      delete state.units[uid];
+    }
+    
+    logToLobby(lobby, "Wrath of God destroys " + toRemove.length + " units!");
+    
+    // Also clear spawns
+    if (state.spawn.gold) {
+      const spawnUnit = state.units[state.spawn.gold];
+      if (spawnUnit) {
+        discardUnitCard(lobby, spawnUnit);
+        delete state.units[state.spawn.gold];
+      }
+      state.spawn.gold = null;
+    }
+    if (state.spawn.silver) {
+      const spawnUnit = state.units[state.spawn.silver];
+      if (spawnUnit) {
+        discardUnitCard(lobby, spawnUnit);
+        delete state.units[state.spawn.silver];
+      }
+      state.spawn.silver = null;
+    }
+  }
+  
+  // ===== 8-BIT BATTALION SPELLS =====
+  
+  // Boss Key - draw Final Boss from deck, or reduce cost if in hand
+  if (effectId === "draw_final_boss") {
+    const player = lobby.gameState.players[role];
+    
+    const bossInHand = player.hand.find(c => c.key === "finalboss");
+    if (bossInHand) {
+      if (!bossInHand.originalCost) bossInHand.originalCost = bossInHand.cost;
+      bossInHand.cost = Math.max(0, bossInHand.cost - 2);
+      bossInHand.costReduced = true;
+      logToLobby(lobby, "Boss Key reduces Final Boss cost by 2! (Now " + bossInHand.cost + ")");
+    } else {
+      const deckIndex = player.deck.findIndex(c => c.key === "finalboss");
+      if (deckIndex !== -1) {
+        const bossCard = player.deck.splice(deckIndex, 1)[0];
+        if (player.hand.length < MAX_HAND_SIZE) {
+          player.hand.push(bossCard);
+          logToLobby(lobby, "Boss Key draws Final Boss from deck!");
+        } else {
+          logToLobby(lobby, "Boss Key found Final Boss but hand is full!");
+          player.deck.push(bossCard);
+        }
+      } else {
+        logToLobby(lobby, "Boss Key: No Final Boss in deck!");
+      }
+    }
+  }
+  
+  // Cheat Code - target +3/+3 this turn, all others +1/+1 this turn
+  if (effectId === "cheat_code_buff") {
+    if (targetUnitId && state.units[targetUnitId]) {
+      const targetUnit = state.units[targetUnitId];
+      if (targetUnit.owner === role) {
+        targetUnit.cheatCodeTarget = true;
+        targetUnit.tempAtkBonus = (targetUnit.tempAtkBonus || 0) + 3;
+        targetUnit.tempHpBonus = (targetUnit.tempHpBonus || 0) + 3;
+        targetUnit.atk += 3;
+        targetUnit.hp += 3;
+        if (!targetUnit.maxHp) targetUnit.maxHp = targetUnit.hp;
+        else targetUnit.maxHp += 3;
+        
+        logToLobby(lobby, targetUnit.name + " gets +3/+3 from Cheat Code!");
+        
+        let buffed = 0;
+        for (const uid in state.units) {
+          const u = state.units[uid];
+          if (u.owner === role && uid !== targetUnitId) {
+            u.tempAtkBonus = (u.tempAtkBonus || 0) + 1;
+            u.tempHpBonus = (u.tempHpBonus || 0) + 1;
+            u.atk += 1;
+            u.hp += 1;
+            if (!u.maxHp) u.maxHp = u.hp;
+            else u.maxHp += 1;
+            buffed++;
+          }
+        }
+        if (buffed > 0) {
+          logToLobby(lobby, buffed + " other units get +1/+1!");
+        }
+        
+        if (!state.cheatCodeBuffs) state.cheatCodeBuffs = {};
+        state.cheatCodeBuffs[role] = true;
+      }
+    }
+  }
+  
+  // Save State - mark unit to restore if it dies
+  if (effectId === "save_state") {
+    if (targetUnitId && state.units[targetUnitId]) {
+      const targetUnit = state.units[targetUnitId];
+      if (targetUnit.owner === role) {
+        targetUnit.saveState = {
+          maxHp: targetUnit.maxHp || targetUnit.hp,
+          atk: targetUnit.atk
+        };
+        logToLobby(lobby, targetUnit.name + " is marked with Save State!");
+      }
+    }
+  }
+  
+  // Reset Button - ALL units on board shuffled back to owner's deck
+  // Tokens (Pixel, Slimeling) are removed instead of shuffled back
+  if (effectId === "reset_board") {
+    const TOKEN_KEYS = ['pixel', 'slimeling']; // Tokens that should be removed, not returned
+    let goldReturned = 0;
+    let silverReturned = 0;
+    let tokensRemoved = 0;
+    
+    const unitsToReturn = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const uid = state.board[r][c];
+        if (uid && state.units[uid]) {
+          unitsToReturn.push({ id: uid, r, c, owner: state.units[uid].owner, art: state.units[uid].art, name: state.units[uid].name });
+        }
+      }
+    }
+    
+    // Emit animation event before removing units
+    if (unitsToReturn.length > 0) {
+      const animData = {
+        type: "effect",
+        effectType: "reset_button",
+        units: unitsToReturn.map(u => ({ r: u.r, c: u.c, owner: u.owner, art: u.art, name: u.name }))
+      };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
+    
+    for (const item of unitsToReturn) {
+      const unit = state.units[item.id];
+      if (!unit) continue;
+      
+      const owner = unit.owner;
+      const player = lobby.gameState.players[owner];
+      
+      // Skip tokens - they just get removed, not returned to deck
+      if (TOKEN_KEYS.includes(unit.key)) {
+        state.board[item.r][item.c] = null;
+        delete state.units[item.id];
+        tokensRemoved++;
+        continue;
+      }
+      
+      const card = {
+        id: genId(),
+        key: unit.key,
+        name: unit.name,
+        atk: unit.atk,
+        hp: unit.maxHp || unit.hp,
+        maxHp: unit.maxHp || unit.hp,
+        cost: unit.cost || 0,
+        type: unit.type,
+        effect: unit.effect,
+        effectId: unit.effectId,
+        effectDesc: unit.effectDesc,
+        art: unit.art,
+        rarity: unit.rarity
+      };
+      
+      player.deck.push(card);
+      state.board[item.r][item.c] = null;
+      delete state.units[item.id];
+      
+      if (owner === "gold") goldReturned++;
+      else silverReturned++;
+    }
+    
+    const goldPlayer = lobby.gameState.players.gold;
+    const silverPlayer = lobby.gameState.players.silver;
+    
+    for (let i = goldPlayer.deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [goldPlayer.deck[i], goldPlayer.deck[j]] = [goldPlayer.deck[j], goldPlayer.deck[i]];
+    }
+    for (let i = silverPlayer.deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [silverPlayer.deck[i], silverPlayer.deck[j]] = [silverPlayer.deck[j], silverPlayer.deck[i]];
+    }
+    
+    logToLobby(lobby, "🔄 RESET BUTTON! " + goldReturned + " gold units and " + silverReturned + " silver units returned to decks!");
+    recomputeOwners(state);
+  }
+  
+  // Rage Quit - deal damage equal to units that died this game
+  if (effectId === "rage_quit") {
+    if (targetUnitId && state.units[targetUnitId]) {
+      const target = state.units[targetUnitId];
+      if (target.owner !== role) {
+        if (target.untargetable) {
+          logToLobby(lobby, target.name + " is untargetable!");
+          return false;
+        }
+        
+        const player = lobby.gameState.players[role];
+        const deathCount = player.discard ? player.discard.filter(c => c.type === "monster").length : 0;
+        
+        if (deathCount > 0) {
+          const before = target.hp;
+          target.hp -= deathCount;
+          combatLogToLobby(lobby, `😤 RAGE QUIT!`, "combat-header");
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - ${deathCount} = ${target.hp} HP`, "combat-result");
+          logToLobby(lobby, "Rage Quit deals " + deathCount + " damage to " + target.name + "!");
+          
+          if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
+            const pos = getUnitPos(state, targetUnitId);
+            if (pos) {
+              processOnDeathEffect(lobby, target, target.owner, pos);
+              processAllyDeathTriggers(lobby, target.owner, target, pos);
+              state.board[pos.r][pos.c] = null;
+              discardUnitCard(lobby, target);
+              delete state.units[targetUnitId];
+              combatLogToLobby(lobby, `💀 ${target.name} DESTROYED`, "combat-death");
+            }
+          }
+        } else {
+          logToLobby(lobby, "Rage Quit: No units have died yet! (0 damage)");
+        }
+      }
+    }
+  }
 }
 
 // Handle campaign victory rewards
@@ -3276,6 +4531,10 @@ function processBossEventWarning(lobby) {
     processEclipseStart(lobby, boss, config);
   } else if (boss.eventType === 'polymorph') {
     processPolymorphStart(lobby, boss, config);
+  } else if (boss.eventType === 'divine_judgment') {
+    processDivineJudgmentStart(lobby, boss, config);
+  } else if (boss.eventType === 'cheat_code') {
+    processCheatCodeStart(lobby, boss, config);
   }
   // Add more event types here for other bosses
 }
@@ -3322,9 +4581,9 @@ function processBossEventCountdown(lobby) {
   // Only show countdown for 3, 2, 1
   if (turnsUntilEvent <= 3 && turnsUntilEvent >= 1) {
     if (boss.eventType === 'void_collapse') {
-      logToLobby(lobby, `⚠️ BLACK HOLE EVENT: ${turnsUntilEvent}`);
+      logToLobby(lobby, `⚠️ BLACK HOLE EVENT: ${turnsUntilEvent}`, "void-collapse-warning");
     } else if (boss.eventType === 'ghost_train') {
-      logToLobby(lobby, `⚠️ GHOST TRAIN APPROACHING: ${turnsUntilEvent}`);
+      logToLobby(lobby, `⚠️ GHOST TRAIN APPROACHING: ${turnsUntilEvent}`, "ghost-train-warning");
     } else if (boss.eventType === 'blood_chalice') {
       logToLobby(lobby, `🍷 BLOOD CHALICE RITUAL: ${turnsUntilEvent}`, "boss-benefit");
     } else if (boss.eventType === 'gem_rain') {
@@ -3333,6 +4592,10 @@ function processBossEventCountdown(lobby) {
       logToLobby(lobby, `🌑 ECLIPSE APPROACHING: ${turnsUntilEvent}`, "eclipse-warning");
     } else if (boss.eventType === 'polymorph') {
       logToLobby(lobby, `🐑 POLYMORPH WAVE: ${turnsUntilEvent}`, "polymorph-warning");
+    } else if (boss.eventType === 'divine_judgment') {
+      logToLobby(lobby, `⚖️ DIVINE JUDGMENT: ${turnsUntilEvent}`, "divine-judgment-warning");
+    } else if (boss.eventType === 'cheat_code') {
+      logToLobby(lobby, `🎮 CHEAT CODE: ${turnsUntilEvent}`, "cheat-code-warning");
     }
   }
 }
@@ -3373,7 +4636,7 @@ function processVoidCollapseWarning(lobby, boss, config) {
   state.bossEventOccurrence++;
   
   // Log warning - tiles are now visible
-  logToLobby(lobby, `⚠️ VOID COLLAPSE WARNING! A ${size}x${size} black hole is forming!`);
+  logToLobby(lobby, `⚠️ VOID COLLAPSE WARNING! A ${size}x${size} black hole is forming!`, "void-collapse-warning");
   combatLogToLobby(lobby, `🌀 VOID COLLAPSE ZONE ACTIVE - MOVE YOUR UNITS!`, "boss-warning");
   
   // Emit event to client for visual effects
@@ -3544,7 +4807,7 @@ function processGhostTrainWarning(lobby, boss, config) {
   
   // Build warning message
   const lineDescriptions = lines.map(l => l.type === 'row' ? `Row ${l.index + 1}` : `Column ${l.index + 1}`);
-  logToLobby(lobby, `🚂 GHOST TRAIN WARNING! Tracks appearing on: ${lineDescriptions.join(', ')}!`);
+  logToLobby(lobby, `🚂 GHOST TRAIN WARNING! Tracks appearing on: ${lineDescriptions.join(', ')}!`, "ghost-train-warning");
   combatLogToLobby(lobby, `🚂 GHOST TRAIN INCOMING - CLEAR THE TRACKS!`, "boss-warning");
   
   // Emit event to client for visual effects
@@ -3597,10 +4860,10 @@ function processGhostTrainExecution(lobby) {
   
   // Log results
   if (destroyedCount > 0) {
-    logToLobby(lobby, `💀 GHOST TRAIN! ${destroyedCount} unit(s) run down: ${destroyedNames.join(', ')}`);
+    logToLobby(lobby, `💀 GHOST TRAIN! ${destroyedCount} unit(s) run down: ${destroyedNames.join(', ')}`, "ghost-train-execute");
     combatLogToLobby(lobby, `🚂 GHOST TRAIN STRIKES! ${destroyedCount} unit(s) destroyed!`, "boss-execute");
   } else {
-    logToLobby(lobby, `🚂 Ghost Train passes through - no casualties!`);
+    logToLobby(lobby, `🚂 Ghost Train passes through - no casualties!`, "ghost-train-warning");
     combatLogToLobby(lobby, `🚂 GHOST TRAIN - All units escaped!`, "boss-execute");
   }
   
@@ -4018,7 +5281,7 @@ function processEclipseEnd(lobby) {
     state.eclipseActive = false;
     state.eclipseEffect = null;
     
-    logToLobby(lobby, `☀️ The eclipse ends - light returns!`);
+    logToLobby(lobby, `☀️ The eclipse ends - light returns!`, "eclipse-warning");
     
     // Emit eclipse end to clients
     if (lobby.hostSocket) {
@@ -4163,7 +5426,7 @@ function processPolymorphStart(lobby, boss, config) {
   
   combatLogToLobby(lobby, `🐑🐲 The Arcane Dragonlord - POLYMORPH WAVE`, "boss-event");
   combatLogToLobby(lobby, `Units transformed! One dragon per side, the rest are Sheep!`, "combat-result");
-  logToLobby(lobby, `🐲 POLYMORPH WAVE! Each side gets one 4/4 Dragon, the rest become 1/1 Sheep for ${config.duration} turns!`);
+  logToLobby(lobby, `🐲 POLYMORPH WAVE! Each side gets one 4/4 Dragon, the rest become 1/1 Sheep for ${config.duration} turns!`, "polymorph-warning");
   
   // Emit polymorph event to clients
   if (lobby.hostSocket) {
@@ -4210,7 +5473,7 @@ function processPolymorphEnd(lobby) {
     state.polymorphActive = false;
     delete state.polymorphedUnits;
     
-    logToLobby(lobby, `✨ The polymorph wears off - units return to normal!`);
+    logToLobby(lobby, `✨ The polymorph wears off - units return to normal!`, "polymorph-warning");
     
     // Emit polymorph end to clients
     if (lobby.hostSocket) {
@@ -4223,6 +5486,402 @@ function processPolymorphEnd(lobby) {
 }
 
 // ==================== END POLYMORPH EVENT ====================
+
+// ==================== DIVINE JUDGMENT EVENT (The Seraph of Judgment) ====================
+
+function processDivineJudgmentStart(lobby, boss, config) {
+  const { state } = lobby.gameState;
+  
+  // Set divine judgment active state
+  state.divineJudgmentActive = true;
+  state.divineJudgmentTurnsLeft = config.duration || 2;
+  
+  const atkThreshold = config.atkThreshold || 4;
+  const wrathDamage = config.wrathDamage || 2;
+  
+  // Track affected units
+  const wrathfulUnits = [];
+  const pridefulUnits = [];
+  const violentUnits = [];
+  
+  // Judge all player units (gold side only, since boss is silver)
+  for (const unitId in state.units) {
+    const unit = state.units[unitId];
+    if (unit.owner !== 'gold') continue; // Only judge player units
+    if (unit.type === 'structure') continue; // Skip structures
+    
+    // Check for Wrath (high ATK) - takes damage immediately
+    if (unit.atk >= atkThreshold) {
+      wrathfulUnits.push({ id: unitId, name: unit.name });
+      unit.hp -= wrathDamage;
+      unit.judgedWrath = true; // Mark for visual effect
+    }
+    
+    // Check for Pride (has buffs/enchantments) - buffs suppressed for duration
+    if (unit.atkBuffed || unit.hpBuffed || unit.blessingMight || unit.blessingVigor || 
+        unit.blessingProtection || unit.blessingKings || unit.deathWard) {
+      pridefulUnits.push({ id: unitId, name: unit.name });
+      // Store original buff state
+      unit.prideOriginal = {
+        atkBuffed: unit.atkBuffed || 0,
+        hpBuffed: unit.hpBuffed || 0,
+        blessingMight: unit.blessingMight,
+        blessingVigor: unit.blessingVigor,
+        blessingProtection: unit.blessingProtection,
+        blessingKings: unit.blessingKings,
+        deathWard: unit.deathWard
+      };
+      // Suppress buffs
+      unit.judgedPride = true;
+      unit.atkBuffed = 0;
+      unit.hpBuffed = 0;
+      delete unit.blessingMight;
+      delete unit.blessingVigor;
+      delete unit.blessingProtection;
+      delete unit.blessingKings;
+      delete unit.deathWard;
+    }
+    
+    // Check for Violence (has killed this game) - stunned for duration
+    if (unit.killCount && unit.killCount > 0) {
+      violentUnits.push({ id: unitId, name: unit.name, kills: unit.killCount });
+      unit.judgedViolence = true;
+      unit.stunned = true; // Cannot move or attack
+    }
+  }
+  
+  // Process deaths from Wrath damage
+  const deadUnits = [];
+  for (const item of wrathfulUnits) {
+    const unit = state.units[item.id];
+    if (unit && unit.hp <= 0) {
+      deadUnits.push(item.id);
+    }
+  }
+  
+  for (const unitId of deadUnits) {
+    const unit = state.units[unitId];
+    if (!unit) continue;
+    const pos = getUnitPos(state, unitId);
+    if (pos) {
+      processOnDeathEffect(lobby, unit, unit.owner, pos);
+      state.board[pos.r][pos.c] = null;
+    }
+    discardUnitCard(lobby, unit);
+    delete state.units[unitId];
+    logToLobby(lobby, `${unit.name} was destroyed by Divine Wrath!`);
+  }
+  
+  // Log the judgment
+  combatLogToLobby(lobby, `⚖️✨ The Seraph of Judgment - DIVINE JUDGMENT`, "boss-event");
+  
+  if (wrathfulUnits.length > 0) {
+    const names = wrathfulUnits.map(u => u.name).join(', ');
+    logToLobby(lobby, `🔥 WRATH: ${names} judged for high power! (${wrathDamage} damage)`);
+  }
+  if (pridefulUnits.length > 0) {
+    const names = pridefulUnits.map(u => u.name).join(', ');
+    logToLobby(lobby, `💚 PRIDE: ${names} judged! Buffs suppressed for ${config.duration} turns.`);
+  }
+  if (violentUnits.length > 0) {
+    const names = violentUnits.map(u => u.name).join(', ');
+    logToLobby(lobby, `🖤 VIOLENCE: ${names} judged for killing! Stunned for ${config.duration} turns.`);
+  }
+  
+  if (wrathfulUnits.length === 0 && pridefulUnits.length === 0 && violentUnits.length === 0) {
+    logToLobby(lobby, `✨ Your units were found pure! No judgment applied.`);
+  }
+  
+  // Emit divine judgment event to clients
+  const eventData = {
+    turnsLeft: state.divineJudgmentTurnsLeft,
+    wrathful: wrathfulUnits,
+    prideful: pridefulUnits,
+    violent: violentUnits
+  };
+  
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("divineJudgmentStart", eventData);
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("divineJudgmentStart", eventData);
+  }
+  
+  // Set cinematic delay - this will pause game processing for 6.5 seconds
+  // to allow the client cinematic to complete
+  state.divineJudgmentCinematicUntil = Date.now() + 6500;
+}
+
+function processDivineJudgmentEnd(lobby) {
+  const { state } = lobby.gameState;
+  
+  if (!state.divineJudgmentActive) return;
+  
+  state.divineJudgmentTurnsLeft--;
+  
+  // Update clients with remaining turns
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("divineJudgmentUpdate", { turnsLeft: state.divineJudgmentTurnsLeft });
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("divineJudgmentUpdate", { turnsLeft: state.divineJudgmentTurnsLeft });
+  }
+  
+  if (state.divineJudgmentTurnsLeft <= 0) {
+    // Restore all judged units
+    for (const unitId in state.units) {
+      const unit = state.units[unitId];
+      if (!unit) continue;
+      
+      // Clear wrath marker
+      delete unit.judgedWrath;
+      
+      // Restore Pride buffs
+      if (unit.judgedPride && unit.prideOriginal) {
+        unit.atkBuffed = unit.prideOriginal.atkBuffed;
+        unit.hpBuffed = unit.prideOriginal.hpBuffed;
+        if (unit.prideOriginal.blessingMight) unit.blessingMight = unit.prideOriginal.blessingMight;
+        if (unit.prideOriginal.blessingVigor) unit.blessingVigor = unit.prideOriginal.blessingVigor;
+        if (unit.prideOriginal.blessingProtection) unit.blessingProtection = unit.prideOriginal.blessingProtection;
+        if (unit.prideOriginal.blessingKings) unit.blessingKings = unit.prideOriginal.blessingKings;
+        if (unit.prideOriginal.deathWard) unit.deathWard = unit.prideOriginal.deathWard;
+        delete unit.prideOriginal;
+        delete unit.judgedPride;
+      }
+      
+      // Remove Violence stun
+      if (unit.judgedViolence) {
+        delete unit.stunned;
+        delete unit.judgedViolence;
+      }
+    }
+    
+    state.divineJudgmentActive = false;
+    
+    logToLobby(lobby, `✨ Divine Judgment has lifted - units restored!`);
+    
+    // Emit divine judgment end to clients
+    if (lobby.hostSocket) {
+      lobby.hostSocket.emit("divineJudgmentEnd", {});
+    }
+    if (lobby.guestSocket) {
+      lobby.guestSocket.emit("divineJudgmentEnd", {});
+    }
+  }
+}
+
+// ==================== END DIVINE JUDGMENT EVENT ====================
+
+// ==================== CHEAT CODE EVENT (The Final Boss - 8-Bit Battalion) ====================
+
+const CHEAT_CODES = [
+  {
+    code: 'IDKFA',
+    name: 'Full Arsenal',
+    description: 'ALL units gain +2 ATK',
+    type: 'permanent'
+  },
+  {
+    code: 'BIGHEAD',
+    name: 'Big Head Mode',
+    description: 'ALL units gain +1/+1',
+    type: 'permanent'
+  },
+  {
+    code: 'HESOYAM',
+    name: 'Bankrupt',
+    description: 'Both players lose all energy for 2 turns',
+    type: 'duration'
+  },
+  {
+    code: 'HOWDOITURNTHISON',
+    name: 'Stat Swap',
+    description: 'ALL units swap ATK ↔ HP and lose buffs',
+    type: 'permanent'
+  },
+  {
+    code: 'GREEDISGOOD',
+    name: 'Discount Mode',
+    description: 'ALL cards cost 1 energy for 2 turns',
+    type: 'duration'
+  }
+];
+
+function processCheatCodeStart(lobby, boss, config) {
+  const { state, players } = lobby.gameState;
+  
+  // Pick a random cheat code
+  const cheat = CHEAT_CODES[Math.floor(Math.random() * CHEAT_CODES.length)];
+  
+  // Track affected units for visual feedback
+  const affectedUnits = [];
+  
+  // Apply the cheat effect
+  if (cheat.code === 'IDKFA') {
+    // All units gain +2 ATK permanently
+    for (const unitId in state.units) {
+      const unit = state.units[unitId];
+      if (unit.type === 'structure') continue;
+      unit.atk += 2;
+      unit.cheatBuffed = true;
+      affectedUnits.push({ id: unitId, name: unit.name, owner: unit.owner });
+    }
+    logToLobby(lobby, `🎮 IDKFA: All units gained +2 ATK!`);
+    
+  } else if (cheat.code === 'BIGHEAD') {
+    // All units gain +1/+1 permanently
+    for (const unitId in state.units) {
+      const unit = state.units[unitId];
+      if (unit.type === 'structure') continue;
+      unit.atk += 1;
+      unit.hp += 1;
+      unit.maxHp = (unit.maxHp || unit.hp) + 1;
+      unit.cheatBuffed = true;
+      affectedUnits.push({ id: unitId, name: unit.name, owner: unit.owner });
+    }
+    logToLobby(lobby, `🎮 BIGHEAD: All units gained +1/+1!`);
+    
+  } else if (cheat.code === 'HESOYAM') {
+    // Both players lose all energy for 2 turns
+    players.gold.energy = 0;
+    players.silver.energy = 0;
+    state.cheatHesoyamActive = true;
+    state.cheatHesoyamTurnsLeft = config.duration || 2;
+    logToLobby(lobby, `🎮 HESOYAM: Both players bankrupt for ${state.cheatHesoyamTurnsLeft} turns!`);
+    
+  } else if (cheat.code === 'HOWDOITURNTHISON') {
+    // All units swap ATK and HP, lose all buffs
+    for (const unitId in state.units) {
+      const unit = state.units[unitId];
+      if (unit.type === 'structure') continue;
+      
+      // Swap ATK and HP
+      const oldAtk = unit.atk;
+      const oldHp = unit.hp;
+      unit.atk = oldHp;
+      unit.hp = oldAtk;
+      unit.maxHp = oldAtk; // New max HP is the old ATK
+      
+      // Clear all buffs
+      delete unit.atkBuffed;
+      delete unit.hpBuffed;
+      delete unit.blessingMight;
+      delete unit.blessingVigor;
+      delete unit.blessingProtection;
+      delete unit.blessingKings;
+      delete unit.deathWard;
+      delete unit.gemBuffs;
+      
+      unit.cheatSwapped = true;
+      affectedUnits.push({ id: unitId, name: unit.name, owner: unit.owner, oldAtk, oldHp });
+    }
+    
+    // Check for deaths (units with 0 or less HP after swap)
+    const deadUnits = [];
+    for (const unitId in state.units) {
+      const unit = state.units[unitId];
+      if (unit.hp <= 0) {
+        deadUnits.push(unitId);
+      }
+    }
+    
+    for (const unitId of deadUnits) {
+      const unit = state.units[unitId];
+      if (!unit) continue;
+      const pos = getUnitPos(state, unitId);
+      if (pos) {
+        state.board[pos.r][pos.c] = null;
+      }
+      discardUnitCard(lobby, unit);
+      delete state.units[unitId];
+      logToLobby(lobby, `${unit.name} was destroyed by stat swap!`);
+    }
+    
+    logToLobby(lobby, `🎮 HOWDOITURNTHISON: All units swapped ATK ↔ HP and lost buffs!`);
+    
+  } else if (cheat.code === 'GREEDISGOOD') {
+    // All cards cost 1 energy for 2 turns
+    state.cheatGreedActive = true;
+    state.cheatGreedTurnsLeft = config.duration || 2;
+    logToLobby(lobby, `🎮 GREEDISGOOD: All cards cost 1 energy for ${state.cheatGreedTurnsLeft} turns!`);
+  }
+  
+  // Log the cheat activation
+  combatLogToLobby(lobby, `🎮💥 The Final Boss - CHEAT CODE ACTIVATED`, "boss-event");
+  combatLogToLobby(lobby, `${cheat.code}: ${cheat.name}`, "cheat-code");
+  
+  // Emit cheat code event to clients
+  const eventData = {
+    cheat: cheat,
+    affectedUnits: affectedUnits,
+    hesoyamTurnsLeft: state.cheatHesoyamTurnsLeft || 0,
+    greedTurnsLeft: state.cheatGreedTurnsLeft || 0
+  };
+  
+  if (lobby.hostSocket) {
+    lobby.hostSocket.emit("cheatCodeStart", eventData);
+  }
+  if (lobby.guestSocket) {
+    lobby.guestSocket.emit("cheatCodeStart", eventData);
+  }
+  
+  // Set cinematic delay - 5 seconds for the cheat code animation
+  state.cheatCodeCinematicUntil = Date.now() + 5000;
+}
+
+function processCheatCodeEnd(lobby) {
+  const { state, players } = lobby.gameState;
+  
+  // Process HESOYAM duration (energy drain happens at start of each player's turn)
+  if (state.cheatHesoyamActive) {
+    state.cheatHesoyamTurnsLeft--;
+    
+    if (state.cheatHesoyamTurnsLeft <= 0) {
+      state.cheatHesoyamActive = false;
+      logToLobby(lobby, `🎮 HESOYAM effect ended - energy restored!`);
+      
+      if (lobby.hostSocket) {
+        lobby.hostSocket.emit("cheatCodeEnd", { cheat: 'HESOYAM' });
+      }
+      if (lobby.guestSocket) {
+        lobby.guestSocket.emit("cheatCodeEnd", { cheat: 'HESOYAM' });
+      }
+    } else {
+      if (lobby.hostSocket) {
+        lobby.hostSocket.emit("cheatCodeUpdate", { cheat: 'HESOYAM', turnsLeft: state.cheatHesoyamTurnsLeft });
+      }
+      if (lobby.guestSocket) {
+        lobby.guestSocket.emit("cheatCodeUpdate", { cheat: 'HESOYAM', turnsLeft: state.cheatHesoyamTurnsLeft });
+      }
+    }
+  }
+  
+  // Process GREEDISGOOD duration
+  if (state.cheatGreedActive) {
+    state.cheatGreedTurnsLeft--;
+    
+    if (state.cheatGreedTurnsLeft <= 0) {
+      state.cheatGreedActive = false;
+      logToLobby(lobby, `🎮 GREEDISGOOD effect ended - normal costs restored!`);
+      
+      if (lobby.hostSocket) {
+        lobby.hostSocket.emit("cheatCodeEnd", { cheat: 'GREEDISGOOD' });
+      }
+      if (lobby.guestSocket) {
+        lobby.guestSocket.emit("cheatCodeEnd", { cheat: 'GREEDISGOOD' });
+      }
+    } else {
+      if (lobby.hostSocket) {
+        lobby.hostSocket.emit("cheatCodeUpdate", { cheat: 'GREEDISGOOD', turnsLeft: state.cheatGreedTurnsLeft });
+      }
+      if (lobby.guestSocket) {
+        lobby.guestSocket.emit("cheatCodeUpdate", { cheat: 'GREEDISGOOD', turnsLeft: state.cheatGreedTurnsLeft });
+      }
+    }
+  }
+}
+
+// ==================== END CHEAT CODE EVENT ====================
 
 function emitLobbyState(lobby) {
   const info = { code: lobby.code, hostDeck: lobby.hostDeck, guestDeck: lobby.guestDeck, hostReady: lobby.hostReady, guestReady: lobby.guestReady, guestJoined: !!lobby.guestSocket, gameStarted: lobby.gameStarted };
@@ -4294,7 +5953,13 @@ function emitGameState(lobby) {
     eclipseActive: state.eclipseActive || false, // For eclipse event
     eclipseEffect: state.eclipseEffect || null, // Current eclipse effect (type, value, label)
     polymorphActive: state.polymorphActive || false, // For polymorph event
-    polymorphTurnsLeft: state.polymorphTurnsLeft || 0 // Turns until polymorph ends
+    polymorphTurnsLeft: state.polymorphTurnsLeft || 0, // Turns until polymorph ends
+    divineJudgmentActive: state.divineJudgmentActive || false, // For divine judgment event
+    divineJudgmentTurnsLeft: state.divineJudgmentTurnsLeft || 0, // Turns until divine judgment ends
+    cheatHesoyamActive: state.cheatHesoyamActive || false, // For HESOYAM cheat
+    cheatHesoyamTurnsLeft: state.cheatHesoyamTurnsLeft || 0,
+    cheatGreedActive: state.cheatGreedActive || false, // For GREEDISGOOD cheat
+    cheatGreedTurnsLeft: state.cheatGreedTurnsLeft || 0
   };
   if (lobby.hostSocket) lobby.hostSocket.emit("state", { 
     ...base, 
@@ -4361,6 +6026,26 @@ async function processAITurn(lobby) {
   const { state, players } = lobby.gameState;
   const ai = lobby.ai;
   if (!ai) return;
+  
+  // Wait for Divine Judgment cinematic to complete
+  if (state.divineJudgmentCinematicUntil && Date.now() < state.divineJudgmentCinematicUntil) {
+    const remainingDelay = state.divineJudgmentCinematicUntil - Date.now();
+    setTimeout(() => {
+      delete state.divineJudgmentCinematicUntil;
+      processAITurn(lobby);
+    }, remainingDelay);
+    return;
+  }
+  
+  // Wait for Cheat Code cinematic to complete
+  if (state.cheatCodeCinematicUntil && Date.now() < state.cheatCodeCinematicUntil) {
+    const remainingDelay = state.cheatCodeCinematicUntil - Date.now();
+    setTimeout(() => {
+      delete state.cheatCodeCinematicUntil;
+      processAITurn(lobby);
+    }, remainingDelay);
+    return;
+  }
   
   // Prevent multiple AI loops from running simultaneously
   if (lobby.aiProcessing) {
@@ -4456,6 +6141,12 @@ async function processAITurn(lobby) {
         // Process polymorph end (counts down each turn)
         processPolymorphEnd(lobby);
         
+        // Process divine judgment end (counts down each turn)
+        processDivineJudgmentEnd(lobby);
+        
+        // Process cheat code duration effects (counts down each turn)
+        processCheatCodeEnd(lobby);
+        
         // Increment boss turn count and check for NEW warning
         state.bossTurnCount++;
         processBossEventWarning(lobby);
@@ -4481,6 +6172,12 @@ async function processAITurn(lobby) {
         if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
         goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
         goldPlayer.hasDrawn = false;
+        
+        // HESOYAM cheat: drain all energy after gaining it
+        if (state.cheatHesoyamActive && state.cheatHesoyamTurnsLeft > 0) {
+          goldPlayer.energy = 0;
+          logToLobby(lobby, `🎮 HESOYAM: Energy drained! (${state.cheatHesoyamTurnsLeft} turns left)`);
+        }
         
         processStartOfTurnEffects(lobby, "gold");
         
@@ -4563,6 +6260,12 @@ async function processAITurn(lobby) {
     goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
     goldPlayer.hasDrawn = false;
     
+    // HESOYAM cheat: drain all energy after gaining it
+    if (state.cheatHesoyamActive && state.cheatHesoyamTurnsLeft > 0) {
+      goldPlayer.energy = 0;
+      logToLobby(lobby, `🎮 HESOYAM: Energy drained! (${state.cheatHesoyamTurnsLeft} turns left)`);
+    }
+    
     processStartOfTurnEffects(lobby, "gold");
     
     // Show countdown warning at start of player's turn
@@ -4592,6 +6295,26 @@ async function processPlayerAITurn(lobby) {
   const { state, players } = lobby.gameState;
   const playerRole = "gold";
   const playerAI = lobby.playerAI;
+  
+  // Wait for Divine Judgment cinematic to complete
+  if (state.divineJudgmentCinematicUntil && Date.now() < state.divineJudgmentCinematicUntil) {
+    const remainingDelay = state.divineJudgmentCinematicUntil - Date.now();
+    setTimeout(() => {
+      delete state.divineJudgmentCinematicUntil;
+      processPlayerAITurn(lobby);
+    }, remainingDelay);
+    return;
+  }
+  
+  // Wait for Cheat Code cinematic to complete
+  if (state.cheatCodeCinematicUntil && Date.now() < state.cheatCodeCinematicUntil) {
+    const remainingDelay = state.cheatCodeCinematicUntil - Date.now();
+    setTimeout(() => {
+      delete state.cheatCodeCinematicUntil;
+      processPlayerAITurn(lobby);
+    }, remainingDelay);
+    return;
+  }
   
   // Prevent multiple AI loops
   if (lobby.playerAIProcessing) return;
@@ -4702,6 +6425,12 @@ async function processPlayerAITurn(lobby) {
     silverPlayer.energy = Math.min(silverPlayer.energy + energyGain, maxEnergy);
     silverPlayer.hasDrawn = false;
     
+    // HESOYAM cheat: drain all energy after gaining it
+    if (state.cheatHesoyamActive && state.cheatHesoyamTurnsLeft > 0) {
+      silverPlayer.energy = 0;
+      logToLobby(lobby, `🎮 HESOYAM: Boss energy drained! (${state.cheatHesoyamTurnsLeft} turns left)`);
+    }
+    
     processStartOfTurnEffects(lobby, "silver");
     state.turnNumber++;
     logToLobby(lobby, "--- SILVER's turn (+" + energyGain + " energy) ---");
@@ -4744,16 +6473,19 @@ async function executeAction(lobby, role, action) {
       const idx = p.hand.findIndex(c => c.id === action.cardId);
       if (idx === -1) return;
       const card = p.hand[idx];
-      if (p.energy < card.cost) return;
+      
+      // GREEDISGOOD cheat: all cards cost 1 energy
+      const effectiveCost = state.cheatGreedActive ? 1 : card.cost;
+      if (p.energy < effectiveCost) return;
       
       if (card.effect === "instant") {
-        p.energy -= card.cost;
+        p.energy -= effectiveCost;
         p.hand.splice(idx, 1);
         p.discard.push(card);
         processInstantSpell(lobby, role, card.effectId, action.row, action.targetUnitId);
         logToLobby(lobby, role.toUpperCase() + " cast " + card.name);
       } else if (action.spawn) {
-        p.energy -= card.cost;
+        p.energy -= effectiveCost;
         p.hand.splice(idx, 1);
         const id = genId();
         const hpB = getArmoryBonus(state, role);
@@ -4767,6 +6499,7 @@ async function executeAction(lobby, role, action) {
         if (card.stolen) unitData.stolen = true;
         if (card.isHolo) unitData.isHolo = true;
         if (card.stationary) unitData.stationary = true;
+        if (card.effectId === "stacking_aura") unitData.wizardStacks = 1; // Wizard NPC starts with +1/+1 buff
         state.units[id] = unitData;
         state.spawn[role] = id;
         
@@ -4802,7 +6535,7 @@ async function executeAction(lobby, role, action) {
         emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       } else if (action.row !== undefined && action.col !== undefined) {
         if (state.board[action.row][action.col]) return;
-        p.energy -= card.cost;
+        p.energy -= effectiveCost;
         p.hand.splice(idx, 1);
         const id = genId();
         const hpB = getArmoryBonus(state, role);
@@ -4816,6 +6549,7 @@ async function executeAction(lobby, role, action) {
         if (card.stolen) unitData.stolen = true;
         if (card.isHolo) unitData.isHolo = true;
         if (card.stationary) unitData.stationary = true;
+        if (card.effectId === "stacking_aura") unitData.wizardStacks = 1; // Wizard NPC starts with +1/+1 buff
         state.units[id] = unitData;
         state.board[action.row][action.col] = id;
         
@@ -4941,6 +6675,12 @@ async function executeAction(lobby, role, action) {
       // Check if unit is rooted
       if (u.rooted) return;
       
+      // Check if unit is stunned (Divine Judgment violence)
+      if (u.stunned) {
+        logToLobby(lobby, `${u.name} is stunned by Divine Judgment and cannot act!`);
+        return;
+      }
+      
       // Check if unit is frozen (Temporal Stasis or Obsidian gem)
       console.log(`[MOVE] ${u.name} (${action.unitId}) attempting move, frozen = ${u.frozen}`);
       if (u.frozen) {
@@ -4967,10 +6707,11 @@ async function executeAction(lobby, role, action) {
       
       const moveCount = state.moveCountThisTurn[action.unitId] || 0;
       const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
+      const canTripleMove = u.effectId === "triple_move";
       const canLongMove = u.effectId === "stampede"; // 2 tiles cardinal, 1 move per turn
       const hasUnlimitedMoves = u.gemBuffs && u.gemBuffs.unlimitedMoves; // Diamond gem buff
       const eclipseMoveBonus = u.eclipseMoveBonus || 0; // Eclipse +moves effect
-      const baseMoves = canDoubleMove ? 2 : 1;
+      const baseMoves = canTripleMove ? 3 : (canDoubleMove ? 2 : 1);
       const maxMoves = hasUnlimitedMoves ? 999 : (baseMoves + eclipseMoveBonus);
       console.log(`[MOVE] ${u.name}: moveCount=${moveCount}, maxMoves=${maxMoves}, unlimitedMoves=${hasUnlimitedMoves}, eclipseBonus=${eclipseMoveBonus}, gemBuffs=${JSON.stringify(u.gemBuffs)}`);
       if (moveCount >= maxMoves) return;
@@ -5125,6 +6866,12 @@ async function executeAction(lobby, role, action) {
         return;
       }
       
+      // Check if attacker is stunned (Divine Judgment violence)
+      if (a.stunned) {
+        logToLobby(lobby, `${a.name} is stunned by Divine Judgment and cannot act!`);
+        return;
+      }
+      
       const ap = getUnitPos(state, action.attackerId);
       const tp = getUnitPos(state, action.targetId);
       if (!ap || !tp) return;
@@ -5194,6 +6941,64 @@ async function executeAction(lobby, role, action) {
             logToLobby(lobby, splashTarget.name + " destroyed by splash damage!");
           }
         }
+      }
+      
+      // Archangel Gabriel - deal 1 to all enemies in target's row
+      if (a.effectId === "gabriel_wrath" && tp) {
+        let rowDamage = 0;
+        const toRemoveRow = [];
+        for (let c = 0; c < COLS; c++) {
+          const uid = state.board[tp.r][c];
+          if (uid && uid !== action.targetId && state.units[uid] && state.units[uid].owner !== role) {
+            state.units[uid].hp -= 1;
+            rowDamage++;
+            if (state.units[uid].hp <= 0 && shouldUnitDie(lobby, state.units[uid])) {
+              toRemoveRow.push({ uid, pos: { r: tp.r, c } });
+            }
+          }
+        }
+        for (const { uid, pos } of toRemoveRow) {
+          const deadUnit = state.units[uid];
+          processOnDeathEffect(lobby, deadUnit, deadUnit.owner, pos);
+          processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, pos);
+          state.board[pos.r][pos.c] = null;
+          discardUnitCard(lobby, deadUnit);
+          delete state.units[uid];
+        }
+        if (rowDamage > 0) {
+          logToLobby(lobby, a.name + "'s wrath deals 1 damage to " + rowDamage + " enemies in the row!");
+        }
+      }
+      
+      // Blessing of Might - gain +1 ATK on attack
+      if (a.mightBlessing) {
+        a.atk += 1;
+        logToLobby(lobby, a.name + "'s Blessing of Might grants +1 ATK!");
+        triggerStatGainEffects(lobby, 'atk', 1, action.attackerId);
+      }
+      
+      // Blessing of Vigor - attacker gains energy
+      if (a.vigorBlessing) {
+        const players = lobby.gameState.players;
+        players[role].energy = Math.min(players[role].energy + 1, players[role].maxEnergy);
+        logToLobby(lobby, a.name + "'s Blessing of Vigor grants 1 energy!");
+      }
+      
+      // Blessing of Kings - attacker draws
+      if (a.kingsBlessing) {
+        drawCards(lobby, role, 1);
+        logToLobby(lobby, a.name + "'s Blessing of Kings draws a card!");
+      }
+      
+      // Blessing of Vigor/Kings on DEFENDER being attacked
+      if (t.vigorBlessing && t.owner !== role) {
+        const players = lobby.gameState.players;
+        players[t.owner].energy = Math.min(players[t.owner].energy + 1, players[t.owner].maxEnergy);
+        logToLobby(lobby, t.name + "'s Blessing of Vigor grants 1 energy!");
+      }
+      if (t.kingsBlessing && t.owner !== role) {
+        drawCards(lobby, t.owner, 1);
+        logToLobby(lobby, t.name + "'s Blessing of Kings draws a card!");
       }
       
       // Arcane Tether - when damaged, deal 1 damage to nearest enemy
@@ -5518,10 +7323,12 @@ async function executeAction(lobby, role, action) {
 }
 
 io.on("connection", (socket) => {
-  // Filter out challenge decks (they end with -challenge)
-  socket.emit("deckList", Object.entries(DECKS)
-    .filter(([id, d]) => !id.endsWith('-challenge'))
-    .map(([id, d]) => ({ id, name: d.name, description: d.description })));
+  // Send deck slot options (8 slots, unlocked based on defeated bosses)
+  const deckSlots = [];
+  for (let i = 1; i <= 8; i++) {
+    deckSlots.push({ id: 'deck-' + i, name: 'Custom Deck ' + i, description: 'Build your own deck with cards you\'ve collected!' });
+  }
+  socket.emit("deckList", deckSlots);
   socket.emit("campaignBosses", CAMPAIGN_BOSSES);
 
   socket.on("createLobby", (data) => {
@@ -5568,7 +7375,10 @@ io.on("connection", (socket) => {
 
     // Check if auto-play is allowed (must have beaten this boss at this difficulty)
     let canAutoPlay = false;
-    if (userId) {
+    if (userId === 'admin') {
+      // Admin can always auto-play
+      canAutoPlay = true;
+    } else if (userId) {
       try {
         const user = await User.findById(userId);
         if (user) {
@@ -5588,7 +7398,24 @@ io.on("connection", (socket) => {
     let customDeckCards = null;
     let deckMusic = 'default';
     let deckBackground = 'default';
-    if (userId) {
+    
+    // Starter deck for new players (medieval cards)
+    const STARTER_DECK = ['peasant','peasant','peasant','squire','squire','squire','archer','archer','archer','manatarms','manatarms','shieldbearer','shieldbearer','warhound','warhound','battlefieldmedic','battlefieldmedic','knight','knight','knight','crusader','royalguard','royalguard','paladin','siegeram'];
+    
+    // Handle admin custom decks
+    if (userId === 'admin') {
+      const customDeck = adminCustomDecks.find(d => d.id === deckId);
+      if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
+        customDeckCards = customDeck.cards;
+        deckMusic = customDeck.music || 'default';
+        deckBackground = customDeck.background || 'default';
+      } else if (deckId === 'deck-1') {
+        // Admin gets starter deck if no custom deck built for slot 1
+        customDeckCards = STARTER_DECK;
+      } else {
+        return socket.emit("lobbyError", "Please build a deck with at least 25 cards first.");
+      }
+    } else if (userId) {
       try {
         const user = await User.findById(userId);
         if (user) {
@@ -5597,11 +7424,21 @@ io.on("connection", (socket) => {
             customDeckCards = customDeck.cards;
             deckMusic = customDeck.music || 'default';
             deckBackground = customDeck.background || 'default';
+          } else if (deckId === 'deck-1') {
+            // New players get starter deck if no custom deck built for slot 1
+            customDeckCards = STARTER_DECK;
+          } else {
+            return socket.emit("lobbyError", "Please build a deck with at least 25 cards first.");
           }
+        } else {
+          return socket.emit("lobbyError", "User not found. Please log in again.");
         }
       } catch (err) {
         console.error('Error loading custom deck:', err);
+        return socket.emit("lobbyError", "Error loading deck. Please try again.");
       }
+    } else {
+      return socket.emit("lobbyError", "Please log in to play campaign.");
     }
 
     const code = generateLobbyCode();
@@ -5647,7 +7484,9 @@ io.on("connection", (socket) => {
       isChallenge: isChallenge,
       music: deckMusic,
       background: deckBackground,
-      canAutoPlay: canAutoPlay
+      canAutoPlay: canAutoPlay,
+      firstTimeBoss: !canAutoPlay, // First time if they haven't beaten this boss at this difficulty
+      bossMusic: boss.deckId // Boss's theme music (uses deck ID)
     });
     socket.emit("enemyInfo", { username: boss.name, isAI: true });
     logToLobby(lobbies[code], "=== CAMPAIGN: " + boss.name.toUpperCase() + " ===");
@@ -5786,7 +7625,13 @@ io.on("connection", (socket) => {
     let hostCustomCards = null;
     let guestCustomCards = null;
     
-    if (lobby.hostUserId) {
+    // Handle admin for host
+    if (lobby.hostUserId === 'admin') {
+      const customDeck = adminCustomDecks.find(d => d.id === lobby.hostDeck);
+      if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
+        hostCustomCards = customDeck.cards;
+      }
+    } else if (lobby.hostUserId) {
       try {
         const hostUser = await User.findById(lobby.hostUserId);
         if (hostUser) {
@@ -5798,7 +7643,13 @@ io.on("connection", (socket) => {
       } catch (err) { console.error('Error loading host custom deck:', err); }
     }
     
-    if (lobby.guestUserId) {
+    // Handle admin for guest
+    if (lobby.guestUserId === 'admin') {
+      const customDeck = adminCustomDecks.find(d => d.id === lobby.guestDeck);
+      if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
+        guestCustomCards = customDeck.cards;
+      }
+    } else if (lobby.guestUserId) {
       try {
         const guestUser = await User.findById(lobby.guestUserId);
         if (guestUser) {
@@ -5826,17 +7677,23 @@ io.on("connection", (socket) => {
     const code = data.code?.toUpperCase();
     const lobby = lobbies[code];
     
+    console.log(`[REJOIN] Attempt to rejoin lobby: ${code}, isHost: ${data.isHost}`);
+    
     if (!lobby) {
+      console.log(`[REJOIN] Lobby not found: ${code}`);
       return socket.emit("lobbyError", "Game not found. Return to home.");
     }
     
     if (!lobby.gameStarted) {
+      console.log(`[REJOIN] Game not started: ${code}`);
       return socket.emit("lobbyError", "Game not started yet.");
     }
     
     // Reconnect socket to lobby
     socket.data.lobbyCode = code;
     socket.data.isHost = data.isHost;
+    
+    console.log(`[REJOIN] Successfully rejoined lobby: ${code}, role: ${data.isHost ? 'gold' : 'silver'}`);
     
     if (data.isHost) {
       lobby.hostSocket = socket;
@@ -5885,7 +7742,21 @@ io.on("connection", (socket) => {
 
   socket.on("action", (payload) => {
     const lobby = lobbies[socket.data.lobbyCode];
-    if (!lobby || !lobby.gameStarted || !lobby.gameState) return;
+    
+    // Debug logging for action issues
+    if (!lobby) {
+      console.log(`[ACTION DEBUG] No lobby found for code: ${socket.data.lobbyCode}`);
+      return socket.emit("log", "Lobby not found. Try refreshing the page.");
+    }
+    if (!lobby.gameStarted) {
+      console.log(`[ACTION DEBUG] Game not started for lobby: ${socket.data.lobbyCode}`);
+      return socket.emit("log", "Game hasn't started yet.");
+    }
+    if (!lobby.gameState) {
+      console.log(`[ACTION DEBUG] No gameState for lobby: ${socket.data.lobbyCode}`);
+      return socket.emit("log", "Game state not initialized. Try refreshing.");
+    }
+    
     const { state, players } = lobby.gameState;
     let role = socket.data.isHost ? "gold" : "silver";
     
@@ -6214,6 +8085,81 @@ io.on("connection", (socket) => {
       }
       return emitGameState(lobby);
     }
+    
+    // Handle Resurrection spell (deploy anywhere with immune)
+    if (payload.type === "resurrectionSelect") {
+      const { cardId, row, col } = payload;
+      
+      // Check if player has pending resurrection
+      if (!state.pendingResurrection || !state.pendingResurrection[role] || !state.pendingResurrection[role].active) {
+        return socket.emit("log", "No pending Resurrection.");
+      }
+      
+      const p = players[role];
+      const idx = p.discard.findIndex(c => c.id === cardId);
+      if (idx === -1) return socket.emit("log", "Card not found in discard.");
+      
+      const card = p.discard[idx];
+      if (card.type !== "monster" && card.type !== "structure") {
+        return socket.emit("log", "Can only resurrect units.");
+      }
+      
+      // Validate placement - can be any empty tile except enemy home rows with HP
+      if (row === undefined || col === undefined || row < 0 || row >= ROWS || col < 0 || col >= COLS) {
+        return socket.emit("log", "Invalid placement.");
+      }
+      if (state.board[row][col]) {
+        return socket.emit("log", "Tile occupied.");
+      }
+      const enemy = enemyOf(role);
+      const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+      if (isEnemyHomeRow && state.rowHP[row] > 0) {
+        return socket.emit("log", "Cannot deploy in enemy home row with HP.");
+      }
+      
+      // Remove from discard
+      p.discard.splice(idx, 1);
+      
+      // Resurrect with full stats and immune
+      const id = genId();
+      const fullHp = card.maxHp || card.hp;
+      state.units[id] = {
+        id,
+        owner: role,
+        key: card.key,
+        name: card.name,
+        atk: card.atk,
+        hp: fullHp,
+        maxHp: fullHp,
+        cost: card.cost,
+        type: card.type,
+        effect: card.effect,
+        effectId: card.effectId,
+        effectDesc: card.effectDesc,
+        art: card.art,
+        originalCard: card,
+        immune: true,
+        immuneUntilNextTurn: true
+      };
+      if (card.stationary) state.units[id].stationary = true;
+      state.board[row][col] = id;
+      state.movedThisTurn.add(id);
+      
+      // Clear pending resurrection
+      state.pendingResurrection[role].active = false;
+      
+      logToLobby(lobby, "Resurrection brings back " + card.name + " with divine protection!");
+      emitSFX(lobby, card.key, 'deploy');
+      return emitGameState(lobby);
+    }
+    
+    if (payload.type === "skipResurrection") {
+      if (state.pendingResurrection && state.pendingResurrection[role]) {
+        state.pendingResurrection[role].active = false;
+        logToLobby(lobby, role.toUpperCase() + " declines to resurrect a unit.");
+      }
+      return emitGameState(lobby);
+    }
 
     if (payload.type === "endTurn") {
       processEndOfTurnEffects(lobby, role);
@@ -6256,6 +8202,17 @@ io.on("connection", (socket) => {
           // Other untargetable effects clear normally
           else if (u.untargetable) {
             u.untargetable = false;
+          }
+          
+          // Clear Archangel Michael's rampage flag
+          if (u.michaelUsedThisTurn) {
+            delete u.michaelUsedThisTurn;
+          }
+          
+          // Clear Archangel Raphael's deploy immune
+          if (u.immuneUntilNextTurn) {
+            delete u.immune;
+            delete u.immuneUntilNextTurn;
           }
         }
       }
@@ -6347,7 +8304,12 @@ io.on("connection", (socket) => {
       const idx = p.hand.findIndex(c => c.id === cardId); if (idx === -1) return socket.emit("log", "Card not found.");
       const card = p.hand[idx]; let cost = card.cost || 0;
       
-      // Apply spell discount from Rune Scribe
+      // GREEDISGOOD cheat: all cards cost 1 energy
+      if (state.cheatGreedActive) {
+        cost = 1;
+      }
+      
+      // Apply spell discount from Rune Scribe (after GREEDISGOOD, so it can still reduce to 0)
       if (card.type === "spell" && state.spellDiscount && state.spellDiscount[role] > 0) {
         cost = Math.max(0, cost - state.spellDiscount[role]);
         state.spellDiscount[role] = 0; // Consume the discount
@@ -6484,6 +8446,26 @@ io.on("connection", (socket) => {
         }
       }
       
+      // Lucifer Fallen Angel can deploy anywhere
+      if (!canDeploy && card.deployAnywhere) {
+        // Can deploy anywhere except enemy home rows with HP
+        const enemy = enemyOf(role);
+        const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+        if (!isEnemyHomeRow || state.rowHP[row] <= 0) {
+          canDeploy = true;
+        }
+      }
+      
+      // Angelic Descent buff - next unit can deploy anywhere
+      if (!canDeploy && state.angelicDescent && state.angelicDescent[role]) {
+        // Can deploy anywhere except enemy home rows with HP
+        const enemy = enemyOf(role);
+        const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+        if (!isEnemyHomeRow || state.rowHP[row] <= 0) {
+          canDeploy = true;
+        }
+      }
+      
       if (!canDeploy) return socket.emit("log", "Can't deploy here.");
       p.energy -= cost; p.hand.splice(idx, 1);
       const id = genId(); const hpB = getArmoryBonus(state, role);
@@ -6590,6 +8572,50 @@ io.on("connection", (socket) => {
         }
       }
       
+      // Cherub Hymnist - draw a card on deploy
+      if (card.effectId === "cherub_draw") {
+        drawCards(lobby, role, 1);
+        logToLobby(lobby, card.name + " sings a hymn! Draw a card.");
+      }
+      
+      // Archangel Raphael - immune when played
+      if (card.effectId === "raphael_shield") {
+        state.units[id].immune = true;
+        state.units[id].immuneUntilNextTurn = true;
+        logToLobby(lobby, card.name + " descends with divine protection!");
+      }
+      
+      // Check for Angelic Descent buff (deploy anywhere + damage adjacent)
+      if (state.angelicDescent && state.angelicDescent[role]) {
+        // Deal 1 damage to adjacent enemies
+        let damaged = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = row + dr, nc = col + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            const adjId = state.board[nr][nc];
+            if (adjId && state.units[adjId] && state.units[adjId].owner !== role) {
+              const enemy = state.units[adjId];
+              enemy.hp -= 1;
+              damaged++;
+              if (enemy.hp <= 0) {
+                const adjPos = { r: nr, c: nc };
+                processOnDeathEffect(lobby, enemy, enemy.owner, adjPos);
+                processAllyDeathTriggers(lobby, enemy.owner, enemy, adjPos);
+                state.board[nr][nc] = null;
+                discardUnitCard(lobby, enemy);
+                delete state.units[adjId];
+              }
+            }
+          }
+        }
+        if (damaged > 0) {
+          logToLobby(lobby, "Angelic Descent deals 1 damage to " + damaged + " adjacent enemies!");
+        }
+        delete state.angelicDescent[role];
+      }
+      
       logToLobby(lobby, role.toUpperCase() + " played " + card.name);
       emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       return emitGameState(lobby);
@@ -6688,9 +8714,10 @@ io.on("connection", (socket) => {
       // Check move limits based on unit abilities
       const moveCount = state.moveCountThisTurn[unitId] || 0;
       const canDoubleMove = u.effectId === "double_move" || playerHasBuff(state, role, "move_buff");
+      const canTripleMove = u.effectId === "triple_move";
       const canLongMove = u.effectId === "stampede"; // Can move 2 tiles but only once
       const hasUnlimitedMoves = u.gemBuffs && u.gemBuffs.unlimitedMoves; // Diamond gem buff
-      const maxMoves = hasUnlimitedMoves ? 999 : (canDoubleMove ? 2 : 1);
+      const maxMoves = hasUnlimitedMoves ? 999 : (canTripleMove ? 3 : (canDoubleMove ? 2 : 1));
       
       console.log(`[PLAYER MOVE] ${u.name}: moveCount=${moveCount}, maxMoves=${maxMoves}, frozen=${u.frozen}, unlimitedMoves=${hasUnlimitedMoves}`);
       
@@ -6777,6 +8804,12 @@ io.on("connection", (socket) => {
       state.moveCountThisTurn[unitId] = moveCount + 1;
       if (state.moveCountThisTurn[unitId] >= maxMoves) {
         state.movedThisTurn.add(unitId);
+      }
+      
+      // Seraphic Hunter - if moved, can't attack this turn
+      if (u.effectId === "seraphic_range") {
+        state.attackedThisTurn.add(unitId);
+        logToLobby(lobby, u.name + " moved and cannot attack this turn.");
       }
       
       recomputeOwners(state); // Recompute after move to update row ownership
@@ -7057,6 +9090,12 @@ io.on("connection", (socket) => {
       const newAttackCount = state.attackCountThisTurn[attackerId];
       if (newAttackCount >= maxAttacks) {
         state.attackedThisTurn.add(attackerId);
+      }
+      
+      // Seraphic Hunter - if attacked, can't move this turn
+      if (a.effectId === "seraphic_range") {
+        state.movedThisTurn.add(attackerId);
+        state.moveCountThisTurn[attackerId] = 999; // Ensure can't move
       }
       
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name + (newAttackCount < maxAttacks ? " (can attack again)" : ""));

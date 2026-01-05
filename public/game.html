@@ -1201,6 +1201,106 @@
       animation: gemWarningPulse 1.5s ease-in-out infinite;
     }
 
+    /* Black Hole / Void Collapse warning - caution tape style */
+    .log-entry.void-collapse-warning {
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.9),
+        rgba(0, 0, 0, 0.9) 10px,
+        rgba(255, 200, 0, 0.9) 10px,
+        rgba(255, 200, 0, 0.9) 20px
+      );
+      border: 2px solid #ffc800;
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin: 4px 0;
+      font-weight: 600;
+      font-size: 11px;
+      color: #ffffff;
+      text-shadow: 
+        1px 1px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        0 0 6px rgba(255, 200, 0, 0.8);
+      animation: cautionPulse 1s ease-in-out infinite;
+      box-sizing: border-box;
+    }
+    
+    @keyframes cautionPulse {
+      0%, 100% {
+        box-shadow: 0 0 8px rgba(255, 200, 0, 0.5), inset 0 0 8px rgba(0, 0, 0, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 15px rgba(255, 200, 0, 0.8), inset 0 0 12px rgba(0, 0, 0, 0.4);
+      }
+    }
+
+    /* Ghost Train warning - spooky ethereal style */
+    .log-entry.ghost-train-warning {
+      background: linear-gradient(90deg, 
+        rgba(20, 40, 30, 0.95) 0%,
+        rgba(40, 80, 60, 0.9) 25%,
+        rgba(20, 40, 30, 0.95) 50%,
+        rgba(40, 80, 60, 0.9) 75%,
+        rgba(20, 40, 30, 0.95) 100%
+      );
+      border: 2px solid #3eff8b;
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin: 4px 0;
+      font-weight: 600;
+      font-size: 11px;
+      color: #3eff8b;
+      text-shadow: 
+        0 0 8px rgba(62, 255, 139, 0.8),
+        0 0 15px rgba(62, 255, 139, 0.4);
+      animation: ghostTrainPulse 1.5s ease-in-out infinite;
+      box-sizing: border-box;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    
+    @keyframes ghostTrainPulse {
+      0%, 100% {
+        box-shadow: 0 0 8px rgba(62, 255, 139, 0.4), inset 0 0 10px rgba(62, 255, 139, 0.1);
+        border-color: #3eff8b;
+      }
+      50% {
+        box-shadow: 0 0 15px rgba(62, 255, 139, 0.6), inset 0 0 15px rgba(62, 255, 139, 0.15);
+        border-color: #7affb5;
+      }
+    }
+    
+    /* Ghost Train execution - darker, more ominous */
+    .log-entry.ghost-train-execute {
+      background: linear-gradient(90deg, 
+        rgba(40, 10, 20, 0.95) 0%,
+        rgba(80, 20, 40, 0.9) 50%,
+        rgba(40, 10, 20, 0.95) 100%
+      );
+      border: 2px solid #ff3e6e;
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin: 4px 0;
+      font-weight: 600;
+      font-size: 11px;
+      color: #ff3e6e;
+      text-shadow: 
+        0 0 8px rgba(255, 62, 110, 0.8),
+        0 0 15px rgba(255, 62, 110, 0.4);
+      animation: ghostTrainStrike 0.3s ease-out 3;
+      box-sizing: border-box;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    
+    @keyframes ghostTrainStrike {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      75% { transform: translateX(2px); }
+    }
+
     /* Combat log specific styles */
     .combat-entry {
       padding: 6px 8px;
@@ -3023,6 +3123,737 @@
     
     /* ==================== END POLYMORPH EVENT ==================== */
 
+    /* ==================== DIVINE JUDGMENT EVENT ==================== */
+    
+    /* Screen shake */
+    .divine-judgment-shake {
+      animation: divineJudgmentShake 0.15s ease-in-out infinite;
+    }
+    
+    @keyframes divineJudgmentShake {
+      0%, 100% { transform: translateX(0) translateY(0); }
+      25% { transform: translateX(-3px) translateY(2px); }
+      50% { transform: translateX(3px) translateY(-2px); }
+      75% { transform: translateX(-2px) translateY(-1px); }
+    }
+    
+    /* Cinematic overlay */
+    #divineJudgmentCinematic {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, 
+        rgba(10, 10, 30, 0.85) 0%, 
+        rgba(0, 0, 10, 0.75) 100%);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    
+    #divineJudgmentCinematic.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    #divineJudgmentCinematic.fading {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    
+    .dj-cinematic-content {
+      text-align: center;
+      color: #ffd700;
+      font-family: 'Cinzel', serif;
+    }
+    
+    .dj-title {
+      font-size: 48px;
+      font-weight: 700;
+      text-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.8),
+        0 0 40px rgba(255, 215, 0, 0.5),
+        0 0 60px rgba(255, 200, 0, 0.3);
+      animation: djTitleFadeIn 1s ease-out forwards;
+      opacity: 0;
+      letter-spacing: 4px;
+    }
+    
+    @keyframes djTitleFadeIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+        filter: blur(10px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0);
+      }
+    }
+    
+    .dj-subtitle {
+      font-size: 18px;
+      color: #c9b896;
+      margin-top: 15px;
+      opacity: 0;
+      animation: djSubtitleFadeIn 0.8s ease-out 0.5s forwards;
+    }
+    
+    @keyframes djSubtitleFadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    .dj-phases {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 50px;
+    }
+    
+    .dj-phase {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 30px;
+      border-radius: 12px;
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+      transition: all 0.5s ease;
+    }
+    
+    .dj-phase.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    
+    .dj-phase.wrath {
+      background: linear-gradient(135deg, rgba(255, 80, 30, 0.3) 0%, rgba(150, 30, 0, 0.4) 100%);
+      border: 2px solid rgba(255, 100, 50, 0.6);
+      box-shadow: 0 0 30px rgba(255, 80, 30, 0.4);
+    }
+    
+    .dj-phase.wrath.active {
+      animation: wrathPulsePhase 0.5s ease-out;
+    }
+    
+    @keyframes wrathPulsePhase {
+      0% { box-shadow: 0 0 30px rgba(255, 80, 30, 0.4); }
+      50% { box-shadow: 0 0 60px rgba(255, 80, 30, 0.8), 0 0 100px rgba(255, 50, 0, 0.5); }
+      100% { box-shadow: 0 0 30px rgba(255, 80, 30, 0.4); }
+    }
+    
+    .dj-phase.pride {
+      background: linear-gradient(135deg, rgba(50, 200, 100, 0.3) 0%, rgba(30, 120, 60, 0.4) 100%);
+      border: 2px solid rgba(50, 200, 100, 0.6);
+      box-shadow: 0 0 30px rgba(50, 200, 100, 0.4);
+    }
+    
+    .dj-phase.pride.active {
+      animation: pridePulsePhase 0.5s ease-out;
+    }
+    
+    @keyframes pridePulsePhase {
+      0% { box-shadow: 0 0 30px rgba(50, 200, 100, 0.4); }
+      50% { box-shadow: 0 0 60px rgba(50, 200, 100, 0.8), 0 0 100px rgba(30, 150, 70, 0.5); }
+      100% { box-shadow: 0 0 30px rgba(50, 200, 100, 0.4); }
+    }
+    
+    .dj-phase.violence {
+      background: linear-gradient(135deg, rgba(80, 50, 120, 0.4) 0%, rgba(40, 20, 60, 0.5) 100%);
+      border: 2px solid rgba(120, 80, 160, 0.6);
+      box-shadow: 0 0 30px rgba(80, 50, 120, 0.4);
+    }
+    
+    .dj-phase.violence.active {
+      animation: violencePulsePhase 0.5s ease-out;
+    }
+    
+    @keyframes violencePulsePhase {
+      0% { box-shadow: 0 0 30px rgba(80, 50, 120, 0.4); }
+      50% { box-shadow: 0 0 60px rgba(80, 50, 120, 0.8), 0 0 100px rgba(60, 30, 100, 0.5); }
+      100% { box-shadow: 0 0 30px rgba(80, 50, 120, 0.4); }
+    }
+    
+    .dj-phase-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 10px currentColor);
+    }
+    
+    .dj-phase-name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+    
+    .dj-phase.wrath .dj-phase-name { color: #ff6644; text-shadow: 0 0 10px rgba(255, 100, 50, 0.8); }
+    .dj-phase.pride .dj-phase-name { color: #44dd88; text-shadow: 0 0 10px rgba(50, 200, 100, 0.8); }
+    .dj-phase.violence .dj-phase-name { color: #aa77cc; text-shadow: 0 0 10px rgba(150, 100, 180, 0.8); }
+    
+    .dj-phase-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Cinematic card flash effects during judgment (on top of persistent state) */
+    .judgment-wrath-flash {
+      animation: wrathFlashCinematic 0.8s ease-out forwards !important;
+    }
+    
+    @keyframes wrathFlashCinematic {
+      0% {
+        filter: brightness(3) saturate(2) hue-rotate(-20deg) !important;
+        box-shadow: 0 0 40px rgba(255, 100, 0, 1), 0 0 80px rgba(255, 50, 0, 0.8) !important;
+      }
+      50% {
+        filter: brightness(2) saturate(1.5) sepia(0.5) !important;
+        box-shadow: 0 0 30px rgba(255, 80, 0, 0.8) !important;
+      }
+      100% {
+        filter: brightness(0.85) saturate(0.7) sepia(0.3) !important;
+        box-shadow: none !important;
+      }
+    }
+    
+    .judgment-pride-flash {
+      animation: prideFlashCinematic 0.8s ease-out forwards !important;
+    }
+    
+    @keyframes prideFlashCinematic {
+      0% {
+        filter: brightness(2) saturate(2) hue-rotate(60deg) !important;
+        box-shadow: 0 0 40px rgba(50, 255, 100, 1), 0 0 80px rgba(30, 200, 80, 0.8) !important;
+      }
+      50% {
+        filter: brightness(1.3) saturate(1.5) hue-rotate(70deg) !important;
+        box-shadow: 0 0 25px rgba(50, 200, 100, 0.6) !important;
+      }
+      100% {
+        filter: hue-rotate(80deg) saturate(1.3) brightness(0.9) !important;
+        box-shadow: none !important;
+      }
+    }
+    
+    .judgment-violence-flash {
+      animation: violenceFlashCinematic 0.8s ease-out forwards !important;
+    }
+    
+    @keyframes violenceFlashCinematic {
+      0% {
+        filter: brightness(0.2) saturate(0.2) !important;
+        box-shadow: 0 0 40px rgba(80, 50, 120, 1), 0 0 80px rgba(50, 20, 80, 0.8) !important;
+      }
+      50% {
+        filter: brightness(0.4) saturate(0.4) !important;
+        box-shadow: 0 0 25px rgba(80, 50, 120, 0.6) !important;
+      }
+      100% {
+        filter: brightness(0.6) saturate(0.5) !important;
+        box-shadow: none !important;
+      }
+    }
+
+    #divineJudgmentIndicator {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 50%, #1a1a2e 100%);
+      border: 3px solid #ffd700;
+      border-radius: 12px;
+      padding: 15px 20px;
+      font-family: 'Cinzel', serif;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.1);
+      min-width: 200px;
+    }
+    
+    #divineJudgmentIndicator.visible {
+      opacity: 1;
+    }
+    
+    .divine-judgment-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    
+    .divine-judgment-key {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .judgment-key-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    
+    .judgment-key-item.wrath {
+      background: rgba(255, 100, 50, 0.2);
+      border: 1px solid rgba(255, 100, 50, 0.5);
+    }
+    
+    .judgment-key-item.pride {
+      background: rgba(50, 200, 100, 0.2);
+      border: 1px solid rgba(50, 200, 100, 0.5);
+    }
+    
+    .judgment-key-item.violence {
+      background: rgba(80, 50, 100, 0.3);
+      border: 1px solid rgba(120, 80, 150, 0.5);
+    }
+    
+    .judgment-icon {
+      font-size: 16px;
+    }
+    
+    .judgment-label {
+      font-weight: 700;
+      color: #e2e8f0;
+      min-width: 70px;
+    }
+    
+    .judgment-desc {
+      color: #94a3b8;
+      font-size: 10px;
+    }
+    
+    /* Divine Judgment visual effect - golden/heavenly tint */
+    .divine-judgment-active .board {
+      filter: brightness(1.05) saturate(0.95);
+    }
+    
+    /* Divine Judgment log entry */
+    .log-entry.divine-judgment-warning {
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.15);
+      border-left-color: #ffd700;
+      text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+      font-weight: bold;
+    }
+    
+    /* Judged unit overlays */
+    
+    /* WRATH - burnt/scorched look */
+    .judged-wrath {
+      filter: brightness(0.85) saturate(0.7) sepia(0.3);
+    }
+    
+    .judgment-wrath-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 20;
+      background: linear-gradient(180deg, 
+        rgba(0, 0, 0, 0.3) 0%,
+        rgba(100, 30, 0, 0.4) 30%,
+        rgba(50, 10, 0, 0.5) 100%);
+      box-shadow: 
+        inset 0 -10px 20px rgba(255, 100, 0, 0.4),
+        inset 0 0 10px rgba(0, 0, 0, 0.5);
+      animation: wrathFlicker 2s ease-in-out infinite;
+    }
+    
+    .judgment-wrath-overlay::after {
+      content: '🔥';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 12px;
+      filter: drop-shadow(0 0 3px rgba(255, 100, 0, 0.8));
+    }
+    
+    @keyframes wrathFlicker {
+      0%, 100% {
+        opacity: 0.9;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+    
+    /* PRIDE - green hue overlay */
+    .judged-pride {
+      filter: hue-rotate(80deg) saturate(1.3) brightness(0.9);
+    }
+    
+    .judgment-pride-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 20;
+      background: linear-gradient(135deg, 
+        rgba(50, 200, 100, 0.3) 0%,
+        rgba(30, 150, 80, 0.25) 50%,
+        rgba(20, 100, 50, 0.3) 100%);
+      box-shadow: 
+        inset 0 0 15px rgba(50, 200, 100, 0.4),
+        0 0 10px rgba(50, 200, 100, 0.3);
+      animation: pridePulse 2s ease-in-out infinite;
+    }
+    
+    .judgment-pride-overlay::after {
+      content: '💚';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 12px;
+      filter: drop-shadow(0 0 3px rgba(50, 200, 100, 0.8));
+    }
+    
+    @keyframes pridePulse {
+      0%, 100% {
+        box-shadow: 
+          inset 0 0 15px rgba(50, 200, 100, 0.4),
+          0 0 10px rgba(50, 200, 100, 0.3);
+      }
+      50% {
+        box-shadow: 
+          inset 0 0 20px rgba(50, 200, 100, 0.5),
+          0 0 15px rgba(50, 200, 100, 0.4);
+      }
+    }
+    
+    /* VIOLENCE - dark tint overlay */
+    .judged-violence {
+      filter: brightness(0.6) saturate(0.5);
+    }
+    
+    .judgment-violence-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 20;
+      background: linear-gradient(135deg, 
+        rgba(50, 30, 70, 0.6) 0%,
+        rgba(30, 20, 50, 0.7) 50%,
+        rgba(20, 10, 30, 0.8) 100%);
+      box-shadow: 
+        inset 0 0 20px rgba(0, 0, 0, 0.6),
+        0 0 10px rgba(50, 30, 70, 0.5);
+      animation: violenceDarken 3s ease-in-out infinite;
+    }
+    
+    .judgment-violence-overlay::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        rgba(0, 0, 0, 0.1) 5px,
+        rgba(0, 0, 0, 0.1) 10px
+      );
+      border-radius: 8px;
+    }
+    
+    .judgment-violence-overlay::after {
+      content: '🖤';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 12px;
+      filter: drop-shadow(0 0 3px rgba(80, 50, 100, 0.8));
+    }
+    
+    @keyframes violenceDarken {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.85;
+      }
+    }
+    
+    /* ==================== END DIVINE JUDGMENT EVENT ==================== */
+
+    /* ==================== CHEAT CODE EVENT ==================== */
+    
+    /* Screen glitch effect */
+    .cheat-code-glitch {
+      animation: cheatGlitch 0.15s ease-in-out infinite;
+    }
+    
+    @keyframes cheatGlitch {
+      0% { transform: translate(0); filter: hue-rotate(0deg); }
+      20% { transform: translate(-1px, 0.5px); filter: hue-rotate(30deg); }
+      40% { transform: translate(1px, -0.5px); filter: hue-rotate(60deg); }
+      60% { transform: translate(-0.5px, -1px); filter: hue-rotate(90deg); }
+      80% { transform: translate(0.5px, 1px); filter: hue-rotate(60deg); }
+      100% { transform: translate(0); filter: hue-rotate(0deg); }
+    }
+    
+    /* Cinematic overlay */
+    #cheatCodeCinematic {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    #cheatCodeCinematic.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    #cheatCodeCinematic.fading {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    
+    .cc-cinematic-content {
+      text-align: center;
+      position: relative;
+    }
+    
+    .cc-glitch-bg {
+      position: absolute;
+      inset: -100px;
+      background: 
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 255, 0, 0.03) 2px,
+          rgba(0, 255, 0, 0.03) 4px
+        );
+      animation: scanlines 0.1s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes scanlines {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(4px); }
+    }
+    
+    .cc-code-input {
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      font-size: 48px;
+      color: #00ff00;
+      text-shadow: 
+        0 0 10px #00ff00,
+        0 0 20px #00ff00,
+        0 0 40px #00ff00;
+      letter-spacing: 8px;
+      min-height: 60px;
+      margin-bottom: 30px;
+    }
+    
+    .cc-activated {
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      font-size: 32px;
+      color: #ffff00;
+      text-shadow: 
+        0 0 10px #ffff00,
+        0 0 20px #ff8800,
+        2px 2px 0 #ff0000,
+        -2px -2px 0 #ff0000;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    
+    .cc-activated.visible {
+      opacity: 1;
+      transform: scale(1);
+      animation: activatedPulse 0.5s ease-out;
+    }
+    
+    @keyframes activatedPulse {
+      0% { transform: scale(0.5); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    
+    .cc-effect-name {
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      font-size: 24px;
+      color: #00ffff;
+      text-shadow: 0 0 10px #00ffff;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      margin-bottom: 10px;
+    }
+    
+    .cc-effect-name.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .cc-effect-desc {
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      color: #aaaaaa;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease 0.1s;
+    }
+    
+    .cc-effect-desc.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Card flash effects during cheat */
+    .cheat-buff-flash {
+      animation: cheatBuffFlash 0.8s ease-out forwards !important;
+    }
+    
+    @keyframes cheatBuffFlash {
+      0% {
+        filter: brightness(1);
+        box-shadow: none;
+      }
+      30% {
+        filter: brightness(2) saturate(1.5);
+        box-shadow: 0 0 30px rgba(0, 255, 0, 1), 0 0 60px rgba(0, 255, 0, 0.6);
+      }
+      100% {
+        filter: brightness(1);
+        box-shadow: none;
+      }
+    }
+    
+    .cheat-swap-flash {
+      animation: cheatSwapFlash 0.8s ease-out forwards !important;
+    }
+    
+    @keyframes cheatSwapFlash {
+      0% {
+        filter: brightness(1) hue-rotate(0deg);
+        box-shadow: none;
+      }
+      25% {
+        filter: brightness(2) hue-rotate(90deg);
+        box-shadow: 0 0 30px rgba(255, 0, 255, 1);
+      }
+      50% {
+        filter: brightness(2) hue-rotate(180deg);
+        box-shadow: 0 0 30px rgba(0, 255, 255, 1);
+      }
+      75% {
+        filter: brightness(2) hue-rotate(270deg);
+        box-shadow: 0 0 30px rgba(255, 255, 0, 1);
+      }
+      100% {
+        filter: brightness(1) hue-rotate(0deg);
+        box-shadow: none;
+      }
+    }
+    
+    /* Persistent cheat indicator */
+    #cheatCodeIndicator {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+      border: 3px solid #00ff00;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      box-shadow: 
+        0 0 20px rgba(0, 255, 0, 0.4),
+        inset 0 0 10px rgba(0, 255, 0, 0.1);
+      min-width: 180px;
+    }
+    
+    #cheatCodeIndicator.visible {
+      opacity: 1;
+    }
+    
+    .cc-indicator-title {
+      font-size: 10px;
+      color: #00ff00;
+      text-shadow: 0 0 5px #00ff00;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    
+    .cc-indicator-item {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 8px;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      background: rgba(0, 255, 0, 0.1);
+      border: 1px solid rgba(0, 255, 0, 0.3);
+    }
+    
+    .cc-indicator-item.hesoyam {
+      background: rgba(255, 0, 0, 0.15);
+      border-color: rgba(255, 0, 0, 0.4);
+    }
+    
+    .cc-indicator-item.hesoyam .cc-indicator-code {
+      color: #ff4444;
+      text-shadow: 0 0 5px #ff0000;
+    }
+    
+    .cc-indicator-item.greed {
+      background: rgba(255, 215, 0, 0.15);
+      border-color: rgba(255, 215, 0, 0.4);
+    }
+    
+    .cc-indicator-item.greed .cc-indicator-code {
+      color: #ffd700;
+      text-shadow: 0 0 5px #ffaa00;
+    }
+    
+    .cc-indicator-code {
+      font-size: 9px;
+      color: #00ff00;
+      margin-bottom: 2px;
+    }
+    
+    .cc-indicator-effect {
+      font-size: 8px;
+      color: #888888;
+      font-family: 'Courier New', monospace;
+    }
+    
+    /* Cheat code log entry */
+    .log-entry.cheat-code-warning {
+      color: #00ff00;
+      background: rgba(0, 255, 0, 0.1);
+      border-left-color: #00ff00;
+      text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+      font-weight: bold;
+    }
+    
+    /* ==================== END CHEAT CODE EVENT ==================== */
+
     /* Floating particles */
     .gem-particles {
       position: absolute;
@@ -3833,6 +4664,23 @@
 
     .unitStat .buff { color: #4ade80; font-size: 10px; }
     .unitStat .debuff { color: #f87171; font-size: 10px; }
+    
+    /* Final Boss rage mode ATK - purple glow */
+    .unitStat .rage-atk { 
+      color: #c084fc; 
+      text-shadow: 0 0 8px rgba(192, 132, 252, 0.8), 0 0 12px rgba(168, 85, 247, 0.6);
+      font-weight: bold;
+      animation: rageAtkPulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes rageAtkPulse {
+      0%, 100% { 
+        text-shadow: 0 0 8px rgba(192, 132, 252, 0.8), 0 0 12px rgba(168, 85, 247, 0.6);
+      }
+      50% { 
+        text-shadow: 0 0 12px rgba(192, 132, 252, 1), 0 0 20px rgba(168, 85, 247, 0.9);
+      }
+    }
 
     .unitCostBadge {
       position: absolute;
@@ -4127,6 +4975,214 @@
         0 0 15px rgba(56, 189, 248, 0.7),
         0 0 30px rgba(56, 189, 248, 0.4),
         inset 0 0 20px rgba(56, 189, 248, 0.3) !important;
+    }
+
+    /* Save State effect - green pixelated glow */
+    .save-state-overlay {
+      position: absolute;
+      inset: -3px;
+      border-radius: 10px;
+      pointer-events: none;
+      z-index: 5;
+      border: 2px solid rgba(34, 197, 94, 0.8);
+      box-shadow: 
+        0 0 10px rgba(34, 197, 94, 0.6),
+        0 0 20px rgba(34, 197, 94, 0.4),
+        inset 0 0 15px rgba(34, 197, 94, 0.2);
+      animation: saveStatePulse 1.5s ease-in-out infinite;
+    }
+
+    .has-save-state {
+      border-color: rgba(34, 197, 94, 0.9) !important;
+    }
+
+    @keyframes saveStatePulse {
+      0%, 100% { 
+        box-shadow: 
+          0 0 10px rgba(34, 197, 94, 0.6),
+          0 0 20px rgba(34, 197, 94, 0.4),
+          inset 0 0 15px rgba(34, 197, 94, 0.2);
+        border-color: rgba(34, 197, 94, 0.8);
+      }
+      50% { 
+        box-shadow: 
+          0 0 15px rgba(34, 197, 94, 0.8),
+          0 0 30px rgba(34, 197, 94, 0.6),
+          inset 0 0 20px rgba(34, 197, 94, 0.3);
+        border-color: rgba(34, 197, 94, 1);
+      }
+    }
+
+    /* Barrel Explosion Effects */
+    .barrel-explosion-center {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 100;
+      background: radial-gradient(circle, 
+        rgba(255, 200, 50, 0.9) 0%, 
+        rgba(255, 120, 0, 0.8) 30%, 
+        rgba(255, 60, 0, 0.6) 60%, 
+        transparent 100%);
+      animation: explosionCenter 0.5s ease-out forwards;
+    }
+
+    @keyframes explosionCenter {
+      0% {
+        transform: scale(0.3);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.5);
+        opacity: 0.9;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    .barrel-explosion-ripple {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 50;
+      animation: explosionRipple 0.45s ease-out forwards;
+    }
+
+    @keyframes explosionRipple {
+      0% {
+        background: linear-gradient(135deg, 
+          rgba(255, 150, 0, 0.8) 0%, 
+          rgba(255, 80, 0, 0.7) 50%, 
+          rgba(200, 30, 0, 0.6) 100%);
+        box-shadow: 
+          inset 0 0 20px rgba(255, 200, 50, 0.8),
+          0 0 15px rgba(255, 100, 0, 0.6);
+        opacity: 1;
+      }
+      30% {
+        background: linear-gradient(135deg, 
+          rgba(255, 180, 50, 0.7) 0%, 
+          rgba(255, 100, 0, 0.6) 50%, 
+          rgba(180, 20, 0, 0.5) 100%);
+        box-shadow: 
+          inset 0 0 15px rgba(255, 180, 50, 0.6),
+          0 0 20px rgba(255, 80, 0, 0.5);
+        opacity: 0.9;
+      }
+      100% {
+        background: linear-gradient(135deg, 
+          rgba(100, 20, 0, 0.3) 0%, 
+          rgba(50, 10, 0, 0.2) 100%);
+        box-shadow: none;
+        opacity: 0;
+      }
+    }
+
+    /* Reset Button Effect */
+    .reset-button-flash {
+      background: radial-gradient(circle at center, 
+        rgba(138, 43, 226, 0.6) 0%, 
+        rgba(88, 28, 135, 0.4) 40%, 
+        rgba(59, 7, 100, 0.2) 70%, 
+        transparent 100%);
+      animation: resetFlash 0.4s ease-out forwards;
+    }
+
+    @keyframes resetFlash {
+      0% {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      30% {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.3);
+      }
+    }
+
+    .reset-flying-card {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+
+    .reset-flying-card .flying-card-art {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+    }
+
+    /* Save State Resurrection Effect */
+    .save-state-revive-glow {
+      position: absolute;
+      inset: -8px;
+      border-radius: 12px;
+      pointer-events: none;
+      z-index: 100;
+      animation: saveStateReviveGlow 0.8s ease-out forwards;
+    }
+
+    @keyframes saveStateReviveGlow {
+      0% {
+        background: radial-gradient(ellipse at center, 
+          rgba(255, 255, 255, 1) 0%, 
+          rgba(200, 255, 200, 0.9) 30%, 
+          rgba(100, 255, 150, 0.6) 60%, 
+          transparent 100%);
+        box-shadow: 
+          0 0 30px rgba(255, 255, 255, 1),
+          0 0 60px rgba(150, 255, 150, 0.8),
+          0 0 90px rgba(100, 255, 100, 0.5);
+        opacity: 1;
+        transform: scale(1.3);
+      }
+      30% {
+        background: radial-gradient(ellipse at center, 
+          rgba(255, 255, 255, 0.9) 0%, 
+          rgba(180, 255, 180, 0.7) 40%, 
+          rgba(80, 200, 100, 0.4) 70%, 
+          transparent 100%);
+        box-shadow: 
+          0 0 25px rgba(255, 255, 255, 0.8),
+          0 0 50px rgba(150, 255, 150, 0.6),
+          0 0 75px rgba(100, 255, 100, 0.3);
+        opacity: 1;
+        transform: scale(1.1);
+      }
+      100% {
+        background: transparent;
+        box-shadow: none;
+        opacity: 0;
+        transform: scale(1);
+      }
+    }
+
+    .save-state-reviving {
+      animation: saveStateReviveUnit 0.8s ease-out forwards !important;
+    }
+
+    @keyframes saveStateReviveUnit {
+      0% {
+        filter: brightness(3) saturate(0);
+        transform: scale(1.1);
+      }
+      30% {
+        filter: brightness(2.5) saturate(0.3);
+        transform: scale(1.05);
+      }
+      60% {
+        filter: brightness(1.5) saturate(0.7);
+        transform: scale(1.02);
+      }
+      100% {
+        filter: brightness(1) saturate(1);
+        transform: scale(1);
+      }
     }
 
     .selected{
@@ -4670,6 +5726,20 @@
     .tooltip-stat-value.atk {
       background: linear-gradient(135deg, #f97316, #ea580c);
     }
+    
+    .tooltip-stat-value.atk.rage {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      animation: tooltipRagePulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes tooltipRagePulse {
+      0%, 100% { 
+        box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+      }
+    }
 
     .tooltip-stat-value.hp {
       background: linear-gradient(135deg, #06b6d4, #0891b2);
@@ -4875,6 +5945,17 @@
       font-size: 12px;
       color: #fff;
       box-shadow: 0 2px 8px rgba(59, 130, 246, 0.6);
+    }
+    
+    .cardCost.cheat-discount {
+      background: linear-gradient(135deg, #00ff00, #00aa00);
+      box-shadow: 0 2px 8px rgba(0, 255, 0, 0.6), 0 0 10px rgba(0, 255, 0, 0.4);
+      animation: cheatCostPulse 1s ease-in-out infinite;
+    }
+    
+    @keyframes cheatCostPulse {
+      0%, 100% { box-shadow: 0 2px 8px rgba(0, 255, 0, 0.6), 0 0 10px rgba(0, 255, 0, 0.4); }
+      50% { box-shadow: 0 2px 12px rgba(0, 255, 0, 0.8), 0 0 20px rgba(0, 255, 0, 0.6); }
     }
 
     /* ===== DECK TILE ===== */
@@ -5401,6 +6482,50 @@
     #timeRiftCards .handCard:hover {
       border-color: #fbbf24;
       box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+    }
+    
+    /* Resurrection Modal Styles */
+    #resurrectionModal .modalContent {
+      border-color: rgba(250, 204, 21, 0.7);
+      max-width: 600px;
+      background: linear-gradient(145deg, rgba(60, 50, 20, 0.98), rgba(40, 35, 15, 0.98));
+    }
+    
+    #resurrectionModal h2 {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: #fef08a;
+      text-align: center;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
+    }
+    
+    #resurrectionModal p {
+      color: #fef9c3;
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    
+    #resurrectionCards {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    
+    #resurrectionCards .handCard {
+      width: 90px;
+      height: 120px;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    #resurrectionCards .handCard:hover {
+      border-color: #fef08a;
+      box-shadow: 0 0 20px rgba(250, 204, 21, 0.6);
     }
 
     .modalContent {
