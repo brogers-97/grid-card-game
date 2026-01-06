@@ -7323,11 +7323,18 @@ async function executeAction(lobby, role, action) {
 }
 
 io.on("connection", (socket) => {
-  // Send deck slot options (8 slots, unlocked based on defeated bosses)
-  const deckSlots = [];
-  for (let i = 1; i <= 8; i++) {
-    deckSlots.push({ id: 'deck-' + i, name: 'Custom Deck ' + i, description: 'Build your own deck with cards you\'ve collected!' });
-  }
+  // Send deck options - use original deck IDs but display as slot numbers
+  // Slot 1 = medieval (always unlocked), Slots 2-8 unlock as you beat bosses
+  const deckSlots = [
+    { id: 'medieval', name: 'Deck Slot 1', description: 'Your first deck slot - always available!' },
+    { id: 'void-alien', name: 'Deck Slot 2', description: 'Unlocked by beating The Hive Mind' },
+    { id: 'western-skeleton', name: 'Deck Slot 3', description: 'Unlocked by beating The Dead Sheriff' },
+    { id: 'crimson-court', name: 'Deck Slot 4', description: 'Unlocked by beating The Blood Countess' },
+    { id: 'jeweled-court', name: 'Deck Slot 5', description: 'Unlocked by beating The Garnet Queen' },
+    { id: 'elunes-chosen', name: 'Deck Slot 6', description: 'Unlocked by beating Moon Shadow Sentinel' },
+    { id: 'dragon-wizard', name: 'Deck Slot 7', description: 'Unlocked by beating The Arcane Dragonlord' },
+    { id: 'celestial-host', name: 'Deck Slot 8', description: 'Unlocked by beating The Seraph of Judgment' }
+  ];
   socket.emit("deckList", deckSlots);
   socket.emit("campaignBosses", CAMPAIGN_BOSSES);
 
@@ -7409,7 +7416,7 @@ io.on("connection", (socket) => {
         customDeckCards = customDeck.cards;
         deckMusic = customDeck.music || 'default';
         deckBackground = customDeck.background || 'default';
-      } else if (deckId === 'deck-1') {
+      } else if (deckId === 'medieval') {
         // Admin gets starter deck if no custom deck built for slot 1
         customDeckCards = STARTER_DECK;
       } else {
@@ -7424,7 +7431,7 @@ io.on("connection", (socket) => {
             customDeckCards = customDeck.cards;
             deckMusic = customDeck.music || 'default';
             deckBackground = customDeck.background || 'default';
-          } else if (deckId === 'deck-1') {
+          } else if (deckId === 'medieval') {
             // New players get starter deck if no custom deck built for slot 1
             customDeckCards = STARTER_DECK;
           } else {

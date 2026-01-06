@@ -1186,49 +1186,65 @@
     });
     
     function updateDeckSelects() {
-      // Calculate unlocked slots based on defeated bosses (1 base + 1 per boss)
-      const defeatedBosses = currentUser?.campaign?.defeatedBosses || [];
-      const numSlots = Math.min(1 + defeatedBosses.length, 8);
-      const unlockedSlots = [];
-      for (let i = 1; i <= numSlots; i++) {
-        unlockedSlots.push('deck-' + i);
-      }
-      
+      // Unlocked decks based on user progress
+      const unlockedDecks = currentUser?.unlockedDecks || ['medieval'];
       const customDecks = currentUser?.customDecks || [];
       
-      // Filter decks based on unlocked slots and show custom names if available
+      console.log('[DEBUG] updateDeckSelects called');
+      console.log('[DEBUG] currentUser:', currentUser);
+      console.log('[DEBUG] unlockedDecks:', unlockedDecks);
+      console.log('[DEBUG] customDecks:', customDecks);
+      console.log('[DEBUG] deckList:', deckList);
+      
+      // Map deck IDs to slot numbers for display
+      const slotNumbers = {
+        'medieval': 1, 'void-alien': 2, 'western-skeleton': 3, 'crimson-court': 4,
+        'jeweled-court': 5, 'elunes-chosen': 6, 'dragon-wizard': 7, 'celestial-host': 8
+      };
+      
+      // Filter decks based on unlocked status and show custom names if available
       const options = deckList.map(d => {
-        const isLocked = !unlockedSlots.includes(d.id);
-        const slotNum = parseInt(d.id.replace('deck-', ''));
+        const isLocked = !unlockedDecks.includes(d.id);
+        const slotNum = slotNumbers[d.id] || 1;
         
         // Check if user has a custom deck for this slot
         const customDeck = customDecks.find(cd => cd.id === d.id);
         const hasValidDeck = customDeck && customDeck.cards && customDeck.cards.length >= 25;
         
-        // Slot 1 special case: "Your First Deck" with starter deck fallback
-        if (d.id === 'deck-1') {
+        console.log(`[DEBUG] Deck ${d.id}: isLocked=${isLocked}, hasValidDeck=${hasValidDeck}, customDeck=`, customDeck);
+        
+        // Locked slots
+        if (isLocked) {
+          return `<option value="${d.id}" disabled>🔒 Deck Slot ${slotNum} (Beat Boss to Unlock)</option>`;
+        }
+        
+        // Slot 1 (medieval) special case: always playable with starter deck fallback
+        if (d.id === 'medieval') {
           const displayName = hasValidDeck ? customDeck.name : 'Your First Deck';
           return `<option value="${d.id}">${displayName}</option>`;
         }
         
-        // Other slots
-        const displayName = hasValidDeck ? customDeck.name : 'Custom Deck ' + slotNum;
-        
-        if (isLocked) {
-          return `<option value="${d.id}" disabled>🔒 Deck Slot ${slotNum} (Beat Boss to Unlock)</option>`;
+        // Other unlocked slots - show custom name if they have a deck, otherwise show empty slot
+        if (hasValidDeck) {
+          return `<option value="${d.id}">${customDeck.name}</option>`;
+        } else {
+          return `<option value="${d.id}" disabled>📝 Deck Slot ${slotNum} (No deck built)</option>`;
         }
-        if (!hasValidDeck) {
-          return `<option value="${d.id}" disabled>📝 ${displayName} (No deck built)</option>`;
-        }
-        return `<option value="${d.id}">${displayName}</option>`;
       }).join('');
       
       deckSelect.innerHTML = options;
       campaignDeckSelect.innerHTML = options;
       
-      // Default to deck-1 (always valid due to starter deck fallback)
-      deckSelect.value = 'deck-1';
-      campaignDeckSelect.value = 'deck-1';
+      // Try to select a valid deck - first custom deck with cards, or fall back to medieval
+      const firstValidDeck = deckList.find(d => {
+        if (d.id === 'medieval') return true; // Always valid due to starter deck
+        const customDeck = customDecks.find(cd => cd.id === d.id);
+        return customDeck && customDeck.cards && customDeck.cards.length >= 25;
+      });
+      
+      const selectedId = firstValidDeck ? firstValidDeck.id : 'medieval';
+      deckSelect.value = selectedId;
+      campaignDeckSelect.value = selectedId;
       deckDescription.textContent = 'Build your own deck with cards you\'ve collected!';
     }
     
@@ -1423,6 +1439,11 @@
         playtestBtn.classList.remove('hidden');
       } else {
         playtestBtn.classList.add('hidden');
+      }
+      
+      // Update deck selects with user's custom decks
+      if (deckList.length > 0) {
+        updateDeckSelects();
       }
       
       renderBossList();

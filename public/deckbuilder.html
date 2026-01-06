@@ -568,7 +568,7 @@
       <div class="panel deck-panel">
         <div class="panel-header"><div class="panel-title">🃏 Current Deck</div></div>
         <div class="deck-selector-section">
-          <select class="deck-select" id="deckSelect"><option value="deck-1">Your First Deck</option><option value="deck-2" disabled>— Deck Slot 2 🔒</option><option value="deck-3" disabled>— Deck Slot 3 🔒</option><option value="deck-4" disabled>— Deck Slot 4 🔒</option><option value="deck-5" disabled>— Deck Slot 5 🔒</option><option value="deck-6" disabled>— Deck Slot 6 🔒</option><option value="deck-7" disabled>— Deck Slot 7 🔒</option><option value="deck-8" disabled>— Deck Slot 8 🔒</option></select>
+          <select class="deck-select" id="deckSelect"><option value="medieval">Your First Deck</option><option value="void-alien" disabled>— Deck Slot 2 🔒</option><option value="western-skeleton" disabled>— Deck Slot 3 🔒</option><option value="crimson-court" disabled>— Deck Slot 4 🔒</option><option value="jeweled-court" disabled>— Deck Slot 5 🔒</option><option value="elunes-chosen" disabled>— Deck Slot 6 🔒</option><option value="dragon-wizard" disabled>— Deck Slot 7 🔒</option><option value="celestial-host" disabled>— Deck Slot 8 🔒</option></select>
         </div>
         <div class="deck-name-section">
           <input type="text" class="deck-name-input" id="deckNameInput" placeholder="Deck name..." maxlength="25">
@@ -767,16 +767,16 @@
       ragequit: { name: "Rage Quit", cost: 4, atk: 0, hp: 0, type: "spell", archetype: "8bit-battalion", effect: true, effectDesc: "Deal damage to target enemy equal to the number of your units that died this game", art: "/images/Rage Quit.png", rarity: "legendary" }
     };
     const DEFAULT_DECKS = {
-      'deck-1': { name: "Your First Deck", cards: [] },
-      'deck-2': { name: "Custom Deck 2", cards: [] },
-      'deck-3': { name: "Custom Deck 3", cards: [] },
-      'deck-4': { name: "Custom Deck 4", cards: [] },
-      'deck-5': { name: "Custom Deck 5", cards: [] },
-      'deck-6': { name: "Custom Deck 6", cards: [] },
-      'deck-7': { name: "Custom Deck 7", cards: [] },
-      'deck-8': { name: "Custom Deck 8", cards: [] }
+      'medieval': { name: "Your First Deck", cards: [] },
+      'void-alien': { name: "Deck Slot 2", cards: [] },
+      'western-skeleton': { name: "Deck Slot 3", cards: [] },
+      'crimson-court': { name: "Deck Slot 4", cards: [] },
+      'jeweled-court': { name: "Deck Slot 5", cards: [] },
+      'elunes-chosen': { name: "Deck Slot 6", cards: [] },
+      'dragon-wizard': { name: "Deck Slot 7", cards: [] },
+      'celestial-host': { name: "Deck Slot 8", cards: [] }
     };
-    let currentUser = null, userCollection = {}, holoCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'deck-1', selectedCardKey = null, hasChanges = false, unlockedDeckSlots = ['deck-1'], unlockedCardSets = ['medieval'];
+    let currentUser = null, userCollection = {}, holoCollection = {}, currentDeck = [], currentDeckName = '', currentDeckType = 'medieval', selectedCardKey = null, hasChanges = false, unlockedDecks = ['medieval'];
     let currentMusic = 'default', currentBackground = 'default';
     const MUSIC_OPTIONS = {
       'default': 'Default (Match Theme)',
@@ -864,43 +864,40 @@
     function loadUserData() {
       userCollection = currentUser.cardCollection || {};
       holoCollection = currentUser.holoCollection || {};
-      
-      // Count defeated bosses to determine unlocked slots (1 base + 1 per boss)
-      const defeatedBosses = currentUser.campaign?.defeatedBosses || [];
-      const numSlots = Math.min(1 + defeatedBosses.length, 8);
-      unlockedDeckSlots = [];
-      for (let i = 1; i <= numSlots; i++) {
-        unlockedDeckSlots.push('deck-' + i);
-      }
-      
-      // Card sets are unlocked based on defeated bosses (for card visibility)
-      unlockedCardSets = currentUser.unlockedDecks || ['medieval'];
+      unlockedDecks = currentUser.unlockedDecks || ['medieval'];
       
       populateCustomizationSelects();
       const customDecks = currentUser.customDecks || [];
       
+      // Map deck IDs to slot numbers
+      const slotNumbers = {
+        'medieval': 1, 'void-alien': 2, 'western-skeleton': 3, 'crimson-court': 4,
+        'jeweled-court': 5, 'elunes-chosen': 6, 'dragon-wizard': 7, 'celestial-host': 8
+      };
+      const deckIds = ['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host'];
+      
       // Update deck slot options
-      for (let i = 1; i <= 8; i++) {
-        const slotId = 'deck-' + i;
-        const option = deckSelect.querySelector('option[value="' + slotId + '"]');
-        const customDeck = customDecks.find(function(d) { return d.id === slotId; });
+      deckIds.forEach(function(deckId) {
+        const slotNum = slotNumbers[deckId];
+        const option = deckSelect.querySelector('option[value="' + deckId + '"]');
+        const customDeck = customDecks.find(function(d) { return d.id === deckId; });
         
-        if (unlockedDeckSlots.includes(slotId)) {
+        if (unlockedDecks.includes(deckId)) {
           option.disabled = false;
           if (customDeck && customDeck.name) {
             option.textContent = customDeck.name;
-          } else if (i === 1) {
+          } else if (deckId === 'medieval') {
             option.textContent = 'Your First Deck';
           } else {
-            option.textContent = 'Custom Deck ' + i;
+            option.textContent = 'Deck Slot ' + slotNum;
           }
         } else {
           option.disabled = true;
-          option.textContent = '— Deck Slot ' + i + ' 🔒';
+          option.textContent = '— Deck Slot ' + slotNum + ' 🔒';
         }
-      }
+      });
       
-      loadDeckType('deck-1');
+      loadDeckType('medieval');
       renderCollection();
       const total = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k); }).length;
       const owned = Object.keys(CARD_DATA).filter(function(k) { return isCardUnlocked(k) && (userCollection[k] || 0) > 0; }).length;
@@ -967,7 +964,7 @@
       const card = CARD_DATA[cardKey];
       if (!card) return false;
       if (card.archetype === 'medieval') return true;
-      return unlockedCardSets.includes(card.archetype);
+      return unlockedDecks.includes(card.archetype);
     }
     function getLockedBossName(archetype) {
       if (archetype === 'void-alien') return 'The Void Scout';
