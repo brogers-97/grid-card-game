@@ -2797,21 +2797,84 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
     const wizardsInHand = player.hand.filter(card => WIZARD_CARDS.includes(card.key));
     
     if (wizardsInHand.length > 0) {
-      // Set pending wizard summon state
-      if (!state.pendingWizardSummon) state.pendingWizardSummon = {};
-      state.pendingWizardSummon[deadUnitOwner] = {
-        active: true,
-        deathPos: deadPos // Store where the rune died for potential spawn location
-      };
-      logToLobby(lobby, "Wizards Rune shatters! " + deadUnitOwner.toUpperCase() + " may summon a Wizard from hand for free!");
-      
-      // Emit event to client to show wizard selection
-      const socket = deadUnitOwner === "gold" ? lobby.hostSocket : lobby.guestSocket;
-      if (socket) {
-        socket.emit("wizardRuneTrigger", { 
-          wizards: wizardsInHand.map(c => ({ id: c.id, key: c.key, name: c.name })),
-          deathPos: deadPos
-        });
+      // Check if this is AI - auto-select a wizard to summon
+      if (lobby.isAIGame && deadUnitOwner === "silver") {
+        // AI auto-selects the highest cost wizard
+        const sortedWizards = wizardsInHand.sort((a, b) => (b.cost || 0) - (a.cost || 0));
+        const bestWizard = sortedWizards[0];
+        
+        // Summon the wizard at the death position or adjacent
+        let spawnRow = deadPos.row;
+        let spawnCol = deadPos.col;
+        
+        // If death position is occupied, find adjacent empty tile
+        if (state.board[spawnRow][spawnCol]) {
+          const adjacentTiles = [
+            { r: spawnRow - 1, c: spawnCol },
+            { r: spawnRow + 1, c: spawnCol },
+            { r: spawnRow, c: spawnCol - 1 },
+            { r: spawnRow, c: spawnCol + 1 }
+          ];
+          for (const tile of adjacentTiles) {
+            if (tile.r >= 0 && tile.r < 7 && tile.c >= 0 && tile.c < 5 && !state.board[tile.r][tile.c]) {
+              spawnRow = tile.r;
+              spawnCol = tile.c;
+              break;
+            }
+          }
+        }
+        
+        // Check if we found a valid spot
+        if (!state.board[spawnRow][spawnCol]) {
+          // Remove wizard from hand
+          const idx = player.hand.findIndex(c => c.id === bestWizard.id);
+          if (idx !== -1) {
+            player.hand.splice(idx, 1);
+            
+            // Summon the wizard
+            const id = genId();
+            const fullHp = bestWizard.hp;
+            state.units[id] = {
+              id,
+              owner: deadUnitOwner,
+              key: bestWizard.key,
+              name: bestWizard.name,
+              atk: bestWizard.atk,
+              hp: fullHp,
+              maxHp: fullHp,
+              cost: bestWizard.cost,
+              type: bestWizard.type,
+              effect: bestWizard.effect,
+              effectId: bestWizard.effectId,
+              effectDesc: bestWizard.effectDesc,
+              art: bestWizard.art,
+              originalCard: bestWizard
+            };
+            state.board[spawnRow][spawnCol] = id;
+            state.movedThisTurn.add(id);
+            
+            logToLobby(lobby, "Wizards Rune shatters! " + deadUnitOwner.toUpperCase() + " summons " + bestWizard.name + " for free!");
+          }
+        } else {
+          logToLobby(lobby, "Wizards Rune shatters but no space to summon!");
+        }
+      } else {
+        // Human player - wait for selection
+        if (!state.pendingWizardSummon) state.pendingWizardSummon = {};
+        state.pendingWizardSummon[deadUnitOwner] = {
+          active: true,
+          deathPos: deadPos // Store where the rune died for potential spawn location
+        };
+        logToLobby(lobby, "Wizards Rune shatters! " + deadUnitOwner.toUpperCase() + " may summon a Wizard from hand for free!");
+        
+        // Emit event to client to show wizard selection
+        const socket = deadUnitOwner === "gold" ? lobby.hostSocket : lobby.guestSocket;
+        if (socket) {
+          socket.emit("wizardRuneTrigger", { 
+            wizards: wizardsInHand.map(c => ({ id: c.id, key: c.key, name: c.name })),
+            deathPos: deadPos
+          });
+        }
       }
     } else {
       logToLobby(lobby, "Wizards Rune shatters but no Wizards in hand!");
@@ -4190,16 +4253,91 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     const unitsInDiscard = p.discard.filter(c => c.type === "monster" || c.type === "structure");
     
     if (unitsInDiscard.length > 0) {
-      if (!state.pendingResurrection) state.pendingResurrection = {};
-      state.pendingResurrection[role] = { active: true };
-      
-      logToLobby(lobby, "Resurrection! Choose a unit from your discard to return!");
-      
-      const socket = role === "gold" ? lobby.hostSocket : lobby.guestSocket;
-      if (socket) {
-        socket.emit("resurrectionTrigger", { 
-          units: unitsInDiscard.map(c => ({ id: c.id, key: c.key, name: c.name, atk: c.atk, hp: c.maxHp || c.hp, art: c.art }))
-        });
+      // Check if this is AI - auto-select the best unit
+      if (lobby.isAIGame && role === "silver") {
+        // AI auto-selects the highest cost unit (most valuable)
+        const sortedUnits = unitsInDiscard.sort((a, b) => (b.cost || 0) - (a.cost || 0));
+        const bestUnit = sortedUnits[0];
+        
+        // Find a valid spawn position (prefer spawn zone, then any empty tile)
+        let spawnRow, spawnCol;
+        const silverSpawnRows = [5, 6]; // Silver's home rows
+        
+        // Try spawn zone first
+        for (const r of silverSpawnRows) {
+          for (let c = 0; c < 5; c++) {
+            if (!state.board[r][c]) {
+              spawnRow = r;
+              spawnCol = c;
+              break;
+            }
+          }
+          if (spawnRow !== undefined) break;
+        }
+        
+        // If spawn zone full, find any empty tile
+        if (spawnRow === undefined) {
+          for (let r = 0; r < 7; r++) {
+            for (let c = 0; c < 5; c++) {
+              if (!state.board[r][c]) {
+                spawnRow = r;
+                spawnCol = c;
+                break;
+              }
+            }
+            if (spawnRow !== undefined) break;
+          }
+        }
+        
+        if (spawnRow !== undefined && bestUnit) {
+          // Remove from discard
+          const idx = p.discard.findIndex(c => c.id === bestUnit.id);
+          if (idx !== -1) {
+            p.discard.splice(idx, 1);
+            
+            // Resurrect the unit with full stats and immune
+            const id = genId();
+            const fullHp = bestUnit.maxHp || bestUnit.hp;
+            state.units[id] = {
+              id,
+              owner: role,
+              key: bestUnit.key,
+              name: bestUnit.name,
+              atk: bestUnit.atk,
+              hp: fullHp,
+              maxHp: fullHp,
+              cost: bestUnit.cost,
+              type: bestUnit.type,
+              effect: bestUnit.effect,
+              effectId: bestUnit.effectId,
+              effectDesc: bestUnit.effectDesc,
+              art: bestUnit.art,
+              originalCard: bestUnit,
+              immune: true,
+              immuneUntilNextTurn: true
+            };
+            if (bestUnit.stationary) state.units[id].stationary = true;
+            state.board[spawnRow][spawnCol] = id;
+            state.movedThisTurn.add(id);
+            
+            logToLobby(lobby, role.toUpperCase() + " resurrects " + bestUnit.name + " with Immune!");
+          }
+        } else {
+          logToLobby(lobby, "No space to resurrect unit!");
+        }
+      } else {
+        // Human player - wait for selection
+        if (!state.pendingResurrection) state.pendingResurrection = {};
+        state.pendingResurrection[role] = { active: true };
+        
+        logToLobby(lobby, "Resurrection! Choose a unit from your discard to return!");
+        
+        const socket = role === "gold" ? lobby.hostSocket : lobby.guestSocket;
+        if (socket) {
+          socket.emit("resurrectionTrigger", { 
+            units: unitsInDiscard.map(c => ({ id: c.id, key: c.key, name: c.name, atk: c.atk, hp: c.maxHp || c.hp, art: c.art }))
+          });
+        }
       }
     } else {
       logToLobby(lobby, "No units in discard to resurrect!");
@@ -6637,22 +6775,80 @@ async function executeAction(lobby, role, action) {
             // Store the deploy position for resurrection
             const deployPos = { r: action.row, c: action.col };
             
-            // Set pending time rift state
-            if (!state.pendingTimeRift) state.pendingTimeRift = {};
-            state.pendingTimeRift[role] = {
-              active: true,
-              deployPos: deployPos
-            };
-            
-            logToLobby(lobby, "Chrono Drake opens a Time Rift! Choose a unit to resurrect.");
-            
-            // Emit event to client to show discard selection
-            const socket = role === "gold" ? lobby.hostSocket : lobby.guestSocket;
-            if (socket) {
-              socket.emit("timeRiftTrigger", { 
-                units: unitsInDiscard.map(c => ({ id: c.id, key: c.key, name: c.name, atk: c.atk, hp: c.maxHp || c.hp, art: c.art })),
+            // Check if this is AI - auto-select the best unit
+            if (lobby.isAIGame && role === "silver") {
+              // AI auto-selects the highest cost unit (most valuable)
+              const sortedUnits = unitsInDiscard.sort((a, b) => (b.cost || 0) - (a.cost || 0));
+              const bestUnit = sortedUnits[0];
+              
+              // Find an adjacent empty tile to deploy
+              const adjacentPositions = [
+                { r: deployPos.r - 1, c: deployPos.c },
+                { r: deployPos.r + 1, c: deployPos.c },
+                { r: deployPos.r, c: deployPos.c - 1 },
+                { r: deployPos.r, c: deployPos.c + 1 }
+              ];
+              
+              let spawnPos = null;
+              for (const pos of adjacentPositions) {
+                if (pos.r >= 0 && pos.r < 7 && pos.c >= 0 && pos.c < 5 && !state.board[pos.r][pos.c]) {
+                  spawnPos = pos;
+                  break;
+                }
+              }
+              
+              if (spawnPos && bestUnit) {
+                // Remove from discard
+                const idx = player.discard.findIndex(c => c.id === bestUnit.id);
+                if (idx !== -1) {
+                  player.discard.splice(idx, 1);
+                  
+                  // Resurrect the unit
+                  const id = genId();
+                  const fullHp = bestUnit.maxHp || bestUnit.hp;
+                  state.units[id] = {
+                    id,
+                    owner: role,
+                    key: bestUnit.key,
+                    name: bestUnit.name,
+                    atk: bestUnit.atk,
+                    hp: fullHp,
+                    maxHp: fullHp,
+                    cost: bestUnit.cost,
+                    type: bestUnit.type,
+                    effect: bestUnit.effect,
+                    effectId: bestUnit.effectId,
+                    effectDesc: bestUnit.effectDesc,
+                    art: bestUnit.art,
+                    originalCard: bestUnit
+                  };
+                  if (bestUnit.stationary) state.units[id].stationary = true;
+                  state.board[spawnPos.r][spawnPos.c] = id;
+                  state.movedThisTurn.add(id);
+                  
+                  logToLobby(lobby, "Time Rift resurrects " + bestUnit.name + "!");
+                }
+              } else {
+                logToLobby(lobby, "No empty tile adjacent to Chrono Drake for resurrection!");
+              }
+            } else {
+              // Human player - wait for selection
+              if (!state.pendingTimeRift) state.pendingTimeRift = {};
+              state.pendingTimeRift[role] = {
+                active: true,
                 deployPos: deployPos
-              });
+              };
+              
+              logToLobby(lobby, "Chrono Drake opens a Time Rift! Choose a unit to resurrect.");
+              
+              // Emit event to client to show discard selection
+              const socket = role === "gold" ? lobby.hostSocket : lobby.guestSocket;
+              if (socket) {
+                socket.emit("timeRiftTrigger", { 
+                  units: unitsInDiscard.map(c => ({ id: c.id, key: c.key, name: c.name, atk: c.atk, hp: c.maxHp || c.hp, art: c.art })),
+                  deployPos: deployPos
+                });
+              }
             }
           } else {
             logToLobby(lobby, "Chrono Drake finds no units in discard to resurrect!");
@@ -7455,6 +7651,7 @@ io.on("connection", (socket) => {
       guestSocket: null,
       hostDeck: deckId || "medieval",
       guestDeck: bossDeckId,
+      hostCustomDeckCards: customDeckCards, // Store for restart
       hostReady: true,
       guestReady: true,
       gameStarted: true,
@@ -7740,8 +7937,20 @@ io.on("connection", (socket) => {
     const lobby = lobbies[socket.data.lobbyCode];
     if (!lobby || !socket.data.isHost) return;
     
-    // Reset game state
-    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck);
+    // Reset game state - use stored custom deck cards for campaign games
+    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck, lobby.hostCustomDeckCards || null, lobby.guestCustomDeckCards || null);
+    
+    // Reset AI state for campaign games
+    if (lobby.isAIGame && lobby.ai) {
+      lobby.ai.reset();
+    }
+    if (lobby.playerAI) {
+      lobby.playerAI.reset();
+    }
+    lobby.autoPlay = false; // Reset auto-play on restart
+    lobby.aiStopped = false; // Make sure AI can run
+    lobby.aiProcessing = false;
+    
     logToLobby(lobby, "=== GAME RESTARTED ===");
     logToLobby(lobby, "GOLD's turn");
     emitGameState(lobby);
@@ -8247,6 +8456,13 @@ io.on("connection", (socket) => {
       const maxEnergy = (isAITurn && lobby.isChallenge) ? 15 : MAX_ENERGY;
       np.energy = Math.min(np.energy + energyGain, maxEnergy);
       np.hasDrawn = false;
+      
+      // HESOYAM cheat: drain all energy after gaining it (affects both players)
+      if (state.cheatHesoyamActive && state.cheatHesoyamTurnsLeft > 0) {
+        np.energy = 0;
+        const turnOwner = state.activeSide === "gold" ? "Player" : "Boss";
+        logToLobby(lobby, `🎮 HESOYAM: ${turnOwner} energy drained! (${state.cheatHesoyamTurnsLeft} turns left)`);
+      }
       
       // Healing Spring buff - heal units on that tile
       for (const key in state.buffTiles) {
@@ -9106,6 +9322,27 @@ io.on("connection", (socket) => {
       }
       
       logToLobby(lobby, a.name + " deals " + dmg + " to " + t.name + (newAttackCount < maxAttacks ? " (can attack again)" : ""));
+      
+      // === BLESSING EFFECTS ON ATTACK ===
+      // Blessing of Might - gain +1 ATK on attack
+      if (a.mightBlessing && state.units[attackerId]) {
+        a.atk += 1;
+        logToLobby(lobby, a.name + "'s Blessing of Might grants +1 ATK!");
+        triggerStatGainEffects(lobby, 'atk', 1, attackerId);
+      }
+      
+      // Blessing of Vigor - attacker gains energy
+      if (a.vigorBlessing && state.units[attackerId]) {
+        const p = players[role];
+        p.energy = Math.min(p.energy + 1, MAX_ENERGY);
+        logToLobby(lobby, a.name + "'s Blessing of Vigor grants 1 energy!");
+      }
+      
+      // Blessing of Kings - attacker draws
+      if (a.kingsBlessing && state.units[attackerId]) {
+        drawCards(lobby, role, 1);
+        logToLobby(lobby, a.name + "'s Blessing of Kings draws a card!");
+      }
       
       // === LIFESTEAL EFFECTS ===
       // Check if attacker has lifesteal

@@ -2070,7 +2070,6 @@ function renderHand() {
       <div class="${costClass}">${displayCost}</div>
       ${card.type === 'spell' ? '<div class="cardType">SPELL</div>' : ''}
       ${card.stolen ? '<div class="stolenBadge">👻</div>' : ''}
-      ${card.isHolo ? '<div class="holoBadge">✨</div>' : ''}
       <div class="cardInfoOverlay">
         <div class="cardName">${card.name}</div>
         ${effectLabel ? `<div class="cardEffect">${effectLabel}</div>` : ''}
@@ -6879,7 +6878,7 @@ function showCampaignVictoryPopup(data) {
         <div class="card-reveal${isHolo ? ' holo-card' : ''}">
           <div class="card-art" style="background-image: url('${artPath}')"></div>
           <div class="card-info">
-            <div class="card-name">${isHolo ? '✨ ' : ''}${cardNames[cardKey] || cardKey}</div>
+            <div class="card-name">${cardNames[cardKey] || cardKey}</div>
           </div>
         </div>
         <div class="rarity-label ${rarity}">${rarity}</div>
