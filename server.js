@@ -6234,8 +6234,6 @@ async function processAITurn(lobby) {
   const randomDelay = speed === 2 ? 150 : 300;
   
   // Quick check: if AI has 0 energy and no units on board, just end turn quickly
-  const aiRole = "silver";
-  const aiPlayer = players[aiRole];
   if (aiPlayer.energy === 0) {
     // Count units that belong to AI
     let hasUnits = false;
