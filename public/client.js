@@ -4795,6 +4795,12 @@ function animateEffect(data) {
     return;
   }
   
+  // Special handling for spore cloud - green/yellow gradient blink
+  if (effectType === "spore_cloud" && targets) {
+    animateSporeCloud(targets);
+    return;
+  }
+  
   // Special handling for reset button - cards fly to deck
   if (effectType === "reset_button" && data.units) {
     animateResetButton(data.units);
@@ -4928,6 +4934,40 @@ function animateBarrelExplosion(sourcePos, targets) {
       });
     }, 100);
   }
+}
+
+// Spore Cloud animation - green/yellow gradient blink on hit tiles
+function animateSporeCloud(targets) {
+  if (!targets || targets.length === 0) return;
+  
+  targets.forEach((target, index) => {
+    const viewRow = toViewRow(target.r);
+    const targetCell = document.getElementById(cellId(viewRow, target.c));
+    
+    if (targetCell) {
+      // Small stagger for each target
+      setTimeout(() => {
+        // Create spore cloud overlay
+        const sporeOverlay = document.createElement('div');
+        sporeOverlay.className = 'spore-cloud-effect';
+        targetCell.appendChild(sporeOverlay);
+        
+        // Also shake the unit
+        const unitEl = targetCell.querySelector('.unit');
+        if (unitEl) {
+          unitEl.classList.add('effect-hit');
+          setTimeout(() => {
+            unitEl.classList.remove('effect-hit');
+          }, 400);
+        }
+        
+        // Remove overlay after animation
+        setTimeout(() => {
+          sporeOverlay.remove();
+        }, 600);
+      }, index * 50);
+    }
+  });
 }
 
 // Reset Button animation - all cards fly off to their owner's deck
@@ -6445,43 +6485,6 @@ function showCampaignVictoryPopup(data) {
       50% { transform: translateX(-50%) translateY(-5px) rotate(5deg); }
     }
     
-    /* Holo label styling by rarity */
-    .holo-label {
-      position: absolute;
-      bottom: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 4px;
-      color: white;
-      font-family: 'Cinzel', serif;
-      z-index: 10;
-    }
-    .slot-card.holo.common .holo-label {
-      background: linear-gradient(135deg, #a855f7, #ec4899);
-    }
-    .slot-card.holo.rare .holo-label {
-      background: linear-gradient(135deg, #06b6d4, #3b82f6);
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-      animation: holoLabelRare 1s ease-in-out infinite;
-    }
-    .slot-card.holo.legendary .holo-label {
-      background: linear-gradient(135deg, #f59e0b, #fbbf24, #fcd34d);
-      color: #1a1a2e;
-      box-shadow: 0 0 15px rgba(251, 191, 36, 0.7), 0 0 30px rgba(245, 158, 11, 0.5);
-      animation: holoLabelLegendary 0.5s ease-in-out infinite;
-    }
-    @keyframes holoLabelRare {
-      0%, 100% { transform: translateX(-50%) scale(1); }
-      50% { transform: translateX(-50%) scale(1.05); }
-    }
-    @keyframes holoLabelLegendary {
-      0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(251, 191, 36, 0.7), 0 0 30px rgba(245, 158, 11, 0.5); }
-      50% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 25px rgba(251, 191, 36, 1), 0 0 50px rgba(245, 158, 11, 0.8); }
-    }
-    
     @keyframes holoShine {
       0% { background-position: -100% -100%; }
       100% { background-position: 200% 200%; }
@@ -6840,7 +6843,43 @@ function showCampaignVictoryPopup(data) {
     'manadrain': 'rare',
     'overchargebolt': 'rare',
     'arcanerift': 'legendary',
-    'dragonsfury': 'legendary'
+    'dragonsfury': 'legendary',
+    // 8-Bit Battalion
+    'slimesprite': 'common',
+    'skeletonwarrior8bit': 'common',
+    'barrel': 'common',
+    'healerfairy': 'common',
+    'bosskey': 'common',
+    'newgameplus': 'rare',
+    'knighterrant': 'rare',
+    'pixelproducer': 'rare',
+    'cheatcode': 'rare',
+    'savestate': 'rare',
+    'wizardnpc': 'legendary',
+    'finalboss': 'legendary',
+    'resetbutton': 'legendary',
+    'ragequit': 'legendary',
+    // Celestial Host
+    'cherubhymnist': 'common',
+    'angelicattendant': 'common',
+    'maidenofvirtue': 'common',
+    'blessingofmight': 'common',
+    'blessingofvigor': 'common',
+    'angelofdestruction': 'rare',
+    'seraphichunter': 'rare',
+    'blessingofprotection': 'rare',
+    'blessingofkings': 'rare',
+    'angelicdescent': 'rare',
+    'heavenlyrescue': 'rare',
+    'layonhands': 'rare',
+    'archangelmichael': 'legendary',
+    'archangeluriel': 'legendary',
+    'archangelgabriel': 'legendary',
+    'archangelraphael': 'legendary',
+    'luciferfallenangel': 'legendary',
+    'gardenofeden': 'legendary',
+    'resurrection': 'legendary',
+    'wrathofgod': 'legendary'
   };
   
   // Reveal cards one by one with delays
@@ -6892,9 +6931,6 @@ function showCampaignVictoryPopup(data) {
         </div>
       ` : '';
       
-      // Holo label
-      const holoLabel = isHolo ? '<div class="holo-label">✨ HOLO</div>' : '';
-      
       slot.innerHTML = `
         ${particlesHtml}
         <div class="card-reveal${isHolo ? ' holo-card' : ''}">
@@ -6904,7 +6940,6 @@ function showCampaignVictoryPopup(data) {
           </div>
         </div>
         <div class="rarity-label ${rarity}">${rarity}</div>
-        ${holoLabel}
       `;
       
     }, 1000 + (index * 800)); // 1s initial delay, then 0.8s between each

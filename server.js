@@ -6233,6 +6233,79 @@ async function processAITurn(lobby) {
   const baseDelay = speed === 2 ? 250 : 600;
   const randomDelay = speed === 2 ? 150 : 300;
   
+  // Quick check: if AI has 0 energy and no units on board, just end turn quickly
+  const aiRole = "silver";
+  const aiPlayer = players[aiRole];
+  if (aiPlayer.energy === 0) {
+    // Count units that belong to AI
+    let hasUnits = false;
+    for (const uid in state.units) {
+      if (state.units[uid].owner === aiRole) {
+        hasUnits = true;
+        break;
+      }
+    }
+    // If no energy and no units, skip to end turn immediately (after draw if needed)
+    if (!hasUnits) {
+      logToLobby(lobby, "Silver has no energy and no units - ending turn quickly");
+      
+      // Do the draw first if needed
+      if (!aiPlayer.hasDrawn && (aiPlayer.deck.length > 0 || aiPlayer.discard.length > 0)) {
+        drawCards(lobby, aiRole, 1);
+        aiPlayer.hasDrawn = true;
+      }
+      
+      // Quick end turn after short delay
+      setTimeout(() => {
+        processEndOfTurnEffects(lobby, aiRole);
+        processEclipseEnd(lobby);
+        processPolymorphEnd(lobby);
+        processDivineJudgmentEnd(lobby);
+        processCheatCodeEnd(lobby);
+        state.bossTurnCount++;
+        processBossEventWarning(lobby);
+        
+        for (const uid in state.units) {
+          const u = state.units[uid];
+          u.canDoubleAttack = false;
+          u.attackCountThisTurn = 0;
+          if (u.owner === aiRole) u.untargetable = false;
+        }
+        
+        state.activeSide = "gold";
+        state.movedThisTurn.clear();
+        state.attackedThisTurn.clear();
+        state.moveCountThisTurn = {};
+        state.attackCountThisTurn = {};
+        clearDiamondBuffs(state, "silver");
+        
+        const goldPlayer = players.gold;
+        let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
+        if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
+        goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
+        goldPlayer.hasDrawn = false;
+        
+        if (state.cheatHesoyamActive && state.cheatHesoyamTurnsLeft > 0) {
+          goldPlayer.energy = 0;
+          logToLobby(lobby, `🎮 HESOYAM: Energy drained! (${state.cheatHesoyamTurnsLeft} turns left)`);
+        }
+        
+        processStartOfTurnEffects(lobby, "gold");
+        processBossEventCountdown(lobby);
+        state.turnNumber++;
+        logToLobby(lobby, "--- GOLD's turn (+" + energyGain + " energy) ---");
+        combatLogToLobby(lobby, `─── Turn ${state.turnNumber}: GOLD ───`, "turn-separator");
+        lobby.aiProcessing = false;
+        emitGameState(lobby);
+        
+        if (lobby.autoPlay && !state.gameOver) {
+          setTimeout(() => processPlayerAITurn(lobby), 800);
+        }
+      }, baseDelay);
+      return;
+    }
+  }
+  
   // Track actions to prevent infinite loops
   let actionCount = 0;
   let consecutiveFailedMoves = 0;
@@ -7136,6 +7209,47 @@ async function executeAction(lobby, role, action) {
             delete state.units[splashTargetId];
             logToLobby(lobby, splashTarget.name + " destroyed by splash damage!");
           }
+        }
+      }
+      
+      // Spore Titan - deals 1 damage to enemies adjacent to the TARGET
+      if (a.effectId === "half_damage_aura" && tp) {
+        const splashPositions = [
+          { r: tp.r, c: tp.c - 1 },
+          { r: tp.r, c: tp.c + 1 },
+          { r: tp.r - 1, c: tp.c },
+          { r: tp.r + 1, c: tp.c }
+        ];
+        const hitPositions = [];
+        for (const sp of splashPositions) {
+          if (sp.r < 0 || sp.r >= ROWS || sp.c < 0 || sp.c >= COLS) continue;
+          const splashId = state.board[sp.r][sp.c];
+          if (splashId && state.units[splashId] && state.units[splashId].owner !== role) {
+            const splashTarget = state.units[splashId];
+            if (splashTarget.untargetable) continue;
+            splashTarget.hp -= 1;
+            hitPositions.push({ r: sp.r, c: sp.c });
+            logToLobby(lobby, a.name + " spore damages " + splashTarget.name + " for 1");
+            if (splashTarget.hp <= 0 && shouldUnitDie(lobby, splashTarget)) {
+              processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
+              processAllyDeathTriggers(lobby, splashTarget.owner, splashTarget, { r: sp.r, c: sp.c });
+              state.board[sp.r][sp.c] = null;
+              discardUnitCard(lobby, splashTarget);
+              delete state.units[splashId];
+              logToLobby(lobby, splashTarget.name + " destroyed by spores!");
+            }
+          }
+        }
+        // Emit spore cloud animation
+        if (hitPositions.length > 0) {
+          const animData = {
+            type: "effect",
+            effectType: "spore_cloud",
+            sourcePos: tp,
+            targets: hitPositions
+          };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
         }
       }
       
@@ -8438,6 +8552,10 @@ io.on("connection", (socket) => {
       state.attackedThisTurn.clear();
       state.moveCountThisTurn = {}; // Reset move counts for new turn
       state.attackCountThisTurn = {}; // Reset attack counts for new turn
+      
+      // Process cheat code duration effects (counts down each turn)
+      processCheatCodeEnd(lobby);
+      
       const np = players[state.activeSide]; 
       
       // Calculate passive energy: +1 base, +1 more every 3 turns
@@ -9443,6 +9561,7 @@ io.on("connection", (socket) => {
           { r: tp.r - 1, c: tp.c },
           { r: tp.r + 1, c: tp.c }
         ];
+        const hitPositions = []; // Track positions that actually get hit
         for (const sp of splashPositions) {
           if (sp.r < 0 || sp.r >= ROWS || sp.c < 0 || sp.c >= COLS) continue;
           const splashId = state.board[sp.r][sp.c];
@@ -9450,6 +9569,7 @@ io.on("connection", (socket) => {
             const splashTarget = state.units[splashId];
             if (splashTarget.untargetable) continue;
             splashTarget.hp -= 1;
+            hitPositions.push({ r: sp.r, c: sp.c });
             logToLobby(lobby, a.name + " spore damages " + splashTarget.name + " for 1");
             if (splashTarget.hp <= 0 && shouldUnitDie(lobby, splashTarget)) {
               processOnDeathEffect(lobby, splashTarget, splashTarget.owner, { r: sp.r, c: sp.c });
@@ -9460,6 +9580,17 @@ io.on("connection", (socket) => {
               logToLobby(lobby, splashTarget.name + " destroyed by spores!");
             }
           }
+        }
+        // Emit spore cloud animation for hit tiles
+        if (hitPositions.length > 0) {
+          const animData = {
+            type: "effect",
+            effectType: "spore_cloud",
+            sourcePos: tp,
+            targets: hitPositions
+          };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
         }
       }
       
