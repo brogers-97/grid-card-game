@@ -7940,12 +7940,12 @@ io.on("connection", (socket) => {
     // Reset game state - use stored custom deck cards for campaign games
     lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck, lobby.hostCustomDeckCards || null, lobby.guestCustomDeckCards || null);
     
-    // Reset AI state for campaign games
-    if (lobby.isAIGame && lobby.ai) {
-      lobby.ai.reset();
+    // Recreate AI instances for campaign games (fresh state)
+    if (lobby.isAIGame) {
+      lobby.ai = new GameAI(lobby.isChallenge ? 3 : lobby.aiLevel);
     }
-    if (lobby.playerAI) {
-      lobby.playerAI.reset();
+    if (lobby.canAutoPlay) {
+      lobby.playerAI = new GameAI(2, 'gold');
     }
     lobby.autoPlay = false; // Reset auto-play on restart
     lobby.aiStopped = false; // Make sure AI can run

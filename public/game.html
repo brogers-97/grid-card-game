@@ -4750,13 +4750,13 @@
       background: linear-gradient(
         105deg,
         transparent 40%,
-        rgba(255, 255, 255, 0.2) 45%,
-        rgba(255, 255, 255, 0.3) 50%,
-        rgba(255, 255, 255, 0.2) 55%,
+        rgba(255, 255, 255, 0.25) 45%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0.25) 55%,
         transparent 60%
       );
       background-size: 200% 100%;
-      animation: shimmerCommon 3s ease-in-out infinite;
+      animation: shimmerCommon 2.5s ease-in-out infinite;
       pointer-events: none;
       z-index: 10;
     }
@@ -4766,16 +4766,9 @@
       100% { background-position: -200% 0; }
     }
     
-    /* RARE: Rainbow holographic - colorful and noticeable */
-    .unit.holo-rare::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: 10px;
-      background: linear-gradient(45deg, #ff0000, #ff7700, #ffff00, #00ff00, #0077ff, #7700ff, #ff00ff, #ff0000);
-      background-size: 400% 400%;
-      animation: holoRareBorder 3s linear infinite;
-      z-index: -1;
+    /* RARE: Rainbow holographic border + rainbow overlay */
+    .unit.holo-rare {
+      box-shadow: 0 0 12px rgba(255, 100, 255, 0.6), 0 0 20px rgba(100, 200, 255, 0.4);
     }
     
     .unit.holo-rare::after {
@@ -4785,25 +4778,19 @@
       border-radius: 8px;
       background: linear-gradient(
         135deg,
-        rgba(255, 0, 0, 0.12) 0%,
-        rgba(255, 154, 0, 0.12) 14%,
-        rgba(208, 222, 33, 0.12) 28%,
-        rgba(79, 220, 74, 0.12) 42%,
-        rgba(47, 201, 226, 0.12) 57%,
-        rgba(28, 127, 238, 0.12) 71%,
-        rgba(95, 21, 242, 0.12) 85%,
-        rgba(255, 0, 0, 0.12) 100%
+        rgba(255, 0, 0, 0.2) 0%,
+        rgba(255, 154, 0, 0.2) 14%,
+        rgba(255, 255, 0, 0.2) 28%,
+        rgba(0, 255, 0, 0.2) 42%,
+        rgba(0, 200, 255, 0.2) 57%,
+        rgba(0, 100, 255, 0.2) 71%,
+        rgba(150, 0, 255, 0.2) 85%,
+        rgba(255, 0, 150, 0.2) 100%
       );
-      background-size: 200% 200%;
+      background-size: 300% 300%;
       animation: holoRainbow 2s ease infinite;
       pointer-events: none;
       z-index: 10;
-      mix-blend-mode: color-dodge;
-    }
-    
-    @keyframes holoRareBorder {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 400% 50%; }
     }
     
     @keyframes holoRainbow {
@@ -4812,22 +4799,15 @@
       100% { background-position: 0% 0%; }
     }
     
-    /* LEGENDARY: Epic golden aura with particles - unmistakable */
+    /* LEGENDARY: Golden glow + sparkle particles + pulsing aura */
     .unit.holo-legendary {
-      filter: drop-shadow(0 0 8px gold) drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+      filter: drop-shadow(0 0 10px gold) drop-shadow(0 0 20px rgba(255, 215, 0, 0.7));
+      animation: legendaryPulse 2s ease-in-out infinite;
     }
     
-    .unit.holo-legendary::before {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: 11px;
-      background: linear-gradient(45deg, 
-        #ffd700, #fff8dc, #ffd700, #ffec8b, 
-        #ffd700, #fff8dc, #ffd700, #ffec8b);
-      background-size: 400% 400%;
-      animation: holoLegendaryBorder 2s linear infinite;
-      z-index: -1;
+    @keyframes legendaryPulse {
+      0%, 100% { filter: drop-shadow(0 0 12px #ffd700) drop-shadow(0 0 25px rgba(255, 200, 0, 0.8)); }
+      50% { filter: drop-shadow(0 0 18px #ffcc00) drop-shadow(0 0 35px rgba(255, 180, 0, 1)); }
     }
     
     .unit.holo-legendary::after {
@@ -4836,27 +4816,22 @@
       inset: 0;
       border-radius: 8px;
       background: 
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.8) 0%, transparent 20%),
-        radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.6) 0%, transparent 15%),
-        radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.7) 0%, transparent 18%),
-        radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.5) 0%, transparent 12%),
+        radial-gradient(circle at 20% 20%, rgba(255, 230, 100, 0.9) 0%, transparent 15%),
+        radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.85) 0%, transparent 12%),
+        radial-gradient(circle at 30% 70%, rgba(255, 240, 150, 0.9) 0%, transparent 14%),
+        radial-gradient(circle at 75% 75%, rgba(255, 200, 50, 0.8) 0%, transparent 10%),
         linear-gradient(
           135deg,
-          rgba(255, 215, 0, 0.25) 0%,
-          rgba(255, 255, 255, 0.2) 25%,
-          rgba(255, 215, 0, 0.25) 50%,
-          rgba(255, 255, 255, 0.2) 75%,
-          rgba(255, 215, 0, 0.25) 100%
+          rgba(255, 200, 0, 0.45) 0%,
+          rgba(255, 230, 100, 0.35) 25%,
+          rgba(255, 180, 0, 0.5) 50%,
+          rgba(255, 230, 100, 0.35) 75%,
+          rgba(255, 200, 0, 0.45) 100%
         );
       background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 300% 300%;
-      animation: holoLegendaryShimmer 3s ease infinite, sparkleMove 2s ease-in-out infinite;
+      animation: holoLegendaryShimmer 2s ease infinite, sparkleFloat 1.5s ease-in-out infinite;
       pointer-events: none;
       z-index: 10;
-    }
-    
-    @keyframes holoLegendaryBorder {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 400% 50%; }
     }
     
     @keyframes holoLegendaryShimmer {
@@ -4865,8 +4840,8 @@
       100% { background-position: 0 0, 0 0, 0 0, 0 0, 0% 0%; }
     }
     
-    @keyframes sparkleMove {
-      0%, 100% { opacity: 0.8; }
+    @keyframes sparkleFloat {
+      0%, 100% { opacity: 0.7; }
       50% { opacity: 1; }
     }
 
@@ -5450,9 +5425,9 @@
       animation-duration: 1.5s;
     }
     
-    /* RARE: Rainbow holographic with border */
+    /* RARE: Rainbow holographic glow */
     .handCard.holo-rare {
-      box-shadow: 0 0 10px rgba(255, 100, 100, 0.3), 0 0 20px rgba(100, 100, 255, 0.3);
+      box-shadow: 0 0 12px rgba(255, 100, 255, 0.5), 0 0 24px rgba(100, 200, 255, 0.4);
     }
     
     .handCard.holo-rare::after {
@@ -5462,46 +5437,38 @@
       border-radius: 6px;
       background: linear-gradient(
         135deg,
-        rgba(255, 0, 0, 0.15) 0%,
-        rgba(255, 154, 0, 0.15) 14%,
-        rgba(208, 222, 33, 0.15) 28%,
-        rgba(79, 220, 74, 0.15) 42%,
-        rgba(47, 201, 226, 0.15) 57%,
-        rgba(28, 127, 238, 0.15) 71%,
-        rgba(95, 21, 242, 0.15) 85%,
-        rgba(255, 0, 0, 0.15) 100%
+        rgba(255, 0, 0, 0.2) 0%,
+        rgba(255, 154, 0, 0.2) 14%,
+        rgba(255, 255, 0, 0.2) 28%,
+        rgba(0, 255, 0, 0.2) 42%,
+        rgba(0, 200, 255, 0.2) 57%,
+        rgba(0, 100, 255, 0.2) 71%,
+        rgba(150, 0, 255, 0.2) 85%,
+        rgba(255, 0, 150, 0.2) 100%
       );
-      background-size: 200% 200%;
+      background-size: 300% 300%;
       animation: holoRainbow 2s ease infinite;
       pointer-events: none;
       z-index: 10;
-      mix-blend-mode: color-dodge;
     }
     
     .handCard.holo-rare:hover {
-      box-shadow: 0 0 15px rgba(255, 100, 100, 0.5), 0 0 30px rgba(100, 100, 255, 0.5);
+      box-shadow: 0 0 18px rgba(255, 100, 255, 0.7), 0 0 35px rgba(100, 200, 255, 0.6);
     }
     
     .handCard.holo-rare:hover::after {
       animation-duration: 1s;
     }
     
-    /* LEGENDARY: Epic golden glow with sparkles */
+    /* LEGENDARY: Epic golden glow with pulsing aura */
     .handCard.holo-legendary {
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.3);
+      box-shadow: 0 0 18px rgba(255, 200, 0, 0.7), 0 0 35px rgba(255, 180, 0, 0.5);
+      animation: legendaryCardPulse 2s ease-in-out infinite;
     }
     
-    .handCard.holo-legendary::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: 8px;
-      background: linear-gradient(45deg, 
-        #ffd700, #fff8dc, #ffd700, #ffec8b, 
-        #ffd700, #fff8dc, #ffd700, #ffec8b);
-      background-size: 400% 400%;
-      animation: holoLegendaryBorder 2s linear infinite;
-      z-index: -1;
+    @keyframes legendaryCardPulse {
+      0%, 100% { box-shadow: 0 0 18px rgba(255, 200, 0, 0.7), 0 0 35px rgba(255, 180, 0, 0.5); }
+      50% { box-shadow: 0 0 25px rgba(255, 180, 0, 0.9), 0 0 50px rgba(255, 160, 0, 0.7); }
     }
     
     .handCard.holo-legendary::after {
@@ -5510,31 +5477,29 @@
       inset: 0;
       border-radius: 6px;
       background: 
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.7) 0%, transparent 15%),
-        radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.5) 0%, transparent 12%),
-        radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.6) 0%, transparent 15%),
+        radial-gradient(circle at 20% 20%, rgba(255, 230, 100, 0.85) 0%, transparent 12%),
+        radial-gradient(circle at 80% 30%, rgba(255, 200, 50, 0.8) 0%, transparent 10%),
+        radial-gradient(circle at 30% 70%, rgba(255, 240, 120, 0.8) 0%, transparent 12%),
+        radial-gradient(circle at 75% 75%, rgba(255, 190, 30, 0.75) 0%, transparent 8%),
         linear-gradient(
           135deg,
-          rgba(255, 215, 0, 0.2) 0%,
-          rgba(255, 255, 255, 0.15) 50%,
-          rgba(255, 215, 0, 0.2) 100%
+          rgba(255, 190, 0, 0.4) 0%,
+          rgba(255, 220, 80, 0.3) 50%,
+          rgba(255, 190, 0, 0.4) 100%
         );
-      background-size: 100% 100%, 100% 100%, 100% 100%, 300% 300%;
-      animation: holoLegendaryShimmer 3s ease infinite;
+      background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 300% 300%;
+      animation: holoLegendaryShimmer 2s ease infinite;
       pointer-events: none;
       z-index: 10;
     }
     
     .handCard.holo-legendary:hover {
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.7), 0 0 40px rgba(255, 215, 0, 0.5);
-    }
-    
-    .handCard.holo-legendary:hover::before {
-      animation-duration: 1s;
+      box-shadow: 0 0 30px rgba(255, 180, 0, 1), 0 0 60px rgba(255, 150, 0, 0.8);
+      animation: none;
     }
     
     .handCard.holo-legendary:hover::after {
-      animation-duration: 1.5s;
+      animation-duration: 1s;
     }
     
 

@@ -2014,7 +2014,29 @@ const CARD_RARITIES = {
   meditationmonk: 'common', wyrmwhelp: 'common', wizardsrune: 'common', cinderwing: 'common',
   manasiphonmage: 'rare', arcanetether: 'rare', stormdrake: 'rare', mirrorwizard: 'rare', volcanicdragon: 'rare',
   redwizard: 'legendary', bluewizard: 'legendary', chronodrake: 'legendary',
-  polymorph: 'rare', manadrain: 'rare', overchargebolt: 'rare', arcanerift: 'legendary', dragonsfury: 'legendary'
+  polymorph: 'rare', manadrain: 'rare', overchargebolt: 'rare', arcanerift: 'legendary', dragonsfury: 'legendary',
+  // 8-Bit Battalion
+  slimesprite: 'common', skeletonwarrior8bit: 'common', barrel: 'common', healerfairy: 'common', bosskey: 'common',
+  newgameplus: 'rare', knighterrant: 'rare', pixelproducer: 'rare', cheatcode: 'rare', savestate: 'rare',
+  wizardnpc: 'legendary', finalboss: 'legendary', resetbutton: 'legendary', ragequit: 'legendary',
+  // Jeweled Court
+  rubysprite: 'common', emeraldforager: 'common', sapphiredancer: 'common', topazminer: 'common',
+  amethystenchanter: 'rare', diamondguardian: 'rare', opaldevourer: 'rare', pearlblessing: 'rare',
+  garnetqueen: 'legendary', moonstonewitch: 'legendary', prismaticfairy: 'legendary', gemstonecurse: 'legendary', fairyring: 'legendary',
+  gemshard: 'common',
+  // Elune's Chosen
+  moonsentinel: 'common', starweavearcher: 'common', moonlitbladedancer: 'common', lunarpriestess: 'common',
+  twilightsrespite: 'common', huntinggodsblessing: 'common',
+  stonegiant: 'rare', nightshadeambusher: 'rare', moonshadowwarden: 'rare', elunesmoonwell: 'rare',
+  lunarprayer: 'rare', moonflaresorceress: 'rare',
+  starlitchampion: 'legendary', starinvoker: 'legendary', templeofthemoon: 'legendary', lunarbarrage: 'legendary',
+  // Celestial Host
+  cherubhymnist: 'common', angelicattendant: 'common', maidenofvirtue: 'common',
+  blessingofmight: 'common', blessingofvigor: 'common',
+  angelofdestruction: 'rare', seraphichunter: 'rare',
+  blessingofprotection: 'rare', blessingofkings: 'rare', angelicdescent: 'rare', heavenlyrescue: 'rare', layonhands: 'rare',
+  archangelmichael: 'legendary', archangeluriel: 'legendary', archangelgabriel: 'legendary', archangelraphael: 'legendary',
+  luciferfallenangel: 'legendary', gardenofeden: 'legendary', resurrection: 'legendary', wrathofgod: 'legendary'
 };
 
 // Card icons based on card key
