@@ -1968,7 +1968,7 @@ function applyDamageReduction(state, tid, dmg, attackerId, lobby = null) {
   // Archangel Raphael - allies in 3 tiles behind take no damage
   // Check if there's a Raphael in front protecting this unit
   const raphaelOwner = t.owner;
-  const behindDirection = raphaelOwner === "gold" ? 1 : -1; // Gold's back is higher rows, Silver's is lower
+  const behindDirection = raphaelOwner === "gold" ? -1 : 1; // Gold's back is lower rows (toward row 0), Silver's is higher rows (toward row 6)
   for (const uid in state.units) {
     const u = state.units[uid];
     if (u.owner === raphaelOwner && u.effectId === "raphael_shield") {
@@ -2236,6 +2236,24 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     logToLobby(lobby, a.name + " grows stronger! Now " + a.atk + "/" + a.hp);
   }
   
+  // Archangel Michael - first kill each turn, can move and attack again (passive but triggers on kill)
+  if (a.effectId === "michael_rampage") {
+    if (!a.michaelUsedThisTurn) {
+      a.michaelUsedThisTurn = true;
+      state.movedThisTurn.delete(aid);
+      state.moveCountThisTurn[aid] = 0;
+      state.attackedThisTurn.delete(aid);
+      state.attackCountThisTurn[aid] = 0;
+      logToLobby(lobby, a.name + "'s divine fury! Can move and attack again!");
+    }
+  }
+  
+  // Archangel Uriel - draw a card on kill (passive but triggers on kill)
+  if (a.effectId === "uriel_wisdom") {
+    drawCards(lobby, role, 1);
+    logToLobby(lobby, a.name + "'s wisdom reveals a card!");
+  }
+  
   // Other on-kill effects require effect === "onKill"
   if (a.effect !== "onKill") return;
   
@@ -2349,34 +2367,17 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     logToLobby(lobby, a.name + " is empowered by the stars! +1 ATK, +1 energy (now " + a.atk + " ATK)");
   }
   
-  // Angel of Destruction - deal 1 damage to enemy heart on kill
+  // Angel of Destruction - deal 1 damage to enemy heart on kill (directly, bypasses walls)
   if (a.effectId === "destruction_heart") {
-    const enemyHeartRow = role === "gold" ? 6 : 0;
-    state.rowHP[enemyHeartRow] -= 1;
-    logToLobby(lobby, a.name + " damages the enemy heart!");
-    if (state.rowHP[enemyHeartRow] <= 0) {
+    const enemy = enemyOf(role);
+    state.heartHP[enemy] = Math.max(0, state.heartHP[enemy] - 1);
+    logToLobby(lobby, a.name + " damages the enemy heart directly!");
+    combatLogToLobby(lobby, `💔 ${a.name} deals 1 damage to ${enemy.toUpperCase()} heart! (${state.heartHP[enemy]} HP left)`, "combat-damage");
+    if (state.heartHP[enemy] <= 0) {
       state.gameOver = true;
       state.winner = role;
-      logToLobby(lobby, "💀 " + enemyOf(role).toUpperCase() + "'s heart is destroyed!");
+      logToLobby(lobby, "💀 " + enemy.toUpperCase() + "'s heart is destroyed!");
     }
-  }
-  
-  // Archangel Michael - first kill each turn, can move and attack again
-  if (a.effectId === "michael_rampage") {
-    if (!a.michaelUsedThisTurn) {
-      a.michaelUsedThisTurn = true;
-      state.movedThisTurn.delete(aid);
-      state.moveCountThisTurn[aid] = 0;
-      state.attackedThisTurn.delete(aid);
-      state.attackCountThisTurn[aid] = 0;
-      logToLobby(lobby, a.name + "'s divine fury! Can move and attack again!");
-    }
-  }
-  
-  // Archangel Uriel - draw a card on kill
-  if (a.effectId === "uriel_wisdom") {
-    drawCards(lobby, role, 1);
-    logToLobby(lobby, a.name + "'s wisdom reveals a card!");
   }
 }
 
@@ -3423,27 +3424,21 @@ function processStartOfTurnEffects(lobby, role) {
       }
     }
     
-    // Maiden of Virtue - heal heart 1 HP
+    // Maiden of Virtue - heal heart 1 HP (heals the actual heart, not walls)
     if (u.effectId === "maiden_heal") {
-      const players = lobby.gameState.players;
-      const heartHP = role === "gold" ? state.rowHP[0] : state.rowHP[6];
-      const maxHeart = 20; // Assume max heart HP is 20
-      if (heartHP < maxHeart) {
-        if (role === "gold") {
-          state.rowHP[0] = Math.min(state.rowHP[0] + 1, maxHeart);
-        } else {
-          state.rowHP[6] = Math.min(state.rowHP[6] + 1, maxHeart);
-        }
-        logToLobby(lobby, u.name + " heals your heart for 1 HP!");
+      const maxHeart = 30; // Max heart HP is 30
+      if (state.heartHP[role] < maxHeart) {
+        state.heartHP[role] = Math.min(state.heartHP[role] + 1, maxHeart);
+        logToLobby(lobby, u.name + " heals your heart for 1 HP! (${state.heartHP[role]}/${maxHeart})");
       }
     }
     
-    // Lucifer Fallen Angel - deal 3 damage to own heart
+    // Lucifer Fallen Angel - deal 3 damage to own heart (directly, bypasses walls)
     if (u.effectId === "lucifer_curse") {
-      const heartRow = role === "gold" ? 0 : 6;
-      state.rowHP[heartRow] -= 3;
-      logToLobby(lobby, "Lucifer's curse deals 3 damage to your heart!");
-      if (state.rowHP[heartRow] <= 0) {
+      state.heartHP[role] = Math.max(0, state.heartHP[role] - 3);
+      logToLobby(lobby, "Lucifer's curse deals 3 damage directly to your heart!");
+      combatLogToLobby(lobby, `💔 Lucifer deals 3 damage to ${role.toUpperCase()} heart! (${state.heartHP[role]} HP left)`, "combat-damage");
+      if (state.heartHP[role] <= 0) {
         state.gameOver = true;
         state.winner = role === "gold" ? "silver" : "gold";
         logToLobby(lobby, "💀 " + role.toUpperCase() + " is destroyed by Lucifer's curse!");
@@ -6233,75 +6228,98 @@ async function processAITurn(lobby) {
   const baseDelay = speed === 2 ? 250 : 600;
   const randomDelay = speed === 2 ? 150 : 300;
   
-  // Quick check: if AI has 0 energy and no units on board, just end turn quickly
+  // Quick check: if AI has 0 energy (e.g., from HESOYAM), do minimal actions and end turn
   if (aiPlayer.energy === 0) {
-    // Count units that belong to AI
-    let hasUnits = false;
-    for (const uid in state.units) {
-      if (state.units[uid].owner === aiRole) {
-        hasUnits = true;
-        break;
-      }
+    logToLobby(lobby, "Silver has no energy - doing free actions only");
+    
+    // Do the draw first if needed (free action)
+    if (!aiPlayer.hasDrawn && (aiPlayer.deck.length > 0 || aiPlayer.discard.length > 0)) {
+      drawCards(lobby, aiRole, 1);
+      aiPlayer.hasDrawn = true;
     }
-    // If no energy and no units, skip to end turn immediately (after draw if needed)
-    if (!hasUnits) {
-      logToLobby(lobby, "Silver has no energy and no units - ending turn quickly");
-      
-      // Do the draw first if needed
-      if (!aiPlayer.hasDrawn && (aiPlayer.deck.length > 0 || aiPlayer.discard.length > 0)) {
-        drawCards(lobby, aiRole, 1);
-        aiPlayer.hasDrawn = true;
+    
+    // Let AI do moves/attacks with existing units (these don't cost energy)
+    // But limit iterations to prevent infinite loops
+    let zeroEnergyActions = 0;
+    const maxZeroEnergyActions = 20;
+    
+    const doZeroEnergyAction = async () => {
+      if (state.gameOver || state.activeSide !== aiRole || zeroEnergyActions >= maxZeroEnergyActions) {
+        // End turn
+        setTimeout(() => {
+          processEndOfTurnEffects(lobby, aiRole);
+          processEclipseEnd(lobby);
+          processPolymorphEnd(lobby);
+          processDivineJudgmentEnd(lobby);
+          processCheatCodeEnd(lobby);
+          state.bossTurnCount++;
+          processBossEventWarning(lobby);
+          
+          for (const uid in state.units) {
+            const u = state.units[uid];
+            u.canDoubleAttack = false;
+            u.attackCountThisTurn = 0;
+            if (u.owner === aiRole) u.untargetable = false;
+          }
+          
+          state.activeSide = "gold";
+          state.movedThisTurn.clear();
+          state.attackedThisTurn.clear();
+          state.moveCountThisTurn = {};
+          state.attackCountThisTurn = {};
+          clearDiamondBuffs(state, "silver");
+          
+          const goldPlayer = players.gold;
+          let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
+          if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
+          goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
+          goldPlayer.hasDrawn = false;
+          
+          if (state.cheatHesoyamActive && state.cheatHesoyamTurnsLeft > 0) {
+            goldPlayer.energy = 0;
+            logToLobby(lobby, `🎮 HESOYAM: Energy drained! (${state.cheatHesoyamTurnsLeft} turns left)`);
+          }
+          
+          processStartOfTurnEffects(lobby, "gold");
+          processBossEventCountdown(lobby);
+          state.turnNumber++;
+          logToLobby(lobby, "--- GOLD's turn (+" + energyGain + " energy) ---");
+          combatLogToLobby(lobby, `─── Turn ${state.turnNumber}: GOLD ───`, "turn-separator");
+          lobby.aiProcessing = false;
+          emitGameState(lobby);
+          
+          if (lobby.autoPlay && !state.gameOver) {
+            setTimeout(() => processPlayerAITurn(lobby), 800);
+          }
+        }, baseDelay);
+        return;
       }
       
-      // Quick end turn after short delay
-      setTimeout(() => {
-        processEndOfTurnEffects(lobby, aiRole);
-        processEclipseEnd(lobby);
-        processPolymorphEnd(lobby);
-        processDivineJudgmentEnd(lobby);
-        processCheatCodeEnd(lobby);
-        state.bossTurnCount++;
-        processBossEventWarning(lobby);
-        
-        for (const uid in state.units) {
-          const u = state.units[uid];
-          u.canDoubleAttack = false;
-          u.attackCountThisTurn = 0;
-          if (u.owner === aiRole) u.untargetable = false;
-        }
-        
-        state.activeSide = "gold";
-        state.movedThisTurn.clear();
-        state.attackedThisTurn.clear();
-        state.moveCountThisTurn = {};
-        state.attackCountThisTurn = {};
-        clearDiamondBuffs(state, "silver");
-        
-        const goldPlayer = players.gold;
-        let energyGain = 1 + Math.floor((state.turnNumber - 1) / 3);
-        if (playerHasBuff(state, "gold", "energy_buff")) energyGain += 1;
-        goldPlayer.energy = Math.min(goldPlayer.energy + energyGain, MAX_ENERGY);
-        goldPlayer.hasDrawn = false;
-        
-        if (state.cheatHesoyamActive && state.cheatHesoyamTurnsLeft > 0) {
-          goldPlayer.energy = 0;
-          logToLobby(lobby, `🎮 HESOYAM: Energy drained! (${state.cheatHesoyamTurnsLeft} turns left)`);
-        }
-        
-        processStartOfTurnEffects(lobby, "gold");
-        processBossEventCountdown(lobby);
-        state.turnNumber++;
-        logToLobby(lobby, "--- GOLD's turn (+" + energyGain + " energy) ---");
-        combatLogToLobby(lobby, `─── Turn ${state.turnNumber}: GOLD ───`, "turn-separator");
-        lobby.aiProcessing = false;
+      zeroEnergyActions++;
+      
+      // Ask AI for action but it should only return moves/attacks (not playCard since no energy)
+      const action = ai.decideAction(state, aiPlayer.hand, 0, true, false); // Pass 0 energy, already drew
+      
+      if (action.type === "endTurn" || action.type === "playCard") {
+        // AI wants to play card or end turn - just end turn
+        doZeroEnergyAction(); // This will hit the end turn path
+        return;
+      }
+      
+      // Process move or attack
+      if (action.type === "move" || action.type === "attack" || action.type === "attackRow" || action.type === "attackHeart") {
+        await processAIAction(lobby, action, aiRole);
         emitGameState(lobby);
-        
-        if (lobby.autoPlay && !state.gameOver) {
-          setTimeout(() => processPlayerAITurn(lobby), 800);
-        }
-      }, baseDelay);
-      return;
-    }
+        setTimeout(doZeroEnergyAction, baseDelay + Math.random() * randomDelay);
+      } else {
+        // Unknown action, end turn
+        zeroEnergyActions = maxZeroEnergyActions;
+        doZeroEnergyAction();
+      }
+    };
+    
+    setTimeout(doZeroEnergyAction, baseDelay);
+    return;
   }
   
   // Track actions to prevent infinite loops
@@ -6700,6 +6718,7 @@ async function executeAction(lobby, role, action) {
         const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
         const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+        if (card.range) unitData.range = card.range;
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
           unitData.burrowTurnsLeft = 2;
@@ -6750,6 +6769,7 @@ async function executeAction(lobby, role, action) {
         const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
         const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+        if (card.range) unitData.range = card.range;
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
           unitData.burrowTurnsLeft = 2;
@@ -8731,6 +8751,8 @@ io.on("connection", (socket) => {
         const id = genId(); const hpB = getArmoryBonus(state, role);
         const maxHp = card.hp + hpB;
         const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+        // Preserve range for ranged attackers
+        if (card.range) unitData.range = card.range;
         // Preserve stolen flag for Soul Collector cards
         if (card.stolen) unitData.stolen = true;
         // Preserve holo flag for holographic cards
@@ -8810,6 +8832,8 @@ io.on("connection", (socket) => {
       const id = genId(); const hpB = getArmoryBonus(state, role);
       const maxHp = card.hp + hpB;
       const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+      // Preserve range for ranged attackers
+      if (card.range) unitData.range = card.range;
       // Preserve stolen flag for Soul Collector cards
       if (card.stolen) unitData.stolen = true;
       // Preserve holo flag for holographic cards
@@ -9232,6 +9256,13 @@ io.on("connection", (socket) => {
         // Cardinal attack up to 2 tiles
         validAttack = (rowDist <= 2 && colDist === 0) || (colDist <= 2 && rowDist === 0);
       }
+      // Seraphic Hunter - range 3, cardinal only
+      else if (a.effectId === "seraphic_range" || a.range) {
+        const rowDist = Math.abs(ap.r - tp.r);
+        const colDist = Math.abs(ap.c - tp.c);
+        const maxRange = (a.range || 3) + bonusRange;
+        validAttack = (rowDist <= maxRange && colDist === 0) || (colDist <= maxRange && rowDist === 0);
+      }
       // Default: cardinal adjacent only (+ bonus range)
       else {
         if (bonusRange > 0) {
@@ -9592,6 +9623,33 @@ io.on("connection", (socket) => {
         }
       }
       
+      // Archangel Gabriel - deal 1 damage to all enemies in target's row
+      if (a.effectId === "gabriel_wrath" && tp) {
+        let rowDamage = 0;
+        const toRemoveRow = [];
+        for (let c = 0; c < COLS; c++) {
+          const uid = state.board[tp.r][c];
+          if (uid && uid !== payload.targetId && state.units[uid] && state.units[uid].owner !== role) {
+            state.units[uid].hp -= 1;
+            rowDamage++;
+            if (state.units[uid].hp <= 0 && shouldUnitDie(lobby, state.units[uid])) {
+              toRemoveRow.push({ uid, pos: { r: tp.r, c } });
+            }
+          }
+        }
+        for (const { uid, pos } of toRemoveRow) {
+          const deadUnit = state.units[uid];
+          processOnDeathEffect(lobby, deadUnit, deadUnit.owner, pos);
+          processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, pos);
+          state.board[pos.r][pos.c] = null;
+          discardUnitCard(lobby, deadUnit);
+          delete state.units[uid];
+        }
+        if (rowDamage > 0) {
+          logToLobby(lobby, a.name + "'s wrath deals 1 damage to " + rowDamage + " enemies in the row!");
+        }
+      }
+      
       if (finalEffectiveHp <= 0) {
         // Death Ward (Lunar Prayer) - survives lethal damage once with 1 HP
         if (t.deathWard) {
@@ -9653,13 +9711,13 @@ io.on("connection", (socket) => {
       
       const ap = getUnitPos(state, attackerId); if (!ap) return;
       
-      // Check range - archers can attack from 2 tiles away, others must be adjacent
-      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged";
-      const maxRange = isRanged ? 2 : 1;
+      // Check range - ranged units can attack from further away
+      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged" || a.effectId === "seraphic_range" || a.range;
+      const maxRange = a.range ? a.range : (isRanged ? 2 : 1);
       const rowDistance = Math.abs(ap.r - row);
       
       if (rowDistance > maxRange) {
-        return socket.emit("log", isRanged ? "Too far (max 2 rows)." : "Not adjacent (no diagonal).");
+        return socket.emit("log", isRanged ? `Too far (max ${maxRange} rows).` : "Not adjacent (no diagonal).");
       }
       
       let dmg = getEffectiveAtk(state, attackerId); 
@@ -9692,14 +9750,15 @@ io.on("connection", (socket) => {
       
       // Heart attack range:
       // - Must be in the enemy's heart row to attack (row 0 for gold heart, row 6 for silver heart)
-      // - Archers (ranged): can attack from 1 additional row away (so rows 0-1 for gold heart, rows 5-6 for silver heart)
+      // - Ranged units can attack from further away
       const heartRow = target === "gold" ? 0 : 6; 
       const distance = Math.abs(pos.r - heartRow);
-      const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce" || u.effectId === "starweave_ranged";
-      const maxRange = isRanged ? 1 : 0;
+      const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce" || u.effectId === "starweave_ranged" || u.effectId === "seraphic_range" || u.range;
+      // Seraphic Hunter has range 3, but for heart attack we use range-1 (so can attack from 2 rows away)
+      const maxRange = u.range ? (u.range - 1) : (isRanged ? 1 : 0);
       
       if (distance > maxRange) {
-        return socket.emit("log", isRanged ? "Archer must be within 1 row of the heart." : "Must be in the heart's row to attack.");
+        return socket.emit("log", isRanged ? `Ranged unit must be within ${maxRange} row(s) of the heart.` : "Must be in the heart's row to attack.");
       }
       
       let dmg = getEffectiveAtk(state, attackerId); 
