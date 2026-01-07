@@ -1951,6 +1951,17 @@ function getEffectiveAtk(state, uid, targetId) {
   return atk;
 }
 
+// Helper to check and consume divine shield for any damage source
+// Returns true if damage should be blocked, false if damage should proceed
+function checkDivineShield(state, unit, lobby = null) {
+  if (unit && unit.divineShield) {
+    delete unit.divineShield;
+    logToLobby(lobby, unit.name + "'s Divine Shield absorbs the damage!");
+    return true; // Block damage
+  }
+  return false; // Allow damage
+}
+
 function applyDamageReduction(state, tid, dmg, attackerId, lobby = null) {
   const t = state.units[tid]; if (!t) return dmg; const pos = getUnitPos(state, tid); if (!pos) return dmg;
   const attacker = attackerId ? state.units[attackerId] : null;
@@ -2233,6 +2244,9 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     a.atk += 1;
     a.hp += 1;
     a.maxHp = (a.maxHp || a.hp) + 1;
+    // Track the buff
+    if (!a.permBuffs) a.permBuffs = [];
+    a.permBuffs.push({ atk: 1, hp: 1, source: "Blood Countess (on kill)" });
     logToLobby(lobby, a.name + " grows stronger! Now " + a.atk + "/" + a.hp);
   }
   
@@ -2363,6 +2377,9 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
   // Starlit Champion - gains 1 energy and +1 ATK permanently on kill
   if (a.effectId === "starlit_slayer") {
     a.atk += 1;
+    // Track the buff
+    if (!a.permBuffs) a.permBuffs = [];
+    a.permBuffs.push({ atk: 1, hp: 0, source: "Starlit Champion (on kill)" });
     lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY);
     logToLobby(lobby, a.name + " is empowered by the stars! +1 ATK, +1 energy (now " + a.atk + " ATK)");
   }
@@ -2568,11 +2585,12 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
         if (targetId && state.units[targetId]) {
           const target = state.units[targetId];
           if (target.untargetable) continue;
+          // Always chain to this unit's adjacent units (even if already at 1 HP)
+          toProcess.push(pos);
+          // Only reduce HP if above 1
           if (target.hp > 1) {
             target.hp = 1;
             affectedUnits.add(targetId);
-            // Chain to this unit's adjacent units
-            toProcess.push(pos);
           }
         }
       }
@@ -2970,6 +2988,9 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
       u.atk += 1;
       u.hp += 1;
       u.maxHp = (u.maxHp || u.hp) + 1;
+      // Track the buff
+      if (!u.permBuffs) u.permBuffs = [];
+      u.permBuffs.push({ atk: 1, hp: 1, source: "Undertaker (ally death)" });
       logToLobby(lobby, u.name + " grows from ally death! Now " + u.atk + "/" + u.hp);
       triggerStatGainEffects(lobby, 'atk', 1, uid);
       triggerStatGainEffects(lobby, 'hp', 1, uid);
@@ -2978,6 +2999,9 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
     if (u.owner === deadUnitOwner && u.effectId === "grow_max_hp_on_ally_death") {
       u.maxHp = (u.maxHp || u.hp) + 1;
       u.hp += 1; // Also heal for the new max
+      // Track the buff
+      if (!u.permBuffs) u.permBuffs = [];
+      u.permBuffs.push({ atk: 0, hp: 1, source: "Crypt Keeper (ally death)" });
       logToLobby(lobby, u.name + " absorbs death essence! Max HP now " + u.maxHp);
       triggerStatGainEffects(lobby, 'hp', 1, uid);
     }
@@ -3544,6 +3568,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           const target = state.units[uid];
           // Check untargetable
           if (target.untargetable) continue;
+          // Check divine shield
+          if (checkDivineShield(state, target, lobby)) continue;
           targetPositions.push({ r: targetRow, c: c });
           const before = target.hp;
           target.hp -= 1;
@@ -3592,6 +3618,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         u.atk += 1;
         u.hp += 1;
         u.maxHp = (u.maxHp || u.hp) + 1;
+        // Track the buff source
+        if (!u.permBuffs) u.permBuffs = [];
+        u.permBuffs.push({ atk: 1, hp: 1, source: "Hive Ascension" });
         buffed++;
       }
     }
@@ -3961,6 +3990,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         if (uid && state.units[uid] && state.units[uid].owner !== role) {
           const target = state.units[uid];
           if (target.untargetable) continue;
+          // Check divine shield
+          if (checkDivineShield(state, target, lobby)) continue;
           targetPositions.push({ r: pos.r, c: pos.c });
           const before = target.hp;
           target.hp -= 2;
@@ -4041,7 +4072,10 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           logToLobby(lobby, target.name + " is untargetable!");
           return false;
         }
-        target.hp -= 2;
+        // Check divine shield
+        if (!checkDivineShield(state, target, lobby)) {
+          target.hp -= 2;
+        }
         const enemyRole = role === "gold" ? "silver" : "gold";
         const enemyPlayer = lobby.gameState.players[enemyRole];
         if (enemyPlayer.energy > 0) {
@@ -4071,6 +4105,10 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         if (target.untargetable) {
           logToLobby(lobby, target.name + " is untargetable!");
           return false;
+        }
+        // Check divine shield
+        if (checkDivineShield(state, target, lobby)) {
+          return true; // Shield consumed, spell "hit" but no damage
         }
         // energySpent is passed in from the spell cast - default to 4 (base cost)
         const energySpent = lobby.lastOverchargeEnergy || 4;
@@ -4137,6 +4175,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       const u = state.units[uid];
       if (u.owner === role && dragonKeys.includes(u.key)) {
         u.atk += 2;
+        // Track the buff
+        if (!u.permBuffs) u.permBuffs = [];
+        u.permBuffs.push({ atk: 2, hp: 0, source: "Dragon's Fury" });
         buffed++;
         // Trigger stat gain effects (Red/Blue Wizard)
         triggerStatGainEffects(lobby, 'atk', 2, uid);
@@ -4154,6 +4195,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       if (target.owner === role) {
         target.atk += 1;
         target.mightBlessing = true; // Track for on-attack buff
+        // Track the initial buff
+        if (!target.permBuffs) target.permBuffs = [];
+        target.permBuffs.push({ atk: 1, hp: 0, source: "Blessing of Might" });
         logToLobby(lobby, target.name + " receives Blessing of Might! (+1 ATK, +1 ATK on attack)");
         triggerStatGainEffects(lobby, 'atk', 1, targetUnitId);
       }
@@ -5646,7 +5690,10 @@ function processDivineJudgmentStart(lobby, boss, config) {
     // Check for Wrath (high ATK) - takes damage immediately
     if (unit.atk >= atkThreshold) {
       wrathfulUnits.push({ id: unitId, name: unit.name });
-      unit.hp -= wrathDamage;
+      // Check divine shield before applying damage
+      if (!checkDivineShield(state, unit, lobby)) {
+        unit.hp -= wrathDamage;
+      }
       unit.judgedWrath = true; // Mark for visual effect
     }
     
@@ -6017,7 +6064,19 @@ function processCheatCodeEnd(lobby) {
 // ==================== END CHEAT CODE EVENT ====================
 
 function emitLobbyState(lobby) {
-  const info = { code: lobby.code, hostDeck: lobby.hostDeck, guestDeck: lobby.guestDeck, hostReady: lobby.hostReady, guestReady: lobby.guestReady, guestJoined: !!lobby.guestSocket, gameStarted: lobby.gameStarted };
+  const info = { 
+    code: lobby.code, 
+    hostDeck: lobby.hostDeck, 
+    guestDeck: lobby.guestDeck, 
+    hostReady: lobby.hostReady, 
+    guestReady: lobby.guestReady, 
+    guestJoined: !!lobby.guestSocket, 
+    gameStarted: lobby.gameStarted,
+    hostUsername: lobby.hostUsername,
+    guestUsername: lobby.guestUsername,
+    hostDeckName: lobby.hostDeckName,
+    guestDeckName: lobby.guestDeckName
+  };
   if (lobby.hostSocket) lobby.hostSocket.emit("lobbyState", { ...info, isHost: true });
   if (lobby.guestSocket) lobby.guestSocket.emit("lobbyState", { ...info, isHost: false });
 }
@@ -7301,6 +7360,9 @@ async function executeAction(lobby, role, action) {
       // Blessing of Might - gain +1 ATK on attack
       if (a.mightBlessing) {
         a.atk += 1;
+        // Track the buff (incremental from blessing)
+        if (!a.permBuffs) a.permBuffs = [];
+        a.permBuffs.push({ atk: 1, hp: 0, source: "Blessing of Might (on attack)" });
         logToLobby(lobby, a.name + "'s Blessing of Might grants +1 ATK!");
         triggerStatGainEffects(lobby, 'atk', 1, action.attackerId);
       }
@@ -7673,7 +7735,9 @@ io.on("connection", (socket) => {
       hostSocket: socket, 
       guestSocket: null, 
       hostDeck: data.deckId || "medieval", 
+      hostDeckName: data.deckName || null,
       guestDeck: null, 
+      guestDeckName: null,
       hostReady: true, 
       guestReady: false, 
       gameStarted: false, 
@@ -7938,6 +8002,7 @@ io.on("connection", (socket) => {
     if (lobby.gameStarted) return socket.emit("lobbyError", "Game in progress.");
     lobby.guestSocket = socket; 
     lobby.guestDeck = data.deckId || "medieval"; 
+    lobby.guestDeckName = data.deckName || null;
     lobby.guestReady = true;
     lobby.guestUsername = data.username || "Guest";
     lobby.guestUserId = data.userId || null;
@@ -7949,7 +8014,13 @@ io.on("connection", (socket) => {
 
   socket.on("selectDeck", (data) => {
     const lobby = lobbies[socket.data.lobbyCode]; if (!lobby || lobby.gameStarted) return;
-    if (socket.data.isHost) lobby.hostDeck = data.deckId; else lobby.guestDeck = data.deckId;
+    if (socket.data.isHost) {
+      lobby.hostDeck = data.deckId;
+      lobby.hostDeckName = data.deckName || null;
+    } else {
+      lobby.guestDeck = data.deckId;
+      lobby.guestDeckName = data.deckName || null;
+    }
     emitLobbyState(lobby);
   });
 

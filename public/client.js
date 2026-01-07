@@ -1114,6 +1114,15 @@ function getAtkBuffBreakdown(unitId) {
     buffs.push({ stat: 'atk', value: u.eclipseAtkBuff, source: 'Eclipse: Blood Moon' });
   }
   
+  // Permanent buffs from spells/effects (stored on unit)
+  if (u.permBuffs && Array.isArray(u.permBuffs)) {
+    for (const buff of u.permBuffs) {
+      if (buff.atk && buff.atk > 0) {
+        buffs.push({ stat: 'atk', value: buff.atk, source: buff.source });
+      }
+    }
+  }
+  
   return buffs;
 }
 
@@ -1148,6 +1157,15 @@ function getHpBuffBreakdown(unitId) {
   // Legacy hpBuffed
   if (u.hpBuffed) {
     buffs.push({ stat: 'hp', value: 1, source: 'Buff' });
+  }
+  
+  // Permanent buffs from spells/effects (stored on unit)
+  if (u.permBuffs && Array.isArray(u.permBuffs)) {
+    for (const buff of u.permBuffs) {
+      if (buff.hp && buff.hp > 0) {
+        buffs.push({ stat: 'hp', value: buff.hp, source: buff.source });
+      }
+    }
   }
   
   return buffs;
@@ -2144,6 +2162,23 @@ function getAtkBuff(unitId) {
   return buff;
 }
 
+// Check if unit has any ATK buffs (for purple display) - includes permanent buffs
+function hasAtkBuff(unitId) {
+  const u = S.units[unitId];
+  if (!u) return false;
+  
+  // Check auras
+  if (getAtkBuff(unitId) > 0) return true;
+  
+  // Check permanent buffs
+  if (u.permBuffs && Array.isArray(u.permBuffs)) {
+    for (const b of u.permBuffs) {
+      if (b.atk && b.atk > 0) return true;
+    }
+  }
+  return false;
+}
+
 // Get HP buff amount (for display purposes)
 function getHpBuff(unitId) {
   const u = S.units[unitId];
@@ -2162,6 +2197,23 @@ function getHpBuff(unitId) {
     }
   }
   return buff;
+}
+
+// Check if unit has any HP buffs (for purple display) - includes permanent buffs
+function hasHpBuff(unitId) {
+  const u = S.units[unitId];
+  if (!u) return false;
+  
+  // Check auras
+  if (getHpBuff(unitId) > 0) return true;
+  
+  // Check permanent buffs
+  if (u.permBuffs && Array.isArray(u.permBuffs)) {
+    for (const b of u.permBuffs) {
+      if (b.hp && b.hp > 0) return true;
+    }
+  }
+  return false;
 }
 
 function sendAction(payload) {
@@ -2844,19 +2896,21 @@ function renderAll() {
       // Calculate buffs
       const atkBuff = getAtkBuff(unitId);
       const hpBuff = getHpBuff(unitId);
+      const hasPermAtkBuff = hasAtkBuff(unitId);
+      const hasPermHpBuff = hasHpBuff(unitId);
       
-      // Display total stats - show in purple if buffed (like Final Boss rage mode)
+      // Display total stats - show in purple if buffed (aura or permanent)
       let atkDisplayHtml;
-      if (atkBuff > 0) {
-        const totalAtk = u.atk + atkBuff;
+      if (hasPermAtkBuff) {
+        const totalAtk = u.atk + atkBuff; // Add aura buffs to base (which includes perm buffs)
         atkDisplayHtml = `<span class="buffed-stat">${totalAtk}</span>`;
       } else {
         atkDisplayHtml = `${u.atk}`;
       }
       
       let hpDisplayHtml;
-      if (hpBuff > 0) {
-        const totalHp = u.hp + hpBuff;
+      if (hasPermHpBuff) {
+        const totalHp = u.hp + hpBuff; // Add aura buffs to base (which includes perm buffs)
         hpDisplayHtml = `<span class="buffed-stat">${totalHp}</span>`;
       } else {
         hpDisplayHtml = `${u.hp}`;

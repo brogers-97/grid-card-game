@@ -831,6 +831,13 @@
       transform: translate(-50%, -50%);
     }
     .diff-btn.challenge.selected { border-color: #fbbf24; box-shadow: 0 0 12px #a855f7, 0 0 20px rgba(168, 85, 247, 0.5); }
+    .diff-btn.challenge.completed { 
+      background: linear-gradient(135deg, #06b6d4, #22d3ee);
+      box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+    }
+    .diff-btn.challenge.completed::after {
+      content: '💎';
+    }
     .diff-btn.challenge.locked { 
       opacity: 0.2; 
       cursor: not-allowed; 
@@ -842,7 +849,17 @@
     .boss-stars { margin-top: 8px; font-size: 14px; display: flex; gap: 4px; align-items: center; }
     .star { color: #64748b; transition: color 0.2s, text-shadow 0.2s; }
     .star.earned { color: #fbbf24; text-shadow: 0 0 6px rgba(251, 191, 36, 0.5); }
+    .star.diamond { 
+      color: #22d3ee; 
+      text-shadow: 0 0 8px rgba(34, 211, 238, 0.8), 0 0 12px rgba(6, 182, 212, 0.6);
+      animation: diamondPulse 2s ease-in-out infinite;
+    }
+    @keyframes diamondPulse {
+      0%, 100% { text-shadow: 0 0 8px rgba(34, 211, 238, 0.8), 0 0 12px rgba(6, 182, 212, 0.6); }
+      50% { text-shadow: 0 0 12px rgba(34, 211, 238, 1), 0 0 20px rgba(6, 182, 212, 0.9); }
+    }
     .boss-stars-label { font-size: 10px; color: #64748b; margin-left: 6px; }
+    .boss-stars-label.diamond { color: #22d3ee; }
     
     .lobby-code {
       background: rgba(30, 30, 60, 0.6);
@@ -1264,21 +1281,31 @@
         
         // Challenge mode unlocks after beating hard difficulty (3 stars)
         const challengeUnlocked = earnedStars >= 3;
+        // Challenge completed = 4 stars
+        const challengeCompleted = earnedStars >= 4;
         
         // Star labels: Easy, Medium, Hard
         const starLabels = ['Easy', 'Medium', 'Hard'];
-        const starsHtml = [1,2,3].map(i => 
-          `<span class="star ${i <= earnedStars ? 'earned' : ''}" title="${starLabels[i-1]}">★</span>`
-        ).join('');
+        // If challenge completed, all stars turn diamond color
+        const starsHtml = [1,2,3].map(i => {
+          const isEarned = i <= Math.min(earnedStars, 3); // Cap at 3 for display purposes
+          const starClass = challengeCompleted ? 'star diamond' : (isEarned ? 'star earned' : 'star');
+          return `<span class="${starClass}" title="${starLabels[i-1]}">★</span>`;
+        }).join('');
         
         // Show highest difficulty beaten
-        const difficultyLabel = earnedStars > 0 
-          ? `<span class="boss-stars-label">(${starLabels[earnedStars - 1]} beaten)</span>` 
-          : `<span class="boss-stars-label">(Not beaten)</span>`;
+        let difficultyLabel;
+        if (challengeCompleted) {
+          difficultyLabel = ''; // Diamond stars speak for themselves
+        } else if (earnedStars > 0) {
+          difficultyLabel = `<span class="boss-stars-label">(${starLabels[earnedStars - 1]} beaten)</span>`;
+        } else {
+          difficultyLabel = `<span class="boss-stars-label">(Not beaten)</span>`;
+        }
         
         // Challenge button - only show if boss has a challenge deck
         const challengeBtn = boss.challengeDeckId 
-          ? `<div class="diff-btn challenge ${challengeUnlocked ? '' : 'locked'}" data-diff="4" title="${challengeUnlocked ? 'Challenge Mode' : 'Beat Hard to Unlock'}"></div>`
+          ? `<div class="diff-btn challenge ${challengeUnlocked ? '' : 'locked'} ${challengeCompleted ? 'completed' : ''}" data-diff="4" title="${challengeCompleted ? 'Challenge Complete!' : (challengeUnlocked ? 'Challenge Mode' : 'Beat Hard to Unlock')}"></div>`
           : '';
         
         return `
@@ -1499,10 +1526,24 @@
       window.location.href = '/playtest.html';
     });
     
+    // Helper to get the selected deck's custom name
+    function getSelectedDeckName(selectEl) {
+      const deckId = selectEl.value;
+      const customDecks = currentUser?.customDecks || [];
+      const customDeck = customDecks.find(cd => cd.id === deckId);
+      if (customDeck && customDeck.name) {
+        return customDeck.name;
+      }
+      // Fall back to built-in deck name
+      const builtInDeck = deckList.find(d => d.id === deckId);
+      return builtInDeck ? builtInDeck.name : null;
+    }
+    
     // Multiplayer
     createBtn.addEventListener('click', () => {
       socket.emit('createLobby', { 
         deckId: deckSelect.value,
+        deckName: getSelectedDeckName(deckSelect),
         username: getUsername(),
         userId: getUserId()
       });
@@ -1517,6 +1558,7 @@
       socket.emit('joinLobby', { 
         code, 
         deckId: deckSelect.value,
+        deckName: getSelectedDeckName(deckSelect),
         username: getUsername(),
         userId: getUserId()
       });
@@ -1561,13 +1603,14 @@
       isHost = lobby.isHost;
       lobbyCodeDisplay.textContent = lobby.code;
       
+      // Use custom deck name if provided, otherwise look up built-in deck name
       const hostDeck = deckList.find(d => d.id === lobby.hostDeck);
-      hostDeckName.textContent = hostDeck ? hostDeck.name : lobby.hostDeck;
+      hostDeckName.textContent = lobby.hostDeckName || (hostDeck ? hostDeck.name : lobby.hostDeck);
       hostPlayerName.textContent = lobby.hostUsername || 'Host';
       
       if (lobby.guestJoined) {
         const guestDeck = deckList.find(d => d.id === lobby.guestDeck);
-        guestDeckName.textContent = guestDeck ? guestDeck.name : lobby.guestDeck;
+        guestDeckName.textContent = lobby.guestDeckName || (guestDeck ? guestDeck.name : lobby.guestDeck);
         guestPlayerName.textContent = lobby.guestUsername || 'Opponent';
         guestReady.textContent = '✅';
         lobbySubtitle.textContent = 'Ready to battle!';
