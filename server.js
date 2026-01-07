@@ -5904,6 +5904,9 @@ function processCheatCodeStart(lobby, boss, config) {
       if (unit.type === 'structure') continue;
       unit.atk += 2;
       unit.cheatBuffed = true;
+      // Track the buff
+      if (!unit.permBuffs) unit.permBuffs = [];
+      unit.permBuffs.push({ atk: 2, hp: 0, source: "IDKFA Cheat" });
       affectedUnits.push({ id: unitId, name: unit.name, owner: unit.owner });
     }
     logToLobby(lobby, `🎮 IDKFA: All units gained +2 ATK!`);
@@ -5917,6 +5920,9 @@ function processCheatCodeStart(lobby, boss, config) {
       unit.hp += 1;
       unit.maxHp = (unit.maxHp || unit.hp) + 1;
       unit.cheatBuffed = true;
+      // Track the buff
+      if (!unit.permBuffs) unit.permBuffs = [];
+      unit.permBuffs.push({ atk: 1, hp: 1, source: "BIGHEAD Cheat" });
       affectedUnits.push({ id: unitId, name: unit.name, owner: unit.owner });
     }
     logToLobby(lobby, `🎮 BIGHEAD: All units gained +1/+1!`);
@@ -9351,9 +9357,14 @@ io.on("connection", (socket) => {
       // Handle UFO Scraper absorb attack
       if (isAbsorbAttack) {
         // UFO Scraper kills friendly and absorbs stats
-        a.atk += t.atk;
-        a.hp += t.hp;
+        const absorbedAtk = t.atk;
+        const absorbedHp = t.hp;
+        a.atk += absorbedAtk;
+        a.hp += absorbedHp;
         a.maxHp = (a.maxHp || 1) + (t.maxHp || t.hp);
+        // Track the buff
+        if (!a.permBuffs) a.permBuffs = [];
+        a.permBuffs.push({ atk: absorbedAtk, hp: absorbedHp, source: `Absorbed ${t.name}` });
         logToLobby(lobby, a.name + " absorbs " + t.name + "! Now " + a.atk + "/" + a.hp);
         
         // Process death effects (Coffin resurrect, Undertaker growth, etc.)
@@ -9374,6 +9385,9 @@ io.on("connection", (socket) => {
         a.atk += 2;
         a.hp += 2;
         a.maxHp = (a.maxHp || a.hp) + 2;
+        // Track the buff
+        if (!a.permBuffs) a.permBuffs = [];
+        a.permBuffs.push({ atk: 2, hp: 2, source: "Opal Devourer (devoured gem)" });
         logToLobby(lobby, a.name + " devours " + t.name + "! +2/+2 (now " + a.atk + "/" + a.hp + ")");
         
         // Process death effects (Prismatic Fairy triggers)

@@ -1031,48 +1031,50 @@ function getAtkBuffBreakdown(unitId) {
   const pos = findUnitPos(unitId);
   if (!pos) return buffs;
   
-  // War Banner aura
+  // Check all adjacent units for aura effects
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
       if (dr === 0 && dc === 0) continue;
       const nr = pos.r + dr, nc = pos.c + dc;
       if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
       const adjId = S.board[nr][nc];
-      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "attack_aura") {
-        buffs.push({ stat: 'atk', value: 1, source: 'War Banner' });
+      if (!adjId || !S.units[adjId]) continue;
+      const adj = S.units[adjId];
+      
+      // Friendly auras
+      if (adj.owner === u.owner) {
+        // War Banner / Psionic Overseer - attack_aura (+1 ATK)
+        if (adj.effectId === "attack_aura") {
+          const sourceName = adj.key === "warbanner" ? "War Banner" : "Psionic Overseer";
+          buffs.push({ stat: 'atk', value: 1, source: sourceName });
+        }
+        // Garnet Queen - garnet_aura (+1 ATK to friendlies)
+        if (adj.effectId === "garnet_aura") {
+          buffs.push({ stat: 'atk', value: 1, source: 'Garnet Queen' });
+        }
+        // Moon Flare Sorceress - moonflare_aura (+1 ATK and +1 HP)
+        if (adj.effectId === "moonflare_aura") {
+          buffs.push({ stat: 'atk', value: 1, source: 'Moon Flare Sorceress' });
+        }
+        // Wizard NPC - stacking_aura (+N/+N based on stacks)
+        if (adj.effectId === "stacking_aura") {
+          const stacks = adj.wizardStacks || 1;
+          buffs.push({ stat: 'atk', value: stacks, source: `Wizard NPC (+${stacks})` });
+        }
+      }
+      
+      // Enemy auras (debuffs)
+      if (adj.owner !== u.owner) {
+        // Garnet Queen - reduces enemy ATK to max 2
+        if (adj.effectId === "garnet_aura" && u.atk > 2) {
+          const reduction = u.atk - 2;
+          buffs.push({ stat: 'atk', value: -reduction, source: 'Garnet Queen (enemy)' });
+        }
       }
     }
   }
   
-  // Garnet Queen aura
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = pos.r + dr, nc = pos.c + dc;
-      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
-      const adjId = S.board[nr][nc];
-      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "garnet_aura") {
-        buffs.push({ stat: 'atk', value: 1, source: 'Garnet Queen' });
-      }
-    }
-  }
-  
-  // Wizard NPC stacking aura
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = pos.r + dr, nc = pos.c + dc;
-      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
-      const adjId = S.board[nr][nc];
-      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "stacking_aura") {
-        const wizard = S.units[adjId];
-        const stacks = wizard.wizardStacks || 1;
-        buffs.push({ stat: 'atk', value: stacks, source: `Wizard NPC (+${stacks})` });
-      }
-    }
-  }
-  
-  // Star Weave Archer bonus
+  // Star Weave Archer - gains +1 ATK per adjacent ally
   if (u.effectId === "starweave_ranged") {
     let adjAllies = 0;
     for (let dr = -1; dr <= 1; dr++) {
@@ -1087,21 +1089,34 @@ function getAtkBuffBreakdown(unitId) {
       }
     }
     if (adjAllies > 0) {
-      buffs.push({ stat: 'atk', value: adjAllies, source: `Adjacent Allies (×${adjAllies})` });
+      buffs.push({ stat: 'atk', value: adjAllies, source: `Star Weave Archer (${adjAllies} allies)` });
     }
   }
   
-  // Final Boss rage mode
+  // Moonstone Witch - gains +1 ATK per Gem Shard on field
+  if (u.effectId === "gem_transform") {
+    let gemShards = 0;
+    for (const uid in S.units) {
+      if (S.units[uid].key === "gemshard") {
+        gemShards++;
+      }
+    }
+    if (gemShards > 0) {
+      buffs.push({ stat: 'atk', value: gemShards, source: `Moonstone Witch (${gemShards} Gem Shards)` });
+    }
+  }
+  
+  // Final Boss rage mode - gains +1 ATK per HP lost
   if (u.effectId === "rage_mode") {
     const hpLost = (u.maxHp || 8) - u.hp;
     if (hpLost > 0) {
-      buffs.push({ stat: 'atk', value: hpLost, source: `Rage Mode (HP lost)` });
+      buffs.push({ stat: 'atk', value: hpLost, source: `Rage Mode (${hpLost} HP lost)` });
     }
   }
   
-  // Blessing of Might
+  // Blessing of Might status (shows that on-attack buff is active)
   if (u.mightBlessing) {
-    buffs.push({ stat: 'atk', value: 0, source: 'Blessing of Might (on attack)' });
+    buffs.push({ stat: 'atk', value: 0, source: 'Blessing of Might (active)' });
   }
   
   // Diamond Gem buff
@@ -1134,17 +1149,27 @@ function getHpBuffBreakdown(unitId) {
   const pos = findUnitPos(unitId);
   if (!pos) return buffs;
   
-  // Wizard NPC stacking aura (HP)
+  // Check all adjacent units for aura effects
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
       if (dr === 0 && dc === 0) continue;
       const nr = pos.r + dr, nc = pos.c + dc;
       if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
       const adjId = S.board[nr][nc];
-      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "stacking_aura") {
-        const wizard = S.units[adjId];
-        const stacks = wizard.wizardStacks || 1;
-        buffs.push({ stat: 'hp', value: stacks, source: `Wizard NPC (+${stacks})` });
+      if (!adjId || !S.units[adjId]) continue;
+      const adj = S.units[adjId];
+      
+      // Friendly auras
+      if (adj.owner === u.owner) {
+        // Moon Flare Sorceress - moonflare_aura (+1 ATK and +1 HP)
+        if (adj.effectId === "moonflare_aura") {
+          buffs.push({ stat: 'hp', value: 1, source: 'Moon Flare Sorceress' });
+        }
+        // Wizard NPC - stacking_aura (+N/+N based on stacks)
+        if (adj.effectId === "stacking_aura") {
+          const stacks = adj.wizardStacks || 1;
+          buffs.push({ stat: 'hp', value: stacks, source: `Wizard NPC (+${stacks})` });
+        }
       }
     }
   }
@@ -2132,13 +2157,44 @@ function getAtkBuff(unitId) {
   if (!u) return 0;
   
   let buff = 0;
-  if (getAdjacentUnitsWithEffect(unitId, "attack_aura").length > 0) {
-    buff += 1;
+  const pos = findUnitPos(unitId);
+  if (!pos) return buff;
+  
+  // Check all adjacent units for aura effects
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = pos.r + dr, nc = pos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const adjId = S.board[nr][nc];
+      if (!adjId || !S.units[adjId]) continue;
+      const adj = S.units[adjId];
+      
+      // Friendly auras
+      if (adj.owner === u.owner) {
+        if (adj.effectId === "attack_aura") buff += 1;
+        if (adj.effectId === "garnet_aura") buff += 1;
+        if (adj.effectId === "moonflare_aura") buff += 1;
+        if (adj.effectId === "stacking_aura") buff += (adj.wizardStacks || 1);
+      }
+    }
   }
-  // Garnet Queen - adjacent friendlies gain +1 ATK
-  if (getAdjacentUnitsWithEffect(unitId, "garnet_aura").length > 0) {
-    buff += 1;
+  
+  // Star Weave Archer - gains +1 ATK per adjacent ally
+  if (u.effectId === "starweave_ranged") {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = pos.r + dr, nc = pos.c + dc;
+        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+        const adjId = S.board[nr][nc];
+        if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner) {
+          buff++;
+        }
+      }
+    }
   }
+  
   // Moonstone Witch - gains +1 ATK per Gem Shard on field
   if (u.effectId === "gem_transform") {
     for (const uid in S.units) {
@@ -2147,18 +2203,12 @@ function getAtkBuff(unitId) {
       }
     }
   }
-  // Wizard NPC - adjacent allies get +N/+N where N = wizardStacks (default 1)
-  const wizardBuffs = getAdjacentUnitsWithEffect(unitId, "stacking_aura");
-  for (const wizardId of wizardBuffs) {
-    const wizard = S.units[wizardId];
-    if (wizard) {
-      buff += (wizard.wizardStacks || 1);
-    }
-  }
+  
   // Final Boss - gains +1 ATK per HP lost (rage_mode)
   if (u.effectId === "rage_mode" && u.maxHp) {
     buff += (u.maxHp - u.hp);
   }
+  
   return buff;
 }
 
@@ -2185,17 +2235,30 @@ function getHpBuff(unitId) {
   if (!u) return 0;
   
   let buff = 0;
+  const pos = findUnitPos(unitId);
+  if (!pos) return buff;
+  
   // Legacy hpBuffed flag
   if (u.hpBuffed) buff += 1;
   
-  // Wizard NPC - adjacent allies get +N/+N where N = wizardStacks (default 1)
-  const wizardBuffs = getAdjacentUnitsWithEffect(unitId, "stacking_aura");
-  for (const wizardId of wizardBuffs) {
-    const wizard = S.units[wizardId];
-    if (wizard) {
-      buff += (wizard.wizardStacks || 1);
+  // Check all adjacent units for aura effects
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = pos.r + dr, nc = pos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const adjId = S.board[nr][nc];
+      if (!adjId || !S.units[adjId]) continue;
+      const adj = S.units[adjId];
+      
+      // Friendly auras
+      if (adj.owner === u.owner) {
+        if (adj.effectId === "moonflare_aura") buff += 1;
+        if (adj.effectId === "stacking_aura") buff += (adj.wizardStacks || 1);
+      }
     }
   }
+  
   return buff;
 }
 
