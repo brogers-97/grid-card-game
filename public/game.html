@@ -65,15 +65,194 @@
       margin: 0 auto;
     }
 
-    /* ===== LEFT SIDEBAR - Just turn indicator ===== */
+    /* ===== LEFT SIDEBAR - Turn indicator + Card Inspector ===== */
     #leftSidebar {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      width: 90px;
+      width: 200px;
       flex-shrink: 0;
       align-self: flex-start;
       padding-top: 40px;
+    }
+
+    /* ===== PINNED CARD INSPECTOR ===== */
+    #cardInspector {
+      display: none;
+      background: linear-gradient(145deg, rgba(30, 30, 60, 0.98), rgba(20, 20, 40, 0.98));
+      border: 2px solid rgba(138, 43, 226, 0.6);
+      border-radius: 12px;
+      padding: 12px;
+      width: 200px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+    
+    #cardInspector.visible {
+      display: block;
+    }
+    
+    #cardInspector .inspector-close {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      width: 20px;
+      height: 20px;
+      background: rgba(239, 68, 68, 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      border-radius: 50%;
+      color: #f87171;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    #cardInspector .inspector-close:hover {
+      background: rgba(239, 68, 68, 0.5);
+      transform: scale(1.1);
+    }
+    
+    #cardInspector .inspector-art {
+      width: 100%;
+      height: 100px;
+      border-radius: 8px;
+      background-size: cover;
+      background-position: center;
+      margin-bottom: 10px;
+      border: 1px solid rgba(138, 43, 226, 0.4);
+    }
+    
+    #cardInspector .inspector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    #cardInspector .inspector-name {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    #cardInspector .inspector-stats {
+      display: flex;
+      gap: 8px;
+    }
+    
+    #cardInspector .inspector-stat {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    
+    #cardInspector .inspector-stat.atk { color: #fb923c; }
+    #cardInspector .inspector-stat.hp { color: #22d3ee; }
+    #cardInspector .inspector-stat.buffed { color: #c084fc; }
+    
+    #cardInspector .inspector-type {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    
+    #cardInspector .inspector-section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(138, 43, 226, 0.3);
+    }
+    
+    #cardInspector .inspector-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    
+    #cardInspector .inspector-buff-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    #cardInspector .inspector-buff-item {
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    #cardInspector .inspector-buff-item.buff {
+      color: #4ade80;
+    }
+    
+    #cardInspector .inspector-buff-item.debuff {
+      color: #f87171;
+    }
+    
+    #cardInspector .inspector-buff-item .buff-value {
+      font-weight: 700;
+    }
+    
+    #cardInspector .inspector-buff-item .buff-source {
+      color: #94a3b8;
+      font-size: 10px;
+    }
+    
+    #cardInspector .inspector-status-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    #cardInspector .inspector-status-item {
+      font-size: 11px;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    #cardInspector .inspector-status-item.positive {
+      color: #4ade80;
+    }
+    
+    #cardInspector .inspector-status-item.negative {
+      color: #f87171;
+    }
+    
+    #cardInspector .inspector-effect {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(138, 43, 226, 0.3);
+    }
+    
+    #cardInspector .inspector-effect-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #a78bfa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    
+    #cardInspector .inspector-effect-desc {
+      font-size: 11px;
+      color: #cbd5e1;
+      line-height: 1.4;
     }
 
     #turnIndicator {
@@ -4665,7 +4844,14 @@
     .unitStat .buff { color: #4ade80; font-size: 10px; }
     .unitStat .debuff { color: #f87171; font-size: 10px; }
     
-    /* Final Boss rage mode ATK - purple glow */
+    /* Buffed stat display - purple color for any buff (aura, blessing, etc) */
+    .unitStat .buffed-stat { 
+      color: #c084fc; 
+      text-shadow: 0 0 6px rgba(192, 132, 252, 0.7);
+      font-weight: bold;
+    }
+    
+    /* Final Boss rage mode ATK - purple glow with pulse animation */
     .unitStat .rage-atk { 
       color: #c084fc; 
       text-shadow: 0 0 8px rgba(192, 132, 252, 0.8), 0 0 12px rgba(168, 85, 247, 0.6);
@@ -5736,6 +5922,12 @@
       background: linear-gradient(135deg, #f97316, #ea580c);
     }
     
+    /* Buffed ATK - purple gradient */
+    .tooltip-stat-value.atk.buffed {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+    }
+    
     .tooltip-stat-value.atk.rage {
       background: linear-gradient(135deg, #a855f7, #7c3aed);
       animation: tooltipRagePulse 1.5s ease-in-out infinite;
@@ -5752,6 +5944,12 @@
 
     .tooltip-stat-value.hp {
       background: linear-gradient(135deg, #06b6d4, #0891b2);
+    }
+    
+    /* Buffed HP - purple gradient */
+    .tooltip-stat-value.hp.buffed {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
     }
 
     .tooltip-stat-label {
@@ -6576,12 +6774,29 @@
 
 <body>
   <div id="gameContainer">
-    <!-- Left side - Turn indicator -->
+    <!-- Left side - Turn indicator + Card Inspector -->
     <div id="leftSidebar">
       <div id="turnIndicator">
         <div id="turnText">Turn</div>
         <div id="turnLabel">SILVER</div>
         <div id="turnCounter">Turn <span id="turnNumber">1</span></div>
+      </div>
+      
+      <!-- Pinned Card Inspector (Shift+Click to pin) -->
+      <div id="cardInspector">
+        <div class="inspector-close" onclick="closeCardInspector()">✕</div>
+        <div class="inspector-art" id="inspectorArt"></div>
+        <div class="inspector-header">
+          <div class="inspector-name" id="inspectorName">Unit Name</div>
+        </div>
+        <div class="inspector-stats" id="inspectorStats">
+          <div class="inspector-stat atk"><span>⚔</span><span id="inspectorAtk">0</span></div>
+          <div class="inspector-stat hp"><span>♥</span><span id="inspectorHp">0</span></div>
+        </div>
+        <div class="inspector-type" id="inspectorType">Monster</div>
+        <div id="inspectorBuffs"></div>
+        <div id="inspectorStatus"></div>
+        <div id="inspectorEffect"></div>
       </div>
     </div>
 

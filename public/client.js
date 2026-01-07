@@ -661,15 +661,17 @@ function showTooltip(unitId, x, y, buff) {
   const atkBuff = getAtkBuff(unitId);
   const effectiveAtk = u.atk + atkBuff;
   const hpBuff = getHpBuff(unitId);
+  const effectiveHp = u.hp + hpBuff;
   
-  // Special handling for Final Boss rage mode - show in purple
-  const isRageMode = u.effectId === "rage_mode" && atkBuff > 0;
-  const atkClass = isRageMode ? "atk rage" : "atk";
-  const atkLabel = isRageMode ? `⚔ ATK (RAGE!)` : `⚔ ATK${atkBuff > 0 ? ` (+${atkBuff})` : ''}`;
+  // ATK display - show buffed in purple with breakdown
+  const atkClass = atkBuff > 0 ? "atk buffed" : "atk";
+  const atkLabel = atkBuff > 0 ? `⚔ ATK (${u.atk} + ${atkBuff})` : `⚔ ATK`;
   
-  // HP display with max HP
+  // HP display with max HP and buff breakdown
   const maxHp = u.maxHp || u.hp;
-  const hpDisplay = `${u.hp}/${maxHp}`;
+  const hpDisplay = hpBuff > 0 ? `${effectiveHp}/${maxHp + hpBuff}` : `${u.hp}/${maxHp}`;
+  const hpLabel = hpBuff > 0 ? `♥ HP (${u.hp} + ${hpBuff})` : `♥ HP`;
+  const hpClass = hpBuff > 0 ? "hp buffed" : "hp";
   
   // Art section
   const icon = CARD_ICONS[u.key] || '⚔️';
@@ -718,8 +720,8 @@ function showTooltip(unitId, x, y, buff) {
             <div class="tooltip-stat-label">${atkLabel}</div>
           </div>
           <div class="tooltip-stat">
-            <div class="tooltip-stat-value hp">${hpDisplay}</div>
-            <div class="tooltip-stat-label">♥ HP${hpBuff > 0 ? ` (+${hpBuff})` : ''}</div>
+            <div class="tooltip-stat-value ${hpClass}">${hpDisplay}</div>
+            <div class="tooltip-stat-label">${hpLabel}</div>
           </div>
         </div>
         ${statusHtml}
@@ -902,6 +904,321 @@ function setupCellTooltip(cellEl, unitId) {
   });
   
   cellEl.addEventListener("mouseleave", hideTooltip);
+}
+
+// ===== PINNED CARD INSPECTOR (Shift+Click) =====
+let pinnedUnitId = null;
+
+function showCardInspector(unitId) {
+  const u = S.units[unitId];
+  if (!u) return;
+  
+  pinnedUnitId = unitId;
+  
+  const inspector = document.getElementById('cardInspector');
+  if (!inspector) return;
+  
+  // Set art
+  const artEl = document.getElementById('inspectorArt');
+  if (u.art) {
+    artEl.style.backgroundImage = `url('${encodeURI(u.art)}')`;
+  } else {
+    artEl.style.backgroundImage = '';
+  }
+  
+  // Set name
+  document.getElementById('inspectorName').textContent = u.name;
+  
+  // Set type
+  document.getElementById('inspectorType').textContent = `${u.owner.toUpperCase()}'s ${u.type || 'Monster'}`;
+  
+  // Calculate and display stats with buff indicators
+  updateCardInspectorStats(unitId);
+  
+  // Show effect if present
+  const effectEl = document.getElementById('inspectorEffect');
+  if (u.effectDesc) {
+    effectEl.innerHTML = `
+      <div class="inspector-effect-title">✨ Effect</div>
+      <div class="inspector-effect-desc">${u.effectDesc}</div>
+    `;
+    effectEl.style.display = 'block';
+  } else {
+    effectEl.style.display = 'none';
+  }
+  
+  inspector.classList.add('visible');
+}
+
+function updateCardInspectorStats(unitId) {
+  const u = S.units[unitId];
+  if (!u) return;
+  
+  // Get detailed buff breakdown
+  const atkBuffs = getAtkBuffBreakdown(unitId);
+  const hpBuffs = getHpBuffBreakdown(unitId);
+  
+  const totalAtkBuff = atkBuffs.reduce((sum, b) => sum + b.value, 0);
+  const totalHpBuff = hpBuffs.reduce((sum, b) => sum + b.value, 0);
+  
+  const effectiveAtk = u.atk + totalAtkBuff;
+  const effectiveHp = u.hp + totalHpBuff;
+  
+  // Update stats display
+  const statsEl = document.getElementById('inspectorStats');
+  const atkClass = totalAtkBuff > 0 ? 'inspector-stat atk buffed' : (totalAtkBuff < 0 ? 'inspector-stat atk debuffed' : 'inspector-stat atk');
+  const hpClass = totalHpBuff > 0 ? 'inspector-stat hp buffed' : (totalHpBuff < 0 ? 'inspector-stat hp debuffed' : 'inspector-stat hp');
+  
+  statsEl.innerHTML = `
+    <div class="${atkClass}"><span>⚔</span><span>${effectiveAtk}</span></div>
+    <div class="${hpClass}"><span>♥</span><span>${effectiveHp}</span></div>
+  `;
+  
+  // Build buffs section
+  const buffsEl = document.getElementById('inspectorBuffs');
+  const allBuffs = [...atkBuffs, ...hpBuffs];
+  
+  if (allBuffs.length > 0) {
+    let buffsHtml = `<div class="inspector-section">
+      <div class="inspector-section-title">Buffs & Debuffs</div>
+      <div class="inspector-buff-list">`;
+    
+    for (const buff of allBuffs) {
+      const isDebuff = buff.value < 0;
+      const itemClass = isDebuff ? 'inspector-buff-item debuff' : 'inspector-buff-item buff';
+      const sign = buff.value > 0 ? '+' : '';
+      const statType = buff.stat === 'atk' ? 'ATK' : 'HP';
+      
+      buffsHtml += `
+        <div class="${itemClass}">
+          <span class="buff-value">${sign}${buff.value} ${statType}</span>
+          <span class="buff-source">— ${buff.source}</span>
+        </div>`;
+    }
+    
+    buffsHtml += `</div></div>`;
+    buffsEl.innerHTML = buffsHtml;
+  } else {
+    buffsEl.innerHTML = '';
+  }
+  
+  // Build status section
+  const statusEl = document.getElementById('inspectorStatus');
+  const statuses = getUnitStatuses(unitId);
+  
+  if (statuses.length > 0) {
+    let statusHtml = `<div class="inspector-section">
+      <div class="inspector-section-title">Status Effects</div>
+      <div class="inspector-status-list">`;
+    
+    for (const status of statuses) {
+      const itemClass = status.positive ? 'inspector-status-item positive' : 'inspector-status-item negative';
+      statusHtml += `<div class="${itemClass}">${status.icon} ${status.name}</div>`;
+    }
+    
+    statusHtml += `</div></div>`;
+    statusEl.innerHTML = statusHtml;
+  } else {
+    statusEl.innerHTML = '';
+  }
+}
+
+function getAtkBuffBreakdown(unitId) {
+  const u = S.units[unitId];
+  if (!u) return [];
+  
+  const buffs = [];
+  const pos = findUnitPos(unitId);
+  if (!pos) return buffs;
+  
+  // War Banner aura
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = pos.r + dr, nc = pos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const adjId = S.board[nr][nc];
+      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "attack_aura") {
+        buffs.push({ stat: 'atk', value: 1, source: 'War Banner' });
+      }
+    }
+  }
+  
+  // Garnet Queen aura
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = pos.r + dr, nc = pos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const adjId = S.board[nr][nc];
+      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "garnet_aura") {
+        buffs.push({ stat: 'atk', value: 1, source: 'Garnet Queen' });
+      }
+    }
+  }
+  
+  // Wizard NPC stacking aura
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = pos.r + dr, nc = pos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const adjId = S.board[nr][nc];
+      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "stacking_aura") {
+        const wizard = S.units[adjId];
+        const stacks = wizard.wizardStacks || 1;
+        buffs.push({ stat: 'atk', value: stacks, source: `Wizard NPC (+${stacks})` });
+      }
+    }
+  }
+  
+  // Star Weave Archer bonus
+  if (u.effectId === "starweave_ranged") {
+    let adjAllies = 0;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = pos.r + dr, nc = pos.c + dc;
+        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+        const adjId = S.board[nr][nc];
+        if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner) {
+          adjAllies++;
+        }
+      }
+    }
+    if (adjAllies > 0) {
+      buffs.push({ stat: 'atk', value: adjAllies, source: `Adjacent Allies (×${adjAllies})` });
+    }
+  }
+  
+  // Final Boss rage mode
+  if (u.effectId === "rage_mode") {
+    const hpLost = (u.maxHp || 8) - u.hp;
+    if (hpLost > 0) {
+      buffs.push({ stat: 'atk', value: hpLost, source: `Rage Mode (HP lost)` });
+    }
+  }
+  
+  // Blessing of Might
+  if (u.mightBlessing) {
+    buffs.push({ stat: 'atk', value: 0, source: 'Blessing of Might (on attack)' });
+  }
+  
+  // Diamond Gem buff
+  if (u.gemBuffs && u.gemBuffs.atk) {
+    buffs.push({ stat: 'atk', value: u.gemBuffs.atk, source: 'Diamond Gem' });
+  }
+  
+  // Eclipse Blood Moon
+  if (u.eclipseAtkBuff) {
+    buffs.push({ stat: 'atk', value: u.eclipseAtkBuff, source: 'Eclipse: Blood Moon' });
+  }
+  
+  return buffs;
+}
+
+function getHpBuffBreakdown(unitId) {
+  const u = S.units[unitId];
+  if (!u) return [];
+  
+  const buffs = [];
+  const pos = findUnitPos(unitId);
+  if (!pos) return buffs;
+  
+  // Wizard NPC stacking aura (HP)
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = pos.r + dr, nc = pos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const adjId = S.board[nr][nc];
+      if (adjId && S.units[adjId] && S.units[adjId].owner === u.owner && S.units[adjId].effectId === "stacking_aura") {
+        const wizard = S.units[adjId];
+        const stacks = wizard.wizardStacks || 1;
+        buffs.push({ stat: 'hp', value: stacks, source: `Wizard NPC (+${stacks})` });
+      }
+    }
+  }
+  
+  // Eclipse buff
+  if (u.eclipseHpBuff) {
+    buffs.push({ stat: 'hp', value: u.eclipseHpBuff, source: 'Eclipse Effect' });
+  }
+  
+  // Legacy hpBuffed
+  if (u.hpBuffed) {
+    buffs.push({ stat: 'hp', value: 1, source: 'Buff' });
+  }
+  
+  return buffs;
+}
+
+function getUnitStatuses(unitId) {
+  const u = S.units[unitId];
+  if (!u) return [];
+  
+  const statuses = [];
+  
+  // Positive statuses
+  if (u.divineShield) {
+    statuses.push({ icon: '🛡️', name: 'Divine Shield (blocks next damage)', positive: true });
+  }
+  if (u.deathWard) {
+    statuses.push({ icon: '💀', name: 'Death Ward (survives lethal once)', positive: true });
+  }
+  if (u.saveState) {
+    statuses.push({ icon: '💾', name: 'Save State (will resurrect)', positive: true });
+  }
+  if (u.untargetable) {
+    statuses.push({ icon: '👻', name: 'Untargetable', positive: true });
+  }
+  if (u.immune) {
+    statuses.push({ icon: '✨', name: 'Immune', positive: true });
+  }
+  if (u.mightBlessing) {
+    statuses.push({ icon: '⚔️', name: 'Blessing of Might', positive: true });
+  }
+  if (u.vigorBlessing) {
+    statuses.push({ icon: '⚡', name: 'Blessing of Vigor', positive: true });
+  }
+  if (u.kingsBlessing) {
+    statuses.push({ icon: '👑', name: 'Blessing of Kings', positive: true });
+  }
+  
+  // Negative statuses
+  if (u.frozen) {
+    statuses.push({ icon: '❄️', name: `Frozen (${u.frozen} turn${u.frozen > 1 ? 's' : ''})`, positive: false });
+  }
+  if (u.rooted) {
+    statuses.push({ icon: '🌿', name: 'Rooted (cannot move)', positive: false });
+  }
+  if (u.judgedWrath) {
+    statuses.push({ icon: '🔥', name: 'Divine Judgment: Wrath', positive: false });
+  }
+  if (u.judgedPride) {
+    statuses.push({ icon: '😤', name: 'Divine Judgment: Pride (buffs suppressed)', positive: false });
+  }
+  if (u.judgedViolence) {
+    statuses.push({ icon: '⛓️', name: 'Divine Judgment: Violence (cannot attack)', positive: false });
+  }
+  
+  return statuses;
+}
+
+function closeCardInspector() {
+  pinnedUnitId = null;
+  const inspector = document.getElementById('cardInspector');
+  if (inspector) inspector.classList.remove('visible');
+}
+
+// Update inspector when game state changes (if a card is pinned)
+function updateCardInspector() {
+  if (pinnedUnitId && S.units[pinnedUnitId]) {
+    updateCardInspectorStats(pinnedUnitId);
+  } else if (pinnedUnitId) {
+    // Unit no longer exists (died), close inspector
+    closeCardInspector();
+  }
 }
 
 
@@ -1960,7 +2277,7 @@ function buildBoardOnce() {
       const cell = document.createElement("div");
       cell.className = "cell";
       cell.id = cellId(vr, c);
-      cell.addEventListener("click", () => onCellClick(vr, c));
+      cell.addEventListener("click", (e) => onCellClick(vr, c, e));
       boardEl.appendChild(cell);
     }
 
@@ -2527,16 +2844,22 @@ function renderAll() {
       // Calculate buffs
       const atkBuff = getAtkBuff(unitId);
       const hpBuff = getHpBuff(unitId);
-      const hpBuffHtml = hpBuff > 0 ? `<span class="buff">+${hpBuff}</span>` : '';
       
-      // Special handling for Final Boss rage mode - show total ATK in purple instead of +X
+      // Display total stats - show in purple if buffed (like Final Boss rage mode)
       let atkDisplayHtml;
-      if (u.effectId === "rage_mode" && atkBuff > 0) {
+      if (atkBuff > 0) {
         const totalAtk = u.atk + atkBuff;
-        atkDisplayHtml = `<span class="rage-atk">${totalAtk}</span>`;
+        atkDisplayHtml = `<span class="buffed-stat">${totalAtk}</span>`;
       } else {
-        const atkBuffHtml = atkBuff > 0 ? `<span class="buff">+${atkBuff}</span>` : '';
-        atkDisplayHtml = `${u.atk}${atkBuffHtml}`;
+        atkDisplayHtml = `${u.atk}`;
+      }
+      
+      let hpDisplayHtml;
+      if (hpBuff > 0) {
+        const totalHp = u.hp + hpBuff;
+        hpDisplayHtml = `<span class="buffed-stat">${totalHp}</span>`;
+      } else {
+        hpDisplayHtml = `${u.hp}`;
       }
       
       // Art display
@@ -2581,7 +2904,7 @@ function renderAll() {
           <div class="unitName">${u.name}</div>
           <div class="unitStats">
             <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${atkDisplayHtml}</div>
-            <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}${hpBuffHtml}</div>
+            <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${hpDisplayHtml}</div>
           </div>
         </div>
       `;
@@ -2660,6 +2983,9 @@ function renderAll() {
   if (selectedUnitId && S.units[selectedUnitId]?.owner === myRole) {
     highlightUnitMoves(selectedUnitId);
   }
+  
+  // Update pinned card inspector if visible
+  updateCardInspector();
 }
 
 if (endTurnBtn) {
@@ -2684,7 +3010,17 @@ if (drawBtn) {
 }
 
 
-function onCellClick(viewRow, col) {
+function onCellClick(viewRow, col, event) {
+  // Shift+Click to pin card to inspector
+  if (event && event.shiftKey) {
+    const row = toServerRow(viewRow);
+    const occId = S.board[row][col];
+    if (occId && S.units[occId]) {
+      showCardInspector(occId);
+    }
+    return;
+  }
+  
   if (myRole !== "gold" && myRole !== "silver") return log("Spectator cannot act.");
   if (S.gameOver) return log("Game over.");
 
