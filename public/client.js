@@ -2155,6 +2155,7 @@ function getEffectiveAtk(unitId) {
 function getAtkBuff(unitId) {
   const u = S.units[unitId];
   if (!u) return 0;
+  if (!S.board) return 0; // Safety check
   
   let buff = 0;
   const pos = findUnitPos(unitId);
@@ -2233,6 +2234,7 @@ function hasAtkBuff(unitId) {
 function getHpBuff(unitId) {
   const u = S.units[unitId];
   if (!u) return 0;
+  if (!S.board) return 0; // Safety check
   
   let buff = 0;
   const pos = findUnitPos(unitId);

@@ -5957,6 +5957,7 @@ function processCheatCodeStart(lobby, boss, config) {
       delete unit.blessingKings;
       delete unit.deathWard;
       delete unit.gemBuffs;
+      delete unit.permBuffs; // Clear permanent buffs too
       
       unit.cheatSwapped = true;
       affectedUnits.push({ id: unitId, name: unit.name, owner: unit.owner, oldAtk, oldHp });
@@ -6373,7 +6374,7 @@ async function processAITurn(lobby) {
       
       // Process move or attack
       if (action.type === "move" || action.type === "attack" || action.type === "attackRow" || action.type === "attackHeart") {
-        await processAIAction(lobby, action, aiRole);
+        await executeAction(lobby, aiRole, action);
         emitGameState(lobby);
         setTimeout(doZeroEnergyAction, baseDelay + Math.random() * randomDelay);
       } else {
