@@ -117,13 +117,33 @@ const SOUND_FILES = {
   move: '/audio/sfx/move.mp3',
   draw: '/audio/sfx/draw.mp3',
   
-  // Deck attack sounds
-  sword: '/audio/sfx/sword.mp3',      // Medieval
-  gunshot: '/audio/sfx/gunshot.mp3',  // Western Skeleton
-  slash: '/audio/sfx/slash.mp3',      // Crimson Vampire
-  twinkle: '/audio/sfx/twinkle.mp3',  // Gem Fairies
-  laser: '/audio/sfx/laser.mp3',      // Aliens
-  retro: '/audio/sfx/retro.mp3',      // 8-Bit Battalion
+  // Card-specific attack sounds
+  sword_slash: '/audio/sfx/sword_slash.mp3',
+  heavy_sword: '/audio/sfx/heavy_sword.mp3',
+  bone_rattle: '/audio/sfx/bone_rattle.mp3',
+  revolver_shot: '/audio/sfx/revolver_shot.mp3',
+  vampire_bite: '/audio/sfx/vampire_bite.mp3',
+  moonlight_strike: '/audio/sfx/moonlight_strike.mp3',
+  fire_breath: '/audio/sfx/fire_breath.mp3',
+  lightning_zap: '/audio/sfx/lightning_zap.mp3',
+  dragon_bite: '/audio/sfx/dragon_bite.mp3',
+  rune_pulse: '/audio/sfx/rune_pulse.mp3',
+  slime_squish: '/audio/sfx/slime_squish.mp3',
+  arrow_shot: '/audio/sfx/arrow_shot.mp3',
+  spear_thrust: '/audio/sfx/spear_thrust.mp3',
+  dog_bite: '/audio/sfx/dog_bite.mp3',
+  ram_impact: '/audio/sfx/ram_impact.mp3',
+  alien_zap: '/audio/sfx/alien_zap.mp3',
+  alien_claw: '/audio/sfx/alien_claw.mp3',
+  spore_burst: '/audio/sfx/spore_burst.mp3',
+  dark_magic: '/audio/sfx/dark_magic.mp3',
+  fairy_sparkle: '/audio/sfx/fairy_sparkle.mp3',
+  wizard_blast: '/audio/sfx/wizard_blast.mp3',
+  '8bit_attack': '/audio/sfx/8bit_attack.mp3',
+  pixel_hit: '/audio/sfx/pixel_hit.mp3',
+  holy_smite: '/audio/sfx/holy_smite.mp3',
+  angelic_chime: '/audio/sfx/angelic_chime.mp3',
+  coffin_slam: '/audio/sfx/coffin_slam.mp3',
   
   // Boss event sounds (wav for seamless looping)
   siren: '/audio/sfx/siren.wav',      // Void collapse countdown (loopable)
@@ -142,14 +162,159 @@ const UNIVERSAL_SOUNDS = {
   draw: 'draw'     // All draws use draw.mp3
 };
 
-// Deck-based attack sounds - all units in a deck use the same attack sound
-const DECK_ATTACK_SOUNDS = {
-  medieval: 'sword',
-  skeleton: 'gunshot',
-  vampire: 'slash',
-  fairy: 'twinkle',
-  alien: 'laser',
-  '8bit': 'retro',
+// Card-specific attack sounds mapping
+const CARD_ATTACK_SOUNDS = {
+  // Sword Slash - light/medium sword
+  squire: 'sword_slash',
+  knight: 'sword_slash',
+  peasant: 'sword_slash',
+  battlefieldmedic: 'sword_slash',
+  knighterrant: 'sword_slash',
+  moonlitbladedancer: 'sword_slash',
+  starlitchampion: 'sword_slash',
+  moonshadowwarden: 'sword_slash',
+  finalboss: 'sword_slash',
+  
+  // Heavy Sword - two-handed
+  crusader: 'heavy_sword',
+  paladin: 'heavy_sword',
+  royalguard: 'heavy_sword',
+  garnetqueen: 'heavy_sword',
+  redwizard: 'heavy_sword',
+  bluewizard: 'heavy_sword',
+  
+  // Bone Rattle - skeleton attacks
+  bonedeputy: 'bone_rattle',
+  graverobber: 'bone_rattle',
+  undertaker: 'bone_rattle',
+  bonecolossus: 'bone_rattle',
+  thehangedman: 'bone_rattle',
+  ghostlystampede: 'bone_rattle',
+  coffintrapper: 'bone_rattle',
+  
+  // Revolver Shot - western guns
+  bonerevolver: 'revolver_shot',
+  undeadsheriff: 'revolver_shot',
+  phantomscout: 'revolver_shot',
+  dustyrattler: 'revolver_shot',
+  
+  // Vampire Bite - fanged creatures
+  bloodfamiliar: 'vampire_bite',
+  nightstalker: 'vampire_bite',
+  vampirespawn: 'vampire_bite',
+  nosferatu: 'vampire_bite',
+  bloodcountess: 'vampire_bite',
+  eldervampire: 'vampire_bite',
+  vampirelord: 'vampire_bite',
+  thrall: 'vampire_bite',
+  
+  // Moonlight Strike - lunar/celestial
+  moonsentinel: 'moonlight_strike',
+  lunarpriestess: 'moonlight_strike',
+  moonflaresorceress: 'moonlight_strike',
+  starinvoker: 'moonlight_strike',
+  stonegiant: 'moonlight_strike',
+  nightshadeambusher: 'moonlight_strike',
+  
+  // Fire Breath - volcanic dragon only
+  volcanicdragon: 'fire_breath',
+  
+  // Lightning Zap - storm drake
+  stormdrake: 'lightning_zap',
+  
+  // Dragon Bite - dragon creatures
+  wyrmwhelp: 'dragon_bite',
+  cinderwing: 'dragon_bite',
+  chronodrake: 'dragon_bite',
+  
+  // Rune Pulse - wizard's rune
+  wizardsrune: 'rune_pulse',
+  
+  // Slime Squish - slime creatures
+  slimesprite: 'slime_squish',
+  slimeling: 'slime_squish',
+  
+  // Arrow Shot - archers
+  archer: 'arrow_shot',
+  starweavearcher: 'arrow_shot',
+  seraphichunter: 'arrow_shot',
+  
+  // Spear Thrust - polearm users
+  manatarms: 'spear_thrust',
+  shieldbearer: 'spear_thrust',
+  
+  // Dog Bite - war hound
+  warhound: 'dog_bite',
+  
+  // Ram Impact - siege
+  siegeram: 'ram_impact',
+  
+  // Alien Zap - energy weapons
+  voiddrone: 'alien_zap',
+  spittercrawler: 'alien_zap',
+  energyleech: 'alien_zap',
+  neuralharvester: 'alien_zap',
+  psionicoverseer: 'alien_zap',
+  ufoscraper: 'alien_zap',
+  
+  // Alien Claw - creature attacks
+  scavengerlarva: 'alien_claw',
+  phaseskirmisher: 'alien_claw',
+  burrowerbeast: 'alien_claw',
+  adaptivecolossus: 'alien_claw',
+  eclipsedevourer: 'alien_claw',
+  voidbroodmother: 'alien_claw',
+  
+  // Spore Burst - spore titan
+  sporetitan: 'spore_burst',
+  
+  // Dark Magic - shadow casters
+  cryptkeeper: 'dark_magic',
+  bloodpriest: 'dark_magic',
+  soulcollector: 'dark_magic',
+  
+  // Fairy Sparkle - gem fairies
+  rubysprite: 'fairy_sparkle',
+  emeraldforager: 'fairy_sparkle',
+  sapphiredancer: 'fairy_sparkle',
+  topazminer: 'fairy_sparkle',
+  amethystenchanter: 'fairy_sparkle',
+  diamondguardian: 'fairy_sparkle',
+  opaldevourer: 'fairy_sparkle',
+  moonstonewitch: 'fairy_sparkle',
+  prismaticfairy: 'fairy_sparkle',
+  gemshard: 'fairy_sparkle',
+  
+  // Wizard Blast - arcane mages
+  mirrorwizard: 'wizard_blast',
+  wizardnpc: 'wizard_blast',
+  meditationmonk: 'wizard_blast',
+  manasiphonmage: 'wizard_blast',
+  
+  // 8-Bit Attack - retro characters
+  pixelproducer: '8bit_attack',
+  skeletonwarrior8bit: '8bit_attack',
+  healerfairy: '8bit_attack',
+  barrel: '8bit_attack',
+  newgameplus: '8bit_attack',
+  
+  // Pixel Hit - pixel token
+  pixel: 'pixel_hit',
+  
+  // Holy Smite - powerful angels
+  archangelmichael: 'holy_smite',
+  archangelgabriel: 'holy_smite',
+  angelofdestruction: 'holy_smite',
+  luciferfallenangel: 'holy_smite',
+  
+  // Angelic Chime - gentle angels
+  cherubhymnist: 'angelic_chime',
+  angelicattendant: 'angelic_chime',
+  archangelraphael: 'angelic_chime',
+  archangeluriel: 'angelic_chime',
+  
+  // Coffin Slam - coffin structure
+  coffin: 'coffin_slam',
 };
 
 // Audio cache for preloaded sounds
@@ -288,14 +453,18 @@ function playCardSound(cardKey, action, archetype) {
     return;
   }
   
-  // Attack - archetype-based sounds
-  if (action === 'attack' && archetype) {
-    const deckSound = DECK_ATTACK_SOUNDS[archetype];
-    if (deckSound) {
-      console.log("[SFX] Playing archetype attack sound:", deckSound, "for archetype:", archetype);
-      playSFX(deckSound);
+  // Attack - card-specific sounds
+  if (action === 'attack') {
+    const cardSound = CARD_ATTACK_SOUNDS[cardKey];
+    if (cardSound) {
+      console.log("[SFX] Playing card attack sound:", cardSound, "for card:", cardKey);
+      playSFX(cardSound);
       return;
     }
+    // Fallback to sword_slash for unmapped cards
+    console.log("[SFX] No specific sound for card:", cardKey, "- using sword_slash fallback");
+    playSFX('sword_slash');
+    return;
   }
   
   console.log("[SFX] No sound found for:", cardKey, action, archetype);
@@ -958,8 +1127,9 @@ function updateCardInspectorStats(unitId) {
   const atkBuffs = getAtkBuffBreakdown(unitId);
   const hpBuffs = getHpBuffBreakdown(unitId);
   
-  const totalAtkBuff = atkBuffs.reduce((sum, b) => sum + b.value, 0);
-  const totalHpBuff = hpBuffs.reduce((sum, b) => sum + b.value, 0);
+  // Exclude permanent buffs from calculation (they're already baked into unit stats)
+  const totalAtkBuff = atkBuffs.filter(b => !b.permanent).reduce((sum, b) => sum + b.value, 0);
+  const totalHpBuff = hpBuffs.filter(b => !b.permanent).reduce((sum, b) => sum + b.value, 0);
   
   const effectiveAtk = u.atk + totalAtkBuff;
   const effectiveHp = u.hp + totalHpBuff;
@@ -985,13 +1155,14 @@ function updateCardInspectorStats(unitId) {
     
     for (const buff of allBuffs) {
       const isDebuff = buff.value < 0;
-      const itemClass = isDebuff ? 'inspector-buff-item debuff' : 'inspector-buff-item buff';
+      const itemClass = isDebuff ? 'inspector-buff-item debuff' : (buff.permanent ? 'inspector-buff-item buff permanent' : 'inspector-buff-item buff');
       const sign = buff.value > 0 ? '+' : '';
       const statType = buff.stat === 'atk' ? 'ATK' : 'HP';
+      const permLabel = buff.permanent ? ' (perm)' : '';
       
       buffsHtml += `
         <div class="${itemClass}">
-          <span class="buff-value">${sign}${buff.value} ${statType}</span>
+          <span class="buff-value">${sign}${buff.value} ${statType}${permLabel}</span>
           <span class="buff-source">— ${buff.source}</span>
         </div>`;
     }
@@ -1030,6 +1201,11 @@ function getAtkBuffBreakdown(unitId) {
   const buffs = [];
   const pos = findUnitPos(unitId);
   if (!pos) return buffs;
+  
+  // Check for War Shrine buff tile (+1 ATK to all units in that row)
+  if (S.buffTiles && playerHasRowBuffTile(u.owner, "atk_row_buff", pos.r)) {
+    buffs.push({ stat: 'atk', value: 1, source: 'War Shrine (tile)' });
+  }
   
   // Check all adjacent units for aura effects
   for (let dr = -1; dr <= 1; dr++) {
@@ -1145,9 +1321,27 @@ function getHpBuffBreakdown(unitId) {
   const u = S.units[unitId];
   if (!u) return [];
   
+  // Volcanic scorched units don't benefit from HP buffs
+  if (u.volcanicScorched) return [];
+  
   const buffs = [];
   const pos = findUnitPos(unitId);
   if (!pos) return buffs;
+  
+  // Check for Blood Chalice buff (permanent max HP increase - already in maxHp, display only)
+  if (u.chaliceBuff && u.chaliceBuff > 0) {
+    buffs.push({ stat: 'hp', value: u.chaliceBuff, source: `Blood Chalice (×${u.chaliceBuff})`, permanent: true });
+  }
+  
+  // Check for Armory buff (passive aura - affects all friendly units)
+  if (u.armoryBuffed && u.armoryBuffed > 0) {
+    buffs.push({ stat: 'hp', value: u.armoryBuffed, source: `Armory (×${u.armoryBuffed})` });
+  }
+  
+  // Check for Fortified Ground buff tile (+1 HP to all units of that player)
+  if (S.buffTiles && playerHasBuffTile(u.owner, "hp_buff")) {
+    buffs.push({ stat: 'hp', value: 1, source: 'Fortified Ground (tile)' });
+  }
   
   // Check all adjacent units for aura effects
   for (let dr = -1; dr <= 1; dr++) {
@@ -1179,11 +1373,6 @@ function getHpBuffBreakdown(unitId) {
     buffs.push({ stat: 'hp', value: u.eclipseHpBuff, source: 'Eclipse Effect' });
   }
   
-  // Legacy hpBuffed
-  if (u.hpBuffed) {
-    buffs.push({ stat: 'hp', value: 1, source: 'Buff' });
-  }
-  
   // Permanent buffs from spells/effects (stored on unit)
   if (u.permBuffs && Array.isArray(u.permBuffs)) {
     for (const buff of u.permBuffs) {
@@ -1194,6 +1383,35 @@ function getHpBuffBreakdown(unitId) {
   }
   
   return buffs;
+}
+
+// Helper to check if a player has a unit on a specific buff tile
+function playerHasBuffTile(role, buffId) {
+  if (!S.buffTiles) return false;
+  for (const key in S.buffTiles) {
+    const buff = S.buffTiles[key];
+    if (buff.id !== buffId) continue;
+    const unitId = S.board[buff.row][buff.col];
+    if (unitId && S.units[unitId] && S.units[unitId].owner === role) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Check if player has a unit on a row-based buff tile that affects a specific row
+function playerHasRowBuffTile(role, buffId, targetRow) {
+  if (!S.buffTiles) return false;
+  for (const key in S.buffTiles) {
+    const buff = S.buffTiles[key];
+    if (buff.id !== buffId) continue;
+    if (buff.row !== targetRow) continue; // Must be in the same row
+    const unitId = S.board[buff.row][buff.col];
+    if (unitId && S.units[unitId] && S.units[unitId].owner === role) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function getUnitStatuses(unitId) {
@@ -1227,6 +1445,9 @@ function getUnitStatuses(unitId) {
   if (u.kingsBlessing) {
     statuses.push({ icon: '👑', name: 'Blessing of Kings', positive: true });
   }
+  if (u.cheatBuffed) {
+    statuses.push({ icon: '🎮', name: 'Cheat Buffed', positive: true });
+  }
   
   // Negative statuses
   if (u.frozen) {
@@ -1243,6 +1464,12 @@ function getUnitStatuses(unitId) {
   }
   if (u.judgedViolence) {
     statuses.push({ icon: '⛓️', name: 'Divine Judgment: Violence (cannot attack)', positive: false });
+  }
+  if (u.cheatSwapped) {
+    statuses.push({ icon: '🔄', name: 'Stats Swapped (HOWDOITURNTHISON)', positive: false });
+  }
+  if (u.volcanicScorched) {
+    statuses.push({ icon: '🌋', name: 'Volcanic Scorched (HP buffs suppressed)', positive: false });
   }
   
   return statuses;
@@ -2022,11 +2249,11 @@ function updateActiveBuffsDisplay() {
   
   const BUFF_INFO = {
     'energy_buff': { icon: '⚡', name: 'Energy Well', class: 'energy' },
-    'heal_buff': { icon: '💚', name: 'Healing Spring', class: 'heal' },
+    'heal_buff': { icon: '💧', name: 'Healing Spring', class: 'heal' },
     'atk_row_buff': { icon: '⚔️', name: 'War Shrine', class: 'attack' },
-    'draw_buff': { icon: '🎴', name: 'Mystic Altar', class: 'draw' },
-    'move_buff': { icon: '💨', name: 'Wind Temple', class: 'move' },
-    'hp_buff': { icon: '🛡️', name: 'Stone Circle', class: 'hp' }
+    'draw_buff': { icon: '📚', name: 'Ancient Library', class: 'draw' },
+    'move_buff': { icon: '👢', name: 'Swift Boots', class: 'move' },
+    'hp_buff': { icon: '🛡️', name: 'Fortified Ground', class: 'hp' }
   };
   
   // Find which buff tiles have the player's units on them
@@ -2161,6 +2388,9 @@ function getAtkBuff(unitId) {
   const pos = findUnitPos(unitId);
   if (!pos) return buff;
   
+  // War Shrine buff tile (+1 ATK to all units in that row if player has unit on tile)
+  if (playerHasRowBuffTile(u.owner, "atk_row_buff", pos.r)) buff += 1;
+  
   // Check all adjacent units for aura effects
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
@@ -2236,9 +2466,18 @@ function getHpBuff(unitId) {
   if (!u) return 0;
   if (!S.board) return 0; // Safety check
   
+  // Volcanic scorched units don't benefit from HP buffs
+  if (u.volcanicScorched) return 0;
+  
   let buff = 0;
   const pos = findUnitPos(unitId);
   if (!pos) return buff;
+  
+  // Armory buff (passive aura)
+  if (u.armoryBuffed) buff += u.armoryBuffed;
+  
+  // Fortified Ground buff tile (+1 HP to all units of that player)
+  if (playerHasBuffTile(u.owner, "hp_buff")) buff += 1;
   
   // Legacy hpBuffed flag
   if (u.hpBuffed) buff += 1;
@@ -2269,8 +2508,17 @@ function hasHpBuff(unitId) {
   const u = S.units[unitId];
   if (!u) return false;
   
-  // Check auras
+  // Volcanic scorched units don't benefit from HP buffs
+  if (u.volcanicScorched) return false;
+  
+  // Check Armory buff
+  if (u.armoryBuffed && u.armoryBuffed > 0) return true;
+  
+  // Check auras and tile buffs
   if (getHpBuff(unitId) > 0) return true;
+  
+  // Check Fortified Ground tile
+  if (playerHasBuffTile(u.owner, "hp_buff")) return true;
   
   // Check permanent buffs
   if (u.permBuffs && Array.isArray(u.permBuffs)) {
@@ -6125,6 +6373,9 @@ socket.on("state", (st) => {
   if (st.hand !== undefined) {
     const newHandCount = Array.isArray(st.hand) ? st.hand.length : 0;
     
+    // Debug: log canDraw value
+    console.log(`[STATE] canDraw received: ${st.canDraw}, hand length: ${newHandCount}`);
+    
     // Detect player draw (hand count increased)
     if (newHandCount > prevMyHandCount && prevMyHandCount > 0) {
       animatePlayerDraw(newHandCount - prevMyHandCount);
@@ -6138,6 +6389,8 @@ socket.on("state", (st) => {
     myMaxEnergy = st.maxEnergy ?? 0;
     canDraw = !!st.canDraw;
     renderHand();
+  } else {
+    console.log(`[STATE] WARNING: st.hand is undefined!`);
   }
 
   // Handle opponent info
@@ -7069,7 +7322,22 @@ function showCampaignVictoryPopup(data) {
     'overchargebolt': 'Overcharge Bolt',
     'arcanerift': 'Arcane Rift',
     'dragonsfury': "Dragon's Fury",
-    'sheep': 'Sheep'
+    'sheep': 'Sheep',
+    // 8-Bit Battalion
+    'slimesprite': 'Slime Sprite',
+    'skeletonwarrior8bit': 'Skeleton Warrior',
+    'barrel': 'Barrel',
+    'healerfairy': 'Healer Fairy',
+    'bosskey': 'Boss Key',
+    'newgameplus': 'New Game+',
+    'knighterrant': 'Knight Errant',
+    'pixelproducer': 'Pixel Producer',
+    'cheatcode': 'Cheat Code',
+    'savestate': 'Save State',
+    'wizardnpc': 'Wizard NPC',
+    'finalboss': 'Final Boss',
+    'resetbutton': 'Reset Button',
+    'ragequit': 'Rage Quit'
   };
   
   // Slot machine reveal animation
@@ -7194,7 +7462,26 @@ function showCampaignVictoryPopup(data) {
     'overchargebolt': '/images/Overcharge Bolt.png',
     'arcanerift': '/images/Arcane Rift.png',
     'dragonsfury': '/images/Dragons Fury.png',
-    'sheep': '/images/Sheep.png'
+    'sheep': '/images/Sheep.png',
+    // 8-Bit Battalion
+    'slimesprite': '/images/Slime Sprite.png',
+    'skeletonwarrior8bit': '/images/Skeleton Warrior 8bit.png',
+    'barrel': '/images/Barrel.png',
+    'healerfairy': '/images/Healer Fairy.png',
+    'bosskey': '/images/Boss Key.png',
+    'newgameplus': '/images/New Game Plus.png',
+    'knighterrant': '/images/Knight Errant.png',
+    'pixelproducer': '/images/Pixel Producer.png',
+    'cheatcode': '/images/Cheat Code.png',
+    'savestate': '/images/Save State.png',
+    'wizardnpc': '/images/Wizard NPC.png',
+    'finalboss': '/images/Final Boss.png',
+    'resetbutton': '/images/Reset Button.png',
+    'ragequit': '/images/Rage Quit.png',
+    'blessingofmight': '/images/Blessing of Might.png',
+    'blessingofvigor': '/images/Blessing of Vigor.png',
+    'blessingofkings': '/images/Blessing of Kings.png',
+    'blessingofprotection': '/images/Blessing of Protection.png'
   };
   
   // Card rarities for visual effects

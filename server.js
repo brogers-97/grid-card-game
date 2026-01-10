@@ -421,9 +421,9 @@ const DECKS = {
       { key: "royalguard", name: "Royal Guard", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "cleave", effectDesc: "PASSIVE: Deals half damage to adjacent enemies.", art: "/images/Royal Guard.png", rarity: "rare" },
       { key: "paladin", name: "Paladin", atk: 6, hp: 5, cost: 4, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 energy.", art: "/images/Paladin.png", rarity: "legendary" },
       { key: "siegeram", name: "Battering Ram", atk: 2, hp: 6, cost: 3, type: "monster", effect: "passive", effectId: "siege", effectDesc: "PASSIVE: 2x damage to rows.", art: "/images/Battering Ram.png", rarity: "rare" },
-      { key: "warbanner", name: "War Banner", atk: 0, hp: 4, cost: 2, type: "spell", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies +1 ATK.", art: "/images/War Banner.png", rarity: "rare" },
-      { key: "shrine", name: "Healing Shrine", atk: 0, hp: 5, cost: 3, type: "spell", effect: "startOfTurn", effectId: "shrine_heal", effectDesc: "START: Heal row allies 1 HP.", art: "/images/Healing Shrine.png", rarity: "rare" },
-      { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "spell", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: Deployed units +1 HP. Stacks.", art: "/images/Armory.png", rarity: "rare" },
+      { key: "warbanner", name: "War Banner", atk: 0, hp: 4, cost: 2, type: "structure", effect: "passive", effectId: "attack_aura", effectDesc: "PASSIVE: Adjacent allies +1 ATK.", art: "/images/War Banner.png", rarity: "rare" },
+      { key: "shrine", name: "Healing Shrine", atk: 0, hp: 5, cost: 3, type: "structure", effect: "startOfTurn", effectId: "shrine_heal", effectDesc: "START: Heal row allies 1 HP.", art: "/images/Healing Shrine.png", rarity: "rare" },
+      { key: "armory", name: "Armory", atk: 0, hp: 4, cost: 3, type: "structure", effect: "passive", effectId: "armory_buff", effectDesc: "PASSIVE: All friendly units +1 HP. Stacks.", art: "/images/Armory.png", rarity: "rare" },
       { key: "castlewalls", name: "Castle Walls", atk: 0, hp: 0, cost: 4, type: "spell", effect: "instant", effectId: "fortify_row", effectDesc: "INSTANT: This row +15 HP.", art: "/images/Castle Walls.png", requiresTarget: "row", rarity: "common" },
       { key: "treasury", name: "King's Treasury", atk: 0, hp: 0, cost: 2, type: "spell", effect: "instant", effectId: "draw_two", effectDesc: "INSTANT: Draw 2 cards.", art: "/images/Kings Treasury.png", rarity: "common" },
       { key: "rally", name: "Rallying Cry", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "double_attack", effectDesc: "INSTANT: Target unit can attack twice.", art: "/images/Rallying Cry.png", requiresTarget: "unit", rarity: "common" },
@@ -1492,6 +1492,16 @@ function isAdjacent(r1, c1, r2, c2) { return Math.abs(r1-r2) <= 1 && Math.abs(c1
 // Cardinal adjacent = up, down, left, right only (no diagonal)
 function isCardinalAdjacent(r1, c1, r2, c2) { return (Math.abs(r1-r2) === 1 && c1 === c2) || (Math.abs(c1-c2) === 1 && r1 === r2); }
 
+// Check if a unit can be spawned at a tile (not in enemy home row with HP)
+function canSpawnAtTile(state, row, col, owner) {
+  if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return false;
+  if (state.board[row][col]) return false; // Tile occupied
+  const enemy = enemyOf(owner);
+  const isEnemyHomeRow = (enemy === "gold" && row <= 1) || (enemy === "silver" && row >= 5);
+  if (isEnemyHomeRow && state.rowHP[row] > 0) return false;
+  return true;
+}
+
 // Add unit's card to owner's discard pile when it dies
 function discardUnitCard(lobby, unit) {
   if (!unit || !unit.owner) return;
@@ -2065,7 +2075,11 @@ function getArmoryBonus(state, role) {
   for (const id in state.units) {
     if (state.units[id].owner === role && state.units[id].effectId === "armory_buff") {
       bonus += 1;
+      console.log(`[ARMORY DEBUG] Found Armory for ${role}, total bonus now: ${bonus}`);
     }
+  }
+  if (bonus > 0) {
+    console.log(`[ARMORY DEBUG] getArmoryBonus returning ${bonus} for ${role}`);
   }
   return bonus;
 }
@@ -2590,6 +2604,7 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
           // Only reduce HP if above 1
           if (target.hp > 1) {
             target.hp = 1;
+            target.volcanicScorched = true; // Mark as scorched - suppresses HP buffs
             affectedUnits.add(targetId);
           }
         }
@@ -2642,8 +2657,8 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
     let spawned = 0;
     for (const tile of adjacentTiles) {
       if (spawned >= 2) break;
-      if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
-      if (state.board[tile.r][tile.c]) continue;
+      // Use canSpawnAtTile to prevent spawning in enemy home rows with HP
+      if (!canSpawnAtTile(state, tile.r, tile.c, deadUnitOwner)) continue;
       
       const slimelingId = genId();
       state.units[slimelingId] = {
@@ -2763,6 +2778,17 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
         sourcePos: deadPos,
         sourceUnitId: null,
         targets: targetPositions
+      };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    } else {
+      // Still show explosion effect even with no targets hit
+      const animData = {
+        type: "effect",
+        effectType: "barrel_explosion",
+        sourcePos: deadPos,
+        sourceUnitId: null,
+        targets: [deadPos] // Use barrel's position as target for visual
       };
       if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
       if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
@@ -3119,7 +3145,7 @@ function processEndOfTurnEffects(lobby, role) {
           { r: pos.r - 1, c: pos.c + 1 },
           { r: pos.r + 1, c: pos.c - 1 },
           { r: pos.r + 1, c: pos.c + 1 }
-        ].filter(t => t.r >= 0 && t.r < ROWS && t.c >= 0 && t.c < COLS && !state.board[t.r][t.c]);
+        ].filter(t => canSpawnAtTile(state, t.r, t.c, u.owner));
         
         if (adjacentTiles.length > 0) {
           const tile = adjacentTiles[Math.floor(Math.random() * adjacentTiles.length)];
@@ -4550,21 +4576,29 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         continue;
       }
       
+      // Use originalCard if available to get unbuffed stats, otherwise reconstruct
+      const originalCard = unit.originalCard;
       const card = {
         id: genId(),
         key: unit.key,
-        name: unit.name,
-        atk: unit.atk,
-        hp: unit.maxHp || unit.hp,
-        maxHp: unit.maxHp || unit.hp,
-        cost: unit.cost || 0,
-        type: unit.type,
-        effect: unit.effect,
-        effectId: unit.effectId,
-        effectDesc: unit.effectDesc,
-        art: unit.art,
-        rarity: unit.rarity
+        name: originalCard ? originalCard.name : unit.name,
+        atk: originalCard ? originalCard.atk : unit.atk,
+        hp: originalCard ? originalCard.hp : (unit.maxHp || unit.hp),
+        maxHp: originalCard ? originalCard.hp : (unit.maxHp || unit.hp),
+        cost: originalCard ? originalCard.cost : (unit.cost || 0),
+        type: originalCard ? originalCard.type : unit.type,
+        effect: originalCard ? originalCard.effect : unit.effect,
+        effectId: originalCard ? originalCard.effectId : unit.effectId,
+        effectDesc: originalCard ? originalCard.effectDesc : unit.effectDesc,
+        art: originalCard ? originalCard.art : unit.art,
+        rarity: originalCard ? originalCard.rarity : unit.rarity
       };
+      
+      // Copy over special properties from original card
+      if (originalCard) {
+        if (originalCard.range) card.range = originalCard.range;
+        if (originalCard.stationary) card.stationary = originalCard.stationary;
+      }
       
       player.deck.push(card);
       state.board[item.r][item.c] = null;
@@ -5152,6 +5186,9 @@ function checkChaliceConsumption(lobby, unitId, row, col) {
   const oldMaxHp = unit.maxHp || unit.hp;
   unit.maxHp = oldMaxHp + 1;
   unit.hp = unit.maxHp; // Heal to new max
+  
+  // Track chalice buff for display (increment if already has one)
+  unit.chaliceBuff = (unit.chaliceBuff || 0) + 1;
   
   // Log the consumption
   logToLobby(lobby, `🍷 ${unit.name} consumed a Blood Chalice! +1 Max HP, fully healed!`);
@@ -6096,11 +6133,28 @@ function emitGameState(lobby) {
   const goldHpBuff = getHpBuffBonus(state, "gold");
   const silverHpBuff = getHpBuffBonus(state, "silver");
   
+  // Calculate Armory bonus for each player (passive aura - affects all units)
+  const goldArmoryBonus = getArmoryBonus(state, "gold");
+  const silverArmoryBonus = getArmoryBonus(state, "silver");
+  
   // Create units with effective stats
   const unitsWithBuffs = {};
   for (const uid in state.units) {
     const u = state.units[uid];
+    
+    // Volcanic scorched units don't benefit from HP buffs (but can still be healed)
+    if (u.volcanicScorched) {
+      unitsWithBuffs[uid] = { 
+        ...u, 
+        displayHp: u.hp,
+        displayMaxHp: u.maxHp || u.hp,
+        hpBuffed: false
+      };
+      continue;
+    }
+    
     const tileHpBuff = u.owner === "gold" ? goldHpBuff : silverHpBuff;
+    const armoryBuff = u.owner === "gold" ? goldArmoryBonus : silverArmoryBonus;
     
     // Check for Moon Flare Sorceress aura (+1 HP to adjacent allies)
     let moonflareHpBuff = 0;
@@ -6121,12 +6175,16 @@ function emitGameState(lobby) {
       }
     }
     
-    const totalHpBuff = tileHpBuff + moonflareHpBuff;
+    // Don't give Armory buff to the Armory itself
+    const armoryBuffForUnit = (u.effectId === "armory_buff") ? 0 : armoryBuff;
+    
+    const totalHpBuff = tileHpBuff + moonflareHpBuff + armoryBuffForUnit;
     unitsWithBuffs[uid] = { 
       ...u, 
       displayHp: u.hp + totalHpBuff,
       displayMaxHp: (u.maxHp || u.hp) + totalHpBuff,
-      hpBuffed: totalHpBuff > 0
+      hpBuffed: totalHpBuff > 0,
+      armoryBuffed: armoryBuffForUnit > 0 ? armoryBuffForUnit : undefined // Track armory buff for client display
     };
   }
   
@@ -6298,9 +6356,12 @@ async function processAITurn(lobby) {
   if (aiPlayer.energy === 0) {
     logToLobby(lobby, "Silver has no energy - doing free actions only");
     
-    // Do the draw first if needed (free action)
-    if (!aiPlayer.hasDrawn && (aiPlayer.deck.length > 0 || aiPlayer.discard.length > 0)) {
+    // Do the draw first if needed (free action) - but only if hand isn't full
+    if (!aiPlayer.hasDrawn && aiPlayer.hand.length < MAX_HAND_SIZE && (aiPlayer.deck.length > 0 || aiPlayer.discard.length > 0)) {
       drawCards(lobby, aiRole, 1);
+      aiPlayer.hasDrawn = true;
+    } else {
+      // Mark as drawn even if we couldn't draw (hand full or no cards)
       aiPlayer.hasDrawn = true;
     }
     
@@ -6749,8 +6810,14 @@ async function executeAction(lobby, role, action) {
   switch (action.type) {
     case "drawCard": {
       if (p.hasDrawn) return;
-      if (p.deck.length === 0 && p.discard.length === 0) return;
-      if (p.hand.length >= MAX_HAND_SIZE) return;
+      if (p.deck.length === 0 && p.discard.length === 0) {
+        p.hasDrawn = true; // Mark as drawn even if can't draw (no cards left)
+        return;
+      }
+      if (p.hand.length >= MAX_HAND_SIZE) {
+        p.hasDrawn = true; // Mark as drawn even if can't draw (hand full)
+        return;
+      }
       // Challenge mode: AI draws 3 cards, normal: 1 (or 2 with Ancient Library buff)
       let drawCount = playerHasBuff(state, role, "draw_buff") ? 2 : 1;
       if (lobby.isChallenge && role === "silver") {
@@ -6781,9 +6848,7 @@ async function executeAction(lobby, role, action) {
         p.energy -= effectiveCost;
         p.hand.splice(idx, 1);
         const id = genId();
-        const hpB = getArmoryBonus(state, role);
-        const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: card.hp, maxHp: card.hp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
         if (card.range) unitData.range = card.range;
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
@@ -6832,9 +6897,7 @@ async function executeAction(lobby, role, action) {
         p.energy -= effectiveCost;
         p.hand.splice(idx, 1);
         const id = genId();
-        const hpB = getArmoryBonus(state, role);
-        const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: card.hp, maxHp: card.hp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
         if (card.range) unitData.range = card.range;
         if (card.effectId === "burrow") {
           unitData.untargetable = true;
@@ -6870,8 +6933,7 @@ async function executeAction(lobby, role, action) {
             { r: action.row, c: action.col - 1 }, { r: action.row, c: action.col + 1 }
           ];
           for (const tile of adjacentTiles) {
-            if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
-            if (state.board[tile.r][tile.c]) continue;
+            if (!canSpawnAtTile(state, tile.r, tile.c, role)) continue;
             const gemId = genId();
             state.units[gemId] = {
               id: gemId,
@@ -7142,8 +7204,7 @@ async function executeAction(lobby, role, action) {
           { r: action.toRow, c: action.toCol - 1 }, { r: action.toRow, c: action.toCol + 1 }
         ];
         for (const tile of adjacentTiles) {
-          if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
-          if (state.board[tile.r][tile.c]) continue;
+          if (!canSpawnAtTile(state, tile.r, tile.c, role)) continue;
           const gemId = genId();
           state.units[gemId] = {
             id: gemId,
@@ -7880,6 +7941,10 @@ io.on("connection", (socket) => {
     
     // Pass custom deck cards if available
     lobbies[code].gameState = createGameState(deckId || "medieval", bossDeckId, customDeckCards, null);
+    
+    // Debug: log initial hasDrawn state
+    console.log(`[CAMPAIGN] Created lobby ${code}, gold.hasDrawn=${lobbies[code].gameState.players.gold.hasDrawn}, canDraw=${!lobbies[code].gameState.players.gold.hasDrawn && lobbies[code].gameState.players.gold.hand.length < 10}`);
+    
     socket.emit("role", "gold");
     socket.emit("campaignStart", { 
       code: code, 
@@ -8170,8 +8235,10 @@ io.on("connection", (socket) => {
     const lobby = lobbies[socket.data.lobbyCode];
     
     // Debug logging for action issues
+    console.log(`[ACTION] Received action type: ${payload.type}, lobbyCode: ${socket.data.lobbyCode}, isHost: ${socket.data.isHost}`);
+    
     if (!lobby) {
-      console.log(`[ACTION DEBUG] No lobby found for code: ${socket.data.lobbyCode}`);
+      console.log(`[ACTION DEBUG] No lobby found for code: ${socket.data.lobbyCode}, available lobbies: ${Object.keys(lobbies).join(', ')}`);
       return socket.emit("log", "Lobby not found. Try refreshing the page.");
     }
     if (!lobby.gameStarted) {
@@ -8328,8 +8395,7 @@ io.on("connection", (socket) => {
             { r: row, c: col - 1 }, { r: row, c: col + 1 }
           ];
           for (const tile of adjacentTiles) {
-            if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
-            if (state.board[tile.r][tile.c]) continue;
+            if (!canSpawnAtTile(state, tile.r, tile.c, side)) continue;
             const gemId = genId();
             state.units[gemId] = {
               id: gemId, owner: side, key: "gemshard", name: "Gem Shard",
@@ -8826,9 +8892,8 @@ io.on("connection", (socket) => {
         if (spawn !== role) return socket.emit("log", "Not your spawn.");
         if (state.spawn[spawn]) return socket.emit("log", "Spawn occupied.");
         p.energy -= cost; p.hand.splice(idx, 1);
-        const id = genId(); const hpB = getArmoryBonus(state, role);
-        const maxHp = card.hp + hpB;
-        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+        const id = genId();
+        const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: card.hp, maxHp: card.hp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
         // Preserve range for ranged attackers
         if (card.range) unitData.range = card.range;
         // Preserve stolen flag for Soul Collector cards
@@ -8907,9 +8972,8 @@ io.on("connection", (socket) => {
       
       if (!canDeploy) return socket.emit("log", "Can't deploy here.");
       p.energy -= cost; p.hand.splice(idx, 1);
-      const id = genId(); const hpB = getArmoryBonus(state, role);
-      const maxHp = card.hp + hpB;
-      const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: maxHp, maxHp: maxHp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
+      const id = genId();
+      const unitData = { id, owner: role, key: card.key, name: card.name, atk: card.atk, hp: card.hp, maxHp: card.hp, cost: card.cost, type: card.type || "monster", effect: card.effect, effectId: card.effectId, effectDesc: card.effectDesc, art: card.art, originalCard: card };
       // Preserve range for ranged attackers
       if (card.range) unitData.range = card.range;
       // Preserve stolen flag for Soul Collector cards
@@ -8954,8 +9018,7 @@ io.on("connection", (socket) => {
         ];
         let spawned = false;
         for (const tile of adjacentTiles) {
-          if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
-          if (state.board[tile.r][tile.c]) continue; // Skip occupied
+          if (!canSpawnAtTile(state, tile.r, tile.c, role)) continue;
           // Found empty tile, spawn gem
           const gemId = genId();
           state.units[gemId] = {
@@ -9085,8 +9148,7 @@ io.on("connection", (socket) => {
           { r: toRow, c: toCol - 1 }, { r: toRow, c: toCol + 1 }
         ];
         for (const tile of adjacentTiles) {
-          if (tile.r < 0 || tile.r >= ROWS || tile.c < 0 || tile.c >= COLS) continue;
-          if (state.board[tile.r][tile.c]) continue; // Skip occupied
+          if (!canSpawnAtTile(state, tile.r, tile.c, role)) continue;
           // Found empty tile, spawn gem
           const gemId = genId();
           state.units[gemId] = {
