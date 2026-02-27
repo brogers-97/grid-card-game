@@ -507,6 +507,14 @@ const isCampaign = urlParams.get('campaign') === '1';
 const bossName = urlParams.get('boss');
 const bossId = urlParams.get('bossId');
 const canAutoPlay = urlParams.get('canAutoPlay') === '1';
+const playtestMode = urlParams.get('playtest') === '1';
+
+// Playtest state - stores both sides' data for side toggling
+let playtestData = {
+  goldHand: [], goldEnergy: 0, goldMaxEnergy: 0, goldDeckCount: 0, goldDiscardCount: 0, goldDiscard: [],
+  silverHand: [], silverEnergy: 0, silverMaxEnergy: 0, silverDeckCount: 0, silverDiscardCount: 0, silverDiscard: [],
+  allCards: []
+};
 
 // Set boss-specific background if in campaign mode
 if (isCampaign && bossId) {
@@ -786,7 +794,10 @@ function positionOpponentDiscardTooltip(e) {
 // Rejoin lobby when connected
 socket.on('connect', () => {
   console.log(`[SOCKET] Connected! Socket ID: ${socket.id}`);
-  if (lobbyCode) {
+  if (playtestMode) {
+    console.log(`[SOCKET] Starting playtest mode`);
+    socket.emit('startPlaytest', { username: 'Tester' });
+  } else if (lobbyCode) {
     console.log(`[SOCKET] Attempting to rejoin lobby: ${lobbyCode}, isHost: ${isHost}`);
     socket.emit('rejoinGame', { code: lobbyCode, isHost: isHost });
   } else {
@@ -1282,6 +1293,19 @@ function getAtkBuffBreakdown(unitId) {
     }
   }
   
+  // Void Broodmother - gains +1 ATK per Void Drone on field
+  if (u.effectId === "spawn_drone") {
+    let drones = 0;
+    for (const uid in S.units) {
+      if (S.units[uid].key === "voiddrone" && S.units[uid].owner === u.owner) {
+        drones++;
+      }
+    }
+    if (drones > 0) {
+      buffs.push({ stat: 'atk', value: drones, source: `Brood Power (${drones} Void Drones)` });
+    }
+  }
+  
   // Final Boss rage mode - gains +1 ATK per HP lost
   if (u.effectId === "rage_mode") {
     const hpLost = (u.maxHp || 8) - u.hp;
@@ -1631,6 +1655,12 @@ let effectSourceCells = new Set();
 // Track cells showing effect hit animation (shaking)
 let effectHitCells = new Set();
 
+// Track cells showing heal source glow
+let healSourceCells = new Set();
+
+// Track cells showing heal target glow
+let healTargetCells = new Set();
+
 // Track units being destroyed by void collapse (hide from render)
 let voidDestroyingUnits = new Set();
 
@@ -1909,7 +1939,7 @@ function highlightUnitMoves(unitId) {
   
   // Unit ability checks
   const canDiagonalAttack = u.effectId === "diagonal_attack" || u.effectId === "lifesteal_lord";
-  const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce" || u.effectId === "starweave_ranged";
+  const isRanged = u.effectId === "ranged" || u.effectId === "ranged_pierce" || u.effectId === "starweave_ranged" || u.effectId === "seraphic_range" || u.range;
   const canKnightLeap = u.effectId === "knight_leap";
   const canAbsorbAlly = u.effectId === "absorb_ally";
   const canConsumeGem = u.effectId === "consume_gem";
@@ -2158,12 +2188,19 @@ function highlightUnitMoves(unitId) {
   
   // Check if can attack enemy heart
   // Normal units: must be in the heart's row (row 0 for gold heart, row 6 for silver)
-  // Archers: can attack from 1 row away (so rows 0-1 for gold heart, rows 5-6 for silver)
+  // Ranged units: can attack from (range - 1) rows away
+  // Both defensive rows must be destroyed first
   const enemyHeartRow = enemy === "gold" ? 0 : 6;
   const distanceToHeart = Math.abs(pos.r - enemyHeartRow);
-  const maxHeartRange = isRanged ? 1 : 0;
+  // Ranged units can attack heart from (range - 1) rows away (range 2 = 1 row, range 3 = 2 rows)
+  const maxHeartRange = u.range ? (u.range - 1) : (isRanged ? 1 : 0);
   
-  if (distanceToHeart <= maxHeartRange && !hasAttacked) {
+  // Check if defensive rows are destroyed
+  const wallsDown = enemy === "gold" 
+    ? (S.rowHP[0] <= 0 && S.rowHP[1] <= 0)
+    : (S.rowHP[5] <= 0 && S.rowHP[6] <= 0);
+  
+  if (distanceToHeart <= maxHeartRange && !hasAttacked && wallsDown) {
     // Highlight enemy heart as attackable
     const enemyHeartEl = document.getElementById("enemyHeartHP");
     if (enemyHeartEl) {
@@ -2188,6 +2225,7 @@ function hasBuffTile(buffId) {
 
 
 function isMyTurn() {
+  if (playtestMode) return true;
   return (myRole === "gold" || myRole === "silver") && myRole === activeSide;
 }
 
@@ -2435,6 +2473,15 @@ function getAtkBuff(unitId) {
     }
   }
   
+  // Void Broodmother - gains +1 ATK per Void Drone on field
+  if (u.effectId === "spawn_drone") {
+    for (const uid in S.units) {
+      if (S.units[uid].key === "voiddrone" && S.units[uid].owner === u.owner) {
+        buff += 1;
+      }
+    }
+  }
+  
   // Final Boss - gains +1 ATK per HP lost (rage_mode)
   if (u.effectId === "rage_mode" && u.maxHp) {
     buff += (u.maxHp - u.hp);
@@ -2478,9 +2525,6 @@ function getHpBuff(unitId) {
   
   // Fortified Ground buff tile (+1 HP to all units of that player)
   if (playerHasBuffTile(u.owner, "hp_buff")) buff += 1;
-  
-  // Legacy hpBuffed flag
-  if (u.hpBuffed) buff += 1;
   
   // Check all adjacent units for aura effects
   for (let dr = -1; dr <= 1; dr++) {
@@ -2534,6 +2578,9 @@ function sendAction(payload) {
     console.error("[ACTION] Socket not connected! Payload:", payload);
     log("Connection lost. Please refresh the page.", "system");
     return;
+  }
+  if (playtestMode) {
+    payload.playtestRole = myRole;
   }
   console.log("[ACTION] Sending:", payload.type, payload);
   socket.emit("action", payload);
@@ -3033,7 +3080,7 @@ function renderAll() {
 
       applyCls(cellEl);
 
-      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical", "blood-chalice-tile", "gem-rain-warning");
+      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical", "blood-chalice-tile", "gem-rain-warning", "raphael-protected", "war-banner-aura");
       cellEl.removeAttribute("data-buff-icon");
       cellEl.innerHTML = "";
       
@@ -3109,6 +3156,17 @@ function renderAll() {
         cellEl.appendChild(glowDiv);
       }
 
+      // Check if this tile is protected by Archangel Raphael
+      if (S.raphaelProtectedTiles && S.raphaelProtectedTiles.length > 0 && S.raphaelProtectedTiles.some(t => t.r === sr && t.c === c)) {
+        cellEl.classList.add("raphael-protected");
+        console.log("[RAPHAEL] Glow applied to cell", sr, c, cellEl.id);
+      }
+
+      // Check if this tile is in a War Banner aura
+      if (S.warBannerAuraTiles && S.warBannerAuraTiles.length > 0 && S.warBannerAuraTiles.some(t => t.r === sr && t.c === c)) {
+        cellEl.classList.add("war-banner-aura");
+      }
+
       const unitId = S.board[sr][c];
 
       // If there's a unit on a buff tile or void collapse warning, add has-unit class
@@ -3119,6 +3177,9 @@ function renderAll() {
         cellEl.classList.add("has-unit");
       }
       if (unitId && cellEl.classList.contains("ghost-train-warning")) {
+        cellEl.classList.add("has-unit");
+      }
+      if (unitId && cellEl.classList.contains("raphael-protected")) {
         cellEl.classList.add("has-unit");
       }
 
@@ -3206,6 +3267,16 @@ function renderAll() {
         wrap.classList.add("effect-hit");
       }
       
+      // Add heal source glow (healer card shining)
+      if (healSourceCells.has(effectKey)) {
+        wrap.classList.add("heal-source");
+      }
+      
+      // Add heal target glow (healed card)
+      if (healTargetCells.has(effectKey)) {
+        wrap.classList.add("heal-target");
+      }
+      
       // Calculate buffs
       const atkBuff = getAtkBuff(unitId);
       const hpBuff = getHpBuff(unitId);
@@ -3261,12 +3332,27 @@ function renderAll() {
         judgmentOverlay += '<div class="judgment-violence-overlay"></div>';
       }
       
+      // War Banner red sparkle overlay for buffed units
+      let bannerSparkleOverlay = '';
+      if (S.warBannerAuraTiles && S.warBannerAuraTiles.length > 0 && 
+          S.warBannerAuraTiles.some(t => t.r === sr && t.c === c && t.owner === u.owner) &&
+          u.effectId !== "attack_aura") {
+        wrap.classList.add('war-banner-buffed');
+        bannerSparkleOverlay = '<div class="war-banner-sparkles"><div class="wb-spark"></div><div class="wb-spark"></div><div class="wb-spark"></div><div class="wb-spark"></div><div class="wb-spark"></div></div>';
+      }
+      
+      // Rallying Cry gold glow when unit can double attack
+      if (u.canDoubleAttack) {
+        wrap.classList.add('rally-buffed');
+      }
+      
       wrap.innerHTML = `
         <div class="unitArt" style="${artStyle}">${artContent}</div>
         ${effectBadge}
         ${shieldOverlay}
         ${saveStateOverlay}
         ${judgmentOverlay}
+        ${bannerSparkleOverlay}
         <div class="unitInfoOverlay">
           <div class="unitName">${u.name}</div>
           <div class="unitStats">
@@ -3385,6 +3471,13 @@ function onCellClick(viewRow, col, event) {
     if (occId && S.units[occId]) {
       showCardInspector(occId);
     }
+    return;
+  }
+  
+  // Playtest: if a library card is selected, spawn it instead of normal click
+  if (playtestMode && window._ptSelectedCard) {
+    const row = toServerRow(viewRow);
+    playtestBoardClick(row, col);
     return;
   }
   
@@ -3651,8 +3744,8 @@ function onCellClick(viewRow, col, event) {
         // Check if this is a valid attack based on unit abilities
         let canAttack = false;
         const bonusRange = a.bonusRange || 0;
-        const isRangedUnit = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged";
-        const baseRange = isRangedUnit ? 2 : 1;
+        const isRangedUnit = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged" || a.effectId === "seraphic_range" || a.range;
+        const baseRange = a.range ? a.range : (isRangedUnit ? 2 : 1);
         const totalRange = baseRange + bonusRange;
         
         const rowDist = Math.abs(ap.r - tp.r);
@@ -3764,10 +3857,11 @@ function onCellClick(viewRow, col, event) {
     }
   }
   
-  // Ranged units (archer) can attack rows from 2 tiles away
-  const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged";
+  // Ranged units can attack rows from their range distance
+  const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged" || a.effectId === "seraphic_range" || a.range;
   const bonusRange = a.bonusRange || 0;
-  const totalRange = (isRanged ? 2 : 1) + bonusRange;
+  const baseRange = a.range ? a.range : (isRanged ? 2 : 1);
+  const totalRange = baseRange + bonusRange;
   const rowDist = Math.abs(ap.r - row);
   const colDist = Math.abs(ap.c - col);
   const isCardinal = (rowDist > 0 && colDist === 0) || (colDist > 0 && rowDist === 0);
@@ -5516,6 +5610,24 @@ function animateEffect(data) {
     return;
   }
   
+  // Special handling for heal pulse - green glow + pillars
+  if (effectType === "heal_pulse") {
+    animateHealPulse(data.sourcePos, data.targets);
+    return;
+  }
+  
+  // Special handling for heal on kill (Crusader) - big green cross
+  if (effectType === "heal_on_kill" && data.sourcePos) {
+    animateHealOnKill(data.sourcePos);
+    return;
+  }
+  
+  // Special handling for energy bolt (Paladin) - lightning to energy bar
+  if (effectType === "energy_bolt" && data.sourcePos) {
+    animateEnergyBolt(data.sourcePos, data.role);
+    return;
+  }
+  
   // If there's a source unit, add to tracking set so renderAll applies the animation
   if (sourcePos) {
     const key = `${sourcePos.r}-${sourcePos.c}`;
@@ -5798,7 +5910,226 @@ function animateSaveStateRevive(targetPos) {
   playSFX('heal');
 }
 
-// Animate unit movement on board
+// Animate heal pulse - green glow on healed units with light pillars
+function animateHealPulse(sourcePos, targets) {
+  if (!targets || targets.length === 0) return;
+  
+  // Track source cell for heal-source glow (survives re-renders)
+  if (sourcePos) {
+    const srcKey = `${sourcePos.r}-${sourcePos.c}`;
+    healSourceCells.add(srcKey);
+    setTimeout(() => {
+      healSourceCells.delete(srcKey);
+      // Re-apply removal in case render happened
+      const srcViewRow = toViewRow(sourcePos.r);
+      const srcCell = document.getElementById(cellId(srcViewRow, sourcePos.c));
+      if (srcCell) {
+        const srcUnit = srcCell.querySelector('.unit');
+        if (srcUnit) srcUnit.classList.remove('heal-source');
+      }
+    }, 1800);
+    
+    // Apply immediately too
+    const srcViewRow = toViewRow(sourcePos.r);
+    const srcCell = document.getElementById(cellId(srcViewRow, sourcePos.c));
+    if (srcCell) {
+      const srcUnit = srcCell.querySelector('.unit');
+      if (srcUnit) srcUnit.classList.add('heal-source');
+    }
+  }
+  
+  // Track target cells for heal-target glow + crosses
+  targets.forEach((target, i) => {
+    const targetKey = `${target.r}-${target.c}`;
+    healTargetCells.add(targetKey);
+    
+    setTimeout(() => {
+      healTargetCells.delete(targetKey);
+      const viewRow = toViewRow(target.r);
+      const cell = document.getElementById(cellId(viewRow, target.c));
+      if (cell) {
+        const unitEl = cell.querySelector('.unit');
+        if (unitEl) unitEl.classList.remove('heal-target');
+      }
+    }, 2000);
+    
+    // Apply immediately + spawn crosses
+    setTimeout(() => {
+      const viewRow = toViewRow(target.r);
+      const cell = document.getElementById(cellId(viewRow, target.c));
+      if (!cell) return;
+      
+      const unitEl = cell.querySelector('.unit');
+      if (unitEl) unitEl.classList.add('heal-target');
+      
+      // Get cell position to place crosses as fixed overlay on body
+      const rect = cell.getBoundingClientRect();
+      
+      const crossContainer = document.createElement('div');
+      crossContainer.className = 'heal-cross-container';
+      crossContainer.style.position = 'fixed';
+      crossContainer.style.left = rect.left + 'px';
+      crossContainer.style.top = rect.top + 'px';
+      crossContainer.style.width = rect.width + 'px';
+      crossContainer.style.height = rect.height + 'px';
+      crossContainer.style.zIndex = '9999';
+      crossContainer.style.pointerEvents = 'none';
+      
+      for (let p = 0; p < 5; p++) {
+        const cross = document.createElement('div');
+        cross.className = 'heal-cross';
+        const size = 8 + Math.random() * 14;
+        cross.style.setProperty('--cross-size', size + 'px');
+        cross.style.left = (10 + Math.random() * 70) + '%';
+        cross.style.bottom = (5 + Math.random() * 30) + '%';
+        cross.style.animationDelay = (Math.random() * 0.4) + 's';
+        cross.style.animationDuration = (1.2 + Math.random() * 0.8) + 's';
+        crossContainer.appendChild(cross);
+      }
+      
+      document.body.appendChild(crossContainer);
+      setTimeout(() => crossContainer.remove(), 2500);
+    }, i * 100);
+  });
+  
+  playSFX('heal');
+}
+
+// Animate heal on kill (Crusader) - big green cross floats up with glow
+function animateHealOnKill(sourcePos) {
+  const viewRow = toViewRow(sourcePos.r);
+  const cell = document.getElementById(cellId(viewRow, sourcePos.c));
+  if (!cell) return;
+  
+  // Add green glow to the unit via tracking set
+  const srcKey = `${sourcePos.r}-${sourcePos.c}`;
+  healSourceCells.add(srcKey);
+  setTimeout(() => {
+    healSourceCells.delete(srcKey);
+    const c = document.getElementById(cellId(viewRow, sourcePos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('heal-source');
+    }
+  }, 1500);
+  
+  // Apply glow immediately too
+  const unitEl = cell.querySelector('.unit');
+  if (unitEl) unitEl.classList.add('heal-source');
+  
+  // Get cell position on screen to place crosses in body overlay
+  const rect = cell.getBoundingClientRect();
+  
+  // Create cross container as a fixed overlay on document.body
+  const crossContainer = document.createElement('div');
+  crossContainer.className = 'heal-cross-container';
+  crossContainer.style.position = 'fixed';
+  crossContainer.style.left = rect.left + 'px';
+  crossContainer.style.top = rect.top + 'px';
+  crossContainer.style.width = rect.width + 'px';
+  crossContainer.style.height = rect.height + 'px';
+  crossContainer.style.zIndex = '9999';
+  crossContainer.style.pointerEvents = 'none';
+  
+  // Big center cross
+  const bigCross = document.createElement('div');
+  bigCross.className = 'heal-cross heal-cross-big';
+  bigCross.style.setProperty('--cross-size', '28px');
+  bigCross.style.left = '35%';
+  bigCross.style.bottom = '20%';
+  bigCross.style.animationDuration = '1.6s';
+  crossContainer.appendChild(bigCross);
+  
+  // A few smaller ones around it
+  for (let p = 0; p < 3; p++) {
+    const cross = document.createElement('div');
+    cross.className = 'heal-cross';
+    const size = 8 + Math.random() * 10;
+    cross.style.setProperty('--cross-size', size + 'px');
+    cross.style.left = (10 + Math.random() * 70) + '%';
+    cross.style.bottom = (10 + Math.random() * 25) + '%';
+    cross.style.animationDelay = (0.1 + Math.random() * 0.3) + 's';
+    cross.style.animationDuration = (1.2 + Math.random() * 0.6) + 's';
+    crossContainer.appendChild(cross);
+  }
+  
+  document.body.appendChild(crossContainer);
+  setTimeout(() => crossContainer.remove(), 2200);
+  
+  playSFX('heal');
+}
+
+// Animate energy bolt - lightning flies from unit to energy bar
+function animateEnergyBolt(sourcePos, role) {
+  const viewRow = toViewRow(sourcePos.r);
+  const cell = document.getElementById(cellId(viewRow, sourcePos.c));
+  if (!cell) return;
+  
+  const energyBar = document.getElementById("energyDisplay");
+  if (!energyBar) return;
+  
+  const cellRect = cell.getBoundingClientRect();
+  const barRect = energyBar.getBoundingClientRect();
+  
+  // Start from center of the unit cell
+  const startX = cellRect.left + cellRect.width / 2;
+  const startY = cellRect.top + cellRect.height / 2;
+  
+  // End at center of energy bar
+  const endX = barRect.left + barRect.width / 2;
+  const endY = barRect.top + barRect.height / 2;
+  
+  // Calculate distance and angle
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  
+  // Create the bolt element
+  const bolt = document.createElement('div');
+  bolt.className = 'energy-bolt';
+  bolt.style.left = startX + 'px';
+  bolt.style.top = startY + 'px';
+  
+  // Create the lightning shape inside
+  bolt.innerHTML = `
+    <svg class="bolt-svg" viewBox="0 0 40 80" width="20" height="40">
+      <polygon points="20,0 8,35 18,35 6,80 34,30 22,30 34,0" 
+        fill="rgba(96, 165, 250, 0.95)" 
+        stroke="rgba(191, 219, 254, 0.9)" 
+        stroke-width="1.5"/>
+    </svg>
+  `;
+  
+  document.body.appendChild(bolt);
+  
+  // Add glow to source unit
+  const srcKey = `${sourcePos.r}-${sourcePos.c}`;
+  healSourceCells.add(srcKey); // reuse tracking set for glow
+  const unitEl = cell.querySelector('.unit');
+  if (unitEl) {
+    unitEl.classList.add('energy-bolt-source');
+    setTimeout(() => unitEl.classList.remove('energy-bolt-source'), 800);
+  }
+  setTimeout(() => healSourceCells.delete(srcKey), 800);
+  
+  // Animate the bolt flying to the energy bar
+  requestAnimationFrame(() => {
+    bolt.style.transition = `all 0.5s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+    bolt.style.left = endX + 'px';
+    bolt.style.top = endY + 'px';
+    bolt.style.transform = `translate(-50%, -50%) rotate(${angle}deg) scale(0.6)`;
+    bolt.style.opacity = '0.8';
+  });
+  
+  // Flash the energy bar on arrival
+  setTimeout(() => {
+    bolt.remove();
+    energyBar.classList.add('energy-bolt-flash');
+    setTimeout(() => energyBar.classList.remove('energy-bolt-flash'), 600);
+  }, 500);
+}
+
 function animateUnitMove(unitId, fromRow, fromCol, toRow, toCol) {
   console.log("[SFX] animateUnitMove called");
   const fromViewRow = toViewRow(fromRow);
@@ -6287,7 +6618,7 @@ function animateCardPlay(card, targetEl, callback) {
 socket.on("role", (role) => {
   myRole = role || "spectator";
   viewFlipped = (myRole === "gold");
-  document.title = `Grid Card Game (${myRole.toUpperCase()})`;
+  document.title = playtestMode ? `Playtest (${myRole.toUpperCase()})` : `Grid Card Game (${myRole.toUpperCase()})`;
 
   selectedUnitId = null;
   deployCardId = null;
@@ -6296,6 +6627,14 @@ socket.on("role", (role) => {
 
   renderAll();
   renderHand();
+});
+
+// Playtest: receive card library
+socket.on("playtestStart", (data) => {
+  if (!playtestMode) return;
+  console.log("[PLAYTEST] Started, received", data.allCards?.length, "cards");
+  playtestData.allCards = data.allCards || [];
+  initPlaytestUI();
 });
 
 // Private state now included in main state event
@@ -6332,6 +6671,11 @@ socket.on("state", (st) => {
   S.attackCountThisTurn = st.attackCountThisTurn || {};
   S.bossEventWarning = st.bossEventWarning || null;
   S.chaliceTiles = st.chaliceTiles || [];
+  S.raphaelProtectedTiles = st.raphaelProtectedTiles || [];
+  S.warBannerAuraTiles = st.warBannerAuraTiles || [];
+  if (S.raphaelProtectedTiles.length > 0) {
+    console.log("[RAPHAEL] Protected tiles received:", JSON.stringify(S.raphaelProtectedTiles));
+  }
   S.turnNumber = st.turnNumber || 1;
   
   // Handle eclipse state
@@ -6389,6 +6733,35 @@ socket.on("state", (st) => {
     myMaxEnergy = st.maxEnergy ?? 0;
     canDraw = !!st.canDraw;
     renderHand();
+    
+    // Playtest: store both sides' hand/energy data
+    if (playtestMode && st.isPlaytest) {
+      // Server always sends from gold's perspective: hand=gold, silverHand=silver
+      playtestData.goldHand = Array.isArray(st.hand) ? st.hand : [];
+      playtestData.goldEnergy = st.energy ?? 0;
+      playtestData.goldMaxEnergy = st.maxEnergy ?? 0;
+      playtestData.goldDeckCount = st.deckCount ?? 0;
+      playtestData.goldDiscardCount = st.discardCount ?? 0;
+      playtestData.goldDiscard = Array.isArray(st.discard) ? st.discard : [];
+      playtestData.silverHand = Array.isArray(st.silverHand) ? st.silverHand : [];
+      playtestData.silverEnergy = st.silverEnergy ?? 0;
+      playtestData.silverMaxEnergy = st.enemyMaxEnergy ?? 0;
+      playtestData.silverDeckCount = st.enemyDeckCount ?? 0;
+      playtestData.silverDiscardCount = st.enemyDiscard?.length ?? 0;
+      playtestData.silverDiscard = Array.isArray(st.enemyDiscard) ? st.enemyDiscard : [];
+      
+      // If currently viewing silver side, swap to show silver data as "my" hand
+      if (myRole === "silver") {
+        myHand = playtestData.silverHand;
+        myEnergy = playtestData.silverEnergy;
+        myMaxEnergy = playtestData.silverMaxEnergy;
+        myDeckCount = playtestData.silverDeckCount;
+        myDiscardCount = playtestData.silverDiscardCount;
+        myDiscard = playtestData.silverDiscard;
+        renderHand();
+      }
+      updatePlaytestSideIndicator();
+    }
   } else {
     console.log(`[STATE] WARNING: st.hand is undefined!`);
   }
@@ -6407,7 +6780,12 @@ socket.on("state", (st) => {
       opponentDiscardCountEl.textContent = enemyDiscard.length;
     }
     
-    renderOpponentInfo(st.enemyHandCount, st.enemyDeckCount, st.enemyEnergy, st.enemyMaxEnergy);
+    // In playtest mode when viewing silver, flip opponent info to show gold's data
+    if (playtestMode && myRole === "silver") {
+      renderOpponentInfo(playtestData.goldHand.length, playtestData.goldDeckCount, playtestData.goldEnergy, playtestData.goldMaxEnergy);
+    } else {
+      renderOpponentInfo(st.enemyHandCount, st.enemyDeckCount, st.enemyEnergy, st.enemyMaxEnergy);
+    }
   }
 
   // Animate heart damage
@@ -6546,7 +6924,12 @@ if (resumeBtn) {
 
 if (restartBtn) {
   restartBtn.onclick = () => {
-    if (confirm("Restart the game? This will reset all progress.")) {
+    if (playtestMode) {
+      if (confirm("Restart playtest? This will reset the board.")) {
+        socket.emit("startPlaytest", { username: "Tester" });
+        if (gameMenu) gameMenu.classList.add("hidden");
+      }
+    } else if (confirm("Restart the game? This will reset all progress.")) {
       socket.emit("restartGame");
       if (gameMenu) gameMenu.classList.add("hidden");
     }
@@ -6555,16 +6938,18 @@ if (restartBtn) {
 
 if (leaveBtn) {
   leaveBtn.onclick = () => {
-    if (confirm("Leave the game? This will end it for both players.")) {
+    if (playtestMode) {
+      window.location.href = "/home.html";
+    } else if (confirm("Leave the game? This will end it for both players.")) {
       socket.emit("leaveGame");
       window.location.href = "/home.html";
     }
   };
 }
 
-// Show restart button only for host
+// Show restart button only for host (or always in playtest)
 socket.on("role", (role) => {
-  if (restartBtn && isHost) {
+  if (restartBtn && (isHost || playtestMode)) {
     restartBtn.style.display = "block";
   }
 });
@@ -7867,4 +8252,210 @@ function updateUnitHighlights() {
       }
     }
   }
+}
+
+// ========================
+// PLAYTEST MODE UI
+// ========================
+
+function initPlaytestUI() {
+  if (!playtestMode) return;
+  
+  // Add playtest class to body for CSS layout shifts
+  document.body.classList.add('playtest-active');
+  
+  // Show the playtest sidebar (card library)
+  const ptSidebar = document.getElementById("playtestSidebar");
+  if (ptSidebar) ptSidebar.style.display = "flex";
+  
+  // Show the side toggle button
+  const toggleBtn = document.getElementById("playtestSideToggle");
+  if (toggleBtn) {
+    toggleBtn.style.display = "flex";
+    toggleBtn.onclick = playtestToggleSide;
+  }
+  
+  // Populate card library
+  renderPlaytestLibrary();
+  
+  // Set up library filter handlers
+  document.querySelectorAll('.pt-filter-btn[data-type]').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.pt-filter-btn[data-type]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._ptFilterType = btn.dataset.type;
+      renderPlaytestLibrary();
+    };
+  });
+  
+  document.querySelectorAll('.pt-filter-btn[data-deck]').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.pt-filter-btn[data-deck]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._ptFilterDeck = btn.dataset.deck;
+      renderPlaytestLibrary();
+    };
+  });
+  
+  const searchInput = document.getElementById("ptCardSearch");
+  if (searchInput) {
+    searchInput.oninput = () => {
+      window._ptFilterSearch = searchInput.value;
+      renderPlaytestLibrary();
+    };
+  }
+  
+  // Escape key deselects library card
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && window._ptSelectedCard) {
+      window._ptSelectedCard = null;
+      renderPlaytestLibrary();
+      const info = document.getElementById("ptCardInfo");
+      if (info) info.style.display = 'none';
+    }
+  });
+  
+  updatePlaytestSideIndicator();
+}
+
+window._ptFilterType = 'all';
+window._ptFilterDeck = 'all';
+window._ptFilterSearch = '';
+window._ptSelectedCard = null;
+
+function renderPlaytestLibrary() {
+  const container = document.getElementById("ptCardList");
+  if (!container) return;
+  
+  const isAllDecks = !window._ptFilterDeck || window._ptFilterDeck === 'all';
+  
+  // Toggle between grid view (filtered deck) and list view (all decks)
+  if (isAllDecks) {
+    container.classList.add('list-view');
+  } else {
+    container.classList.remove('list-view');
+  }
+  
+  let cards = playtestData.allCards.filter(card => {
+    if (window._ptFilterType !== 'all' && card.type !== window._ptFilterType) return false;
+    if (window._ptFilterDeck !== 'all' && card.deck !== window._ptFilterDeck) return false;
+    if (window._ptFilterSearch) {
+      const s = window._ptFilterSearch.toLowerCase();
+      if (!card.name.toLowerCase().includes(s) && 
+          !(card.effectDesc || '').toLowerCase().includes(s) &&
+          !card.key.toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+  
+  // Deduplicate by key
+  const seen = new Set();
+  cards = cards.filter(c => {
+    if (seen.has(c.key)) return false;
+    seen.add(c.key);
+    return true;
+  });
+  
+  cards.sort((a, b) => (a.cost - b.cost) || a.name.localeCompare(b.name));
+  
+  container.innerHTML = '';
+  cards.forEach(card => {
+    const el = document.createElement('div');
+    el.className = 'pt-lib-card' + (window._ptSelectedCard?.key === card.key ? ' selected' : '');
+    if (card.rarity) el.classList.add('rarity-' + card.rarity);
+    
+    let statsHtml = '';
+    if (card.type !== 'spell') {
+      statsHtml = `<span class="pt-atk">⚔${card.atk}</span> <span class="pt-hp">♥${card.hp}</span>`;
+    } else {
+      statsHtml = `<span class="pt-spell">✦ Spell</span>`;
+    }
+    
+    el.innerHTML = `
+      <span class="pt-cost">${card.cost}</span>
+      <div class="pt-card-art" style="background-image: url('${card.art || ''}')"></div>
+      <div class="pt-card-name">${card.name}</div>
+      <div class="pt-card-stats">${statsHtml}</div>
+    `;
+    
+    el.onclick = () => {
+      window._ptSelectedCard = card;
+      renderPlaytestLibrary();
+      const info = document.getElementById("ptCardInfo");
+      if (info) {
+        info.innerHTML = `<strong>${card.name}</strong> (${card.cost}⚡) ${card.type !== 'spell' ? '⚔' + card.atk + ' ♥' + card.hp : 'Spell'}<br><small>${card.effectDesc || 'No effect'}</small>`;
+        info.style.display = 'block';
+      }
+    };
+    
+    el.oncontextmenu = (e) => {
+      e.preventDefault();
+      window._ptSelectedCard = null;
+      renderPlaytestLibrary();
+      const info = document.getElementById("ptCardInfo");
+      if (info) info.style.display = 'none';
+    };
+    
+    container.appendChild(el);
+  });
+}
+
+// Handle board clicks for playtest spawning
+function playtestBoardClick(serverRow, col) {
+  if (!playtestMode || !window._ptSelectedCard) return false;
+  
+  const side = document.querySelector('input[name="ptSpawnSide"]:checked')?.value || 'gold';
+  
+  socket.emit("action", {
+    type: "playtestSpawn",
+    cardKey: window._ptSelectedCard.key,
+    row: serverRow,
+    col: col,
+    side: side
+  });
+  
+  return true; // Consumed the click
+}
+
+function playtestToggleSide() {
+  if (!playtestMode) return;
+  
+  const newRole = myRole === "gold" ? "silver" : "gold";
+  myRole = newRole;
+  viewFlipped = (myRole === "gold");
+  document.title = `Playtest (${myRole.toUpperCase()})`;
+  
+  if (myRole === "gold") {
+    myHand = playtestData.goldHand;
+    myEnergy = playtestData.goldEnergy;
+    myMaxEnergy = playtestData.goldMaxEnergy;
+    myDeckCount = playtestData.goldDeckCount;
+    myDiscardCount = playtestData.goldDiscardCount;
+    myDiscard = playtestData.goldDiscard;
+  } else {
+    myHand = playtestData.silverHand;
+    myEnergy = playtestData.silverEnergy;
+    myMaxEnergy = playtestData.silverMaxEnergy;
+    myDeckCount = playtestData.silverDeckCount;
+    myDiscardCount = playtestData.silverDiscardCount;
+    myDiscard = playtestData.silverDiscard;
+  }
+  
+  selectedUnitId = null;
+  deployCardId = null;
+  selectedCardId = null;
+  selectedSpawnUnit = null;
+  clearHighlights();
+  
+  renderAll();
+  renderHand();
+  updatePlaytestSideIndicator();
+}
+
+function updatePlaytestSideIndicator() {
+  const toggleBtn = document.getElementById("playtestSideToggle");
+  if (!toggleBtn) return;
+  const icon = myRole === "gold" ? "🟡" : "⚪";
+  toggleBtn.innerHTML = `${icon} Viewing: ${myRole.toUpperCase()} <small>(click to switch)</small>`;
+  toggleBtn.className = 'pt-side-toggle pt-side-' + myRole;
 }

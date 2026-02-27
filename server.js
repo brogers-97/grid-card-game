@@ -434,10 +434,10 @@ const DECKS = {
     description: "Alien swarm with energy manipulation and adaptation",
     archetype: "alien",
     cards: [
-      // Void Drone x3 (1 cost filler)
-      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png", rarity: "common" },
-      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png", rarity: "common" },
-      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", art: "/images/Void Drone.png", rarity: "common" },
+      // Void Drone x3 (1 cost with death damage)
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "drone_death_damage", effectDesc: "ON DEATH: Deal 1 damage to a random enemy.", art: "/images/Void Drone.png", rarity: "common" },
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "drone_death_damage", effectDesc: "ON DEATH: Deal 1 damage to a random enemy.", art: "/images/Void Drone.png", rarity: "common" },
+      { key: "voiddrone", name: "Void Drone", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeath", effectId: "drone_death_damage", effectDesc: "ON DEATH: Deal 1 damage to a random enemy.", art: "/images/Void Drone.png", rarity: "common" },
       // Scavenger Larva x3 (energy on death)
       { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
       { key: "scavengerlarva", name: "Scavenger Larva", atk: 1, hp: 1, cost: 1, type: "monster", effect: "onDeath", effectId: "energy_on_death", effectDesc: "ON DEATH: Gain 1 Energy.", art: "/images/Scavenger Larva.png", rarity: "common" },
@@ -465,12 +465,12 @@ const DECKS = {
       { key: "adaptivecolossus", name: "Adaptive Colossus", atk: 4, hp: 5, cost: 4, type: "monster", effect: "passive", effectId: "adapt_hp", effectDesc: "PASSIVE: Gains +1 Max HP when surviving damage.", art: "/images/Adaptive Colossus.png", rarity: "legendary" },
       // Spore Titan x1 (1 damage splash to enemies adjacent to target)
       { key: "sporetitan", name: "Spore Titan", atk: 3, hp: 6, cost: 4, type: "monster", effect: "passive", effectId: "half_damage_aura", effectDesc: "PASSIVE: Attacks deal 1 splash damage to enemies adjacent to target.", art: "/images/Spore Titan.png", rarity: "rare" },
-      // Void Broodmother x1 (spawn drone on kill)
-      { key: "voidbroodmother", name: "Void Broodmother", atk: 2, hp: 6, cost: 4, type: "monster", effect: "onKill", effectId: "spawn_drone", effectDesc: "ON KILL: Spawn a Void Drone in the killed unit's tile.", art: "/images/Void Broodmother.png", rarity: "legendary" },
+      // Void Broodmother x1 (spawn drone on kill, gains ATK per drone)
+      { key: "voidbroodmother", name: "Void Broodmother", atk: 2, hp: 6, cost: 4, type: "monster", effect: "onKill", effectId: "spawn_drone", effectDesc: "ON KILL: Spawn a Void Drone. PASSIVE: +1 ATK for each Void Drone you control.", art: "/images/Void Broodmother.png", rarity: "legendary" },
       // Eclipse Devourer x1 (energy on kill)
       { key: "eclipsedevourer", name: "Eclipse Devourer", atk: 5, hp: 4, cost: 5, type: "monster", effect: "onKill", effectId: "energy_on_kill", effectDesc: "ON KILL: Gain 1 Energy.", art: "/images/Eclipse Devourer.png", rarity: "legendary" },
-      // UFO Scraper x1 (absorb friendly alien stats)
-      { key: "ufoscraper", name: "UFO Scraper", atk: 1, hp: 1, cost: 4, type: "monster", effect: "passive", effectId: "absorb_ally", effectDesc: "PASSIVE: Can attack friendly Aliens to absorb their stats.", art: "/images/UFO Scraper.png", rarity: "legendary" },
+      // UFO Scraper x1 (absorb any friendly unit's stats)
+      { key: "ufoscraper", name: "UFO Scraper", atk: 1, hp: 1, cost: 4, type: "monster", effect: "passive", effectId: "absorb_ally", effectDesc: "PASSIVE: Can attack any friendly unit to absorb their stats.", art: "/images/UFO Scraper.png", rarity: "legendary" },
       // Assimilation x2 (destroy enemy with <=2 HP)
       { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit", rarity: "rare" },
       { key: "assimilation", name: "Assimilation", atk: 0, hp: 0, cost: 3, type: "spell", effect: "instant", effectId: "destroy_weak", effectDesc: "INSTANT: Destroy target enemy with 2 or less HP.", art: "/images/Assimilation.png", requiresTarget: "enemy_unit", rarity: "rare" },
@@ -1688,14 +1688,16 @@ function getAllCardsForPlaytest() {
   
   for (const deckKey in DECKS) {
     const deck = DECKS[deckKey];
-    const deckName = deck.name || deckKey;
+    // Skip challenge decks from playtest library
+    if (deck.isChallenge) continue;
     
     for (const card of deck.cards) {
       if (!seen.has(card.key)) {
         seen.add(card.key);
         allCards.push({
           ...card,
-          deck: deckName
+          deck: deckKey,
+          deckName: deck.name
         });
       }
     }
@@ -1713,13 +1715,30 @@ function emitPlaytestState(lobby) {
   const goldHpBuff = getHpBuffBonus(state, "gold");
   const silverHpBuff = getHpBuffBonus(state, "silver");
   
+  // Calculate Armory bonus for each player (passive aura - affects all units)
+  const goldArmoryBonus = getArmoryBonus(state, "gold");
+  const silverArmoryBonus = getArmoryBonus(state, "silver");
+
   // Create units with effective stats
   const unitsWithBuffs = {};
   for (const uid in state.units) {
     const u = state.units[uid];
-    const tileHpBuff = u.owner === "gold" ? goldHpBuff : silverHpBuff;
     
-    // Check for Moon Flare Sorceress aura
+    // Volcanic scorched units don't benefit from HP buffs
+    if (u.volcanicScorched) {
+      unitsWithBuffs[uid] = { 
+        ...u, 
+        displayHp: u.hp,
+        displayMaxHp: u.maxHp || u.hp,
+        hpBuffed: false
+      };
+      continue;
+    }
+    
+    const tileHpBuff = u.owner === "gold" ? goldHpBuff : silverHpBuff;
+    const armoryBuff = u.owner === "gold" ? goldArmoryBonus : silverArmoryBonus;
+    
+    // Check for Moon Flare Sorceress aura (+1 HP to adjacent allies)
     let moonflareHpBuff = 0;
     const pos = getUnitPos(state, uid);
     if (pos) {
@@ -1738,15 +1757,52 @@ function emitPlaytestState(lobby) {
       }
     }
     
-    const totalHpBuff = tileHpBuff + moonflareHpBuff;
+    // Don't give Armory buff to the Armory itself
+    const armoryBuffForUnit = (u.effectId === "armory_buff") ? 0 : armoryBuff;
+    
+    const totalHpBuff = tileHpBuff + moonflareHpBuff + armoryBuffForUnit;
     unitsWithBuffs[uid] = { 
       ...u, 
       displayHp: u.hp + totalHpBuff,
       displayMaxHp: (u.maxHp || u.hp) + totalHpBuff,
-      hpBuffed: totalHpBuff > 0
+      hpBuffed: totalHpBuff > 0,
+      armoryBuffed: armoryBuffForUnit > 0 ? armoryBuffForUnit : undefined
     };
   }
   
+  // Calculate Raphael protected tiles and War Banner aura tiles for client-side glow
+  const raphaelProtectedTiles = [];
+  const warBannerAuraTiles = [];
+  for (const uid in state.units) {
+    const u = state.units[uid];
+    if (u.effectId === "raphael_shield") {
+      const raphaelPos = getUnitPos(state, uid);
+      if (raphaelPos) {
+        const behindDir = u.owner === "gold" ? -1 : 1;
+        for (let i = 1; i <= 3; i++) {
+          const pr = raphaelPos.r + behindDir * i;
+          if (pr >= 0 && pr < ROWS) {
+            raphaelProtectedTiles.push({ r: pr, c: raphaelPos.c, owner: u.owner });
+          }
+        }
+      }
+    }
+    if (u.effectId === "attack_aura") {
+      const bannerPos = getUnitPos(state, uid);
+      if (bannerPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = bannerPos.r + dr, nc = bannerPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              warBannerAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+  }
+
   const base = { 
     board: state.board, 
     rowHP: state.rowHP, 
@@ -1762,6 +1818,8 @@ function emitPlaytestState(lobby) {
     firstTurn: state.firstTurn,
     buffTiles: state.buffTiles,
     moveCountThisTurn: state.moveCountThisTurn,
+    raphaelProtectedTiles: raphaelProtectedTiles,
+    warBannerAuraTiles: warBannerAuraTiles,
     isPlaytest: true
   };
   
@@ -1886,6 +1944,12 @@ function getEffectiveAtk(state, uid, targetId) {
       if (state.units[gid].key === "gemshard") atk += 1;
     }
   }
+  // Void Broodmother - gains +1 ATK per Void Drone on field (owned by same player)
+  if (u.effectId === "spawn_drone") {
+    for (const gid in state.units) {
+      if (state.units[gid].key === "voiddrone" && state.units[gid].owner === u.owner) atk += 1;
+    }
+  }
   // War Shrine buff tile (atk_row_buff) - applies to ALL units in that row if owner has unit on tile
   for (const key in state.buffTiles) {
     const buff = state.buffTiles[key];
@@ -1986,24 +2050,25 @@ function applyDamageReduction(state, tid, dmg, attackerId, lobby = null) {
     return 0;
   }
   
-  // Archangel Raphael - allies in 3 tiles behind take no damage
-  // Check if there's a Raphael in front protecting this unit
+  // Archangel Raphael - allies in 3 tiles straight behind take no damage
+  // "Behind" means toward the owner's heart (same column, up to 3 rows back)
+  // Gold's heart is at row 0 (so behind = lower row numbers)
+  // Silver's heart is at row 6 (so behind = higher row numbers)
   const raphaelOwner = t.owner;
-  const behindDirection = raphaelOwner === "gold" ? -1 : 1; // Gold's back is lower rows (toward row 0), Silver's is higher rows (toward row 6)
+  const behindDirection = raphaelOwner === "gold" ? -1 : 1;
   for (const uid in state.units) {
     const u = state.units[uid];
     if (u.owner === raphaelOwner && u.effectId === "raphael_shield") {
       const raphaelPos = getUnitPos(state, uid);
       if (raphaelPos) {
-        // Check if target is in the 3 tiles "behind" Raphael (toward owner's heart)
-        const behindRow = raphaelPos.r + behindDirection;
-        // Three tiles: directly behind, and left/right of directly behind
+        // Check if target is in the 3 tiles straight behind Raphael (same column, 1-3 rows back)
         const protectedTiles = [
-          { r: behindRow, c: raphaelPos.c },
-          { r: behindRow, c: raphaelPos.c - 1 },
-          { r: behindRow, c: raphaelPos.c + 1 }
+          { r: raphaelPos.r + behindDirection * 1, c: raphaelPos.c },
+          { r: raphaelPos.r + behindDirection * 2, c: raphaelPos.c },
+          { r: raphaelPos.r + behindDirection * 3, c: raphaelPos.c }
         ];
         for (const tile of protectedTiles) {
+          if (tile.r < 0 || tile.r >= ROWS) continue; // Skip out-of-bounds
           if (pos.r === tile.r && pos.c === tile.c) {
             logToLobby(lobby, u.name + " shields " + t.name + " from damage!");
             return 0;
@@ -2289,11 +2354,29 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     // Crusader heals 2 HP on kill, even past max HP
     a.hp += 2;
     a.maxHp = Math.max(a.maxHp || a.hp, a.hp); // Increase max if needed
-    logToLobby(lobby, a.name + " heals 2 HP! Now " + a.hp + "/" + a.maxHp); 
+    // Track as perm buff so client shows purple HP
+    if (!a.permBuffs) a.permBuffs = [];
+    a.permBuffs.push({ hp: 2, source: "Crusader (on kill)" });
+    logToLobby(lobby, a.name + " heals 2 HP! Now " + a.hp + "/" + a.maxHp);
+    // Emit big heal cross animation on the Crusader
+    const crusaderPos = getUnitPos(state, aid);
+    if (crusaderPos) {
+      console.log("[CRUSADER] Heal on kill animation at", crusaderPos.r, crusaderPos.c);
+      const animData = { type: "effect", effectType: "heal_on_kill", sourcePos: crusaderPos };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
   }
   if (a.effectId === "energy_on_kill") { 
     lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY); 
-    logToLobby(lobby, role.toUpperCase() + " gains 1 energy"); 
+    logToLobby(lobby, role.toUpperCase() + " gains 1 energy");
+    // Emit energy bolt animation from the unit to energy bar
+    const unitPos = getUnitPos(state, aid);
+    if (unitPos) {
+      const animData = { type: "effect", effectType: "energy_bolt", sourcePos: unitPos, role: role };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
   }
   if (a.effectId === "drain_energy") {
     const enemy = enemyOf(role);
@@ -2322,6 +2405,9 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
       hp: 2, 
       maxHp: 2, 
       type: "monster",
+      effect: "onDeath",
+      effectId: "drone_death_damage",
+      effectDesc: "ON DEATH: Deal 1 damage to a random enemy.",
       art: "/images/Void Drone.png"
     };
     state.board[killedUnitPos.r][killedUnitPos.c] = droneId;
@@ -2441,6 +2527,42 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
   if (deadUnit.effectId === "energy_on_death") {
     lobby.gameState.players[deadUnitOwner].energy = Math.min(lobby.gameState.players[deadUnitOwner].energy + 1, MAX_ENERGY);
     logToLobby(lobby, deadUnit.name + " grants " + deadUnitOwner.toUpperCase() + " 1 energy on death");
+  }
+  
+  // Void Drone - deal 1 damage to a random enemy on death
+  if (deadUnit.effectId === "drone_death_damage") {
+    const enemyRole = deadUnitOwner === "gold" ? "silver" : "gold";
+    
+    // Find all enemy units
+    const enemyUnits = [];
+    for (const uid in state.units) {
+      const u = state.units[uid];
+      if (u.owner === enemyRole && !u.untargetable) {
+        enemyUnits.push({ id: uid, unit: u });
+      }
+    }
+    
+    if (enemyUnits.length > 0) {
+      // Pick a random enemy
+      const targetData = enemyUnits[Math.floor(Math.random() * enemyUnits.length)];
+      const target = targetData.unit;
+      target.hp -= 1;
+      logToLobby(lobby, `${deadUnit.name} explodes! ${target.name} takes 1 damage!`);
+      
+      if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
+        const targetPos = getUnitPos(state, targetData.id);
+        if (targetPos) {
+          processOnDeathEffect(lobby, target, target.owner, targetPos);
+          processAllyDeathTriggers(lobby, target.owner, target, targetPos);
+          state.board[targetPos.r][targetPos.c] = null;
+        }
+        discardUnitCard(lobby, target);
+        delete state.units[targetData.id];
+        logToLobby(lobby, target.name + " destroyed!");
+      }
+    } else {
+      logToLobby(lobby, deadUnit.name + " explodes but finds no targets!");
+    }
   }
   
   // New Game+ - shuffle Final Boss from discard into deck
@@ -3079,14 +3201,24 @@ function processEndOfTurnEffects(lobby, role) {
     if (u.effectId === "heal_adjacent") { 
       const allies = getAdjacentAllies(state, id); 
       let healedCount = 0;
+      const healedPositions = [];
+      const sourcePos = getUnitPos(state, id);
       allies.forEach(aid => { 
         const ally = state.units[aid];
         if (ally && ally.hp < (ally.maxHp || ally.hp + 1)) {
           ally.hp = Math.min(ally.hp + 1, ally.maxHp || ally.hp + 1);
           healedCount++;
+          const allyPos = getUnitPos(state, aid);
+          if (allyPos) healedPositions.push({ r: allyPos.r, c: allyPos.c });
         }
       }); 
-      if (healedCount > 0) logToLobby(lobby, u.name + " heals " + healedCount + " allies"); 
+      if (healedCount > 0) {
+        logToLobby(lobby, u.name + " heals " + healedCount + " allies");
+        // Emit heal animation
+        const animData = { type: "effect", effectType: "heal_pulse", sourcePos: sourcePos, targets: healedPositions };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
     }
     // Topaz Miner - gains +1 ATK if adjacent to a Gem Shard
     if (u.effectId === "gem_adjacent_buff") {
@@ -3296,18 +3428,25 @@ function processStartOfTurnEffects(lobby, role) {
     if (u.effectId === "shrine_heal") { 
       const pos = getUnitPos(state, id); 
       if (!pos) continue; 
-      let healed = 0; 
+      let healed = 0;
+      const healedPositions = [];
       for (let c = 0; c < COLS; c++) { 
         const uid = state.board[pos.r][c]; 
         if (uid && state.units[uid] && state.units[uid].owner === role && uid !== id) { 
           const unit = state.units[uid];
           if (unit.hp < (unit.maxHp || unit.hp + 1)) {
             unit.hp = Math.min(unit.hp + 1, unit.maxHp || unit.hp + 1);
-            healed++; 
+            healed++;
+            healedPositions.push({ r: pos.r, c: c });
           }
         } 
       } 
-      if (healed > 0) logToLobby(lobby, "Shrine heals " + healed + " units"); 
+      if (healed > 0) {
+        logToLobby(lobby, "Shrine heals " + healed + " units");
+        const animData = { type: "effect", effectType: "heal_pulse", sourcePos: pos, targets: healedPositions };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
     }
     
     // Moon Sentinel - gain +1 HP if adjacent to 2+ allies
@@ -6188,6 +6327,39 @@ function emitGameState(lobby) {
     };
   }
   
+  // Calculate Raphael protected tiles and War Banner aura tiles for client-side glow
+  const raphaelProtectedTiles = [];
+  const warBannerAuraTiles = [];
+  for (const uid in state.units) {
+    const u = state.units[uid];
+    if (u.effectId === "raphael_shield") {
+      const raphaelPos = getUnitPos(state, uid);
+      if (raphaelPos) {
+        const behindDir = u.owner === "gold" ? -1 : 1;
+        for (let i = 1; i <= 3; i++) {
+          const pr = raphaelPos.r + behindDir * i;
+          if (pr >= 0 && pr < ROWS) {
+            raphaelProtectedTiles.push({ r: pr, c: raphaelPos.c, owner: u.owner });
+          }
+        }
+      }
+    }
+    if (u.effectId === "attack_aura") {
+      const bannerPos = getUnitPos(state, uid);
+      if (bannerPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = bannerPos.r + dr, nc = bannerPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              warBannerAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+  }
+
   const base = { 
     board: state.board, 
     rowHP: state.rowHP, 
@@ -6205,18 +6377,20 @@ function emitGameState(lobby) {
     buffTiles: state.buffTiles,
     moveCountThisTurn: state.moveCountThisTurn,
     attackCountThisTurn: state.attackCountThisTurn || {},
-    bossEventWarning: state.bossEventWarning, // For boss event visual warnings
-    chaliceTiles: state.chaliceTiles || [], // For blood chalice tiles
-    eclipseActive: state.eclipseActive || false, // For eclipse event
-    eclipseEffect: state.eclipseEffect || null, // Current eclipse effect (type, value, label)
-    polymorphActive: state.polymorphActive || false, // For polymorph event
-    polymorphTurnsLeft: state.polymorphTurnsLeft || 0, // Turns until polymorph ends
-    divineJudgmentActive: state.divineJudgmentActive || false, // For divine judgment event
-    divineJudgmentTurnsLeft: state.divineJudgmentTurnsLeft || 0, // Turns until divine judgment ends
-    cheatHesoyamActive: state.cheatHesoyamActive || false, // For HESOYAM cheat
+    bossEventWarning: state.bossEventWarning,
+    chaliceTiles: state.chaliceTiles || [],
+    eclipseActive: state.eclipseActive || false,
+    eclipseEffect: state.eclipseEffect || null,
+    polymorphActive: state.polymorphActive || false,
+    polymorphTurnsLeft: state.polymorphTurnsLeft || 0,
+    divineJudgmentActive: state.divineJudgmentActive || false,
+    divineJudgmentTurnsLeft: state.divineJudgmentTurnsLeft || 0,
+    cheatHesoyamActive: state.cheatHesoyamActive || false,
     cheatHesoyamTurnsLeft: state.cheatHesoyamTurnsLeft || 0,
-    cheatGreedActive: state.cheatGreedActive || false, // For GREEDISGOOD cheat
-    cheatGreedTurnsLeft: state.cheatGreedTurnsLeft || 0
+    cheatGreedActive: state.cheatGreedActive || false,
+    cheatGreedTurnsLeft: state.cheatGreedTurnsLeft || 0,
+    raphaelProtectedTiles: raphaelProtectedTiles,
+    warBannerAuraTiles: warBannerAuraTiles
   };
   if (lobby.hostSocket) lobby.hostSocket.emit("state", { 
     ...base, 
@@ -7074,6 +7248,24 @@ async function executeAction(lobby, role, action) {
           }
         }
         
+        // Armory deployed - show green cross heal effect on all existing friendly units
+        if (card.effectId === "armory_buff") {
+          const armoryPos = { r: action.row, c: action.col };
+          const buffedPositions = [];
+          for (const uid in state.units) {
+            const unit = state.units[uid];
+            if (unit.owner === role && uid !== id && unit.effectId !== "armory_buff") {
+              const unitPos = getUnitPos(state, uid);
+              if (unitPos) buffedPositions.push({ r: unitPos.r, c: unitPos.c });
+            }
+          }
+          if (buffedPositions.length > 0) {
+            const animData = { type: "effect", effectType: "heal_pulse", sourcePos: armoryPos, targets: buffedPositions };
+            if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+            if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+          }
+        }
+        
         logToLobby(lobby, role.toUpperCase() + " played " + card.name);
         emitSFX(lobby, card.key, 'deploy'); // Play deploy sound
       }
@@ -7718,15 +7910,16 @@ async function executeAction(lobby, role, action) {
       const pos = getUnitPos(state, action.attackerId);
       if (!pos) return;
       
-      // Check if walls are down
+      // Check if walls are down (both defensive rows must be destroyed)
       if (target === "gold" && (state.rowHP[0] > 0 || state.rowHP[1] > 0)) return;
       if (target === "silver" && (state.rowHP[5] > 0 || state.rowHP[6] > 0)) return;
       
-      // Check range - must be in heart row or ranged 1 row away
+      // Check range - must be in heart row or within ranged distance
       const heartRow = target === "gold" ? 0 : 6;
       const distance = Math.abs(pos.r - heartRow);
-      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce";
-      const maxRange = isRanged ? 1 : 0;
+      const isRanged = a.effectId === "ranged" || a.effectId === "ranged_pierce" || a.effectId === "starweave_ranged" || a.effectId === "seraphic_range" || a.range;
+      // Ranged units can attack heart from (range - 1) rows away (range 2 = 1 row, range 3 = 2 rows)
+      const maxRange = a.range ? (a.range - 1) : (isRanged ? 1 : 0);
       if (distance > maxRange) return;
       
       // Combat log header
@@ -8362,7 +8555,7 @@ io.on("connection", (socket) => {
         // Handle spells
         if (cardDef.type === "spell") {
           logToLobby(lobby, side.toUpperCase() + " casts " + card.name);
-          processSpellEffect(lobby, side, card.effectId, null, row, col);
+          processInstantSpell(lobby, side, card.effectId, row, null, col);
           targetPlayer.discard.push(card);
           emitPlaytestState(lobby);
           return;
@@ -8380,9 +8573,11 @@ io.on("connection", (socket) => {
           maxHp: card.hp,
           cost: card.cost,
           type: card.type,
+          effect: card.effect,
           effectId: card.effectId,
           effectDesc: card.effectDesc,
-          art: card.art
+          art: card.art,
+          originalCard: card
         };
         state.units[unitId] = unitData;
         state.board[row][col] = unitId;
@@ -8410,6 +8605,24 @@ io.on("connection", (socket) => {
             
             logToLobby(lobby, card.name + " summons a Gem Shard!");
             break;
+          }
+        }
+        
+        // Armory deployed - show green cross heal effect on all existing friendly units
+        if (card.effectId === "armory_buff") {
+          const armoryPos = { r: row, c: col };
+          const buffedPositions = [];
+          for (const uid in state.units) {
+            const unit = state.units[uid];
+            if (unit.owner === side && uid !== unitId && unit.effectId !== "armory_buff") {
+              const unitPos = getUnitPos(state, uid);
+              if (unitPos) buffedPositions.push({ r: unitPos.r, c: unitPos.c });
+            }
+          }
+          if (buffedPositions.length > 0) {
+            const animData = { type: "effect", effectType: "heal_pulse", sourcePos: armoryPos, targets: buffedPositions };
+            if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+            if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
           }
         }
         
