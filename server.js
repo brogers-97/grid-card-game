@@ -2383,6 +2383,12 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     if (lobby.gameState.players[enemy].energy > 0) {
       lobby.gameState.players[enemy].energy = Math.max(0, lobby.gameState.players[enemy].energy - 1);
       logToLobby(lobby, a.name + " drains 1 energy from " + enemy.toUpperCase());
+      const unitPos = getUnitPos(state, aid);
+      if (unitPos) {
+        const animData = { type: "effect", effectType: "energy_drain", sourcePos: unitPos, drainer: role, victim: enemy };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
     }
   }
   // Mana Siphon Mage - enemy loses 1 energy on kill
@@ -2391,6 +2397,12 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     if (lobby.gameState.players[enemy].energy > 0) {
       lobby.gameState.players[enemy].energy = Math.max(0, lobby.gameState.players[enemy].energy - 1);
       logToLobby(lobby, a.name + " siphons mana! Enemy loses 1 energy!");
+      const unitPos = getUnitPos(state, aid);
+      if (unitPos) {
+        const animData = { type: "effect", effectType: "energy_drain", sourcePos: unitPos, drainer: role, victim: enemy };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
     }
   }
   if (a.effectId === "spawn_drone" && killedUnitPos) {
@@ -2527,6 +2539,12 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
   if (deadUnit.effectId === "energy_on_death") {
     lobby.gameState.players[deadUnitOwner].energy = Math.min(lobby.gameState.players[deadUnitOwner].energy + 1, MAX_ENERGY);
     logToLobby(lobby, deadUnit.name + " grants " + deadUnitOwner.toUpperCase() + " 1 energy on death");
+    // Emit energy bolt animation from where the unit died
+    if (deadPos) {
+      const animData = { type: "effect", effectType: "energy_bolt", sourcePos: deadPos, role: deadUnitOwner };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
   }
   
   // Void Drone - deal 1 damage to a random enemy on death
@@ -2546,11 +2564,20 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
       // Pick a random enemy
       const targetData = enemyUnits[Math.floor(Math.random() * enemyUnits.length)];
       const target = targetData.unit;
+      const targetPos = getUnitPos(state, targetData.id);
+      
+      // Emit void zap animation on the target
+      if (targetPos) {
+        const willDie = (target.hp - 1 <= 0) && shouldUnitDie(lobby, target);
+        const animData = { type: "effect", effectType: "void_zap", targetPos: targetPos, willDie: willDie, targetArt: target.art, targetName: target.name };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
+      
       target.hp -= 1;
       logToLobby(lobby, `${deadUnit.name} explodes! ${target.name} takes 1 damage!`);
       
       if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
-        const targetPos = getUnitPos(state, targetData.id);
         if (targetPos) {
           processOnDeathEffect(lobby, target, target.owner, targetPos);
           processAllyDeathTriggers(lobby, target.owner, target, targetPos);
@@ -3703,6 +3730,10 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
             logToLobby(lobby, target.name + " is untargetable!");
             return false;
           }
+          // Emit melt animation
+          const animData = { type: "effect", effectType: "melt", targetPos: pos, targetArt: target.art };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
           // Process on-death effect before removing
           processOnDeathEffect(lobby, target, target.owner, pos);
           processAllyDeathTriggers(lobby, target.owner, target, pos);
@@ -3747,12 +3778,11 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       }
       
       // Emit row damage animation (spell effect, no source unit)
-      if (targetPositions.length > 0) {
+      if (targetPositions.length > 0 || damaged === 0) {
         const animData = {
           type: "effect",
           effectType: "void_collapse",
-          sourcePos: null,
-          sourceUnitId: null,
+          targetRow: targetRow,
           targets: targetPositions
         };
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
@@ -8555,7 +8585,9 @@ io.on("connection", (socket) => {
         // Handle spells
         if (cardDef.type === "spell") {
           logToLobby(lobby, side.toUpperCase() + " casts " + card.name);
-          processInstantSpell(lobby, side, card.effectId, row, null, col);
+          // Get the unit at the target cell (if any) for targeted spells
+          const targetUnitId = state.board[row][col] || null;
+          processInstantSpell(lobby, side, card.effectId, row, targetUnitId, col);
           targetPlayer.discard.push(card);
           emitPlaytestState(lobby);
           return;
@@ -9632,6 +9664,18 @@ io.on("connection", (socket) => {
       
       // Handle UFO Scraper absorb attack
       if (isAbsorbAttack) {
+        // Emit absorb animation - target floats into UFO
+        const animData = { 
+          type: "effect", 
+          effectType: "ufo_absorb", 
+          sourcePos: { r: ap.r, c: ap.c },
+          targetPos: { r: tp.r, c: tp.c },
+          targetArt: t.art,
+          targetName: t.name
+        };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        
         // UFO Scraper kills friendly and absorbs stats
         const absorbedAtk = t.atk;
         const absorbedHp = t.hp;
@@ -9813,6 +9857,13 @@ io.on("connection", (socket) => {
       if (t.effectId === "adapt_hp" && t.hp > 0 && dmg > 0) {
         t.maxHp = (t.maxHp || t.hp) + 1;
         logToLobby(lobby, t.name + " adapts! Max HP now " + t.maxHp);
+        // Big green cross animation
+        const adaptPos = getUnitPos(state, targetId);
+        if (adaptPos) {
+          const animData = { type: "effect", effectType: "heal_on_kill", sourcePos: adaptPos };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        }
       }
       
       // Track attack count
@@ -9897,6 +9948,12 @@ io.on("connection", (socket) => {
       if (a.effectId === "energy_on_hit" && t.hp > 0) {
         lobby.gameState.players[role].energy = Math.min(lobby.gameState.players[role].energy + 1, MAX_ENERGY);
         logToLobby(lobby, a.name + " harvests 1 energy!");
+        const harvesterPos = getUnitPos(state, attackerId);
+        if (harvesterPos) {
+          const animData = { type: "effect", effectType: "energy_bolt", sourcePos: harvesterPos, role: role };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        }
       }
       
       // Blood Familiar blood_bite - attacks twice, second attack deals 1 damage

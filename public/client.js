@@ -105,6 +105,20 @@ if (sfxSlider) {
   });
 }
 
+// Tooltip toggle button handler
+const tooltipToggleBtn = document.getElementById("tooltipToggleBtn");
+if (tooltipToggleBtn) {
+  tooltipToggleBtn.addEventListener('click', () => {
+    tooltipsEnabled = !tooltipsEnabled;
+    tooltipToggleBtn.textContent = tooltipsEnabled ? '💬' : '🚫';
+    tooltipToggleBtn.classList.toggle('muted', !tooltipsEnabled);
+    // Hide any visible tooltip immediately
+    if (!tooltipsEnabled && tooltipEl) {
+      tooltipEl.classList.remove("visible");
+    }
+  });
+}
+
 // ==================== SFX SOUND SYSTEM ====================
 const SFX_VOLUME = 0.5; // SFX volume (0-1)
 
@@ -327,7 +341,40 @@ const FADE_DURATION = 150; // ms for fade in/out
 // Start time offsets for sounds with silence at the beginning (in seconds)
 const SOUND_START_OFFSETS = {
   magic: 0.15,  // Skip first 150ms of silence
-  // Add more sounds here if needed: soundName: offsetInSeconds
+};
+
+// Per-sound volume multipliers to normalize loudness across all attack sounds
+// 1.0 = default, lower = quieter, higher = louder. Adjust these to taste.
+const SOUND_VOLUME_MULTIPLIERS = {
+  // Attack sounds - normalize to similar perceived loudness
+  heavy_sword: 0.55,
+  sword_slash: 0.7,
+  bone_rattle: 0.7,
+  revolver_shot: 0.6,
+  vampire_bite: 0.7,
+  moonlight_strike: 0.7,
+  fire_breath: 0.65,
+  lightning_zap: 0.6,
+  dragon_bite: 0.65,
+  rune_pulse: 0.7,
+  slime_squish: 0.7,
+  arrow_shot: 0.65,
+  spear_thrust: 0.7,
+  dog_bite: 0.7,
+  ram_impact: 0.6,
+  alien_zap: 0.65,
+  alien_claw: 0.7,
+  spore_burst: 0.7,
+  dark_magic: 0.7,
+  fairy_sparkle: 0.7,
+  wizard_blast: 0.65,
+  '8bit_attack': 0.7,
+  pixel_hit: 0.7,
+  holy_smite: 0.6,
+  angelic_chime: 0.7,
+  coffin_slam: 0.6,
+  // Effect sounds
+  implosion: 0.6,
 };
 
 // Preload all SFX sounds
@@ -351,6 +398,10 @@ function playSFX(soundName) {
     // Clone the audio to allow overlapping sounds
     const sound = cachedAudio.cloneNode();
     let targetVolume = (sfxSlider?.value || 50) / 100;
+    
+    // Apply per-sound volume normalization
+    const volumeMultiplier = SOUND_VOLUME_MULTIPLIERS[soundName] || 1.0;
+    targetVolume *= volumeMultiplier;
     
     // Apply 50% volume boost for move/draw sounds
     if (BOOSTED_SOUNDS.includes(soundName)) {
@@ -830,7 +881,10 @@ let prevHeartHP = { gold: 30, silver: 30 };
 let cardElements = {};
 
 // ===== TOOLTIP FUNCTIONS =====
+let tooltipsEnabled = true;
+
 function showTooltip(unitId, x, y, buff) {
+  if (!tooltipsEnabled) return;
   const u = S.units[unitId];
   if (!u || !tooltipEl) return;
   
@@ -5628,6 +5682,36 @@ function animateEffect(data) {
     return;
   }
   
+  // Special handling for energy drain (Energy Leech, Mana Siphon) - bolt from enemy bar through unit to player bar
+  if (effectType === "energy_drain" && data.sourcePos) {
+    animateEnergyDrain(data.sourcePos, data.drainer, data.victim);
+    return;
+  }
+  
+  // Special handling for UFO absorb - target shrinks and flies into UFO
+  if (effectType === "ufo_absorb" && data.sourcePos && data.targetPos) {
+    animateUfoAbsorb(data.sourcePos, data.targetPos, data.targetArt);
+    return;
+  }
+  
+  // Special handling for void drone death zap - purple lightning + shake on target
+  if (effectType === "void_zap" && data.targetPos) {
+    animateVoidZap(data.targetPos, data.willDie, data.targetArt);
+    return;
+  }
+  
+  // Special handling for melt (Assimilation) - target melts away
+  if (effectType === "melt" && data.targetPos) {
+    animateMelt(data.targetPos, data.targetArt);
+    return;
+  }
+  
+  // Special handling for void collapse spell - lasers across row + shake damaged units
+  if (effectType === "void_collapse" && data.targetRow !== undefined) {
+    animateVoidCollapse(data.targetRow, data.targets || []);
+    return;
+  }
+  
   // If there's a source unit, add to tracking set so renderAll applies the animation
   if (sourcePos) {
     const key = `${sourcePos.r}-${sourcePos.c}`;
@@ -6065,7 +6149,11 @@ function animateEnergyBolt(sourcePos, role) {
   const cell = document.getElementById(cellId(viewRow, sourcePos.c));
   if (!cell) return;
   
-  const energyBar = document.getElementById("energyDisplay");
+  // Determine which energy bar to fly to based on whose energy it is
+  const isMyEnergy = (role === myRole);
+  const energyBar = isMyEnergy 
+    ? document.getElementById("energyDisplay") 
+    : document.getElementById("opponentEnergy");
   if (!energyBar) return;
   
   const cellRect = cell.getBoundingClientRect();
@@ -6127,6 +6215,397 @@ function animateEnergyBolt(sourcePos, role) {
     bolt.remove();
     energyBar.classList.add('energy-bolt-flash');
     setTimeout(() => energyBar.classList.remove('energy-bolt-flash'), 600);
+  }, 500);
+}
+
+// Animate void collapse - colored lasers shoot across the row, damaged units shake
+function animateVoidCollapse(targetRow, targets) {
+  const viewRow = toViewRow(targetRow);
+  
+  // Get the row's bounding area from first and last cell
+  const firstCell = document.getElementById(cellId(viewRow, 0));
+  const lastCell = document.getElementById(cellId(viewRow, 5));
+  if (!firstCell || !lastCell) return;
+  
+  const firstRect = firstCell.getBoundingClientRect();
+  const lastRect = lastCell.getBoundingClientRect();
+  
+  // Row spans from left of first cell to right of last cell
+  const rowLeft = firstRect.left;
+  const rowRight = lastRect.right;
+  const rowTop = firstRect.top;
+  const rowBottom = firstRect.bottom;
+  const rowWidth = rowRight - rowLeft;
+  const rowHeight = rowBottom - rowTop;
+  
+  // Create laser container spanning the full row
+  const container = document.createElement('div');
+  container.className = 'vc-laser-container';
+  container.style.position = 'fixed';
+  container.style.left = rowLeft + 'px';
+  container.style.top = rowTop + 'px';
+  container.style.width = rowWidth + 'px';
+  container.style.height = rowHeight + 'px';
+  container.style.zIndex = '9999';
+  container.style.pointerEvents = 'none';
+  container.style.overflow = 'visible';
+  
+  // Create 8-12 colored lasers shooting across in random directions
+  const laserColors = [
+    'rgba(168, 85, 247, 0.8)',   // purple
+    'rgba(59, 130, 246, 0.8)',   // blue
+    'rgba(236, 72, 153, 0.8)',   // pink
+    'rgba(34, 211, 238, 0.8)',   // cyan
+    'rgba(251, 191, 36, 0.8)',   // gold
+    'rgba(239, 68, 68, 0.8)',    // red
+    'rgba(34, 197, 94, 0.8)',    // green
+  ];
+  
+  const laserCount = 8 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < laserCount; i++) {
+    const laser = document.createElement('div');
+    laser.className = 'vc-laser';
+    
+    const color = laserColors[Math.floor(Math.random() * laserColors.length)];
+    const yPos = 10 + Math.random() * 80; // % from top
+    const thickness = 2 + Math.random() * 3;
+    const fromLeft = Math.random() > 0.5; // direction
+    
+    laser.style.position = 'absolute';
+    laser.style.top = yPos + '%';
+    laser.style.height = thickness + 'px';
+    laser.style.background = `linear-gradient(${fromLeft ? 'to right' : 'to left'}, transparent, ${color}, ${color}, transparent)`;
+    laser.style.boxShadow = `0 0 8px ${color}, 0 0 16px ${color}`;
+    laser.style.borderRadius = '2px';
+    laser.style.animationDelay = (Math.random() * 0.2) + 's';
+    laser.style.animationDuration = (0.3 + Math.random() * 0.2) + 's';
+    
+    if (fromLeft) {
+      laser.classList.add('vc-laser-left');
+    } else {
+      laser.classList.add('vc-laser-right');
+    }
+    
+    container.appendChild(laser);
+  }
+  
+  document.body.appendChild(container);
+  
+  // Shake damaged units using tracking set pattern
+  for (const target of targets) {
+    const tViewRow = toViewRow(target.r);
+    const tCell = document.getElementById(cellId(tViewRow, target.c));
+    if (tCell) {
+      const tKey = `${target.r}-${target.c}`;
+      damagingCells.add(tKey);
+      const unitEl = tCell.querySelector('.unit');
+      if (unitEl) unitEl.classList.add('vc-shake');
+      setTimeout(() => {
+        damagingCells.delete(tKey);
+        if (unitEl) unitEl.classList.remove('vc-shake');
+      }, 700);
+    }
+  }
+  
+  setTimeout(() => container.remove(), 800);
+  
+  playSFX('alien_zap');
+}
+
+// Animate melt (Assimilation) - target card melts and drips away
+function animateMelt(targetPos, targetArt) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  
+  // Create fixed overlay clone
+  const clone = document.createElement('div');
+  clone.className = 'melt-clone';
+  clone.style.position = 'fixed';
+  clone.style.left = rect.left + 'px';
+  clone.style.top = rect.top + 'px';
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.zIndex = '9998';
+  clone.style.pointerEvents = 'none';
+  clone.style.borderRadius = '6px';
+  clone.style.overflow = 'visible';
+  
+  if (targetArt) {
+    clone.style.backgroundImage = `url('${encodeURI(targetArt)}')`;
+    clone.style.backgroundSize = 'cover';
+    clone.style.backgroundPosition = 'center';
+  }
+  
+  // Add drip elements at the bottom
+  const dripContainer = document.createElement('div');
+  dripContainer.className = 'melt-drips';
+  for (let i = 0; i < 6; i++) {
+    const drip = document.createElement('div');
+    drip.className = 'melt-drip';
+    drip.style.left = (8 + Math.random() * 75) + '%';
+    drip.style.animationDelay = (0.1 + Math.random() * 0.25) + 's';
+    drip.style.animationDuration = (0.3 + Math.random() * 0.2) + 's';
+    const width = 4 + Math.random() * 6;
+    drip.style.width = width + 'px';
+    dripContainer.appendChild(drip);
+  }
+  clone.appendChild(dripContainer);
+  
+  document.body.appendChild(clone);
+  
+  // Hide real unit
+  const unitEl = cell.querySelector('.unit');
+  if (unitEl) unitEl.style.visibility = 'hidden';
+  
+  // Phase 1: Tint green/purple (0-100ms)
+  requestAnimationFrame(() => {
+    clone.style.transition = 'all 0.1s ease-in';
+    clone.style.filter = 'hue-rotate(90deg) saturate(2) brightness(1.2)';
+    clone.style.boxShadow = '0 0 15px rgba(34, 197, 94, 0.5), 0 0 30px rgba(168, 85, 247, 0.3)';
+    clone.style.border = '2px solid rgba(34, 197, 94, 0.6)';
+  });
+  
+  // Phase 2: Start melting (100-450ms)
+  setTimeout(() => {
+    clone.style.transition = 'all 0.35s ease-in';
+    clone.style.transform = 'scaleX(1.15) scaleY(0.3) translateY(35%)';
+    clone.style.opacity = '0.4';
+    clone.style.filter = 'hue-rotate(90deg) saturate(3) brightness(0.6) blur(3px)';
+    clone.style.borderRadius = '4px 4px 50% 50%';
+  }, 100);
+  
+  // Phase 3: Fully dissolved
+  setTimeout(() => {
+    clone.style.transition = 'all 0.15s ease-in';
+    clone.style.opacity = '0';
+    clone.style.transform = 'scaleX(1.3) scaleY(0.05) translateY(50%)';
+  }, 450);
+  
+  // Cleanup
+  setTimeout(() => clone.remove(), 600);
+  
+  playSFX('alien_zap');
+}
+
+// Animate void drone death zap - purple lightning fingers + shake on target, then disappear if killed
+function animateVoidZap(targetPos, willDie, targetArt) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  
+  // Create a fixed overlay clone of the target card so animation survives re-renders
+  const clone = document.createElement('div');
+  clone.className = 'void-zap-clone';
+  clone.style.position = 'fixed';
+  clone.style.left = rect.left + 'px';
+  clone.style.top = rect.top + 'px';
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.zIndex = '9998';
+  clone.style.pointerEvents = 'none';
+  clone.style.borderRadius = '6px';
+  clone.style.overflow = 'hidden';
+  
+  // Copy the unit's art as background
+  if (targetArt) {
+    clone.style.backgroundImage = `url('${encodeURI(targetArt)}')`;
+    clone.style.backgroundSize = 'cover';
+    clone.style.backgroundPosition = 'center';
+  }
+  
+  // Start shaking immediately
+  clone.classList.add('void-zap-shake');
+  
+  // Create lightning container on top
+  const lightningContainer = document.createElement('div');
+  lightningContainer.style.position = 'absolute';
+  lightningContainer.style.inset = '0';
+  lightningContainer.style.zIndex = '9999';
+  lightningContainer.style.pointerEvents = 'none';
+  
+  // Create 5-7 lightning fingers from different edges
+  const boltCount = 5 + Math.floor(Math.random() * 3);
+  const w = rect.width;
+  const h = rect.height;
+  for (let i = 0; i < boltCount; i++) {
+    const bolt = document.createElement('div');
+    bolt.className = 'void-zap-bolt';
+    
+    const startEdge = Math.floor(Math.random() * 4);
+    let sx, sy;
+    if (startEdge === 0) { sx = 10 + Math.random() * (w - 20); sy = 0; }
+    else if (startEdge === 1) { sx = w; sy = 10 + Math.random() * (h - 20); }
+    else if (startEdge === 2) { sx = 10 + Math.random() * (w - 20); sy = h; }
+    else { sx = 0; sy = 10 + Math.random() * (h - 20); }
+    
+    const cx = w / 2 + (Math.random() - 0.5) * 10;
+    const cy = h / 2 + (Math.random() - 0.5) * 10;
+    
+    const segs = 3 + Math.floor(Math.random() * 2);
+    let path = `M${sx},${sy}`;
+    for (let s = 1; s <= segs; s++) {
+      const t = s / segs;
+      const px = sx + (cx - sx) * t + (Math.random() - 0.5) * 20;
+      const py = sy + (cy - sy) * t + (Math.random() - 0.5) * 20;
+      path += ` L${px},${py}`;
+    }
+    
+    bolt.innerHTML = `
+      <svg width="${w}" height="${h}" style="position:absolute;left:0;top:0">
+        <path d="${path}" fill="none" stroke="rgba(168, 85, 247, 0.9)" stroke-width="2.5" 
+          stroke-linecap="round" filter="url(#voidGlow${i})"/>
+        <path d="${path}" fill="none" stroke="rgba(216, 180, 254, 0.95)" stroke-width="1" 
+          stroke-linecap="round"/>
+        <defs>
+          <filter id="voidGlow${i}" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+      </svg>
+    `;
+    
+    bolt.style.animationDelay = (Math.random() * 0.15) + 's';
+    bolt.style.animationDuration = (0.3 + Math.random() * 0.2) + 's';
+    lightningContainer.appendChild(bolt);
+  }
+  
+  clone.appendChild(lightningContainer);
+  document.body.appendChild(clone);
+  
+  // Hide the real unit while the clone is showing
+  const unitEl = cell.querySelector('.unit');
+  if (unitEl) unitEl.style.visibility = 'hidden';
+  
+  playSFX('alien_zap');
+  
+  // After shake + lightning (700ms), either fade out (death) or restore
+  setTimeout(() => {
+    lightningContainer.remove();
+    
+    if (willDie) {
+      // Fade out and shrink to nothing
+      clone.style.transition = 'all 0.4s ease-in';
+      clone.style.opacity = '0';
+      clone.style.transform = 'scale(0.3)';
+      clone.style.filter = 'brightness(2) saturate(0)';
+      setTimeout(() => clone.remove(), 400);
+    } else {
+      // Just remove clone and restore the real unit
+      clone.remove();
+      if (unitEl) unitEl.style.visibility = '';
+    }
+  }, 700);
+}
+
+// Animate UFO absorb - target card shrinks and flies into UFO Scraper
+function animateUfoAbsorb(ufoPos, targetPos, targetArt) {
+  const ufoViewRow = toViewRow(ufoPos.r);
+  const targetViewRow = toViewRow(targetPos.r);
+  const ufoCell = document.getElementById(cellId(ufoViewRow, ufoPos.c));
+  const targetCell = document.getElementById(cellId(targetViewRow, targetPos.c));
+  if (!ufoCell || !targetCell) return;
+  
+  const ufoRect = ufoCell.getBoundingClientRect();
+  const targetRect = targetCell.getBoundingClientRect();
+  
+  // Destination: center of UFO cell
+  const destX = ufoRect.left + ufoRect.width / 2;
+  const destY = ufoRect.top + ufoRect.height / 2;
+  
+  // Create a floating clone of the target card
+  const clone = document.createElement('div');
+  clone.className = 'ufo-absorb-target';
+  clone.style.left = targetRect.left + 'px';
+  clone.style.top = targetRect.top + 'px';
+  clone.style.width = targetRect.width + 'px';
+  clone.style.height = targetRect.height + 'px';
+  
+  if (targetArt) {
+    clone.style.backgroundImage = `url('${encodeURI(targetArt)}')`;
+    clone.style.backgroundSize = 'cover';
+    clone.style.backgroundPosition = 'center';
+  }
+  
+  document.body.appendChild(clone);
+  
+  // Animate: fly to UFO center while shrinking and fading
+  requestAnimationFrame(() => {
+    clone.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+    clone.style.left = destX + 'px';
+    clone.style.top = destY + 'px';
+    clone.style.width = '0px';
+    clone.style.height = '0px';
+    clone.style.opacity = '0.3';
+    clone.style.transform = 'translate(-50%, -50%) rotate(15deg)';
+    clone.style.borderRadius = '50%';
+  });
+  
+  // Glow the UFO when absorb completes
+  setTimeout(() => {
+    clone.remove();
+    const srcKey = `${ufoPos.r}-${ufoPos.c}`;
+    healSourceCells.add(srcKey);
+    const ufoUnit = ufoCell.querySelector('.unit');
+    if (ufoUnit) {
+      ufoUnit.classList.add('ufo-absorb-glow');
+      setTimeout(() => ufoUnit.classList.remove('ufo-absorb-glow'), 800);
+    }
+    setTimeout(() => healSourceCells.delete(srcKey), 800);
+  }, 600);
+}
+
+// Animate energy drain - bolt flies from victim's energy bar to drainer's energy bar
+function animateEnergyDrain(sourcePos, drainer, victim) {  // Determine which bars are victim and drainer from this client's perspective
+  const victimIsMe = (victim === myRole);
+  const victimBar = victimIsMe 
+    ? document.getElementById("energyDisplay") 
+    : document.getElementById("opponentEnergy");
+  const drainerBar = (drainer === myRole)
+    ? document.getElementById("energyDisplay")
+    : document.getElementById("opponentEnergy");
+  if (!victimBar || !drainerBar) return;
+  
+  const victimRect = victimBar.getBoundingClientRect();
+  const drainerRect = drainerBar.getBoundingClientRect();
+  
+  // Flash victim bar purple (losing energy)
+  victimBar.classList.add('energy-drain-victim-flash');
+  setTimeout(() => victimBar.classList.remove('energy-drain-victim-flash'), 600);
+  
+  // Create purple bolt at victim's energy bar
+  const bolt = document.createElement('div');
+  bolt.className = 'energy-bolt energy-drain-bolt';
+  bolt.style.left = (victimRect.left + victimRect.width / 2) + 'px';
+  bolt.style.top = (victimRect.top + victimRect.height / 2) + 'px';
+  bolt.innerHTML = `
+    <svg class="bolt-svg" viewBox="0 0 40 80" width="18" height="36">
+      <polygon points="20,0 8,35 18,35 6,80 34,30 22,30 34,0" 
+        fill="rgba(168, 85, 247, 0.95)" 
+        stroke="rgba(216, 180, 254, 0.9)" 
+        stroke-width="1.5"/>
+    </svg>
+  `;
+  document.body.appendChild(bolt);
+  
+  // Animate bolt straight to drainer's energy bar
+  requestAnimationFrame(() => {
+    bolt.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.3, 1)';
+    bolt.style.left = (drainerRect.left + drainerRect.width / 2) + 'px';
+    bolt.style.top = (drainerRect.top + drainerRect.height / 2) + 'px';
+    bolt.style.opacity = '0.8';
+  });
+  
+  // Flash drainer bar blue on arrival
+  setTimeout(() => {
+    bolt.remove();
+    drainerBar.classList.add('energy-bolt-flash');
+    setTimeout(() => drainerBar.classList.remove('energy-bolt-flash'), 600);
   }, 500);
 }
 
