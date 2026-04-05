@@ -3,7 +3,7 @@ const path = require("path");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { connectDB, User, CAMPAIGN_BOSSES, authHelpers } = require("./database");
+const { connectDB, User, CAMPAIGN_BOSSES, CARD_RARITIES, CARD_PRICES, PACKS, CAMPAIGN_GOLD, authHelpers, shopHelpers, getDailyDeals, getBuyPrice, getSellPrice } = require("./database");
 const GameAI = require("./gameAI");
 
 const app = express();
@@ -375,6 +375,72 @@ app.post("/api/deleteDeck", async (req, res) => {
   }
 });
 
+// ==================== SHOP API ROUTES ====================
+
+// Get shop data (daily deals, packs, prices)
+app.get("/api/shop", (req, res) => {
+  res.json({
+    dailyDeals: getDailyDeals(),
+    packs: PACKS,
+    prices: CARD_PRICES
+  });
+});
+
+// Buy a card from the market
+app.post("/api/shop/buy-card", async (req, res) => {
+  try {
+    const { userId, cardKey } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+    if (!CARD_RARITIES[cardKey]) return res.status(400).json({ success: false, error: 'Invalid card' });
+    
+    const result = await shopHelpers.buyCard(userId, cardKey);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Buy a daily deal
+app.post("/api/shop/buy-deal", async (req, res) => {
+  try {
+    const { userId, cardKey } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+    
+    const result = await shopHelpers.buyDailyDeal(userId, cardKey);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Buy a pack
+app.post("/api/shop/buy-pack", async (req, res) => {
+  try {
+    const { userId, packId } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+    if (!PACKS[packId]) return res.status(400).json({ success: false, error: 'Invalid pack' });
+    
+    const result = await shopHelpers.buyPack(userId, packId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Sell a card
+app.post("/api/shop/sell-card", async (req, res) => {
+  try {
+    const { userId, cardKey } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+    if (!CARD_RARITIES[cardKey]) return res.status(400).json({ success: false, error: 'Invalid card' });
+    
+    const result = await shopHelpers.sellCard(userId, cardKey);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 const ROWS = 7;
 const COLS = 6;
@@ -543,16 +609,16 @@ const DECKS = {
       { key: "bloodfamiliar", name: "Blood Familiar", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "blood_bite", effectDesc: "PASSIVE: Attacks twice. Second attack deals 1 damage.", art: "/images/Blood Familiar.png", rarity: "common" },
       { key: "bloodfamiliar", name: "Blood Familiar", atk: 2, hp: 1, cost: 1, type: "monster", effect: "passive", effectId: "blood_bite", effectDesc: "PASSIVE: Attacks twice. Second attack deals 1 damage.", art: "/images/Blood Familiar.png", rarity: "common" },
       // Nightstalker x3 (lifesteal)
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
       // Crypt Keeper x2 (gains max HP on ally death)
       { key: "cryptkeeper", name: "Crypt Keeper", atk: 1, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "grow_max_hp_on_ally_death", effectDesc: "PASSIVE: Gains +1 Max HP when a friendly unit dies.", art: "/images/Crypt Keeper.png", rarity: "rare" },
       { key: "cryptkeeper", name: "Crypt Keeper", atk: 1, hp: 3, cost: 2, type: "monster", effect: "passive", effectId: "grow_max_hp_on_ally_death", effectDesc: "PASSIVE: Gains +1 Max HP when a friendly unit dies.", art: "/images/Crypt Keeper.png", rarity: "rare" },
       // Vampire Spawn x3 (lifesteal)
-      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Vampire Spawn.png", rarity: "common" },
-      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Vampire Spawn.png", rarity: "common" },
-      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Vampire Spawn.png", rarity: "common" },
+      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Vampire Spawn.png", rarity: "common" },
+      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Vampire Spawn.png", rarity: "common" },
+      { key: "vampirespawn", name: "Vampire Spawn", atk: 2, hp: 3, cost: 3, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Vampire Spawn.png", rarity: "common" },
       // Blood Priest x2 (heals adjacent allies end of turn)
       { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
       { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
@@ -560,13 +626,13 @@ const DECKS = {
       { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
       { key: "soulcollector", name: "Soul Collector", atk: 3, hp: 2, cost: 3, type: "monster", effect: "onKill", effectId: "steal_card", effectDesc: "ON KILL: Add a copy of killed unit to your hand.", art: "/images/Soul Collector.png", rarity: "rare" },
       // Nosferatu x2 (lifesteal + weaken aura)
-      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
-      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
       // Coffin x2 (resurrects self)
       { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
       { key: "coffin", name: "Coffin", atk: 0, hp: 6, cost: 4, type: "structure", effect: "passive", effectId: "resurrect_self", effectDesc: "PASSIVE: If destroyed, resummon at start of your next turn.", art: "/images/Coffin.png", rarity: "rare" },
       // Blood Countess x1 (lifesteal + grows on kill)
-      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
       // Elder Vampire x1 (immortal - heals to full once)
       { key: "eldervampire", name: "Elder Vampire", atk: 3, hp: 6, cost: 5, type: "monster", effect: "passive", effectId: "immortal", effectDesc: "PASSIVE: When this would die, instead heal to full HP (once per game).", art: "/images/Elder Vampire.png", rarity: "legendary" },
       // Vampire Lord x1 (diagonal + grants lifesteal to all)
@@ -597,9 +663,9 @@ const DECKS = {
       { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
       { key: "emeraldforager", name: "Emerald Forager", atk: 1, hp: 2, cost: 1, type: "monster", effect: "onDeploy", effectId: "gem_spawn", effectDesc: "ON DEPLOY: Summon a 1/1 Gem Shard in an adjacent empty tile.", art: "/images/Emerald Forager.png", rarity: "common" },
       // Sapphire Dancer x3 (swap with fairy)
-      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
-      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
-      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with any friendly unit.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with any friendly unit.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with any friendly unit.", art: "/images/Sapphire Dancer.png", rarity: "common" },
       // Topaz Miner x3 (buff from adjacent gems)
       { key: "topazminer", name: "Topaz Miner", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "gem_adjacent_buff", effectDesc: "END OF TURN: If adjacent to a Gem Shard, gain +1 ATK.", art: "/images/Topaz Miner.png", rarity: "common" },
       { key: "topazminer", name: "Topaz Miner", atk: 1, hp: 3, cost: 2, type: "monster", effect: "endOfTurn", effectId: "gem_adjacent_buff", effectDesc: "END OF TURN: If adjacent to a Gem Shard, gain +1 ATK.", art: "/images/Topaz Miner.png", rarity: "common" },
@@ -826,9 +892,9 @@ const DECKS = {
       { key: "vampirelord", name: "Vampire Lord", atk: 5, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "lifesteal_lord", effectDesc: "PASSIVE: Can attack diagonally. All friendly units have Lifesteal.", art: "/images/Vampire Lord.png", rarity: "legendary" },
       { key: "vampirelord", name: "Vampire Lord", atk: 5, hp: 7, cost: 6, type: "monster", effect: "passive", effectId: "lifesteal_lord", effectDesc: "PASSIVE: Can attack diagonally. All friendly units have Lifesteal.", art: "/images/Vampire Lord.png", rarity: "legendary" },
       // Blood Countess x3 (normally 1) - lifesteal + grows on kill
-      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
-      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
-      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
+      { key: "bloodcountess", name: "Blood Countess", atk: 4, hp: 5, cost: 5, type: "monster", effect: "passive", effectId: "lifesteal_grow", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. ON KILL: Gain +1/+1.", art: "/images/Blood Countess.png", rarity: "legendary" },
       // Elder Vampire x3 (normally 1) - immortal resurrection
       { key: "eldervampire", name: "Elder Vampire", atk: 3, hp: 6, cost: 5, type: "monster", effect: "passive", effectId: "immortal", effectDesc: "PASSIVE: When this would die, instead heal to full HP (once per game).", art: "/images/Elder Vampire.png", rarity: "legendary" },
       { key: "eldervampire", name: "Elder Vampire", atk: 3, hp: 6, cost: 5, type: "monster", effect: "passive", effectId: "immortal", effectDesc: "PASSIVE: When this would die, instead heal to full HP (once per game).", art: "/images/Elder Vampire.png", rarity: "legendary" },
@@ -848,10 +914,10 @@ const DECKS = {
       
       // === LIFESTEAL SYNERGY ===
       // Nosferatu x4 - lifesteal + weaken aura
-      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
-      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
-      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
-      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
+      { key: "nosferatu", name: "Nosferatu", atk: 3, hp: 4, cost: 4, type: "monster", effect: "passive", effectId: "lifesteal_weaken", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack. Adjacent enemies deal -1 damage.", art: "/images/Nosferatu.png", rarity: "rare" },
       // Blood Priest x4 - end of turn heals
       { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
       { key: "bloodpriest", name: "Blood Priest", atk: 2, hp: 4, cost: 3, type: "monster", effect: "endOfTurn", effectId: "heal_adjacent", effectDesc: "END OF TURN: Heal adjacent allies for 1.", art: "/images/Blood Priest.png", rarity: "rare" },
@@ -873,12 +939,12 @@ const DECKS = {
       
       // === FODDER (Lifesteal bodies) ===
       // Nightstalker x6 - cheap lifesteal units
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
-      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP when attacking or attacked.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
+      { key: "nightstalker", name: "Nightstalker", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "lifesteal", effectDesc: "PASSIVE: Lifesteal: Heals 1 HP on attack.", art: "/images/Nightstalker.png", rarity: "common" },
     ]
   },
   "jeweled-court-challenge": {
@@ -952,10 +1018,10 @@ const DECKS = {
       
       // === POSITIONING & MOBILITY ===
       // Sapphire Dancer x4 - swap with fairies
-      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
-      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
-      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
-      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with a friendly Fairy.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with any friendly unit.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with any friendly unit.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with any friendly unit.", art: "/images/Sapphire Dancer.png", rarity: "common" },
+      { key: "sapphiredancer", name: "Sapphire Dancer", atk: 2, hp: 2, cost: 2, type: "monster", effect: "passive", effectId: "fairy_swap", effectDesc: "PASSIVE: Can swap positions with any friendly unit.", art: "/images/Sapphire Dancer.png", rarity: "common" },
     ]
   },
   "elunes-chosen-challenge": {
@@ -1551,6 +1617,13 @@ function shouldUnitDie(lobby, unit) {
     unit.hp = unit.maxHp || 6;
     unit.immortalUsed = true;
     logToLobby(lobby, unit.name + " refuses to die! Heals to full HP!");
+    // Emit immortal animation
+    const pos = getUnitPos(state, unit.id);
+    if (pos) {
+      const animData = { type: "effect", effectType: "immortal_rise", targetPos: pos };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
     return false; // Unit survives
   }
   
@@ -1761,18 +1834,69 @@ function emitPlaytestState(lobby) {
     const armoryBuffForUnit = (u.effectId === "armory_buff") ? 0 : armoryBuff;
     
     const totalHpBuff = tileHpBuff + moonflareHpBuff + armoryBuffForUnit;
+    
+    let displayAtk = u.atk;
+    if (pos) {
+      if (u.effectId === "gem_transform") {
+        for (const gid in state.units) {
+          if (state.units[gid].key === "gemshard") displayAtk += 1;
+        }
+      }
+      if (u.effectId === "spawn_drone") {
+        for (const gid in state.units) {
+          if (state.units[gid].key === "voiddrone" && state.units[gid].owner === u.owner) displayAtk += 1;
+        }
+      }
+      if (u.effectId === "starweave_ranged") {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = pos.r + dr, nc = pos.c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            const aid = state.board[nr][nc];
+            if (aid && state.units[aid] && state.units[aid].owner === u.owner) displayAtk += 1;
+          }
+        }
+      }
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = pos.r + dr, nc = pos.c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const aid = state.board[nr][nc];
+          if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "attack_aura") displayAtk += 1;
+          if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "moonflare_aura") displayAtk += 1;
+          if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "garnet_aura") displayAtk += 1;
+          if (aid && state.units[aid] && state.units[aid].owner !== u.owner && state.units[aid].effectId === "garnet_aura") {
+            displayAtk = Math.min(displayAtk, 2);
+          }
+          if (aid && state.units[aid] && state.units[aid].owner !== u.owner && 
+              (state.units[aid].effectId === "weaken_aura" || state.units[aid].effectId === "lifesteal_weaken")) {
+            displayAtk = Math.max(0, displayAtk - 1);
+          }
+        }
+      }
+    }
+    
     unitsWithBuffs[uid] = { 
       ...u, 
+      displayAtk: displayAtk,
       displayHp: u.hp + totalHpBuff,
       displayMaxHp: (u.maxHp || u.hp) + totalHpBuff,
       hpBuffed: totalHpBuff > 0,
+      atkModified: displayAtk !== u.atk,
       armoryBuffed: armoryBuffForUnit > 0 ? armoryBuffForUnit : undefined
     };
   }
   
-  // Calculate Raphael protected tiles and War Banner aura tiles for client-side glow
+  // Calculate Raphael protected tiles, War Banner aura tiles, and Coffin Trapper tiles for client-side glow
   const raphaelProtectedTiles = [];
   const warBannerAuraTiles = [];
+  const coffinTrapperTiles = [];
+  const sheriffAuraTiles = [];
+  const nosferatuAuraTiles = [];
+  const garnetAuraTiles = [];
+  const diamondGuardianTiles = [];
   for (const uid in state.units) {
     const u = state.units[uid];
     if (u.effectId === "raphael_shield") {
@@ -1801,6 +1925,76 @@ function emitPlaytestState(lobby) {
         }
       }
     }
+    if (u.effectId === "root_aura") {
+      const trapPos = getUnitPos(state, uid);
+      if (trapPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = trapPos.r + dr, nc = trapPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              coffinTrapperTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "weaken_aura") {
+      const sheriffPos = getUnitPos(state, uid);
+      if (sheriffPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = sheriffPos.r + dr, nc = sheriffPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              sheriffAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "lifesteal_weaken") {
+      const nosPos = getUnitPos(state, uid);
+      if (nosPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = nosPos.r + dr, nc = nosPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              nosferatuAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "garnet_aura") {
+      const garnetPos = getUnitPos(state, uid);
+      if (garnetPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = garnetPos.r + dr, nc = garnetPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              garnetAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "bodyguard") {
+      const dgPos = getUnitPos(state, uid);
+      if (dgPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = dgPos.r + dr, nc = dgPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              diamondGuardianTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
   }
 
   const base = { 
@@ -1820,6 +2014,11 @@ function emitPlaytestState(lobby) {
     moveCountThisTurn: state.moveCountThisTurn,
     raphaelProtectedTiles: raphaelProtectedTiles,
     warBannerAuraTiles: warBannerAuraTiles,
+    coffinTrapperTiles: coffinTrapperTiles,
+    sheriffAuraTiles: sheriffAuraTiles,
+    nosferatuAuraTiles: nosferatuAuraTiles,
+    garnetAuraTiles: garnetAuraTiles,
+    diamondGuardianTiles: diamondGuardianTiles,
     isPlaytest: true
   };
   
@@ -2323,10 +2522,16 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     a.atk += 1;
     a.hp += 1;
     a.maxHp = (a.maxHp || a.hp) + 1;
-    // Track the buff
     if (!a.permBuffs) a.permBuffs = [];
     a.permBuffs.push({ atk: 1, hp: 1, source: "Blood Countess (on kill)" });
     logToLobby(lobby, a.name + " grows stronger! Now " + a.atk + "/" + a.hp);
+    // Emit blood vortex animation
+    const countessPos = getUnitPos(state, aid);
+    if (countessPos && killedUnitPos) {
+      const animData = { type: "effect", effectType: "blood_vortex", sourcePos: killedUnitPos, targetPos: countessPos };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
   }
   
   // Archangel Michael - first kill each turn, can move and attack again (passive but triggers on kill)
@@ -2406,6 +2611,10 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
     }
   }
   if (a.effectId === "spawn_drone" && killedUnitPos) {
+    // Emit drop-in animation before spawning
+    const animData = { type: "effect", effectType: "drone_drop", targetPos: killedUnitPos, droneArt: "/images/Void Drone.png" };
+    if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+    if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
     // Spawn a Void Drone in the killed unit's tile
     const droneId = genId();
     state.units[droneId] = { 
@@ -2429,11 +2638,25 @@ function processOnKillEffect(lobby, aid, role, killedUnitPos, killedUnit) {
   if (a.effectId === "draw_on_kill") {
     drawCards(lobby, role, 1);
     logToLobby(lobby, a.name + " draws a card!");
+    // Emit ghost green glow on the grave robber
+    const grPos = getUnitPos(state, aid);
+    if (grPos) {
+      const animData = { type: "effect", effectType: "grave_glow", sourcePos: grPos };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    }
   }
   // Soul Collector - add copy of killed unit to hand
   if (a.effectId === "steal_card" && killedUnit) {
     const p = lobby.gameState.players[role];
     if (p.hand.length < MAX_HAND_SIZE) {
+      // Emit soul steal animation
+      const scPos = getUnitPos(state, aid);
+      if (scPos && killedUnitPos) {
+        const animData = { type: "effect", effectType: "soul_steal", sourcePos: killedUnitPos, targetPos: scPos, stolenArt: killedUnit.art, stolenName: killedUnit.name, role: role };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
       // Create a copy of the killed unit as a card
       const stolenCard = {
         id: genId(),
@@ -2519,8 +2742,9 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
   // Ruby Sprite - deal 1 damage to attacker on death
   if (deadUnit.effectId === "death_retaliate" && attackerId && state.units[attackerId]) {
     const attacker = state.units[attackerId];
-    attacker.hp -= 1;
-    logToLobby(lobby, deadUnit.name + " retaliates! " + attacker.name + " takes 1 damage!");
+    const retDmg = applyDamageReduction(state, attackerId, 1, null, lobby);
+    attacker.hp -= retDmg;
+    logToLobby(lobby, deadUnit.name + " retaliates! " + attacker.name + " takes " + retDmg + " damage!");
     if (attacker.hp <= 0) {
       const attackerPos = getUnitPos(state, attackerId);
       if (attackerPos) {
@@ -2568,14 +2792,16 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
       
       // Emit void zap animation on the target
       if (targetPos) {
-        const willDie = (target.hp - 1 <= 0) && shouldUnitDie(lobby, target);
+        const preCheckDmg = applyDamageReduction(state, targetData.id, 1, null);
+        const willDie = (target.hp - preCheckDmg <= 0) && shouldUnitDie(lobby, target);
         const animData = { type: "effect", effectType: "void_zap", targetPos: targetPos, willDie: willDie, targetArt: target.art, targetName: target.name };
         if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
         if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
       }
       
-      target.hp -= 1;
-      logToLobby(lobby, `${deadUnit.name} explodes! ${target.name} takes 1 damage!`);
+      const droneDmg = applyDamageReduction(state, targetData.id, 1, null, lobby);
+      target.hp -= droneDmg;
+      logToLobby(lobby, `${deadUnit.name} explodes! ${target.name} takes ${droneDmg} damage!`);
       
       if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
         if (targetPos) {
@@ -2617,6 +2843,17 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
   
   // Bone Deputy - spawn a 1/1 Bone Pile
   if (deadUnit.effectId === "spawn_bone_pile" && deadPos) {
+    // Emit crossfade animation - bone deputy fades out while bone pile fades in
+    const animData = { 
+      type: "effect", 
+      effectType: "death_transform", 
+      targetPos: deadPos, 
+      fromArt: deadUnit.art, 
+      toArt: "/images/Bone Pile.png" 
+    };
+    if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+    if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+    
     const pileId = genId();
     state.units[pileId] = {
       id: pileId,
@@ -2633,14 +2870,15 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
     logToLobby(lobby, deadUnit.name + " leaves behind a Bone Pile!");
   }
   
-  // The Hanged Man - deal 2 damage to all adjacent enemies
+  // The Hanged Man - deal 2 damage to all adjacent enemies (all 8 tiles)
   if (deadUnit.effectId === "death_explosion" && deadPos) {
-    const adjacentPositions = [
-      { r: deadPos.r - 1, c: deadPos.c },
-      { r: deadPos.r + 1, c: deadPos.c },
-      { r: deadPos.r, c: deadPos.c - 1 },
-      { r: deadPos.r, c: deadPos.c + 1 }
-    ];
+    const adjacentPositions = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        adjacentPositions.push({ r: deadPos.r + dr, c: deadPos.c + dc });
+      }
+    }
     let damaged = 0;
     const toRemove = [];
     const targetPositions = [];
@@ -2656,8 +2894,9 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
         if (target.untargetable) continue;
         targetPositions.push({ r: pos.r, c: pos.c });
         const before = target.hp;
-        target.hp -= 2;
-        combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
+        const explodeDmg = applyDamageReduction(state, targetId, 2, null, lobby);
+        target.hp -= explodeDmg;
+        combatLogToLobby(lobby, `${target.name}: ${before} HP - ${explodeDmg} = ${target.hp} HP`, "combat-result");
         damaged++;
         if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
           toRemove.push({ id: targetId, r: pos.r, c: pos.c });
@@ -2684,7 +2923,10 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
       // Process death effects for the killed unit (enemy's ally death triggers)
       processOnDeathEffect(lobby, deadTarget, deadTarget.owner, { r: item.r, c: item.c });
       processAllyDeathTriggers(lobby, deadTarget.owner, deadTarget, { r: item.r, c: item.c });
-      state.board[item.r][item.c] = null;
+      // Only clear the board cell if it still holds the dead unit (death effects may have spawned something new there)
+      if (state.board[item.r][item.c] === item.id) {
+        state.board[item.r][item.c] = null;
+      }
       discardUnitCard(lobby, deadTarget);
       delete state.units[item.id];
       combatLogToLobby(lobby, `💀 ${deadTarget.name} DESTROYED`, "combat-death");
@@ -2911,8 +3153,9 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
         if (target.untargetable) continue;
         targetPositions.push({ r: pos.r, c: pos.c });
         const before = target.hp;
-        target.hp -= 3;
-        combatLogToLobby(lobby, `${target.name}: ${before} HP - 3 = ${target.hp} HP`, "combat-result");
+        const barrelDmg = applyDamageReduction(state, targetId, 3, null, lobby);
+        target.hp -= barrelDmg;
+        combatLogToLobby(lobby, `${target.name}: ${before} HP - ${barrelDmg} = ${target.hp} HP`, "combat-result");
         damaged++;
         if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
           toRemove.push({ id: targetId, r: pos.r, c: pos.c });
@@ -2956,7 +3199,9 @@ function processOnDeathEffect(lobby, deadUnit, deadUnitOwner, deadPos, attackerI
       
       processOnDeathEffect(lobby, deadTarget, deadTarget.owner, { r: item.r, c: item.c });
       processAllyDeathTriggers(lobby, deadTarget.owner, deadTarget, { r: item.r, c: item.c });
-      state.board[item.r][item.c] = null;
+      if (state.board[item.r][item.c] === item.id) {
+        state.board[item.r][item.c] = null;
+      }
       discardUnitCard(lobby, deadTarget);
       delete state.units[item.id];
       combatLogToLobby(lobby, `💀 ${deadTarget.name} DESTROYED`, "combat-death");
@@ -3130,23 +3375,29 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
             const enemyPos = getUnitPos(state, eid);
             if (enemyPos) targetPositions.push({ r: enemyPos.r, c: enemyPos.c });
             const before = enemy.hp;
-            enemy.hp -= 1;
-            combatLogToLobby(lobby, `${enemy.name}: ${before} HP - 1 = ${enemy.hp} HP`, "combat-result");
+            const gemDmg = applyDamageReduction(state, eid, 1, null, lobby);
+            enemy.hp -= gemDmg;
+            combatLogToLobby(lobby, `${enemy.name}: ${before} HP - ${gemDmg} = ${enemy.hp} HP`, "combat-result");
             if (enemy.hp <= 0) {
               toRemove.push({ id: eid, pos: enemyPos });
             }
           }
         }
         
-        // Emit AOE animation - Prismatic Fairy glows, all enemies shake
-        emitEffectAnimation(lobby, uid, targetPositions, "gem_shatter");
+        // Emit prismatic shatter animation - fairy glows, enemies get crystallized
+        const fairyPos = getUnitPos(state, uid);
+        const animData = { type: "effect", effectType: "prismatic_shatter", sourcePos: fairyPos, targets: targetPositions };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
         
         logToLobby(lobby, u.name + "'s gem shatters! All enemies take 1 damage!");
         for (const item of toRemove) {
           const deadEnemy = state.units[item.id];
           processOnDeathEffect(lobby, deadEnemy, deadEnemy.owner, item.pos);
           processAllyDeathTriggers(lobby, deadEnemy.owner, deadEnemy, item.pos);
-          if (item.pos) state.board[item.pos.r][item.pos.c] = null;
+          if (item.pos && state.board[item.pos.r][item.pos.c] === item.id) {
+            state.board[item.pos.r][item.pos.c] = null;
+          }
           discardUnitCard(lobby, deadEnemy);
           delete state.units[item.id];
           combatLogToLobby(lobby, `💀 ${deadEnemy.name} DESTROYED`, "combat-death");
@@ -3158,6 +3409,8 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
   
   for (const uid in state.units) {
     const u = state.units[uid];
+    // Skip the dead unit itself
+    if (deadUnit && uid === deadUnit.id) continue;
     // Undertaker - gains +1/+1 on ally death
     if (u.owner === deadUnitOwner && u.effectId === "grow_on_ally_death") {
       u.atk += 1;
@@ -3169,16 +3422,29 @@ function processAllyDeathTriggers(lobby, deadUnitOwner, deadUnit = null, deadPos
       logToLobby(lobby, u.name + " grows from ally death! Now " + u.atk + "/" + u.hp);
       triggerStatGainEffects(lobby, 'atk', 1, uid);
       triggerStatGainEffects(lobby, 'hp', 1, uid);
+      // Emit soul absorption animation
+      const undertakerPos = getUnitPos(state, uid);
+      if (undertakerPos && deadPos) {
+        const animData = { type: "effect", effectType: "soul_absorb", sourcePos: deadPos, targetPos: undertakerPos };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
     }
-    // Crypt Keeper - gains +1 max HP on ally death
+    // Crypt Keeper - gains +1 max HP on ally death (does NOT heal)
     if (u.owner === deadUnitOwner && u.effectId === "grow_max_hp_on_ally_death") {
       u.maxHp = (u.maxHp || u.hp) + 1;
-      u.hp += 1; // Also heal for the new max
       // Track the buff
       if (!u.permBuffs) u.permBuffs = [];
       u.permBuffs.push({ atk: 0, hp: 1, source: "Crypt Keeper (ally death)" });
       logToLobby(lobby, u.name + " absorbs death essence! Max HP now " + u.maxHp);
       triggerStatGainEffects(lobby, 'hp', 1, uid);
+      // Emit glow animation
+      const ckPos = getUnitPos(state, uid);
+      if (ckPos) {
+        const animData = { type: "effect", effectType: "crypt_glow", sourcePos: ckPos };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
     }
   }
 }
@@ -3564,10 +3830,11 @@ function processStartOfTurnEffects(lobby, role) {
         // Combat log
         combatLogToLobby(lobby, `⭐ ${u.name} - Star Strike`, "combat-header");
         const before = target.hp;
-        target.hp -= 2;
-        combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
+        const starDmg = applyDamageReduction(state, targetId, 2, null, lobby);
+        target.hp -= starDmg;
+        combatLogToLobby(lobby, `${target.name}: ${before} HP - ${starDmg} = ${target.hp} HP`, "combat-result");
         
-        logToLobby(lobby, u.name + " calls down starfire on " + target.name + "! (2 damage)");
+        logToLobby(lobby, u.name + " calls down starfire on " + target.name + "! (" + starDmg + " damage)");
         if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
           processOnDeathEffect(lobby, target, target.owner, targetPos);
           processAllyDeathTriggers(lobby, target.owner, target, targetPos);
@@ -3768,8 +4035,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           if (checkDivineShield(state, target, lobby)) continue;
           targetPositions.push({ r: targetRow, c: c });
           const before = target.hp;
-          target.hp -= 1;
-          combatLogToLobby(lobby, `${target.name}: ${before} HP - 1 = ${target.hp} HP`, "combat-result");
+          const vcDmg = applyDamageReduction(state, uid, 1, null, lobby);
+          target.hp -= vcDmg;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - ${vcDmg} = ${target.hp} HP`, "combat-result");
           damaged++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, col: c });
@@ -3781,7 +4049,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       if (targetPositions.length > 0 || damaged === 0) {
         const animData = {
           type: "effect",
-          effectType: "void_collapse",
+          effectType: "void_collapse_spell",
           targetRow: targetRow,
           targets: targetPositions
         };
@@ -3796,7 +4064,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         const deadPos = { r: targetRow, c: item.col };
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, deadPos);
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, deadPos);
-        state.board[targetRow][item.col] = null;
+        if (state.board[targetRow][item.col] === item.id) state.board[targetRow][item.col] = null;
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
         combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
@@ -3807,6 +4075,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
   if (effectId === "mass_buff") {
     // Hive Ascension - all friendly units gain +1 ATK and +1 HP permanently
     let buffed = 0;
+    const buffedPositions = [];
     for (const uid in state.units) {
       const u = state.units[uid];
       if (u.owner === role) {
@@ -3816,8 +4085,16 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         // Track the buff source
         if (!u.permBuffs) u.permBuffs = [];
         u.permBuffs.push({ atk: 1, hp: 1, source: "Hive Ascension" });
+        const pos = getUnitPos(state, uid);
+        if (pos) buffedPositions.push({ r: pos.r, c: pos.c });
         buffed++;
       }
+    }
+    // Emit buff float animation on all affected units
+    if (buffedPositions.length > 0) {
+      const animData = { type: "effect", effectType: "buff_float", targets: buffedPositions, buffAtk: 1, buffHp: 1 };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
     }
     logToLobby(lobby, "Hive Ascension buffs " + buffed + " units with +1 ATK and +1 HP!");
   }
@@ -3840,6 +4117,13 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           return false;
         }
         target.marked = true;
+        // Emit most wanted poster animation
+        const targetPos = getUnitPos(state, targetUnitId);
+        if (targetPos) {
+          const animData = { type: "effect", effectType: "most_wanted", targetPos: targetPos };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        }
         logToLobby(lobby, target.name + " is Most Wanted! Takes +2 damage from attacks.");
         return true;
       }
@@ -3889,8 +4173,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           if (target.untargetable) continue;
           targetPositions.push({ r: targetRow, c: c });
           const before = target.hp;
-          target.hp -= 2;
-          combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
+          const rdmg1 = applyDamageReduction(state, uid, 2, null, lobby); target.hp -= rdmg1;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - ${rdmg1} = ${target.hp} HP`, "combat-result");
           damaged++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, col: c });
@@ -3899,24 +4183,21 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       }
       
       // Emit High Noon animation
-      if (targetPositions.length > 0) {
-        const animData = {
-          type: "effect",
-          effectType: "high_noon",
-          sourcePos: null,
-          sourceUnitId: null,
-          targets: targetPositions
-        };
-        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
-        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
-      }
+      const animData = {
+        type: "effect",
+        effectType: "high_noon",
+        targetRow: targetRow,
+        targets: targetPositions
+      };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
       
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
         if (!deadUnit) continue;
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, { r: targetRow, c: item.col });
-        state.board[targetRow][item.col] = null;
+        if (state.board[targetRow][item.col] === item.id) state.board[targetRow][item.col] = null;
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
         combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
@@ -3932,6 +4213,13 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     if (targetUnitId && state.units[targetUnitId]) {
       const target = state.units[targetUnitId];
       if (target.owner === role) {
+        // Emit blood pact animation
+        const targetPos = getUnitPos(state, targetUnitId);
+        if (targetPos) {
+          const animData = { type: "effect", effectType: "blood_pact", targetPos: targetPos, role: role };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        }
         target.hp -= 2;
         logToLobby(lobby, "Blood Pact deals 2 damage to " + target.name);
         
@@ -3957,6 +4245,15 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       const target = state.units[targetUnitId];
       const oldAtk = target.atk;
       const oldHp = target.hp;
+      
+      // Emit animation before swapping
+      const targetPos = getUnitPos(state, targetUnitId);
+      if (targetPos) {
+        const animData = { type: "effect", effectType: "blood_transfusion", targetPos: targetPos, oldAtk: oldAtk, oldHp: oldHp };
+        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      }
+      
       target.atk = oldHp;
       target.hp = oldAtk;
       target.maxHp = oldAtk; // Update max HP too
@@ -3982,6 +4279,11 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     const toReturn = unitCards.slice(-2); // Last 2 units
     
     if (toReturn.length > 0) {
+      // Emit animation
+      const animData = { type: "effect", effectType: "crimson_revival", role: role, cardNames: toReturn.map(c => c.name), cardArts: toReturn.map(c => c.art) };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+      
       for (const card of toReturn) {
         const idx = p.discard.indexOf(card);
         if (idx !== -1) {
@@ -4013,8 +4315,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           if (target.untargetable) continue;
           targetPositions.push({ r: targetRow, c: c });
           const before = target.hp;
-          target.hp -= 2;
-          combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
+          const rdmg2 = applyDamageReduction(state, uid, 2, null, lobby); target.hp -= rdmg2;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - ${rdmg2} = ${target.hp} HP`, "combat-result");
           hitCount++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, col: c });
@@ -4023,24 +4325,23 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       }
       
       // Emit Sanguine Feast animation
-      if (targetPositions.length > 0) {
-        const animData = {
-          type: "effect",
-          effectType: "sanguine_feast",
-          sourcePos: null,
-          sourceUnitId: null,
-          targets: targetPositions
-        };
-        if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
-        if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
-      }
+      const animData = {
+        type: "effect",
+        effectType: "sanguine_feast",
+        targetRow: targetRow,
+        targets: targetPositions,
+        hitCount: hitCount,
+        role: role
+      };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
       
       for (const item of toRemove) {
         const deadUnit = state.units[item.id];
         if (!deadUnit) continue;
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, { r: targetRow, c: item.col });
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, { r: targetRow, c: item.col });
-        state.board[targetRow][item.col] = null;
+        if (state.board[targetRow][item.col] === item.id) state.board[targetRow][item.col] = null;
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
         combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
@@ -4064,17 +4365,30 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
                        'amethystenchanter', 'diamondguardian', 'opaldevourer',
                        'garnetqueen', 'moonstonewitch', 'prismaticfairy'];
+    const buffedPositions = [];
+    const fairyPositions = [];
     for (const uid in state.units) {
       const u = state.units[uid];
       if (u.owner === role) {
+        const uPos = getUnitPos(state, uid);
+        if (uPos) buffedPositions.push({ r: uPos.r, c: uPos.c });
         u.hp += 1;
         u.maxHp = (u.maxHp || u.hp) + 1;
+        if (!u.permBuffs) u.permBuffs = [];
         if (fairyKeys.includes(u.key)) {
           u.atk += 1;
+          u.permBuffs.push({ atk: 1, hp: 1, source: "Pearl Blessing" });
+          if (uPos) fairyPositions.push({ r: uPos.r, c: uPos.c });
+        } else {
+          u.permBuffs.push({ atk: 0, hp: 1, source: "Pearl Blessing" });
         }
         buffed++;
       }
     }
+    // Emit pearl rain animation
+    const animData = { type: "effect", effectType: "pearl_blessing", targets: buffedPositions, fairyTargets: fairyPositions, role: role };
+    if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+    if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
     logToLobby(lobby, "Pearl Blessing buffs " + buffed + " units!");
   }
   
@@ -4085,6 +4399,17 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
       if (target.owner !== role) {
         const oldAtk = target.atk;
         target.atk = Math.max(1, Math.floor(target.atk / 2));
+        const reduction = oldAtk - target.atk;
+        // Track the debuff
+        if (!target.permBuffs) target.permBuffs = [];
+        target.permBuffs.push({ atk: -reduction, hp: 0, source: "Gemstone Curse" });
+        // Emit curse animation
+        const targetPos = getUnitPos(state, targetUnitId);
+        if (targetPos) {
+          const animData = { type: "effect", effectType: "gemstone_curse", targetPos: targetPos, reduction: reduction };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        }
         logToLobby(lobby, "Gemstone Curse reduces " + target.name + "'s ATK from " + oldAtk + " to " + target.atk + "!");
       }
     }
@@ -4094,6 +4419,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
     // Fairy Ring - summon 2 Gem Shards in home rows
     const homeRows = role === "gold" ? [0, 1] : [5, 6];
     let spawned = 0;
+    const spawnPositions = [];
     for (const row of homeRows) {
       if (spawned >= 2) break;
       for (let c = 0; c < COLS; c++) {
@@ -4112,6 +4438,7 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
             art: "/images/Gem Shard.png"
           };
           state.board[row][c] = gemId;
+          spawnPositions.push({ r: row, c: c });
           
           // Apply polymorph to spawned gem if polymorph is active
           if (state.polymorphActive) {
@@ -4121,6 +4448,12 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           spawned++;
         }
       }
+    }
+    // Emit fairy ring spawn animation
+    if (spawnPositions.length > 0) {
+      const animData = { type: "effect", effectType: "fairy_ring_spawn", targets: spawnPositions };
+      if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+      if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
     }
     logToLobby(lobby, "Fairy Ring summons " + spawned + " Gem Shards!");
   }
@@ -4189,8 +4522,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
           if (checkDivineShield(state, target, lobby)) continue;
           targetPositions.push({ r: pos.r, c: pos.c });
           const before = target.hp;
-          target.hp -= 2;
-          combatLogToLobby(lobby, `${target.name}: ${before} HP - 2 = ${target.hp} HP`, "combat-result");
+          const rdmg3 = applyDamageReduction(state, uid, 2, null, lobby); target.hp -= rdmg3;
+          combatLogToLobby(lobby, `${target.name}: ${before} HP - ${rdmg3} = ${target.hp} HP`, "combat-result");
           hitCount++;
           if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
             toRemove.push({ id: uid, pos: pos });
@@ -4216,7 +4549,9 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         if (!deadUnit) continue;
         processOnDeathEffect(lobby, deadUnit, deadUnit.owner, item.pos);
         processAllyDeathTriggers(lobby, deadUnit.owner, deadUnit, item.pos);
-        state.board[item.pos.r][item.pos.c] = null;
+        if (state.board[item.pos.r][item.pos.c] === item.id) {
+          state.board[item.pos.r][item.pos.c] = null;
+        }
         discardUnitCard(lobby, deadUnit);
         delete state.units[item.id];
         combatLogToLobby(lobby, `💀 ${deadUnit.name} DESTROYED`, "combat-death");
@@ -4269,7 +4604,8 @@ function processInstantSpell(lobby, role, effectId, targetRow, targetUnitId, tar
         }
         // Check divine shield
         if (!checkDivineShield(state, target, lobby)) {
-          target.hp -= 2;
+          const mdDmg = applyDamageReduction(state, targetUnitId, 2, null, lobby);
+          target.hp -= mdDmg;
         }
         const enemyRole = role === "gold" ? "silver" : "gold";
         const enemyPlayer = lobby.gameState.players[enemyRole];
@@ -4846,12 +5182,21 @@ async function handleCampaignVictory(lobby) {
     
     const result = await authHelpers.completeBoss(lobby.hostUserId, lobby.bossId, stars, lobby.aiLevel, lobby.isChallenge);
     
+    // Award gold based on difficulty
+    const goldAmount = CAMPAIGN_GOLD[lobby.isChallenge ? 4 : (lobby.aiLevel || 1)] || 5;
+    let goldResult = null;
+    if (lobby.hostUserId) {
+      goldResult = await shopHelpers.addGold(lobby.hostUserId, goldAmount);
+    }
+    
     // Send rewards to player
     if (lobby.hostSocket) {
       lobby.hostSocket.emit("campaignVictory", {
         bossId: lobby.bossId,
         stars: stars,
         rewards: result.rewards,
+        goldEarned: goldAmount,
+        newGold: goldResult ? goldResult.gold : 0,
         user: result.user,
         isChallenge: lobby.isChallenge
       });
@@ -4859,7 +5204,7 @@ async function handleCampaignVictory(lobby) {
     
     const difficultyNames = { 1: 'Easy', 2: 'Medium', 3: 'Hard', 4: 'Challenge' };
     const diffLabel = lobby.isChallenge ? 'Challenge' : difficultyNames[stars];
-    logToLobby(lobby, "🎉 Boss defeated on " + diffLabel + "!" + (lobby.isChallenge ? " ✨ HOLO CARDS!" : " Earned " + stars + " star(s)!"));
+    logToLobby(lobby, "🎉 Boss defeated on " + diffLabel + "!" + (lobby.isChallenge ? " ✨ HOLO CARDS!" : " Earned " + stars + " star(s)!") + " 🪙 +" + goldAmount + " gold!");
     
     // Format card names for log
     const cardNames = result.rewards.cards.map(c => {
@@ -6348,18 +6693,74 @@ function emitGameState(lobby) {
     const armoryBuffForUnit = (u.effectId === "armory_buff") ? 0 : armoryBuff;
     
     const totalHpBuff = tileHpBuff + moonflareHpBuff + armoryBuffForUnit;
+    
+    // Compute display ATK including all passive buffs
+    let displayAtk = u.atk;
+    if (pos) {
+      // Moonstone Witch - +1 ATK per Gem Shard on field
+      if (u.effectId === "gem_transform") {
+        for (const gid in state.units) {
+          if (state.units[gid].key === "gemshard") displayAtk += 1;
+        }
+      }
+      // Void Broodmother - +1 ATK per owned Void Drone
+      if (u.effectId === "spawn_drone") {
+        for (const gid in state.units) {
+          if (state.units[gid].key === "voiddrone" && state.units[gid].owner === u.owner) displayAtk += 1;
+        }
+      }
+      // Starweave Archer - +1 ATK per adjacent ally
+      if (u.effectId === "starweave_ranged") {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = pos.r + dr, nc = pos.c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+            const aid = state.board[nr][nc];
+            if (aid && state.units[aid] && state.units[aid].owner === u.owner) displayAtk += 1;
+          }
+        }
+      }
+      // Adjacent aura buffs and debuffs
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = pos.r + dr, nc = pos.c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          const aid = state.board[nr][nc];
+          if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "attack_aura") displayAtk += 1;
+          if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "moonflare_aura") displayAtk += 1;
+          if (aid && state.units[aid] && state.units[aid].owner === u.owner && state.units[aid].effectId === "garnet_aura") displayAtk += 1;
+          if (aid && state.units[aid] && state.units[aid].owner !== u.owner && state.units[aid].effectId === "garnet_aura") {
+            displayAtk = Math.min(displayAtk, 2);
+          }
+          if (aid && state.units[aid] && state.units[aid].owner !== u.owner && 
+              (state.units[aid].effectId === "weaken_aura" || state.units[aid].effectId === "lifesteal_weaken")) {
+            displayAtk = Math.max(0, displayAtk - 1);
+          }
+        }
+      }
+    }
+    
     unitsWithBuffs[uid] = { 
       ...u, 
+      displayAtk: displayAtk,
       displayHp: u.hp + totalHpBuff,
       displayMaxHp: (u.maxHp || u.hp) + totalHpBuff,
       hpBuffed: totalHpBuff > 0,
-      armoryBuffed: armoryBuffForUnit > 0 ? armoryBuffForUnit : undefined // Track armory buff for client display
+      atkModified: displayAtk !== u.atk,
+      armoryBuffed: armoryBuffForUnit > 0 ? armoryBuffForUnit : undefined
     };
   }
   
-  // Calculate Raphael protected tiles and War Banner aura tiles for client-side glow
+  // Calculate Raphael protected tiles, War Banner aura tiles, and Coffin Trapper tiles for client-side glow
   const raphaelProtectedTiles = [];
   const warBannerAuraTiles = [];
+  const coffinTrapperTiles = [];
+  const sheriffAuraTiles = [];
+  const nosferatuAuraTiles = [];
+  const garnetAuraTiles = [];
+  const diamondGuardianTiles = [];
   for (const uid in state.units) {
     const u = state.units[uid];
     if (u.effectId === "raphael_shield") {
@@ -6383,6 +6784,76 @@ function emitGameState(lobby) {
             const nr = bannerPos.r + dr, nc = bannerPos.c + dc;
             if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
               warBannerAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "root_aura") {
+      const trapPos = getUnitPos(state, uid);
+      if (trapPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = trapPos.r + dr, nc = trapPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              coffinTrapperTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "weaken_aura") {
+      const sheriffPos = getUnitPos(state, uid);
+      if (sheriffPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = sheriffPos.r + dr, nc = sheriffPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              sheriffAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "lifesteal_weaken") {
+      const nosPos = getUnitPos(state, uid);
+      if (nosPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = nosPos.r + dr, nc = nosPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              nosferatuAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "garnet_aura") {
+      const garnetPos = getUnitPos(state, uid);
+      if (garnetPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = garnetPos.r + dr, nc = garnetPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              garnetAuraTiles.push({ r: nr, c: nc, owner: u.owner });
+            }
+          }
+        }
+      }
+    }
+    if (u.effectId === "bodyguard") {
+      const dgPos = getUnitPos(state, uid);
+      if (dgPos) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = dgPos.r + dr, nc = dgPos.c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+              diamondGuardianTiles.push({ r: nr, c: nc, owner: u.owner });
             }
           }
         }
@@ -6420,7 +6891,12 @@ function emitGameState(lobby) {
     cheatGreedActive: state.cheatGreedActive || false,
     cheatGreedTurnsLeft: state.cheatGreedTurnsLeft || 0,
     raphaelProtectedTiles: raphaelProtectedTiles,
-    warBannerAuraTiles: warBannerAuraTiles
+    warBannerAuraTiles: warBannerAuraTiles,
+    coffinTrapperTiles: coffinTrapperTiles,
+    sheriffAuraTiles: sheriffAuraTiles,
+    nosferatuAuraTiles: nosferatuAuraTiles,
+    garnetAuraTiles: garnetAuraTiles,
+    diamondGuardianTiles: diamondGuardianTiles
   };
   if (lobby.hostSocket) lobby.hostSocket.emit("state", { 
     ...base, 
@@ -7490,7 +7966,7 @@ async function executeAction(lobby, role, action) {
       const baseAttacks = 1;
       const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
       const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
-      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      const bloodBiteBonus = a.effectId === "blood_bite" ? 1 : 0; const maxAttacks = baseAttacks + doubleAttackBonus + bloodBiteBonus + topazBonus;
       
       console.log(`[ATTACK] ${a.name} (${action.attackerId}): attackCount=${attackCount}, maxAttacks=${maxAttacks} (base=${baseAttacks}, double=${doubleAttackBonus}, topaz=${topazBonus}), frozen=${a.frozen}`);
       
@@ -7517,6 +7993,7 @@ async function executeAction(lobby, role, action) {
       combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
       
       let dmg = getEffectiveAtk(state, action.attackerId, action.targetId);
+      if (a.effectId === "blood_bite" && (state.attackCountThisTurn?.[action.attackerId] || 0) >= 1) dmg = 1;
       if (dmg !== a.atk) {
         combatLogToLobby(lobby, `Modified ATK: ${dmg} (buffs/debuffs applied)`, "combat-step");
       }
@@ -7565,8 +8042,9 @@ async function executeAction(lobby, role, action) {
         if (otherEnemies.length > 0) {
           const splashTargetId = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
           const splashTarget = state.units[splashTargetId];
-          splashTarget.hp -= 1;
-          logToLobby(lobby, a.name + "'s flames splash " + splashTarget.name + " for 1 damage!");
+          const splDmg = applyDamageReduction(state, splashTargetId, 1, action.attackerId, lobby);
+          splashTarget.hp -= splDmg;
+          logToLobby(lobby, a.name + "'s flames splash " + splashTarget.name + " for " + splDmg + " damage!");
           if (splashTarget.hp <= 0 && shouldUnitDie(lobby, splashTarget)) {
             const splashPos = getUnitPos(state, splashTargetId);
             processOnDeathEffect(lobby, splashTarget, splashTarget.owner, splashPos);
@@ -7594,7 +8072,7 @@ async function executeAction(lobby, role, action) {
           if (splashId && state.units[splashId] && state.units[splashId].owner !== role) {
             const splashTarget = state.units[splashId];
             if (splashTarget.untargetable) continue;
-            splashTarget.hp -= 1;
+            const spDmg = applyDamageReduction(state, splashId, 1, action.attackerId, lobby); splashTarget.hp -= spDmg;
             hitPositions.push({ r: sp.r, c: sp.c });
             logToLobby(lobby, a.name + " spore damages " + splashTarget.name + " for 1");
             if (splashTarget.hp <= 0 && shouldUnitDie(lobby, splashTarget)) {
@@ -7627,7 +8105,7 @@ async function executeAction(lobby, role, action) {
         for (let c = 0; c < COLS; c++) {
           const uid = state.board[tp.r][c];
           if (uid && uid !== action.targetId && state.units[uid] && state.units[uid].owner !== role) {
-            state.units[uid].hp -= 1;
+            const rwDmg = applyDamageReduction(state, uid, 1, action.attackerId, lobby); state.units[uid].hp -= rwDmg;
             rowDamage++;
             if (state.units[uid].hp <= 0 && shouldUnitDie(lobby, state.units[uid])) {
               toRemoveRow.push({ uid, pos: { r: tp.r, c } });
@@ -7699,7 +8177,7 @@ async function executeAction(lobby, role, action) {
         }
         if (nearestEnemy) {
           const linkTarget = state.units[nearestEnemy];
-          linkTarget.hp -= 1;
+          const lnkDmg = applyDamageReduction(state, nearestEnemy, 1, action.attackerId, lobby); linkTarget.hp -= lnkDmg;
           logToLobby(lobby, t.name + "'s arcane link zaps " + linkTarget.name + " for 1 damage!");
           if (linkTarget.hp <= 0 && shouldUnitDie(lobby, linkTarget)) {
             const linkPos = getUnitPos(state, nearestEnemy);
@@ -7763,7 +8241,7 @@ async function executeAction(lobby, role, action) {
       const baseAttacks = 1;
       const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
       const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
-      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      const bloodBiteBonus = a.effectId === "blood_bite" ? 1 : 0; const maxAttacks = baseAttacks + doubleAttackBonus + bloodBiteBonus + topazBonus;
       
       if (attackCount >= maxAttacks) return;
       if (state.rowHP[action.row] <= 0) return;
@@ -7771,6 +8249,7 @@ async function executeAction(lobby, role, action) {
       const ap = getUnitPos(state, action.attackerId);
       
       let dmg = getEffectiveAtk(state, action.attackerId);
+      if (a.effectId === "blood_bite" && (state.attackCountThisTurn?.[action.attackerId] || 0) >= 1) dmg = 1;
       const rowLetter = String.fromCharCode(65 + action.row);
       
       // Combat log for row attack
@@ -7841,7 +8320,7 @@ async function executeAction(lobby, role, action) {
       const baseAttacks = 1;
       const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
       const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
-      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      const bloodBiteBonus = a.effectId === "blood_bite" ? 1 : 0; const maxAttacks = baseAttacks + doubleAttackBonus + bloodBiteBonus + topazBonus;
       
       if (attackCount >= maxAttacks) return;
       
@@ -7857,6 +8336,7 @@ async function executeAction(lobby, role, action) {
       combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
       
       let dmg = getEffectiveAtk(state, attackerId, action.targetId);
+      if (a.effectId === "blood_bite" && (state.attackCountThisTurn?.[attackerId] || 0) >= 1) dmg = 1;
       if (dmg !== a.atk) {
         combatLogToLobby(lobby, `Modified ATK: ${dmg} (buffs/debuffs applied)`, "combat-step");
       }
@@ -7930,7 +8410,7 @@ async function executeAction(lobby, role, action) {
       const baseAttacks = 1;
       const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
       const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
-      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      const bloodBiteBonus = a.effectId === "blood_bite" ? 1 : 0; const maxAttacks = baseAttacks + doubleAttackBonus + bloodBiteBonus + topazBonus;
       
       if (attackCount >= maxAttacks) return;
       
@@ -7957,6 +8437,7 @@ async function executeAction(lobby, role, action) {
       combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
       
       let dmg = getEffectiveAtk(state, action.attackerId);
+      if (a.effectId === "blood_bite" && (state.attackCountThisTurn?.[action.attackerId] || 0) >= 1) dmg = 1;
       if (a.effectId === "stampede") {
         combatLogToLobby(lobby, `Stampede bonus: +2 vs structures`, "combat-step");
         dmg += 2;
@@ -9115,7 +9596,7 @@ io.on("connection", (socket) => {
             if (enemies.length > 0) {
               const targetId = enemies[Math.floor(Math.random() * enemies.length)];
               const target = state.units[targetId];
-              target.hp -= 1;
+              const echoDmg = applyDamageReduction(state, targetId, 1, null, lobby); target.hp -= echoDmg;
               logToLobby(lobby, u.name + " echoes the spell - zaps " + target.name + " for 1 damage!");
               if (target.hp <= 0 && shouldUnitDie(lobby, target)) {
                 const targetPos = getUnitPos(state, targetId);
@@ -9346,7 +9827,7 @@ io.on("connection", (socket) => {
             const adjId = state.board[nr][nc];
             if (adjId && state.units[adjId] && state.units[adjId].owner !== role) {
               const enemy = state.units[adjId];
-              enemy.hp -= 1;
+              const adjDmg = applyDamageReduction(state, adjId, 1, null, lobby); enemy.hp -= adjDmg;
               damaged++;
               if (enemy.hp <= 0) {
                 const adjPos = { r: nr, c: nc };
@@ -9470,7 +9951,32 @@ io.on("connection", (socket) => {
       console.log(`[PLAYER MOVE] ${u.name}: moveCount=${moveCount}, maxMoves=${maxMoves}, frozen=${u.frozen}, unlimitedMoves=${hasUnlimitedMoves}`);
       
       if (moveCount >= maxMoves) return socket.emit("log", "No more moves for this unit.");
-      if (toRow < 0 || toRow >= ROWS || toCol < 0 || toCol >= COLS || state.board[toRow][toCol]) return socket.emit("log", "Invalid.");
+      if (toRow < 0 || toRow >= ROWS || toCol < 0 || toCol >= COLS) return socket.emit("log", "Invalid.");
+      
+      // Sapphire Dancer fairy_swap - can swap positions with any friendly unit
+      if (u.effectId === "fairy_swap" && state.board[toRow][toCol]) {
+        const targetUnitId = state.board[toRow][toCol];
+        if (targetUnitId && state.units[targetUnitId]) {
+          const targetUnit = state.units[targetUnitId];
+          if (targetUnit.owner === role && targetUnitId !== unitId) {
+            // Valid swap target - perform the swap
+            state.board[from.r][from.c] = targetUnitId;
+            state.board[toRow][toCol] = unitId;
+            state.movedThisTurn.add(unitId);
+            if (!state.moveCountThisTurn) state.moveCountThisTurn = {};
+            state.moveCountThisTurn[unitId] = maxMoves; // Use up all moves
+            recomputeOwners(state);
+            logToLobby(lobby, u.name + " swaps with " + targetUnit.name + "!");
+            const swapAnim = { type: "effect", effectType: "fairy_swap", fromPos: { r: from.r, c: from.c }, toPos: { r: toRow, c: toCol } };
+            if (lobby.hostSocket) lobby.hostSocket.emit("animate", swapAnim);
+            if (lobby.guestSocket) lobby.guestSocket.emit("animate", swapAnim);
+            return emitGameState(lobby);
+          }
+        }
+      }
+      
+      // Normal move - tile must be empty
+      if (state.board[toRow][toCol]) return socket.emit("log", "Invalid.");
       
       // Calculate distance
       const rowDist = Math.abs(from.r - toRow);
@@ -9506,28 +10012,6 @@ io.on("connection", (socket) => {
               validMove = true;
               break;
             }
-          }
-        }
-      }
-      
-      // Sapphire Dancer fairy_swap - can swap positions with a friendly Fairy
-      const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
-                         'amethystenchanter', 'diamondguardian', 'opaldevourer',
-                         'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
-      if (u.effectId === "fairy_swap" && !validMove) {
-        // Check if destination has a friendly fairy
-        const targetUnitId = state.board[toRow][toCol];
-        if (targetUnitId && state.units[targetUnitId]) {
-          const targetUnit = state.units[targetUnitId];
-          if (targetUnit.owner === role && fairyKeys.includes(targetUnit.key) && targetUnitId !== unitId) {
-            // Valid swap target - perform the swap
-            state.board[from.r][from.c] = targetUnitId;
-            state.board[toRow][toCol] = unitId;
-            state.movedThisTurn.add(unitId);
-            state.moveCountThisTurn[unitId] = maxMoves; // Use up all moves
-            recomputeOwners(state);
-            logToLobby(lobby, u.name + " swaps with " + targetUnit.name + "!");
-            return emitGameState(lobby);
           }
         }
       }
@@ -9595,8 +10079,9 @@ io.on("connection", (socket) => {
       const attackCount = state.attackCountThisTurn?.[attackerId] || 0;
       const baseAttacks = 1;
       const doubleAttackBonus = a.canDoubleAttack ? 1 : 0;
+      const bloodBiteBonus = a.effectId === "blood_bite" ? 1 : 0;
       const topazBonus = (a.gemBuffs && a.gemBuffs.extraAttacks) || 0;
-      const maxAttacks = baseAttacks + doubleAttackBonus + topazBonus;
+      const maxAttacks = baseAttacks + doubleAttackBonus + bloodBiteBonus + topazBonus;
       
       console.log(`[PLAYER ATTACK] ${a.name}: attackCount=${attackCount}, maxAttacks=${maxAttacks}, frozen=${a.frozen}, topazBonus=${topazBonus}`);
       
@@ -9744,11 +10229,21 @@ io.on("connection", (socket) => {
       // Calculate damage
       let dmg = getEffectiveAtk(state, attackerId, targetId);
       
+      // Blood Familiar - second attack only deals 1 damage
+      const isBloodBiteSecond = a.effectId === "blood_bite" && attackCount >= 1;
+      if (isBloodBiteSecond) {
+        dmg = 1;
+      }
+      
       // Combat log header
       combatLogToLobby(lobby, `⚔️ ${a.name} attacks ${t.name}`, "combat-header");
-      combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
-      if (dmg !== a.atk) {
-        combatLogToLobby(lobby, `Modified ATK: ${dmg} (buffs/debuffs applied)`, "combat-step");
+      if (isBloodBiteSecond) {
+        combatLogToLobby(lobby, `Blood Bite (second attack): 1 damage`, "combat-step");
+      } else {
+        combatLogToLobby(lobby, `Base ATK: ${a.atk}`, "combat-step");
+        if (dmg !== a.atk) {
+          combatLogToLobby(lobby, `Modified ATK: ${dmg} (buffs/debuffs applied)`, "combat-step");
+        }
       }
       
       const dmgBeforeReduction = dmg;
@@ -9783,11 +10278,18 @@ io.on("connection", (socket) => {
         bodyguard.hp -= 1;
         dmg -= 1;
         logToLobby(lobby, bodyguard.name + " intercepts 1 damage!");
+        // Emit bodyguard glow animation
+        const bgPos = getUnitPos(state, bodyguardId);
+        if (bgPos) {
+          const animData = { type: "effect", effectType: "bodyguard_glow", targetPos: bgPos, protectedPos: { r: tp.r, c: tp.c } };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        }
         if (bodyguard.hp <= 0) {
-          const bgPos = getUnitPos(state, bodyguardId);
-          processOnDeathEffect(lobby, bodyguard, bodyguard.owner, bgPos, attackerId);
-          processAllyDeathTriggers(lobby, bodyguard.owner, bodyguard, bgPos);
-          if (bgPos) state.board[bgPos.r][bgPos.c] = null;
+          const bgPos2 = getUnitPos(state, bodyguardId);
+          processOnDeathEffect(lobby, bodyguard, bodyguard.owner, bgPos2, attackerId);
+          processAllyDeathTriggers(lobby, bodyguard.owner, bodyguard, bgPos2);
+          if (bgPos2) state.board[bgPos2.r][bgPos2.c] = null;
           discardUnitCard(lobby, bodyguard);
           delete state.units[bodyguardId];
           logToLobby(lobby, bodyguard.name + " destroyed protecting ally!");
@@ -9805,8 +10307,14 @@ io.on("connection", (socket) => {
       
       // Amethyst Enchanter reflect_damage - reflects 1 damage back to attacker
       if (t.effectId === "reflect_damage" && dmg > 0 && state.units[attackerId]) {
-        a.hp -= 1;
+        const refDmg = applyDamageReduction(state, attackerId, 1, null, lobby); a.hp -= refDmg;
         logToLobby(lobby, t.name + " reflects 1 damage back to " + a.name + "!");
+        // Emit reflect animation
+        if (refDmg > 0) {
+          const animData = { type: "effect", effectType: "amethyst_reflect", sourcePos: { r: tp.r, c: tp.c }, targetPos: { r: ap.r, c: ap.c } };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+        }
         if (a.hp <= 0) {
           const attackerPos = getUnitPos(state, attackerId);
           processOnDeathEffect(lobby, a, a.owner, attackerPos);
@@ -9919,28 +10427,16 @@ io.on("connection", (socket) => {
           a.hp = Math.min(a.hp + 1, maxHp);
           logToLobby(lobby, a.name + " drains life! +1 HP");
           combatLogToLobby(lobby, `Lifesteal (attacker): ${a.name} heals ${hpBefore} → ${a.hp} HP`, "combat-lifesteal");
+          // Emit lifesteal animation
+          const lsPos = getUnitPos(state, attackerId);
+          const lsTargetPos = getUnitPos(state, targetId);
+          if (lsPos && lsTargetPos) {
+            const animData = { type: "effect", effectType: "lifesteal", sourcePos: lsTargetPos, targetPos: lsPos };
+            if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+            if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
+          }
         } else {
           combatLogToLobby(lobby, `Lifesteal (attacker): ${a.name} already at max HP`, "combat-step");
-        }
-      }
-      
-      // Check if target has lifesteal (heals when attacked)
-      const targetHasLifesteal = t.effectId === "lifesteal" || 
-                                  t.effectId === "lifesteal_weaken" || 
-                                  t.effectId === "lifesteal_grow" ||
-                                  t.effectId === "lifesteal_lord" ||
-                                  hasVampireLordBuff(state, t.owner);
-      
-      if (targetHasLifesteal && dmg > 0 && t.hp > 0) {
-        // Lifesteal heals the unit for 1 HP when attacked
-        const maxHp = t.maxHp || t.hp;
-        if (t.hp < maxHp) {
-          const hpBefore = t.hp;
-          t.hp = Math.min(t.hp + 1, maxHp);
-          logToLobby(lobby, t.name + " drains life from attacker! +1 HP");
-          combatLogToLobby(lobby, `Lifesteal (defender): ${t.name} heals ${hpBefore} → ${t.hp} HP`, "combat-lifesteal");
-        } else {
-          combatLogToLobby(lobby, `Lifesteal (defender): ${t.name} already at max HP`, "combat-step");
         }
       }
       
@@ -9956,14 +10452,7 @@ io.on("connection", (socket) => {
         }
       }
       
-      // Blood Familiar blood_bite - attacks twice, second attack deals 1 damage
-      if (a.effectId === "blood_bite" && t.hp > 0) {
-        // Deal second attack for 1 damage
-        const secondDmg = applyDamageReduction(state, targetId, 1, attackerId, lobby);
-        t.hp -= secondDmg;
-        logToLobby(lobby, a.name + " bites again for " + secondDmg + "!");
-        combatLogToLobby(lobby, `Second bite: ${t.name} takes ${secondDmg} damage, now ${t.hp} HP`, "combat-step");
-      }
+      // Blood Familiar blood_bite - second attack handled via maxAttacks (no auto-bite needed)
       
       // Recalculate effective HP after all damage (including blood_bite)
       // Re-check moonflare aura in case positions changed
@@ -10015,7 +10504,7 @@ io.on("connection", (socket) => {
           if (splashId && state.units[splashId] && state.units[splashId].owner !== role) {
             const splashTarget = state.units[splashId];
             if (splashTarget.untargetable) continue;
-            splashTarget.hp -= 1;
+            const spDmg2 = applyDamageReduction(state, splashId, 1, attackerId, lobby); splashTarget.hp -= spDmg2;
             hitPositions.push({ r: sp.r, c: sp.c });
             logToLobby(lobby, a.name + " spore damages " + splashTarget.name + " for 1");
             if (splashTarget.hp <= 0 && shouldUnitDie(lobby, splashTarget)) {
@@ -10048,7 +10537,7 @@ io.on("connection", (socket) => {
         for (let c = 0; c < COLS; c++) {
           const uid = state.board[tp.r][c];
           if (uid && uid !== payload.targetId && state.units[uid] && state.units[uid].owner !== role) {
-            state.units[uid].hp -= 1;
+            const rwDmg2 = applyDamageReduction(state, uid, 1, attackerId, lobby); state.units[uid].hp -= rwDmg2;
             rowDamage++;
             if (state.units[uid].hp <= 0 && shouldUnitDie(lobby, state.units[uid])) {
               toRemoveRow.push({ uid, pos: { r: tp.r, c } });
@@ -10082,6 +10571,10 @@ io.on("connection", (socket) => {
           t.immortalUsed = true;
           logToLobby(lobby, t.name + " refuses to die! Heals to full HP!");
           combatLogToLobby(lobby, `☠️ ${t.name} would die but IMMORTAL triggers! Heals to full`, "combat-lifesteal");
+          // Emit immortal animation
+          const animData = { type: "effect", effectType: "immortal_rise", targetPos: { r: tp.r, c: tp.c } };
+          if (lobby.hostSocket) lobby.hostSocket.emit("animate", animData);
+          if (lobby.guestSocket) lobby.guestSocket.emit("animate", animData);
         } else {
           combatLogToLobby(lobby, `💀 ${t.name} DESTROYED (${t.hp} HP)`, "combat-death");
           if (lobby.hostSocket) lobby.hostSocket.emit("animate", { type: "destroy", row: tp.r, col: tp.c });

@@ -135,6 +135,12 @@ const userSchema = new mongoose.Schema({
   selectedMat: {
     type: String,
     default: 'default'
+  },
+  
+  // Gold currency
+  gold: {
+    type: Number,
+    default: 0
   }
 });
 
@@ -167,6 +173,7 @@ userSchema.methods.toPublicJSON = function() {
     preferences: this.preferences,
     stats: this.stats,
     achievements: Object.fromEntries(this.achievements || new Map()),
+    gold: this.gold || 0,
     createdAt: this.createdAt
   };
 };
@@ -544,7 +551,8 @@ const authHelpers = {
         customDecks: [],
         preferences: { selectedDeck: 'medieval' },
         stats: { gamesPlayed: 999, gamesWon: 999, campaignWins: 999, challengeWins: 24 },
-        achievements: getAllAchievementsUnlocked()
+        achievements: getAllAchievementsUnlocked(),
+        gold: 99999
       };
     }
     
@@ -1355,13 +1363,257 @@ function getAchievementReward(achievementId) {
   return achievement ? achievement.reward : null;
 }
 
+// ==================== SHOP SYSTEM ====================
+
+// Card prices by rarity (buy price)
+const CARD_PRICES = {
+  common: 50,
+  rare: 150,
+  legendary: 500
+};
+
+// Sell price = 40% of buy price
+function getSellPrice(cardKey) {
+  const rarity = CARD_RARITIES[cardKey] || 'common';
+  return Math.floor(CARD_PRICES[rarity] * 0.4);
+}
+
+function getBuyPrice(cardKey) {
+  const rarity = CARD_RARITIES[cardKey] || 'common';
+  return CARD_PRICES[rarity];
+}
+
+// Pack definitions
+const PACKS = {
+  basic: {
+    id: 'basic',
+    name: 'Basic Pack',
+    description: '3 random cards',
+    price: 100,
+    cardCount: 3,
+    guarantees: {} // no guarantees
+  },
+  premium: {
+    id: 'premium',
+    name: 'Premium Pack',
+    description: '5 cards, guaranteed 1 Rare+',
+    price: 350,
+    cardCount: 5,
+    guarantees: { rare: 1 }
+  },
+  legendary: {
+    id: 'legendary',
+    name: 'Legendary Pack',
+    description: '5 cards, guaranteed 1 Legendary',
+    price: 1000,
+    cardCount: 5,
+    guarantees: { legendary: 1 }
+  }
+};
+
+// Campaign gold rewards by difficulty
+const CAMPAIGN_GOLD = {
+  1: 5,   // Easy
+  2: 10,  // Medium
+  3: 20,  // Hard
+  4: 50   // Challenge
+};
+
+// Generate daily deals (3 cards at discounted prices) - seeded by date
+function getDailyDeals() {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  
+  // Simple seeded random
+  let rng = seed;
+  function seededRandom() {
+    rng = (rng * 1103515245 + 12345) & 0x7fffffff;
+    return rng / 0x7fffffff;
+  }
+  
+  const allCards = Object.keys(CARD_RARITIES);
+  const deals = [];
+  const usedCards = new Set();
+  
+  // Pick 4 deals: 2 common, 1 rare, 1 legendary
+  const slots = ['common', 'common', 'rare', 'legendary'];
+  
+  for (const targetRarity of slots) {
+    const pool = allCards.filter(c => CARD_RARITIES[c] === targetRarity && !usedCards.has(c));
+    if (pool.length === 0) continue;
+    
+    const idx = Math.floor(seededRandom() * pool.length);
+    const card = pool[idx];
+    usedCards.add(card);
+    
+    const fullPrice = getBuyPrice(card);
+    const discount = Math.floor(seededRandom() * 20) + 20; // 20-40% off
+    const salePrice = Math.floor(fullPrice * (1 - discount / 100));
+    
+    deals.push({
+      cardKey: card,
+      rarity: targetRarity,
+      fullPrice: fullPrice,
+      salePrice: salePrice,
+      discount: discount
+    });
+  }
+  
+  return deals;
+}
+
+// Open a pack - returns array of card keys
+function openPack(packId) {
+  const pack = PACKS[packId];
+  if (!pack) return null;
+  
+  const allCards = Object.keys(CARD_RARITIES);
+  const cards = [];
+  
+  // Handle guarantees first
+  const guaranteedSlots = { rare: 0, legendary: 0 };
+  if (pack.guarantees.rare) guaranteedSlots.rare = pack.guarantees.rare;
+  if (pack.guarantees.legendary) guaranteedSlots.legendary = pack.guarantees.legendary;
+  
+  // Add guaranteed legendaries
+  for (let i = 0; i < guaranteedSlots.legendary; i++) {
+    const pool = allCards.filter(c => CARD_RARITIES[c] === 'legendary');
+    cards.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  
+  // Add guaranteed rares
+  for (let i = 0; i < guaranteedSlots.rare; i++) {
+    const pool = allCards.filter(c => CARD_RARITIES[c] === 'rare');
+    cards.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  
+  // Fill remaining slots with weighted random
+  const remaining = pack.cardCount - cards.length;
+  for (let i = 0; i < remaining; i++) {
+    const roll = Math.random();
+    let targetRarity;
+    if (roll < 0.05) targetRarity = 'legendary';
+    else if (roll < 0.25) targetRarity = 'rare';
+    else targetRarity = 'common';
+    
+    const pool = allCards.filter(c => CARD_RARITIES[c] === targetRarity);
+    cards.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  
+  return cards;
+}
+
+// Shop auth helpers
+const shopHelpers = {
+  async buyCard(userId, cardKey) {
+    if (userId === 'admin') return { success: true, gold: 99999 };
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+    
+    const price = getBuyPrice(cardKey);
+    if (user.gold < price) throw new Error('Not enough gold');
+    
+    user.gold -= price;
+    const currentCount = user.cardCollection.get(cardKey) || 0;
+    user.cardCollection.set(cardKey, currentCount + 1);
+    
+    await user.save();
+    return { success: true, gold: user.gold, cardCollection: Object.fromEntries(user.cardCollection) };
+  },
+  
+  async buyDailyDeal(userId, cardKey) {
+    if (userId === 'admin') return { success: true, gold: 99999 };
+    
+    const deals = getDailyDeals();
+    const deal = deals.find(d => d.cardKey === cardKey);
+    if (!deal) throw new Error('Card is not in daily deals');
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+    
+    if (user.gold < deal.salePrice) throw new Error('Not enough gold');
+    
+    user.gold -= deal.salePrice;
+    const currentCount = user.cardCollection.get(cardKey) || 0;
+    user.cardCollection.set(cardKey, currentCount + 1);
+    
+    await user.save();
+    return { success: true, gold: user.gold, cardCollection: Object.fromEntries(user.cardCollection) };
+  },
+  
+  async buyPack(userId, packId) {
+    if (userId === 'admin') return { success: true, gold: 99999, cards: openPack(packId) };
+    
+    const pack = PACKS[packId];
+    if (!pack) throw new Error('Invalid pack');
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+    
+    if (user.gold < pack.price) throw new Error('Not enough gold');
+    
+    user.gold -= pack.price;
+    
+    const cards = openPack(packId);
+    for (const cardKey of cards) {
+      const currentCount = user.cardCollection.get(cardKey) || 0;
+      user.cardCollection.set(cardKey, currentCount + 1);
+    }
+    
+    await user.save();
+    return { success: true, gold: user.gold, cards: cards, cardCollection: Object.fromEntries(user.cardCollection) };
+  },
+  
+  async sellCard(userId, cardKey) {
+    if (userId === 'admin') return { success: true, gold: 99999 };
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+    
+    const currentCount = user.cardCollection.get(cardKey) || 0;
+    if (currentCount <= 0) throw new Error('You don\'t own this card');
+    
+    const sellPrice = getSellPrice(cardKey);
+    user.gold += sellPrice;
+    
+    if (currentCount === 1) {
+      user.cardCollection.delete(cardKey);
+    } else {
+      user.cardCollection.set(cardKey, currentCount - 1);
+    }
+    
+    await user.save();
+    return { success: true, gold: user.gold, sellPrice: sellPrice, cardCollection: Object.fromEntries(user.cardCollection) };
+  },
+  
+  async addGold(userId, amount) {
+    if (userId === 'admin') return { success: true, gold: 99999 };
+    
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+    
+    user.gold += amount;
+    await user.save();
+    return { success: true, gold: user.gold };
+  }
+};
+
 module.exports = {
   connectDB,
   User,
   CAMPAIGN_BOSSES,
+  CARD_RARITIES,
+  CARD_PRICES,
+  PACKS,
+  CAMPAIGN_GOLD,
   ACHIEVEMENTS,
   getAllAchievements,
   getAchievementsByCategory,
   getAchievementReward,
-  authHelpers
+  authHelpers,
+  shopHelpers,
+  getDailyDeals,
+  getBuyPrice,
+  getSellPrice
 };

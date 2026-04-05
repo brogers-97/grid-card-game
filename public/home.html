@@ -362,6 +362,41 @@
       outline: none;
       transition: all 0.2s ease;
     }
+
+    .password-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .password-wrapper input {
+      padding-right: 42px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 6px 8px;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: opacity 0.2s ease;
+      width: auto;
+      line-height: 1;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-toggle:hover {
+      opacity: 0.9;
+    }
+    
+    .eye-icon {
+      display: block;
+    }
     
     select:focus, input:focus {
       border-color: rgba(138, 43, 226, 0.7);
@@ -937,7 +972,20 @@
         
         <div class="section">
           <div class="section-title">Password</div>
-          <input type="password" id="passwordInput" placeholder="Enter password">
+          <div class="password-wrapper">
+            <input type="password" id="passwordInput" placeholder="Enter password">
+            <button type="button" class="password-toggle" id="passwordToggle" tabindex="-1">
+              <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
         </div>
         
         <div class="btn-group">
@@ -953,11 +1001,12 @@
         <div class="user-info">
           <div class="user-name" id="displayUsername">Player</div>
           <div class="user-stats">
-            <span id="statsWins">0</span> wins • Level <span id="statsLevel">1</span>
+            <span id="statsWins">0</span> wins • Level <span id="statsLevel">1</span> • 🪙 <span id="statsGold">0</span>
           </div>
         </div>
         <button class="btn-secondary" id="deckBuilderBtn" style="margin-bottom: 10px;">🛠️ Deck Builder</button>
         <button class="btn-secondary" id="collectionsBtn" style="margin-bottom: 10px;">🖼️ Collections</button>
+        <button class="btn-secondary" id="shopBtn" style="margin-bottom: 10px; background: linear-gradient(135deg, #f59e0b, #b45309);">🪙 Shop</button>
         <button class="btn-secondary hidden" id="playtestBtn" style="margin-bottom: 10px; background: linear-gradient(135deg, #f59e0b, #d97706);">🧪 Playtest</button>
         <button class="btn-danger" id="logoutBtn">Logout</button>
         
@@ -1139,18 +1188,31 @@
     const lobbyScreen = document.getElementById('lobbyScreen');
     const usernameInput = document.getElementById('usernameInput');
     const passwordInput = document.getElementById('passwordInput');
+    const passwordToggle = document.getElementById('passwordToggle');
+    
+    if (passwordToggle && passwordInput) {
+      passwordToggle.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        passwordToggle.querySelector('.eye-open').style.display = isPassword ? 'none' : '';
+        passwordToggle.querySelector('.eye-closed').style.display = isPassword ? '' : 'none';
+      });
+    }
+    
     const loginBtn = document.getElementById('loginBtn');
     const registerBtn = document.getElementById('registerBtn');
     const guestBtn = document.getElementById('guestBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const deckBuilderBtn = document.getElementById('deckBuilderBtn');
     const collectionsBtn = document.getElementById('collectionsBtn');
+    const shopBtn = document.getElementById('shopBtn');
     const playtestBtn = document.getElementById('playtestBtn');
     const authError = document.getElementById('authError');
     const authSuccess = document.getElementById('authSuccess');
     const displayUsername = document.getElementById('displayUsername');
     const statsWins = document.getElementById('statsWins');
     const statsLevel = document.getElementById('statsLevel');
+    const statsGold = document.getElementById('statsGold');
     const deckSelect = document.getElementById('deckSelect');
     const campaignDeckSelect = document.getElementById('campaignDeckSelect');
     const deckDescription = document.getElementById('deckDescription');
@@ -1441,6 +1503,7 @@
       statsWins.textContent = '0';
       statsLevel.textContent = '1';
       deckBuilderBtn.classList.add('hidden');
+      shopBtn.classList.add('hidden');
       campaignLoginHint.classList.remove('hidden');
       renderBossList();
     }
@@ -1463,7 +1526,9 @@
       displayUsername.textContent = currentUser.username;
       statsWins.textContent = currentUser.stats?.campaignWins || 0;
       statsLevel.textContent = currentUser.campaign?.currentLevel || 1;
+      statsGold.textContent = currentUser.gold || 0;
       deckBuilderBtn.classList.remove('hidden');
+      shopBtn.classList.remove('hidden');
       campaignLoginHint.classList.add('hidden');
       
       // Show playtest button for admin users
@@ -1525,6 +1590,10 @@
     
     collectionsBtn.addEventListener('click', () => {
       window.location.href = '/collections.html';
+    });
+    
+    shopBtn.addEventListener('click', () => {
+      window.location.href = '/shop.html';
     });
     
     playtestBtn.addEventListener('click', () => {

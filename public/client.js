@@ -1383,10 +1383,10 @@ function getAtkBuffBreakdown(unitId) {
     buffs.push({ stat: 'atk', value: u.eclipseAtkBuff, source: 'Eclipse: Blood Moon' });
   }
   
-  // Permanent buffs from spells/effects (stored on unit)
+  // Permanent buffs and debuffs from spells/effects (stored on unit)
   if (u.permBuffs && Array.isArray(u.permBuffs)) {
     for (const buff of u.permBuffs) {
-      if (buff.atk && buff.atk > 0) {
+      if (buff.atk && buff.atk !== 0) {
         buffs.push({ stat: 'atk', value: buff.atk, source: buff.source });
       }
     }
@@ -2000,9 +2000,6 @@ function highlightUnitMoves(unitId) {
   const canFairySwap = u.effectId === "fairy_swap";
   const canHealAttack = u.effectId === "heal_attack";
   const bonusRange = u.bonusRange || 0; // From Hunting God's Blessing
-  const fairyKeys = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
-                     'amethystenchanter', 'diamondguardian', 'opaldevourer',
-                     'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
   
   // Helper to check if a row is an enemy home row with HP remaining
   function isBlockedEnemyRow(row) {
@@ -2011,7 +2008,7 @@ function highlightUnitMoves(unitId) {
     return false;
   }
   
-  // Sapphire Dancer fairy_swap - can swap with any friendly Fairy on the board
+  // Sapphire Dancer fairy_swap - can swap with any friendly unit on the board
   if (canFairySwap && canStillMove) {
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -2019,7 +2016,6 @@ function highlightUnitMoves(unitId) {
         if (!targetId) continue;
         const target = S.units[targetId];
         if (!target || target.owner !== myRole) continue;
-        if (!fairyKeys.includes(target.key)) continue;
         if (targetId === selectedUnitId) continue; // Can't swap with self
         
         const viewRow = viewFlipped ? (ROWS - 1 - r) : r;
@@ -2217,18 +2213,14 @@ function highlightUnitMoves(unitId) {
     }
   }
   
-  // Sapphire Dancer fairy_swap - can swap with friendly fairies
+  // Sapphire Dancer fairy_swap - can swap with any friendly unit
   if (u.effectId === "fairy_swap" && canStillMove) {
-    const fairyKeysForSwap = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
-                              'amethystenchanter', 'diamondguardian', 'opaldevourer',
-                              'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const targetId = S.board[r][c];
         if (!targetId) continue;
         const target = S.units[targetId];
         if (!target || target.owner !== myRole) continue;
-        if (!fairyKeysForSwap.includes(target.key)) continue;
         if (targetId === selectedUnitId) continue;
         
         const viewRow = viewFlipped ? (ROWS - 1 - r) : r;
@@ -2552,10 +2544,10 @@ function hasAtkBuff(unitId) {
   // Check auras
   if (getAtkBuff(unitId) > 0) return true;
   
-  // Check permanent buffs
+  // Check permanent buffs and debuffs
   if (u.permBuffs && Array.isArray(u.permBuffs)) {
     for (const b of u.permBuffs) {
-      if (b.atk && b.atk > 0) return true;
+      if (b.atk && b.atk !== 0) return true;
     }
   }
   return false;
@@ -3059,7 +3051,7 @@ function renderSpawnUnit(el, unitId, spawnEl) {
     <div class="unitInfoOverlay">
       <div class="unitName">${u.name}</div>
       <div class="unitStats">
-        <div class="unitStat unitAtk"><span class="unitStatIcon">⚔</span>${u.atk}</div>
+        <div class="unitStat unitAtk${u.atkModified ? ' atk-modified' : ''}"><span class="unitStatIcon">⚔</span>${u.displayAtk !== undefined ? u.displayAtk : u.atk}</div>
         <div class="unitStat unitHp"><span class="unitStatIcon">♥</span>${u.hp}</div>
       </div>
     </div>
@@ -3134,7 +3126,7 @@ function renderAll() {
 
       applyCls(cellEl);
 
-      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical", "blood-chalice-tile", "gem-rain-warning", "raphael-protected", "war-banner-aura");
+      cellEl.classList.remove("selected", "buff-tile", "buff-energy", "buff-heal", "buff-attack", "buff-draw", "buff-move", "buff-hp", "has-unit", "void-collapse-warning", "ghost-train-warning", "train-horizontal", "train-vertical", "blood-chalice-tile", "gem-rain-warning", "raphael-protected", "war-banner-aura", "coffin-trapper-aura", "sheriff-aura", "nosferatu-aura", "garnet-aura", "diamond-guardian-aura");
       cellEl.removeAttribute("data-buff-icon");
       cellEl.innerHTML = "";
       
@@ -3221,6 +3213,85 @@ function renderAll() {
         cellEl.classList.add("war-banner-aura");
       }
 
+      // Check if this tile is in a Coffin Trapper aura (only for enemy tiles)
+      if (S.coffinTrapperTiles && S.coffinTrapperTiles.length > 0 && S.coffinTrapperTiles.some(t => t.r === sr && t.c === c)) {
+        cellEl.classList.add("coffin-trapper-aura");
+      }
+
+      // Check if this tile is in an Undead Sheriff aura
+      if (S.sheriffAuraTiles && S.sheriffAuraTiles.length > 0 && S.sheriffAuraTiles.some(t => t.r === sr && t.c === c)) {
+        cellEl.classList.add("sheriff-aura");
+      }
+
+      // Check if this tile is in a Nosferatu blood mist aura
+      if (S.nosferatuAuraTiles && S.nosferatuAuraTiles.length > 0 && S.nosferatuAuraTiles.some(t => t.r === sr && t.c === c)) {
+        cellEl.classList.add("nosferatu-aura");
+      }
+
+      // Check if this tile is in a Garnet Queen aura
+      if (S.garnetAuraTiles && S.garnetAuraTiles.length > 0 && S.garnetAuraTiles.some(t => t.r === sr && t.c === c)) {
+        cellEl.classList.add("garnet-aura");
+        // Start orb spawner if not already running
+        if (!cellEl._garnetOrbInterval) {
+          const spawnOrb = () => {
+            if (!cellEl.classList.contains('garnet-aura')) {
+              clearInterval(cellEl._garnetOrbInterval);
+              cellEl._garnetOrbInterval = null;
+              return;
+            }
+            const orb = document.createElement('div');
+            orb.className = 'garnet-orb';
+            orb.style.left = (10 + Math.random() * 80) + '%';
+            const duration = 0.9 + Math.random() * 0.5;
+            orb.style.setProperty('--orb-duration', duration + 's');
+            cellEl.appendChild(orb);
+            setTimeout(() => orb.remove(), duration * 1000);
+          };
+          // Stagger start per cell so they don't all sync up
+          setTimeout(() => {
+            spawnOrb();
+            cellEl._garnetOrbInterval = setInterval(spawnOrb, 500);
+          }, Math.random() * 500);
+        }
+      } else {
+        if (cellEl._garnetOrbInterval) {
+          clearInterval(cellEl._garnetOrbInterval);
+          cellEl._garnetOrbInterval = null;
+        }
+      }
+
+      // Check if this tile is in a Diamond Guardian aura
+      if (S.diamondGuardianTiles && S.diamondGuardianTiles.length > 0 && S.diamondGuardianTiles.some(t => t.r === sr && t.c === c)) {
+        cellEl.classList.add("diamond-guardian-aura");
+        // Spawn diamond sparkles one at a time
+        if (!cellEl._diamondSparkleInterval) {
+          const spawnSparkle = () => {
+            if (!cellEl.classList.contains('diamond-guardian-aura')) {
+              clearInterval(cellEl._diamondSparkleInterval);
+              cellEl._diamondSparkleInterval = null;
+              return;
+            }
+            const sparkle = document.createElement('div');
+            sparkle.className = 'diamond-sparkle';
+            sparkle.style.left = (10 + Math.random() * 80) + '%';
+            sparkle.style.top = (10 + Math.random() * 80) + '%';
+            const duration = 0.6 + Math.random() * 0.4;
+            sparkle.style.setProperty('--sparkle-duration', duration + 's');
+            cellEl.appendChild(sparkle);
+            setTimeout(() => sparkle.remove(), duration * 1000);
+          };
+          setTimeout(() => {
+            spawnSparkle();
+            cellEl._diamondSparkleInterval = setInterval(spawnSparkle, 600);
+          }, Math.random() * 600);
+        }
+      } else {
+        if (cellEl._diamondSparkleInterval) {
+          clearInterval(cellEl._diamondSparkleInterval);
+          cellEl._diamondSparkleInterval = null;
+        }
+      }
+
       const unitId = S.board[sr][c];
 
       // If there's a unit on a buff tile or void collapse warning, add has-unit class
@@ -3301,14 +3372,8 @@ function renderAll() {
         wrap.classList.add("taking-damage");
       }
       
-      // Add attack animation if this unit is attacking
-      const attackKey = `${sr}-${c}`;
-      if (attackingCells.has(attackKey)) {
-        const { budgeX, budgeY } = attackingCells.get(attackKey);
-        wrap.style.setProperty('--budge-x', `${budgeX}px`);
-        wrap.style.setProperty('--budge-y', `${budgeY}px`);
-        wrap.classList.add("attacking");
-      }
+      // Attack animation is applied directly when animate event arrives
+      // Do NOT re-apply on renderAll — this prevents double budge
       
       // Add effect source animation (AOE caster glowing)
       const effectKey = `${sr}-${c}`;
@@ -3339,11 +3404,11 @@ function renderAll() {
       
       // Display total stats - show in purple if buffed (aura or permanent)
       let atkDisplayHtml;
-      if (hasPermAtkBuff) {
-        const totalAtk = u.atk + atkBuff; // Add aura buffs to base (which includes perm buffs)
-        atkDisplayHtml = `<span class="buffed-stat">${totalAtk}</span>`;
+      const effectiveAtk = u.displayAtk !== undefined ? u.displayAtk : u.atk;
+      if (u.atkModified || hasPermAtkBuff) {
+        atkDisplayHtml = `<span class="buffed-stat">${effectiveAtk}</span>`;
       } else {
-        atkDisplayHtml = `${u.atk}`;
+        atkDisplayHtml = `${effectiveAtk}`;
       }
       
       let hpDisplayHtml;
@@ -3399,6 +3464,36 @@ function renderAll() {
       if (u.canDoubleAttack) {
         wrap.classList.add('rally-buffed');
       }
+
+      // Coffin Trapper ghostly hands on enemy units in the root aura
+      let coffinHandsOverlay = '';
+      if (S.coffinTrapperTiles && S.coffinTrapperTiles.length > 0 &&
+          S.coffinTrapperTiles.some(t => t.r === sr && t.c === c && t.owner !== u.owner) &&
+          u.effectId !== "root_aura") {
+        wrap.classList.add('coffin-rooted');
+        coffinHandsOverlay = '<div class="coffin-hands"><div class="coffin-hand coffin-hand-left"></div><div class="coffin-hand coffin-hand-right"></div><div class="coffin-hand coffin-hand-center"></div></div>';
+      }
+
+      // Most Wanted poster overlay on marked units
+      let mostWantedOverlay = '';
+      if (u.marked) {
+        wrap.classList.add('most-wanted-marked');
+        mostWantedOverlay = '<div class="most-wanted-overlay"></div>';
+      }
+
+      // Sheriff weaken debuff badge on enemy units (only for Undead Sheriff, not Nosferatu)
+      let sheriffDebuffOverlay = '';
+      const inSheriffAura = S.sheriffAuraTiles && S.sheriffAuraTiles.length > 0 &&
+          S.sheriffAuraTiles.some(t => t.r === sr && t.c === c && t.owner !== u.owner);
+      const inNosferatuAura = S.nosferatuAuraTiles && S.nosferatuAuraTiles.length > 0 &&
+          S.nosferatuAuraTiles.some(t => t.r === sr && t.c === c && t.owner !== u.owner);
+      if ((inSheriffAura || inNosferatuAura) &&
+          u.effectId !== "weaken_aura" && u.effectId !== "lifesteal_weaken") {
+        wrap.classList.add('sheriff-weakened');
+      }
+      if (inSheriffAura && u.effectId !== "weaken_aura" && u.effectId !== "lifesteal_weaken") {
+        sheriffDebuffOverlay = '<div class="sheriff-debuff-badge"><img src="/images/Sheriff Badge.png" alt=""></div>';
+      }
       
       wrap.innerHTML = `
         <div class="unitArt" style="${artStyle}">${artContent}</div>
@@ -3407,6 +3502,9 @@ function renderAll() {
         ${saveStateOverlay}
         ${judgmentOverlay}
         ${bannerSparkleOverlay}
+        ${coffinHandsOverlay}
+        ${mostWantedOverlay}
+        ${sheriffDebuffOverlay}
         <div class="unitInfoOverlay">
           <div class="unitName">${u.name}</div>
           <div class="unitStats">
@@ -3774,12 +3872,9 @@ function onCellClick(viewRow, col, event) {
       // Lunar Priestess can attack friendly units to heal them
       const isHealAttack = a && a.owner === myRole && a.effectId === "heal_attack" && clickedUnit.owner === myRole;
       
-      // Sapphire Dancer can swap with friendly fairies
-      const fairyKeysForSwap = ['rubysprite', 'emeraldforager', 'sapphiredancer', 'topazminer', 
-                                'amethystenchanter', 'diamondguardian', 'opaldevourer',
-                                'garnetqueen', 'moonstonewitch', 'prismaticfairy', 'gemshard'];
+      // Sapphire Dancer can swap with any friendly unit
       const isFairySwap = a && a.owner === myRole && a.effectId === "fairy_swap" && 
-                          clickedUnit.owner === myRole && fairyKeysForSwap.includes(clickedUnit.key);
+                          clickedUnit.owner === myRole && occId !== selectedUnitId;
       
       // Handle fairy swap as a move action (server handles the swap logic)
       if (isFairySwap) {
@@ -5577,28 +5672,27 @@ socket.on("animate", (data) => {
     console.log("budgeX:", budgeX, "budgeY:", budgeY);
     
     const key = `${data.attackerRow}-${data.attackerCol}`;
-    attackingCells.set(key, { budgeX, budgeY });
     
     // Apply animation immediately by finding the unit and adding the class
     const cellIdStr = cellId(attackerViewRow, data.attackerCol);
-    console.log("Looking for cell:", cellIdStr);
     const attackerCell = document.getElementById(cellIdStr);
-    console.log("Found cell:", attackerCell);
     if (attackerCell) {
       const unitEl = attackerCell.querySelector('.unit');
-      console.log("Found unit:", unitEl);
       if (unitEl) {
         unitEl.style.setProperty('--budge-x', `${budgeX}px`);
         unitEl.style.setProperty('--budge-y', `${budgeY}px`);
         unitEl.classList.add('attacking');
-        console.log("Added attacking class");
       }
     }
     
-    // Remove after animation completes
+    // Store the budge values so renderAll can re-apply on DOM rebuild
+    // But mark it as used after first renderAll application
+    attackingCells.set(key, { budgeX, budgeY, rendersLeft: 1 });
+    
+    // Safety cleanup
     setTimeout(() => {
       attackingCells.delete(key);
-    }, 300);
+    }, 400);
   } else if (data.type === "damage") {
     // Add to tracking set and let renderAll apply the class
     const key = `${data.row}-${data.col}`;
@@ -5707,8 +5801,158 @@ function animateEffect(data) {
   }
   
   // Special handling for void collapse spell - lasers across row + shake damaged units
-  if (effectType === "void_collapse" && data.targetRow !== undefined) {
+  if (effectType === "void_collapse_spell" && data.targetRow !== undefined) {
     animateVoidCollapse(data.targetRow, data.targets || []);
+    return;
+  }
+  
+  // Special handling for High Noon - sun descends, row burns
+  if (effectType === "high_noon" && data.targetRow !== undefined) {
+    animateHighNoon(data.targetRow, data.targets || []);
+    return;
+  }
+  
+  // Special handling for Sanguine Feast - blood wave across row, droplets fly to heart
+  if (effectType === "sanguine_feast" && data.targetRow !== undefined) {
+    animateSanguineFeast(data.targetRow, data.targets || [], data.hitCount || 0, data.role);
+    return;
+  }
+  
+  // Special handling for broodmother drone drop - drone falls from above into tile
+  if (effectType === "drone_drop" && data.targetPos) {
+    animateDroneDrop(data.targetPos, data.droneArt);
+    return;
+  }
+  
+  // Special handling for buff float (Hive Ascension) - +1 HP then +1 ATK float up from each unit
+  if (effectType === "buff_float" && data.targets) {
+    animateBuffFloat(data.targets, data.buffAtk, data.buffHp);
+    return;
+  }
+  
+  // Special handling for death transform (Bone Deputy -> Bone Pile) - crossfade with shake
+  if (effectType === "death_transform" && data.targetPos) {
+    animateDeathTransform(data.targetPos, data.fromArt, data.toArt);
+    return;
+  }
+  
+  // Special handling for grave robber ghost green glow
+  if (effectType === "grave_glow" && data.sourcePos) {
+    animateGraveGlow(data.sourcePos);
+    return;
+  }
+  
+  // Special handling for most wanted poster slam
+  if (effectType === "most_wanted" && data.targetPos) {
+    animateMostWanted(data.targetPos);
+    return;
+  }
+  
+  // Special handling for undertaker soul absorption
+  if (effectType === "soul_absorb" && data.sourcePos && data.targetPos) {
+    animateSoulAbsorb(data.sourcePos, data.targetPos);
+    return;
+  }
+  
+  // Special handling for Hanged Man death explosion
+  if (effectType === "death_explosion" && data.sourcePos) {
+    animateDeathExplosion(data.sourcePos, data.targets || []);
+    return;
+  }
+  
+  // Special handling for Crypt Keeper glow on ally death
+  if (effectType === "crypt_glow" && data.sourcePos) {
+    animateCryptGlow(data.sourcePos);
+    return;
+  }
+  
+  // Special handling for lifesteal - blood siphon from victim to attacker
+  if (effectType === "lifesteal" && data.sourcePos && data.targetPos) {
+    animateLifesteal(data.sourcePos, data.targetPos);
+    return;
+  }
+  
+  // Special handling for Soul Collector - ghost card flies from victim to collector to hand
+  if (effectType === "soul_steal" && data.sourcePos && data.targetPos) {
+    animateSoulSteal(data.sourcePos, data.targetPos, data.stolenArt, data.role);
+    return;
+  }
+  
+  // Special handling for Blood Pact - dark sacrifice, blood drains from unit
+  if (effectType === "blood_pact" && data.targetPos) {
+    animateBloodPact(data.targetPos);
+    return;
+  }
+  
+  // Special handling for Blood Transfusion - red tint, spin, stats swap
+  if (effectType === "blood_transfusion" && data.targetPos) {
+    animateBloodTransfusion(data.targetPos);
+    return;
+  }
+  
+  // Special handling for Blood Countess - blood vortex on kill growth
+  if (effectType === "blood_vortex" && data.sourcePos && data.targetPos) {
+    animateBloodVortex(data.sourcePos, data.targetPos);
+    return;
+  }
+  
+  // Special handling for Elder Vampire - immortal resurrection
+  if (effectType === "immortal_rise" && data.targetPos) {
+    animateImmortalRise(data.targetPos);
+    return;
+  }
+  
+  // Special handling for Prismatic Fairy - crystallize enemies, fairy glows
+  if (effectType === "prismatic_shatter" && data.targets) {
+    animatePrismaticShatter(data.sourcePos, data.targets);
+    return;
+  }
+  
+  // Special handling for Diamond Guardian bodyguard intercept
+  if (effectType === "bodyguard_glow" && data.targetPos) {
+    animateBodyguardGlow(data.targetPos, data.protectedPos);
+    return;
+  }
+  
+  // Special handling for Pearl Blessing - pearl rain across board
+  if (effectType === "pearl_blessing") {
+    animatePearlBlessing(data.targets || [], data.fairyTargets || []);
+    return;
+  }
+  
+  // Special handling for Pearl Blessing - pearl rain over board
+  if (effectType === "pearl_blessing") {
+    animatePearlBlessing(data.targets || [], data.fairyTargets || []);
+    return;
+  }
+  
+  // Special handling for Sapphire Dancer swap - both units fly to each other
+  if (effectType === "fairy_swap" && data.fromPos && data.toPos) {
+    animateFairySwap(data.fromPos, data.toPos);
+    return;
+  }
+  
+  // Special handling for Amethyst Enchanter - reflect damage back
+  if (effectType === "amethyst_reflect" && data.sourcePos && data.targetPos) {
+    animateAmethystReflect(data.sourcePos, data.targetPos);
+    return;
+  }
+  
+  // Special handling for Crimson Revival - ghost cards rise from discard to hand
+  if (effectType === "crimson_revival") {
+    animateCrimsonRevival(data.role, data.cardArts || []);
+    return;
+  }
+  
+  // Special handling for Fairy Ring - gems fade into tiles
+  if (effectType === "fairy_ring_spawn" && data.targets) {
+    animateFairyRingSpawn(data.targets);
+    return;
+  }
+  
+  // Special handling for Gemstone Curse - dark crystal curse on target
+  if (effectType === "gemstone_curse" && data.targetPos) {
+    animateGemstoneCurse(data.targetPos, data.reduction);
     return;
   }
   
@@ -6216,6 +6460,1590 @@ function animateEnergyBolt(sourcePos, role) {
     energyBar.classList.add('energy-bolt-flash');
     setTimeout(() => energyBar.classList.remove('energy-bolt-flash'), 600);
   }, 500);
+}
+
+// Animate Amethyst Enchanter reflect - enchanter grows and glows purple, attacker shakes
+function animateAmethystReflect(sourcePos, targetPos) {
+  console.log("[AMETHYST REFLECT] sourcePos:", sourcePos, "targetPos:", targetPos);
+  // Clear any attack animation on the attacker to prevent double budge
+  const attackKey = `${targetPos.r}-${targetPos.c}`;
+  console.log("[AMETHYST REFLECT] Deleting attackKey:", attackKey, "exists:", attackingCells.has(attackKey));
+  attackingCells.delete(attackKey);
+  
+  // Also remove the attacking class from current DOM element immediately
+  const atkViewRow = toViewRow(targetPos.r);
+  const atkCell = document.getElementById(cellId(atkViewRow, targetPos.c));
+  if (atkCell) {
+    const u = atkCell.querySelector('.unit');
+    if (u) u.classList.remove('attacking');
+  }
+  
+  // Delay until after the initial attack budge + target shake finishes (~400ms)
+  setTimeout(() => {
+    // Enchanter grows and glows purple
+    const applyGlow = () => {
+      const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.add('amethyst-reflect-glow');
+      }
+    };
+    applyGlow();
+    const glowInterval = setInterval(applyGlow, 50);
+    setTimeout(() => {
+      clearInterval(glowInterval);
+      const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.remove('amethyst-reflect-glow');
+      }
+    }, 700);
+    
+    // Attacker shakes from reflected damage at the same time
+    const applyHit = () => {
+      const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.add('amethyst-reflect-hit');
+      }
+    };
+    applyHit();
+    const hitInterval = setInterval(applyHit, 50);
+    setTimeout(() => {
+      clearInterval(hitInterval);
+      const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.remove('amethyst-reflect-hit');
+      }
+    }, 500);
+    
+    playSFX('fairy_sparkle');
+  }, 450);
+}
+
+// Animate Sapphire Dancer swap - both units fly to each other's positions
+function animateFairySwap(fromPos, toPos) {
+  const fromViewRow = toViewRow(fromPos.r);
+  const toViewRow2 = toViewRow(toPos.r);
+  const fromCell = document.getElementById(cellId(fromViewRow, fromPos.c));
+  const toCell = document.getElementById(cellId(toViewRow2, toPos.c));
+  if (!fromCell || !toCell) return;
+  
+  const fromUnit = fromCell.querySelector('.unit');
+  const toUnit = toCell.querySelector('.unit');
+  if (!fromUnit || !toUnit) return;
+  
+  const fromRect = fromCell.getBoundingClientRect();
+  const toRect = toCell.getBoundingClientRect();
+  
+  // Calculate movement deltas
+  const deltaX = toRect.left - fromRect.left;
+  const deltaY = toRect.top - fromRect.top;
+  
+  // Clone both units for the flying animation
+  const fromClone = fromUnit.cloneNode(true);
+  const toClone = toUnit.cloneNode(true);
+  
+  fromClone.className = 'fairy-swap-clone';
+  toClone.className = 'fairy-swap-clone';
+  
+  fromClone.style.left = fromRect.left + 'px';
+  fromClone.style.top = fromRect.top + 'px';
+  fromClone.style.width = fromRect.width + 'px';
+  fromClone.style.height = fromRect.height + 'px';
+  
+  toClone.style.left = toRect.left + 'px';
+  toClone.style.top = toRect.top + 'px';
+  toClone.style.width = toRect.width + 'px';
+  toClone.style.height = toRect.height + 'px';
+  
+  // Hide originals
+  fromUnit.style.opacity = '0';
+  toUnit.style.opacity = '0';
+  
+  document.body.appendChild(fromClone);
+  document.body.appendChild(toClone);
+  
+  // Sparkle trail on both
+  fromClone.classList.add('fairy-swap-glow');
+  toClone.classList.add('fairy-swap-glow');
+  
+  // Fly both to each other
+  requestAnimationFrame(() => {
+    fromClone.style.transition = 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)';
+    toClone.style.transition = 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)';
+    
+    fromClone.style.left = toRect.left + 'px';
+    fromClone.style.top = toRect.top + 'px';
+    
+    toClone.style.left = fromRect.left + 'px';
+    toClone.style.top = fromRect.top + 'px';
+  });
+  
+  // Clean up after animation — state update will re-render with correct positions
+  setTimeout(() => {
+    fromClone.remove();
+    toClone.remove();
+  }, 420);
+  
+  playSFX('fairy_sparkle');
+}
+
+// Animate Pearl Blessing - iridescent pearl rain, board hue shift, units glow
+function animatePearlBlessing(targets, fairyTargets) {
+  const board = document.getElementById('board');
+  if (!board) return;
+  const boardRect = board.getBoundingClientRect();
+  
+  // Hue shift the whole board to pearlescent pink/lavender
+  board.classList.add('pearl-blessing-hue');
+  setTimeout(() => board.classList.remove('pearl-blessing-hue'), 1500);
+  
+  // Rain pearls across the board
+  for (let i = 0; i < 25; i++) {
+    setTimeout(() => {
+      const pearl = document.createElement('div');
+      pearl.className = 'pearl-rain-drop';
+      pearl.style.left = (boardRect.left + Math.random() * boardRect.width) + 'px';
+      pearl.style.top = (boardRect.top - 10) + 'px';
+      const duration = 0.7 + Math.random() * 0.5;
+      pearl.style.setProperty('--pearl-fall-duration', duration + 's');
+      const size = 4 + Math.random() * 4;
+      pearl.style.width = size + 'px';
+      pearl.style.height = size + 'px';
+      document.body.appendChild(pearl);
+      setTimeout(() => pearl.remove(), duration * 1000);
+    }, i * 50);
+  }
+  
+  // Glow each buffed unit
+  targets.forEach((target, i) => {
+    setTimeout(() => {
+      const tViewRow = toViewRow(target.r);
+      const tCell = document.getElementById(cellId(tViewRow, target.c));
+      if (!tCell) return;
+      
+      const isFairy = fairyTargets.some(f => f.r === target.r && f.c === target.c);
+      
+      const applyGlow = () => {
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.add(isFairy ? 'pearl-fairy-glow' : 'pearl-unit-glow');
+        }
+      };
+      applyGlow();
+      const interval = setInterval(applyGlow, 50);
+      setTimeout(() => {
+        clearInterval(interval);
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) {
+            u.classList.remove('pearl-unit-glow');
+            u.classList.remove('pearl-fairy-glow');
+          }
+        }
+      }, 800);
+      
+      // Float buff text
+      const rect = tCell.getBoundingClientRect();
+      const hpFloat = document.createElement('div');
+      hpFloat.className = 'buff-float-text buff-float-hp';
+      hpFloat.textContent = isFairy ? '+1/+1' : '+1 HP';
+      hpFloat.style.left = (rect.left + rect.width / 2) + 'px';
+      hpFloat.style.top = (rect.top + rect.height * 0.3) + 'px';
+      document.body.appendChild(hpFloat);
+      setTimeout(() => hpFloat.remove(), 800);
+    }, 300 + i * 80);
+  });
+  
+  playSFX('fairy_sparkle');
+}
+
+// Animate Pearl Blessing - pearlescent hue wash over board, pearl drops rain down, units glow
+function animatePearlBlessing(targets, fairyTargets) {
+  // Hue shift the whole game board
+  const board = document.getElementById('board');
+  if (board) {
+    board.classList.add('pearl-blessing-hue');
+    setTimeout(() => board.classList.remove('pearl-blessing-hue'), 1800);
+  }
+  
+  // Rain pearl drops across the board
+  const boardRect = board ? board.getBoundingClientRect() : { left: 100, top: 100, width: 500, height: 600 };
+  for (let i = 0; i < 25; i++) {
+    setTimeout(() => {
+      const pearl = document.createElement('div');
+      pearl.className = 'pearl-rain-drop';
+      pearl.style.left = (boardRect.left + Math.random() * boardRect.width) + 'px';
+      pearl.style.top = (boardRect.top - 10) + 'px';
+      const size = 4 + Math.random() * 4;
+      pearl.style.width = size + 'px';
+      pearl.style.height = size + 'px';
+      const duration = 0.8 + Math.random() * 0.6;
+      pearl.style.setProperty('--pearl-fall-duration', duration + 's');
+      // Randomize pearl color
+      const hue = Math.random() > 0.5 ? (300 + Math.random() * 40) : (20 + Math.random() * 30);
+      pearl.style.setProperty('--pearl-hue', hue + 'deg');
+      document.body.appendChild(pearl);
+      setTimeout(() => pearl.remove(), duration * 1000);
+    }, Math.random() * 800);
+  }
+  
+  // Glow each friendly unit with pearl shimmer
+  const fairySet = new Set(fairyTargets.map(f => `${f.r}-${f.c}`));
+  targets.forEach((target, i) => {
+    setTimeout(() => {
+      const isFairy = fairySet.has(`${target.r}-${target.c}`);
+      const tViewRow = toViewRow(target.r);
+      const tCell = document.getElementById(cellId(tViewRow, target.c));
+      if (!tCell) return;
+      
+      const applyGlow = () => {
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.add(isFairy ? 'pearl-fairy-glow' : 'pearl-unit-glow');
+        }
+      };
+      applyGlow();
+      const interval = setInterval(applyGlow, 50);
+      setTimeout(() => {
+        clearInterval(interval);
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.remove('pearl-fairy-glow', 'pearl-unit-glow');
+        }
+      }, 800);
+      
+      // Float buff text
+      const rect = tCell.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      
+      const hpFloat = document.createElement('div');
+      hpFloat.className = 'buff-float-text buff-float-hp';
+      hpFloat.textContent = '+1 HP';
+      hpFloat.style.left = centerX + 'px';
+      hpFloat.style.top = (rect.top + rect.height * 0.35) + 'px';
+      document.body.appendChild(hpFloat);
+      setTimeout(() => hpFloat.remove(), 800);
+      
+      if (isFairy) {
+        setTimeout(() => {
+          const atkFloat = document.createElement('div');
+          atkFloat.className = 'buff-float-text buff-float-atk';
+          atkFloat.textContent = '+1 ATK';
+          atkFloat.style.left = centerX + 'px';
+          atkFloat.style.top = (rect.top + rect.height * 0.5) + 'px';
+          document.body.appendChild(atkFloat);
+          setTimeout(() => atkFloat.remove(), 800);
+        }, 150);
+      }
+    }, 300 + i * 80);
+  });
+  
+  playSFX('fairy_sparkle');
+}
+
+// Animate Diamond Guardian bodyguard - guardian flashes bright, shield line to protected ally
+function animateBodyguardGlow(guardianPos, protectedPos) {
+  const gViewRow = toViewRow(guardianPos.r);
+  const pViewRow = toViewRow(protectedPos.r);
+  const guardianCell = document.getElementById(cellId(gViewRow, guardianPos.c));
+  const protectedCell = document.getElementById(cellId(pViewRow, protectedPos.c));
+  if (!guardianCell) return;
+  
+  // Guardian glows bright diamond white
+  const applyGlow = () => {
+    const c = document.getElementById(cellId(toViewRow(guardianPos.r), guardianPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.add('bodyguard-glow');
+    }
+  };
+  applyGlow();
+  const interval = setInterval(applyGlow, 50);
+  setTimeout(() => {
+    clearInterval(interval);
+    const c = document.getElementById(cellId(toViewRow(guardianPos.r), guardianPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('bodyguard-glow');
+    }
+  }, 700);
+  
+  // Brief shield flash on the protected ally
+  if (protectedCell) {
+    const applyShield = () => {
+      const c = document.getElementById(cellId(toViewRow(protectedPos.r), protectedPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.add('bodyguard-shielded');
+      }
+    };
+    applyShield();
+    const shieldInterval = setInterval(applyShield, 50);
+    setTimeout(() => {
+      clearInterval(shieldInterval);
+      const c = document.getElementById(cellId(toViewRow(protectedPos.r), protectedPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.remove('bodyguard-shielded');
+      }
+    }, 500);
+  }
+  
+  playSFX('shield');
+}
+
+// Animate Prismatic Fairy shatter - fairy glows rainbow, enemies get prismatic crystallize overlay
+function animatePrismaticShatter(sourcePos, targets) {
+  // Glow the fairy
+  if (sourcePos) {
+    const fairyViewRow = toViewRow(sourcePos.r);
+    const fairyCell = document.getElementById(cellId(fairyViewRow, sourcePos.c));
+    if (fairyCell) {
+      const applyGlow = () => {
+        const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.add('prismatic-fairy-glow');
+        }
+      };
+      applyGlow();
+      const interval = setInterval(applyGlow, 50);
+      setTimeout(() => {
+        clearInterval(interval);
+        const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.remove('prismatic-fairy-glow');
+        }
+      }, 1000);
+    }
+  }
+  
+  // Crystallize each hit enemy
+  targets.forEach((target, i) => {
+    setTimeout(() => {
+      const tViewRow = toViewRow(target.r);
+      const tCell = document.getElementById(cellId(tViewRow, target.c));
+      if (!tCell) return;
+      
+      const tKey = `${target.r}-${target.c}`;
+      damagingCells.add(tKey);
+      
+      // Apply prismatic crystallize class
+      const applyEffect = () => {
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.add('prismatic-crystallize');
+        }
+      };
+      applyEffect();
+      const effectInterval = setInterval(applyEffect, 50);
+      
+      setTimeout(() => {
+        clearInterval(effectInterval);
+        damagingCells.delete(tKey);
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.remove('prismatic-crystallize');
+        }
+      }, 900);
+    }, i * 60);
+  });
+  
+  playSFX('fairy_sparkle');
+}
+
+// Animate Elder Vampire immortal - near-death flash then crimson resurrection burst
+function animateImmortalRise(targetPos) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  // Apply the death-then-rise animation on the unit
+  const applyEffect = () => {
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.add('immortal-rise');
+    }
+  };
+  applyEffect();
+  const interval = setInterval(applyEffect, 50);
+  setTimeout(() => {
+    clearInterval(interval);
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('immortal-rise');
+    }
+  }, 1200);
+  
+  // Crimson shockwave ring at the midpoint
+  setTimeout(() => {
+    const ring = document.createElement('div');
+    ring.className = 'immortal-shockwave';
+    ring.style.left = centerX + 'px';
+    ring.style.top = centerY + 'px';
+    document.body.appendChild(ring);
+    setTimeout(() => ring.remove(), 600);
+  }, 400);
+  
+  playSFX('dark_magic');
+}
+
+// Animate Blood Countess vortex - blood particles spiral from victim to countess, she glows, +1/+1
+function animateBloodVortex(victimPos, countessPos) {
+  const victimViewRow = toViewRow(victimPos.r);
+  const countessViewRow = toViewRow(countessPos.r);
+  const victimCell = document.getElementById(cellId(victimViewRow, victimPos.c));
+  const countessCell = document.getElementById(cellId(countessViewRow, countessPos.c));
+  if (!victimCell || !countessCell) return;
+  
+  const vRect = victimCell.getBoundingClientRect();
+  const cRect = countessCell.getBoundingClientRect();
+  
+  const startX = vRect.left + vRect.width / 2;
+  const startY = vRect.top + vRect.height / 2;
+  const endX = cRect.left + cRect.width / 2;
+  const endY = cRect.top + cRect.height / 2;
+  
+  // Spawn 8 blood particles that spiral from victim to countess
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const particle = document.createElement('div');
+      particle.className = 'blood-vortex-particle';
+      
+      // Start at random offset around victim
+      const offsetX = (Math.random() - 0.5) * 40;
+      const offsetY = (Math.random() - 0.5) * 40;
+      particle.style.left = (startX + offsetX) + 'px';
+      particle.style.top = (startY + offsetY) + 'px';
+      
+      document.body.appendChild(particle);
+      
+      // Fly to countess with slight curve
+      requestAnimationFrame(() => {
+        particle.style.transition = `all ${0.35 + Math.random() * 0.15}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+        particle.style.left = endX + 'px';
+        particle.style.top = endY + 'px';
+        particle.style.opacity = '0.5';
+        particle.style.transform = 'translate(-50%, -50%) scale(0.4)';
+      });
+      
+      setTimeout(() => particle.remove(), 500);
+    }, i * 50);
+  }
+  
+  // Countess glows crimson after particles arrive
+  setTimeout(() => {
+    const applyGlow = () => {
+      const c = document.getElementById(cellId(toViewRow(countessPos.r), countessPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.add('blood-vortex-glow');
+      }
+    };
+    applyGlow();
+    const interval = setInterval(applyGlow, 50);
+    setTimeout(() => {
+      clearInterval(interval);
+      const c = document.getElementById(cellId(toViewRow(countessPos.r), countessPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.remove('blood-vortex-glow');
+      }
+    }, 800);
+    
+    // Show +1/+1 buff float
+    animateBuffFloat([{ r: countessPos.r, c: countessPos.c }], 1, 1);
+  }, 450);
+  
+  playSFX('vampire_bite');
+}
+
+// Animate Gemstone Curse - dark purple crystals encase target, ATK drains
+function animateGemstoneCurse(targetPos, reduction) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  
+  // Dark crystal curse on the unit
+  const applyEffect = () => {
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.add('gemstone-cursed');
+    }
+  };
+  applyEffect();
+  const interval = setInterval(applyEffect, 50);
+  setTimeout(() => {
+    clearInterval(interval);
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('gemstone-cursed');
+    }
+  }, 1000);
+  
+  // Crystal shards stab inward from edges
+  for (let i = 0; i < 6; i++) {
+    const shard = document.createElement('div');
+    shard.className = 'gemstone-curse-shard';
+    const angle = (i / 6) * Math.PI * 2;
+    const startDist = 40;
+    const sx = rect.left + rect.width / 2 + Math.cos(angle) * startDist;
+    const sy = rect.top + rect.height / 2 + Math.sin(angle) * startDist;
+    shard.style.left = sx + 'px';
+    shard.style.top = sy + 'px';
+    shard.style.transform = `translate(-50%, -50%) rotate(${angle * (180/Math.PI) + 90}deg)`;
+    shard.style.animationDelay = (i * 0.05) + 's';
+    document.body.appendChild(shard);
+    
+    // Fly inward to center
+    requestAnimationFrame(() => {
+      shard.style.transition = 'all 0.3s ease-in';
+      shard.style.left = (rect.left + rect.width / 2) + 'px';
+      shard.style.top = (rect.top + rect.height / 2) + 'px';
+      shard.style.opacity = '0.4';
+    });
+    
+    setTimeout(() => shard.remove(), 500);
+  }
+  
+  // Float ATK reduction text
+  setTimeout(() => {
+    const dmgFloat = document.createElement('div');
+    dmgFloat.className = 'buff-float-text';
+    dmgFloat.style.color = '#a855f7';
+    dmgFloat.style.textShadow = '0 0 8px rgba(168, 85, 247, 0.7), 0 0 2px rgba(0,0,0,0.9)';
+    dmgFloat.textContent = `-${reduction} ATK`;
+    dmgFloat.style.left = centerX + 'px';
+    dmgFloat.style.top = (rect.top + rect.height * 0.3) + 'px';
+    document.body.appendChild(dmgFloat);
+    setTimeout(() => dmgFloat.remove(), 800);
+  }, 300);
+  
+  playSFX('dark_magic');
+}
+
+// Animate Fairy Ring - gems shimmer and fade into their tiles
+function animateFairyRingSpawn(targets) {
+  targets.forEach((target, i) => {
+    setTimeout(() => {
+      const viewRow = toViewRow(target.r);
+      const cell = document.getElementById(cellId(viewRow, target.c));
+      if (!cell) return;
+      
+      const rect = cell.getBoundingClientRect();
+      
+      // Create a sparkle burst on the tile
+      for (let s = 0; s < 8; s++) {
+        const sparkle = document.createElement('div');
+        sparkle.className = 'fairy-ring-sparkle';
+        const angle = (s / 8) * Math.PI * 2;
+        const dist = 15 + Math.random() * 20;
+        sparkle.style.left = (rect.left + rect.width / 2 + Math.cos(angle) * dist) + 'px';
+        sparkle.style.top = (rect.top + rect.height / 2 + Math.sin(angle) * dist) + 'px';
+        sparkle.style.animationDelay = (Math.random() * 0.2) + 's';
+        document.body.appendChild(sparkle);
+        setTimeout(() => sparkle.remove(), 700);
+      }
+      
+      // Apply fade-in glow to the unit that appears
+      const applyFade = () => {
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.add('fairy-ring-fadein');
+        }
+      };
+      applyFade();
+      const interval = setInterval(applyFade, 50);
+      setTimeout(() => {
+        clearInterval(interval);
+        const c = document.getElementById(cellId(toViewRow(target.r), target.c));
+        if (c) {
+          const u = c.querySelector('.unit');
+          if (u) u.classList.remove('fairy-ring-fadein');
+        }
+      }, 800);
+    }, i * 250);
+  });
+  
+  playSFX('fairy_sparkle');
+}
+
+// Animate Crimson Revival - ghost cards rise from discard pile and fly to hand
+function animateCrimsonRevival(role, cardArts) {
+  const isMyRole = (role === myRole);
+  
+  // Find the discard pile element
+  const discardEl = isMyRole 
+    ? document.getElementById('discardPile')
+    : document.getElementById('opponentDiscardPile');
+  const handEl = document.getElementById('hand');
+  
+  if (!discardEl || !handEl) return;
+  
+  const discardRect = discardEl.getBoundingClientRect();
+  const handRect = handEl.getBoundingClientRect();
+  
+  // Flash the discard pile crimson
+  discardEl.classList.add('crimson-revival-discard-flash');
+  setTimeout(() => discardEl.classList.remove('crimson-revival-discard-flash'), 800);
+  
+  // Create ghost cards rising from discard
+  cardArts.forEach((art, i) => {
+    setTimeout(() => {
+      const ghost = document.createElement('div');
+      ghost.className = 'crimson-revival-ghost';
+      ghost.style.left = (discardRect.left + discardRect.width / 2) + 'px';
+      ghost.style.top = (discardRect.top) + 'px';
+      ghost.style.width = '50px';
+      ghost.style.height = '65px';
+      
+      document.body.appendChild(ghost);
+      
+      // Phase 1: Rise up from discard
+      requestAnimationFrame(() => {
+        ghost.style.transition = 'top 0.4s ease-out, opacity 0.4s ease';
+        ghost.style.top = (discardRect.top - 80) + 'px';
+        ghost.style.opacity = '0.8';
+      });
+      
+      // Phase 2: Fly to hand
+      setTimeout(() => {
+        ghost.style.transition = 'all 0.5s cubic-bezier(0.2, 0.8, 0.3, 1)';
+        ghost.style.left = (handRect.left + handRect.width / 2) + 'px';
+        ghost.style.top = (handRect.top + handRect.height / 2) + 'px';
+        ghost.style.width = '30px';
+        ghost.style.height = '40px';
+        ghost.style.opacity = '0';
+        ghost.style.filter = 'brightness(2) saturate(0)';
+      }, 450);
+      
+      // Flash hand on arrival
+      setTimeout(() => {
+        ghost.remove();
+        handEl.classList.add('crimson-revival-hand-flash');
+        setTimeout(() => handEl.classList.remove('crimson-revival-hand-flash'), 400);
+      }, 950);
+      
+    }, i * 300);
+  });
+  
+  playSFX('dark_magic');
+}
+
+// Animate Blood Transfusion - card goes red-scale, spins, stats swap
+function animateBloodTransfusion(targetPos) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  // Apply red-scale + spin to the unit via tracking
+  const applyEffect = () => {
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.add('blood-transfusion-spin');
+    }
+  };
+  applyEffect();
+  const interval = setInterval(applyEffect, 50);
+  
+  setTimeout(() => {
+    clearInterval(interval);
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('blood-transfusion-spin');
+    }
+  }, 1000);
+  
+  // Show "SWAP" text at the midpoint of the spin
+  setTimeout(() => {
+    const rect = cell.getBoundingClientRect();
+    const swapText = document.createElement('div');
+    swapText.className = 'buff-float-text';
+    swapText.style.color = '#ff6666';
+    swapText.style.textShadow = '0 0 10px rgba(255, 50, 50, 0.8), 0 0 3px rgba(0,0,0,0.9)';
+    swapText.style.fontSize = '14px';
+    swapText.textContent = '⚔ ↔ ♥';
+    swapText.style.left = (rect.left + rect.width / 2) + 'px';
+    swapText.style.top = (rect.top + rect.height * 0.3) + 'px';
+    document.body.appendChild(swapText);
+    setTimeout(() => swapText.remove(), 800);
+  }, 450);
+  
+  playSFX('vampire_bite');
+}
+
+// Animate Blood Pact - blood washes down the card, card goes grayscale then back
+function animateBloodPact(targetPos) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  
+  // Grayscale the unit
+  const applyGlow = () => {
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.add('blood-pact-sacrifice');
+    }
+  };
+  applyGlow();
+  const interval = setInterval(applyGlow, 50);
+  setTimeout(() => {
+    clearInterval(interval);
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('blood-pact-sacrifice');
+    }
+  }, 1000);
+  
+  // Blood streaks falling from top of card to past bottom
+  for (let i = 0; i < 6; i++) {
+    const streak = document.createElement('div');
+    streak.className = 'blood-pact-streak';
+    streak.style.position = 'fixed';
+    streak.style.left = (rect.left + 4 + Math.random() * (rect.width - 12)) + 'px';
+    streak.style.top = rect.top + 'px';
+    streak.style.width = (3 + Math.random() * 5) + 'px';
+    streak.style.height = '0px';
+    streak.style.zIndex = '9999';
+    streak.style.pointerEvents = 'none';
+    streak.style.animationDelay = (Math.random() * 0.2) + 's';
+    document.body.appendChild(streak);
+    
+    // Animate streak growing down
+    setTimeout(() => {
+      streak.style.transition = `height ${0.4 + Math.random() * 0.2}s ease-in`;
+      streak.style.height = (rect.height + 15 + Math.random() * 15) + 'px';
+    }, Math.random() * 150);
+    
+    // Fade out
+    setTimeout(() => {
+      streak.style.transition = 'opacity 0.3s ease-out';
+      streak.style.opacity = '0';
+    }, 600 + Math.random() * 150);
+    
+    setTimeout(() => streak.remove(), 950);
+  }
+  
+  // Float -2 HP text
+  setTimeout(() => {
+    const centerX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height * 0.3;
+    const dmgFloat = document.createElement('div');
+    dmgFloat.className = 'buff-float-text';
+    dmgFloat.style.color = '#ef4444';
+    dmgFloat.style.textShadow = '0 0 8px rgba(239, 68, 68, 0.6), 0 0 2px rgba(0,0,0,0.9)';
+    dmgFloat.textContent = '-2 HP';
+    dmgFloat.style.left = centerX + 'px';
+    dmgFloat.style.top = startY + 'px';
+    document.body.appendChild(dmgFloat);
+    setTimeout(() => dmgFloat.remove(), 800);
+  }, 300);
+  
+  playSFX('vampire_bite');
+}
+
+// Animate Soul Collector - ghost card rises from victim, flies to collector, then to hand
+function animateSoulSteal(victimPos, collectorPos, stolenArt, role) {
+  const victimViewRow = toViewRow(victimPos.r);
+  const collectorViewRow = toViewRow(collectorPos.r);
+  const victimCell = document.getElementById(cellId(victimViewRow, victimPos.c));
+  const collectorCell = document.getElementById(cellId(collectorViewRow, collectorPos.c));
+  if (!victimCell || !collectorCell) return;
+  
+  const vRect = victimCell.getBoundingClientRect();
+  const cRect = collectorCell.getBoundingClientRect();
+  
+  // Create ghost card at victim position
+  const ghost = document.createElement('div');
+  ghost.className = 'soul-steal-ghost';
+  ghost.style.left = vRect.left + 'px';
+  ghost.style.top = vRect.top + 'px';
+  ghost.style.width = vRect.width + 'px';
+  ghost.style.height = vRect.height + 'px';
+  
+  if (stolenArt) {
+    ghost.style.backgroundImage = `url('${encodeURI(stolenArt)}')`;
+    ghost.style.backgroundSize = 'cover';
+    ghost.style.backgroundPosition = 'center';
+  }
+  
+  document.body.appendChild(ghost);
+  
+  // Phase 1: Rise up slightly and become ghostly
+  requestAnimationFrame(() => {
+    ghost.style.transition = 'top 0.3s ease-out, opacity 0.3s ease, filter 0.3s ease';
+    ghost.style.top = (vRect.top - 15) + 'px';
+    ghost.style.opacity = '0.7';
+    ghost.style.filter = 'brightness(1.5) saturate(0.3) hue-rotate(200deg)';
+  });
+  
+  // Phase 2: Fly to Soul Collector while shrinking
+  setTimeout(() => {
+    ghost.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.3, 1)';
+    ghost.style.left = (cRect.left + cRect.width * 0.15) + 'px';
+    ghost.style.top = (cRect.top + cRect.height * 0.15) + 'px';
+    ghost.style.width = (cRect.width * 0.7) + 'px';
+    ghost.style.height = (cRect.height * 0.7) + 'px';
+    ghost.style.opacity = '0.4';
+    ghost.style.filter = 'brightness(2) saturate(0) hue-rotate(200deg)';
+  }, 300);
+  
+  // Phase 3: Absorb into collector - collector glows
+  setTimeout(() => {
+    ghost.remove();
+    
+    const applyGlow = () => {
+      const c = document.getElementById(cellId(toViewRow(collectorPos.r), collectorPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.add('soul-steal-glow');
+      }
+    };
+    applyGlow();
+    const interval = setInterval(applyGlow, 50);
+    setTimeout(() => {
+      clearInterval(interval);
+      const c = document.getElementById(cellId(toViewRow(collectorPos.r), collectorPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.remove('soul-steal-glow');
+      }
+    }, 800);
+    
+    // Phase 4: Just glow - no card flying to hand
+  }, 700);
+  
+  playSFX('dark_magic');
+}
+
+// Animate lifesteal - red blood droplet flies from victim to attacker, attacker glows red
+function animateLifesteal(victimPos, attackerPos) {
+  const victimViewRow = toViewRow(victimPos.r);
+  const attackerViewRow = toViewRow(attackerPos.r);
+  const victimCell = document.getElementById(cellId(victimViewRow, victimPos.c));
+  const attackerCell = document.getElementById(cellId(attackerViewRow, attackerPos.c));
+  if (!victimCell || !attackerCell) return;
+  
+  const vRect = victimCell.getBoundingClientRect();
+  const aRect = attackerCell.getBoundingClientRect();
+  
+  const startX = vRect.left + vRect.width / 2;
+  const startY = vRect.top + vRect.height / 2;
+  const endX = aRect.left + aRect.width / 2;
+  const endY = aRect.top + aRect.height / 2;
+  
+  // Create blood droplet
+  const drop = document.createElement('div');
+  drop.className = 'lifesteal-drop';
+  drop.style.left = startX + 'px';
+  drop.style.top = startY + 'px';
+  document.body.appendChild(drop);
+  
+  // Fly to attacker
+  requestAnimationFrame(() => {
+    drop.style.transition = 'left 0.35s cubic-bezier(0.2, 0.8, 0.3, 1), top 0.35s cubic-bezier(0.2, 0.8, 0.3, 1)';
+    drop.style.left = endX + 'px';
+    drop.style.top = endY + 'px';
+  });
+  
+  // On arrival — glow attacker red, show +1 HP
+  setTimeout(() => {
+    drop.remove();
+    
+    const applyGlow = () => {
+      const c = document.getElementById(cellId(toViewRow(attackerPos.r), attackerPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.add('lifesteal-glow');
+      }
+    };
+    applyGlow();
+    const interval = setInterval(applyGlow, 50);
+    setTimeout(() => {
+      clearInterval(interval);
+      const c = document.getElementById(cellId(toViewRow(attackerPos.r), attackerPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.remove('lifesteal-glow');
+      }
+    }, 700);
+    
+    // Float +1 HP
+    const rect = attackerCell.getBoundingClientRect();
+    const hpFloat = document.createElement('div');
+    hpFloat.className = 'buff-float-text buff-float-hp';
+    hpFloat.textContent = '+1 HP';
+    hpFloat.style.left = (rect.left + rect.width / 2) + 'px';
+    hpFloat.style.top = (rect.top + rect.height * 0.4) + 'px';
+    document.body.appendChild(hpFloat);
+    setTimeout(() => hpFloat.remove(), 800);
+  }, 350);
+}
+
+// Animate Crypt Keeper glow - bright flash when absorbing death essence
+function animateCryptGlow(sourcePos) {
+  const viewRow = toViewRow(sourcePos.r);
+  const cell = document.getElementById(cellId(viewRow, sourcePos.c));
+  if (!cell) return;
+  
+  const applyGlow = () => {
+    const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.add('crypt-glow');
+    }
+  };
+  applyGlow();
+  const interval = setInterval(applyGlow, 50);
+  
+  setTimeout(() => {
+    clearInterval(interval);
+    const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('crypt-glow');
+    }
+  }, 1000);
+  
+  // Show +1 Max HP float
+  const rect = cell.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const startY = rect.top + rect.height * 0.4;
+  const hpFloat = document.createElement('div');
+  hpFloat.className = 'buff-float-text buff-float-hp';
+  hpFloat.textContent = '+1 Max HP';
+  hpFloat.style.left = centerX + 'px';
+  hpFloat.style.top = startY + 'px';
+  document.body.appendChild(hpFloat);
+  setTimeout(() => hpFloat.remove(), 800);
+  
+  playSFX('dark_magic');
+}
+
+// Animate Hanged Man death explosion - dark blast from source, bone fragments fly out, targets shake
+function animateDeathExplosion(sourcePos, targets) {
+  const viewRow = toViewRow(sourcePos.r);
+  const cell = document.getElementById(cellId(viewRow, sourcePos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  // Create explosion blast at the source
+  const blast = document.createElement('div');
+  blast.className = 'death-explosion-blast';
+  blast.style.left = centerX + 'px';
+  blast.style.top = centerY + 'px';
+  document.body.appendChild(blast);
+  
+  // Create bone fragments flying outward
+  const boneChars = ['🦴', '💀', '🦴', '💀', '🦴', '🦴'];
+  for (let i = 0; i < 8; i++) {
+    const frag = document.createElement('div');
+    frag.className = 'death-explosion-frag';
+    frag.textContent = boneChars[i % boneChars.length];
+    frag.style.left = centerX + 'px';
+    frag.style.top = centerY + 'px';
+    
+    const angle = (i / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    const dist = 50 + Math.random() * 40;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    frag.style.setProperty('--frag-dx', dx + 'px');
+    frag.style.setProperty('--frag-dy', dy + 'px');
+    frag.style.animationDelay = (Math.random() * 0.1) + 's';
+    
+    document.body.appendChild(frag);
+    setTimeout(() => frag.remove(), 700);
+  }
+  
+  setTimeout(() => blast.remove(), 600);
+  
+  // Shake hit targets
+  for (const target of targets) {
+    const tViewRow = toViewRow(target.r);
+    const tCell = document.getElementById(cellId(tViewRow, target.c));
+    if (tCell) {
+      const tKey = `${target.r}-${target.c}`;
+      damagingCells.add(tKey);
+      const unitEl = tCell.querySelector('.unit');
+      if (unitEl) unitEl.classList.add('vc-shake');
+      setTimeout(() => {
+        damagingCells.delete(tKey);
+        if (unitEl) unitEl.classList.remove('vc-shake');
+      }, 700);
+    }
+  }
+  
+  playSFX('coffin_slam');
+}
+
+// Animate soul absorption - wisp floats from dead ally to Undertaker via squiggly path, then buff text
+function animateSoulAbsorb(deadPos, undertakerPos) {
+  const deadViewRow = toViewRow(deadPos.r);
+  const utViewRow = toViewRow(undertakerPos.r);
+  const deadCell = document.getElementById(cellId(deadViewRow, deadPos.c));
+  const utCell = document.getElementById(cellId(utViewRow, undertakerPos.c));
+  if (!deadCell || !utCell) return;
+  
+  const deadRect = deadCell.getBoundingClientRect();
+  const utRect = utCell.getBoundingClientRect();
+  
+  const startX = deadRect.left + deadRect.width / 2;
+  const startY = deadRect.top + deadRect.height / 2;
+  const endX = utRect.left + utRect.width / 2;
+  const endY = utRect.top + utRect.height / 2;
+  
+  // Create ghostly wisp
+  const wisp = document.createElement('div');
+  wisp.className = 'soul-wisp';
+  wisp.style.left = startX + 'px';
+  wisp.style.top = startY + 'px';
+  wisp.innerHTML = '<div class="soul-wisp-core"></div><div class="soul-wisp-trail"></div>';
+  document.body.appendChild(wisp);
+  
+  // Build squiggly path with 8-10 waypoints
+  const steps = 8 + Math.floor(Math.random() * 3);
+  const waypoints = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const baseX = startX + (endX - startX) * t;
+    const baseY = startY + (endY - startY) * t;
+    // Add wobble that's strongest in the middle of the path
+    const wobbleStrength = Math.sin(t * Math.PI) * 35;
+    const wx = baseX + (Math.random() - 0.5) * wobbleStrength * 2;
+    const wy = baseY + (Math.random() - 0.5) * wobbleStrength;
+    waypoints.push({ x: wx, y: wy });
+  }
+  // Make sure last point is exactly the destination
+  waypoints[waypoints.length - 1] = { x: endX, y: endY };
+  
+  // Animate along the squiggly path with blinking
+  const totalDuration = 800;
+  const stepDuration = totalDuration / steps;
+  let currentStep = 0;
+  
+  const moveInterval = setInterval(() => {
+    currentStep++;
+    if (currentStep >= waypoints.length) {
+      clearInterval(moveInterval);
+      return;
+    }
+    const wp = waypoints[currentStep];
+    wisp.style.transition = `left ${stepDuration}ms ease-in-out, top ${stepDuration}ms ease-in-out`;
+    wisp.style.left = wp.x + 'px';
+    wisp.style.top = wp.y + 'px';
+  }, stepDuration);
+  
+  // On arrival: glow the undertaker + show buff text
+  setTimeout(() => {
+    wisp.remove();
+    
+    // Purple/green glow on undertaker
+    const applyGlow = () => {
+      const c = document.getElementById(cellId(toViewRow(undertakerPos.r), undertakerPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.add('soul-absorb-glow');
+      }
+    };
+    applyGlow();
+    const glowInterval = setInterval(applyGlow, 50);
+    
+    setTimeout(() => {
+      clearInterval(glowInterval);
+      const c = document.getElementById(cellId(toViewRow(undertakerPos.r), undertakerPos.c));
+      if (c) {
+        const u = c.querySelector('.unit');
+        if (u) u.classList.remove('soul-absorb-glow');
+      }
+    }, 1000);
+    
+    // Show +1 HP then +1 ATK buff float
+    animateBuffFloat([{ r: undertakerPos.r, c: undertakerPos.c }], 1, 1);
+    
+  }, totalDuration + 50);
+  
+  playSFX('dark_magic');
+}
+
+// Animate most wanted - poster slams down over the target card
+function animateMostWanted(targetPos) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  
+  // Create poster overlay
+  const poster = document.createElement('div');
+  poster.className = 'most-wanted-slam';
+  poster.style.position = 'fixed';
+  poster.style.left = (rect.left - 4) + 'px';
+  poster.style.top = (rect.top - 4) + 'px';
+  poster.style.width = (rect.width + 8) + 'px';
+  poster.style.height = (rect.height + 8) + 'px';
+  poster.style.zIndex = '10000';
+  poster.style.pointerEvents = 'none';
+  poster.style.backgroundImage = "url('/images/Most Wanted Poster.png')";
+  poster.style.backgroundSize = 'cover';
+  poster.style.backgroundPosition = 'center';
+  
+  document.body.appendChild(poster);
+  
+  // Remove after the slam animation plays
+  setTimeout(() => poster.remove(), 1200);
+  
+  playSFX('coffin_slam');
+}
+
+// Animate grave robber ghost green glow - border and eyes glow eerie green
+function animateGraveGlow(sourcePos) {
+  const viewRow = toViewRow(sourcePos.r);
+  const cell = document.getElementById(cellId(viewRow, sourcePos.c));
+  if (!cell) return;
+  
+  const srcKey = `${sourcePos.r}-${sourcePos.c}`;
+  
+  // Use a dedicated tracking set approach via healSourceCells (green glow reuse)
+  // But we want a distinct ghost-green, so use a separate class
+  const applyGlow = () => {
+    const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.add('grave-glow');
+    }
+  };
+  
+  applyGlow();
+  // Re-apply on renders
+  const interval = setInterval(applyGlow, 50);
+  
+  setTimeout(() => {
+    clearInterval(interval);
+    const c = document.getElementById(cellId(toViewRow(sourcePos.r), sourcePos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.classList.remove('grave-glow');
+    }
+  }, 1200);
+  
+  playSFX('bone_rattle');
+}
+
+// Animate death transform - old card shakes and fades out while new card fades in simultaneously
+function animateDeathTransform(targetPos, fromArt, toArt) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  
+  // Create the dying card clone (fades out + shakes)
+  const fromClone = document.createElement('div');
+  fromClone.className = 'transform-from';
+  fromClone.style.position = 'fixed';
+  fromClone.style.left = rect.left + 'px';
+  fromClone.style.top = rect.top + 'px';
+  fromClone.style.width = rect.width + 'px';
+  fromClone.style.height = rect.height + 'px';
+  fromClone.style.zIndex = '9999';
+  fromClone.style.pointerEvents = 'none';
+  fromClone.style.borderRadius = '6px';
+  fromClone.style.overflow = 'hidden';
+  if (fromArt) {
+    fromClone.style.backgroundImage = `url('${encodeURI(fromArt)}')`;
+    fromClone.style.backgroundSize = 'cover';
+    fromClone.style.backgroundPosition = 'center';
+  }
+  
+  // Create the new card clone (fades in)
+  const toClone = document.createElement('div');
+  toClone.className = 'transform-to';
+  toClone.style.position = 'fixed';
+  toClone.style.left = rect.left + 'px';
+  toClone.style.top = rect.top + 'px';
+  toClone.style.width = rect.width + 'px';
+  toClone.style.height = rect.height + 'px';
+  toClone.style.zIndex = '9998';
+  toClone.style.pointerEvents = 'none';
+  toClone.style.borderRadius = '6px';
+  toClone.style.overflow = 'hidden';
+  toClone.style.opacity = '0';
+  if (toArt) {
+    toClone.style.backgroundImage = `url('${encodeURI(toArt)}')`;
+    toClone.style.backgroundSize = 'cover';
+    toClone.style.backgroundPosition = 'center';
+  }
+  
+  document.body.appendChild(toClone);
+  document.body.appendChild(fromClone);
+  
+  // Clear any damage/effect tracking on this cell so the new unit doesn't inherit red glow
+  const trackKey = `${targetPos.r}-${targetPos.c}`;
+  damagingCells.delete(trackKey);
+  effectHitCells.delete(trackKey);
+  
+  // Hide the real unit during animation
+  const hideReal = () => {
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.style.visibility = 'hidden';
+    }
+  };
+  hideReal();
+  const hideInterval = setInterval(hideReal, 50);
+  
+  // Simultaneously: old card shakes + fades out, new card fades in
+  requestAnimationFrame(() => {
+    fromClone.classList.add('transform-shake-out');
+    toClone.style.transition = 'opacity 0.5s ease-in';
+    toClone.style.opacity = '1';
+  });
+  
+  // Cleanup - show real unit
+  setTimeout(() => {
+    clearInterval(hideInterval);
+    fromClone.remove();
+    toClone.remove();
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.style.visibility = '';
+    }
+  }, 550);
+  
+  playSFX('bone_rattle');
+}
+
+// Animate buff float - +1 HP then +1 ATK float up from each affected unit
+function animateBuffFloat(targets, buffAtk, buffHp) {
+  targets.forEach((target, i) => {
+    // Stagger each unit slightly
+    setTimeout(() => {
+      const viewRow = toViewRow(target.r);
+      const cell = document.getElementById(cellId(viewRow, target.c));
+      if (!cell) return;
+      
+      const rect = cell.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const startY = rect.top + rect.height * 0.4;
+      
+      // First: +1 HP floats up (green)
+      const hpFloat = document.createElement('div');
+      hpFloat.className = 'buff-float-text buff-float-hp';
+      hpFloat.textContent = `+${buffHp} HP`;
+      hpFloat.style.left = centerX + 'px';
+      hpFloat.style.top = startY + 'px';
+      document.body.appendChild(hpFloat);
+      
+      setTimeout(() => hpFloat.remove(), 800);
+      
+      // Second: +1 ATK floats up after a delay (red/orange)
+      setTimeout(() => {
+        const atkFloat = document.createElement('div');
+        atkFloat.className = 'buff-float-text buff-float-atk';
+        atkFloat.textContent = `+${buffAtk} ATK`;
+        atkFloat.style.left = centerX + 'px';
+        atkFloat.style.top = startY + 'px';
+        document.body.appendChild(atkFloat);
+        
+        setTimeout(() => atkFloat.remove(), 800);
+      }, 400);
+      
+    }, i * 80);
+  });
+}
+
+// Animate drone drop - void drone falls from above into the target tile
+function animateDroneDrop(targetPos, droneArt) {
+  const viewRow = toViewRow(targetPos.r);
+  const cell = document.getElementById(cellId(viewRow, targetPos.c));
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  
+  // Create drone clone starting above the target cell
+  const clone = document.createElement('div');
+  clone.className = 'drone-drop-clone';
+  clone.style.position = 'fixed';
+  clone.style.left = rect.left + 'px';
+  clone.style.top = (rect.top - 120) + 'px';
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.zIndex = '9998';
+  clone.style.pointerEvents = 'none';
+  clone.style.borderRadius = '6px';
+  clone.style.overflow = 'hidden';
+  clone.style.opacity = '0.9';
+  clone.style.border = '2px solid rgba(168, 85, 247, 0.6)';
+  clone.style.boxShadow = '0 0 15px rgba(168, 85, 247, 0.5), 0 0 30px rgba(168, 85, 247, 0.2)';
+  
+  if (droneArt) {
+    clone.style.backgroundImage = `url('${encodeURI(droneArt)}')`;
+    clone.style.backgroundSize = 'cover';
+    clone.style.backgroundPosition = 'center';
+  }
+  
+  document.body.appendChild(clone);
+  
+  // Hide the real unit until animation completes
+  const hideKey = `${targetPos.r}-${targetPos.c}`;
+  const hideReal = () => {
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.style.visibility = 'hidden';
+    }
+  };
+  hideReal();
+  // Also hide on re-renders via a tracking approach
+  const hideInterval = setInterval(hideReal, 50);
+  
+  // Animate falling down into place
+  requestAnimationFrame(() => {
+    clone.style.transition = 'top 0.25s cubic-bezier(0.6, 0, 0.9, 0.6), opacity 0.25s ease-out, box-shadow 0.25s ease-out';
+    clone.style.top = rect.top + 'px';
+    clone.style.opacity = '1';
+  });
+  
+  // Impact flash when it lands
+  setTimeout(() => {
+    // Flash the cell purple
+    const impactFlash = document.createElement('div');
+    impactFlash.className = 'drone-drop-impact';
+    impactFlash.style.position = 'fixed';
+    impactFlash.style.left = rect.left + 'px';
+    impactFlash.style.top = rect.top + 'px';
+    impactFlash.style.width = rect.width + 'px';
+    impactFlash.style.height = rect.height + 'px';
+    impactFlash.style.zIndex = '9997';
+    impactFlash.style.pointerEvents = 'none';
+    document.body.appendChild(impactFlash);
+    
+    setTimeout(() => impactFlash.remove(), 250);
+    
+    // Remove clone and show real unit
+    clearInterval(hideInterval);
+    clone.remove();
+    const c = document.getElementById(cellId(toViewRow(targetPos.r), targetPos.c));
+    if (c) {
+      const u = c.querySelector('.unit');
+      if (u) u.style.visibility = '';
+    }
+  }, 250);
+  
+  playSFX('alien_zap');
+}
+
+// Animate Sanguine Feast - blood wave across row, units shake, blood drops fly to heart
+function animateSanguineFeast(targetRow, targets, hitCount, role) {
+  const viewRow = toViewRow(targetRow);
+  
+  const firstCell = document.getElementById(cellId(viewRow, 0));
+  const lastCell = document.getElementById(cellId(viewRow, 5));
+  if (!firstCell || !lastCell) return;
+  
+  const firstRect = firstCell.getBoundingClientRect();
+  
+  // Blood streaks + shake on each hit unit
+  for (const target of targets) {
+    const tViewRow = toViewRow(target.r);
+    const tCell = document.getElementById(cellId(tViewRow, target.c));
+    if (tCell) {
+      const tKey = `${target.r}-${target.c}`;
+      damagingCells.add(tKey);
+      const unitEl = tCell.querySelector('.unit');
+      if (unitEl) {
+        unitEl.classList.add('sanguine-shake');
+        unitEl.classList.add('blood-pact-sacrifice');
+      }
+      setTimeout(() => {
+        damagingCells.delete(tKey);
+        if (unitEl) {
+          unitEl.classList.remove('sanguine-shake');
+          unitEl.classList.remove('blood-pact-sacrifice');
+        }
+      }, 900);
+      
+      // Add blood streaks falling from top of each card
+      const tRect = tCell.getBoundingClientRect();
+      for (let s = 0; s < 5; s++) {
+        const streak = document.createElement('div');
+        streak.className = 'blood-pact-streak';
+        streak.style.position = 'fixed';
+        streak.style.left = (tRect.left + 4 + Math.random() * (tRect.width - 12)) + 'px';
+        streak.style.top = tRect.top + 'px';
+        streak.style.width = (3 + Math.random() * 5) + 'px';
+        streak.style.height = '0px';
+        streak.style.zIndex = '9999';
+        streak.style.pointerEvents = 'none';
+        document.body.appendChild(streak);
+        
+        setTimeout(() => {
+          streak.style.transition = `height ${0.35 + Math.random() * 0.2}s ease-in`;
+          streak.style.height = (tRect.height + 10 + Math.random() * 15) + 'px';
+        }, Math.random() * 150);
+        
+        setTimeout(() => {
+          streak.style.transition = 'opacity 0.3s ease-out';
+          streak.style.opacity = '0';
+        }, 550 + Math.random() * 100);
+        
+        setTimeout(() => streak.remove(), 850);
+      }
+    }
+  }
+  
+  // Blood drops fly from each hit enemy to the heart display
+  if (hitCount > 0) {
+    const isMyRole = (role === myRole);
+    const heartEl = isMyRole 
+      ? document.querySelector('.playerBox .heartHP')
+      : document.querySelector('.enemyBox .heartHP');
+    
+    if (heartEl) {
+      const heartRect = heartEl.getBoundingClientRect();
+      
+      targets.forEach((target, i) => {
+        setTimeout(() => {
+          const tViewRow = toViewRow(target.r);
+          const tCell = document.getElementById(cellId(tViewRow, target.c));
+          if (!tCell) return;
+          const tRect = tCell.getBoundingClientRect();
+          
+          const drop = document.createElement('div');
+          drop.className = 'sanguine-drop';
+          drop.style.left = (tRect.left + tRect.width / 2) + 'px';
+          drop.style.top = (tRect.top + tRect.height / 2) + 'px';
+          document.body.appendChild(drop);
+          
+          requestAnimationFrame(() => {
+            drop.style.transition = 'all 0.45s cubic-bezier(0.2, 0.8, 0.3, 1)';
+            drop.style.left = (heartRect.left + heartRect.width / 2) + 'px';
+            drop.style.top = (heartRect.top + heartRect.height / 2) + 'px';
+            drop.style.opacity = '0.6';
+          });
+          
+          setTimeout(() => {
+            drop.remove();
+            heartEl.classList.add('sanguine-heart-flash');
+            setTimeout(() => heartEl.classList.remove('sanguine-heart-flash'), 400);
+          }, 450);
+        }, 300 + i * 120);
+      });
+    }
+  }
+  
+  playSFX('vampire_bite');
+}
+
+// Animate High Noon - sun descends above row, row burns, damaged units shake
+function animateHighNoon(targetRow, targets) {
+  const viewRow = toViewRow(targetRow);
+  
+  const firstCell = document.getElementById(cellId(viewRow, 0));
+  const lastCell = document.getElementById(cellId(viewRow, 5));
+  if (!firstCell || !lastCell) return;
+  
+  const firstRect = firstCell.getBoundingClientRect();
+  const lastRect = lastCell.getBoundingClientRect();
+  
+  const rowLeft = firstRect.left;
+  const rowRight = lastRect.right;
+  const rowTop = firstRect.top;
+  const rowWidth = rowRight - rowLeft;
+  const rowCenterX = rowLeft + rowWidth / 2;
+  
+  // Create sun image above the row
+  const sun = document.createElement('div');
+  sun.className = 'high-noon-sun';
+  sun.style.left = rowCenterX + 'px';
+  sun.style.top = (rowTop - 160) + 'px';
+  sun.innerHTML = '<img src="/images/High Noon Sun.png" alt="">';
+  document.body.appendChild(sun);
+  
+  // Sun descends into position
+  requestAnimationFrame(() => {
+    sun.style.transition = 'top 0.5s ease-out, opacity 0.3s ease';
+    sun.style.top = (rowTop - 70) + 'px';
+    sun.style.opacity = '1';
+  });
+  
+  // After sun arrives, apply burn effect to the row
+  setTimeout(() => {
+    // Create burn overlay across the whole row
+    const burnOverlay = document.createElement('div');
+    burnOverlay.className = 'high-noon-burn';
+    burnOverlay.style.position = 'fixed';
+    burnOverlay.style.left = rowLeft + 'px';
+    burnOverlay.style.top = rowTop + 'px';
+    burnOverlay.style.width = rowWidth + 'px';
+    burnOverlay.style.height = firstRect.height + 'px';
+    burnOverlay.style.zIndex = '9997';
+    burnOverlay.style.pointerEvents = 'none';
+    document.body.appendChild(burnOverlay);
+    
+    // Shake damaged units
+    for (const target of targets) {
+      const tViewRow = toViewRow(target.r);
+      const tCell = document.getElementById(cellId(tViewRow, target.c));
+      if (tCell) {
+        const tKey = `${target.r}-${target.c}`;
+        damagingCells.add(tKey);
+        const unitEl = tCell.querySelector('.unit');
+        if (unitEl) unitEl.classList.add('high-noon-shake');
+        setTimeout(() => {
+          damagingCells.delete(tKey);
+          if (unitEl) unitEl.classList.remove('high-noon-shake');
+        }, 800);
+      }
+    }
+    
+    // Fade burn overlay
+    setTimeout(() => burnOverlay.remove(), 900);
+  }, 500);
+  
+  // Fade sun out
+  setTimeout(() => {
+    sun.style.transition = 'opacity 0.4s ease, top 0.4s ease';
+    sun.style.opacity = '0';
+    sun.style.top = (rowTop - 90) + 'px';
+  }, 1200);
+  
+  setTimeout(() => sun.remove(), 1600);
+  
+  playSFX('fire_breath');
 }
 
 // Animate void collapse - colored lasers shoot across the row, damaged units shake
@@ -7152,6 +8980,11 @@ socket.on("state", (st) => {
   S.chaliceTiles = st.chaliceTiles || [];
   S.raphaelProtectedTiles = st.raphaelProtectedTiles || [];
   S.warBannerAuraTiles = st.warBannerAuraTiles || [];
+  S.coffinTrapperTiles = st.coffinTrapperTiles || [];
+  S.sheriffAuraTiles = st.sheriffAuraTiles || [];
+  S.nosferatuAuraTiles = st.nosferatuAuraTiles || [];
+  S.garnetAuraTiles = st.garnetAuraTiles || [];
+  S.diamondGuardianTiles = st.diamondGuardianTiles || [];
   if (S.raphaelProtectedTiles.length > 0) {
     console.log("[RAPHAEL] Protected tiles received:", JSON.stringify(S.raphaelProtectedTiles));
   }
@@ -8687,7 +10520,8 @@ function updateUnitHighlights() {
       // Check attack count for double-attack units and topaz gem buff
       const attackCount = S.attackCountThisTurn ? (S.attackCountThisTurn[unitId] || 0) : 0;
       const topazBonus = (unit.gemBuffs && unit.gemBuffs.extraAttacks) || 0;
-      const maxAttacks = (unit.canDoubleAttack ? 2 : 1) + topazBonus;
+      const bloodBiteBonus = unit.effectId === "blood_bite" ? 1 : 0;
+      const maxAttacks = (unit.canDoubleAttack ? 2 : 1) + bloodBiteBonus + topazBonus;
       const canStillAttack = attackCount < maxAttacks && !hasAttacked;
       
       if (highlightingMoves) {

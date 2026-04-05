@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grid Card Game - Shop</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, rgba(26, 26, 46, 0.92) 0%, rgba(22, 33, 62, 0.92) 50%, rgba(15, 52, 96, 0.92) 100%),
+                  url('/images/Shop Background.png') center/cover no-repeat fixed;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(20, 20, 40, 0.9);
+      border-bottom: 2px solid rgba(138, 43, 226, 0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .back-btn {
+      background: rgba(138, 43, 226, 0.3);
+      border: 1px solid rgba(138, 43, 226, 0.5);
+      color: #e2e8f0;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .back-btn:hover { background: rgba(138, 43, 226, 0.5); box-shadow: 0 0 12px rgba(138, 43, 226, 0.3); }
+
+    .shop-title {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .gold-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fbbf24;
+    }
+
+    .shop-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: rgba(20, 20, 40, 0.6);
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: rgba(138, 43, 226, 0.4);
+      color: #e2e8f0;
+      box-shadow: 0 0 12px rgba(138, 43, 226, 0.2);
+    }
+    .tab:hover:not(.active) { background: rgba(138, 43, 226, 0.15); color: #c4b5fd; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .section-header {
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #c4b5fd;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-header .subtitle {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .deals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .deal-card {
+      perspective: 800px;
+      border-radius: 12px;
+      position: relative;
+      aspect-ratio: 3 / 4;
+    }
+
+    .market-card, .sell-card-item {
+      perspective: 800px;
+      border-radius: 10px;
+      position: relative;
+      aspect-ratio: 3 / 4;
+    }
+
+    /* 3D Flip Container */
+    .card-flip-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s ease;
+      transform-style: preserve-3d;
+      border-radius: inherit;
+    }
+    .card-flip-inner.flipped {
+      transform: rotateY(180deg);
+    }
+
+    /* Front and Back faces */
+    .card-front, .card-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border-radius: inherit;
+      overflow: hidden;
+    }
+
+    .card-front {
+      background: rgba(30, 30, 60, 0.8);
+      border: 2px solid rgba(100, 100, 140, 0.3);
+      border-radius: inherit;
+    }
+    .deal-card .card-front {
+      border-color: rgba(251, 191, 36, 0.3);
+    }
+
+    .card-back {
+      background: rgba(20, 20, 45, 0.98);
+      border: 2px solid rgba(138, 43, 226, 0.5);
+      border-radius: inherit;
+      transform: rotateY(180deg);
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      overflow-y: auto;
+    }
+
+    /* Front face hover effects */
+    .deal-card:hover .card-front {
+      border-color: rgba(251, 191, 36, 0.6);
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+    }
+    .market-card:hover .card-front {
+      border-color: rgba(138, 43, 226, 0.5);
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.1);
+    }
+    .sell-card-item:hover .card-front {
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
+    }
+
+    /* Rarity borders on front */
+    .card-front.rare-border { border-color: rgba(59, 130, 246, 0.4); }
+    .card-front.legendary-border { border-color: rgba(251, 191, 36, 0.4); }
+
+    .deal-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      z-index: 3;
+    }
+
+    /* Hover overlay for cards (front face) */
+    .card-hover-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 30, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      z-index: 2;
+      text-align: center;
+    }
+    .card-flip-inner:not(.flipped) .card-front:hover .card-hover-overlay {
+      opacity: 1;
+    }
+
+    /* Card name label at bottom (always visible on front) */
+    .card-name-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(10, 10, 30, 0.95));
+      padding: 24px 10px 8px;
+      z-index: 1;
+      text-align: center;
+    }
+    .card-name-bar .card-name {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    /* Card Back Styles */
+    .card-back-header {
+      text-align: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+    }
+    .card-back-name {
+      font-family: 'Cinzel', serif;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .card-back-stats {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+
+    .card-back-effect {
+      flex: 1;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+    .card-back-effect .effect-label {
+      color: #a78bfa;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .card-back-effect .effect-text {
+      color: #e2e8f0;
+      font-size: 13px;
+    }
+    .card-back-effect .no-effect {
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .card-back-footer {
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: auto;
+      padding-top: 6px;
+      border-top: 1px solid rgba(100, 100, 140, 0.2);
+    }
+
+    .deal-timer {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 12px;
+      margin-bottom: 16px;
+      padding: 6px 12px;
+      background: rgba(30, 30, 60, 0.6);
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      position: absolute;
+      inset: 0;
+    }
+    .card-img.common { }
+    .card-img.rare { }
+    .card-img.legendary { }
+
+    .card-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .card-stats-line { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+
+    .rarity-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .rarity-badge.common { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
+    .rarity-badge.rare { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .rarity-badge.legendary { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+    .price-line { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .price-original { text-decoration: line-through; color: #64748b; font-size: 13px; }
+    .price-current { color: #fbbf24; font-weight: 700; font-size: 16px; }
+
+    .buy-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #f59e0b, #b45309);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .buy-btn:hover:not(:disabled) { filter: brightness(1.15); box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
+    .buy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .buy-btn.sell-btn { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .buy-btn.sell-btn:hover:not(:disabled) { box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); }
+
+    .packs-grid {
+      margin-bottom: 32px;
+    }
+
+    .faction-packs-section {
+      margin-bottom: 20px;
+    }
+
+    .faction-pack-header {
+      font-family: 'Cinzel', serif;
+      font-size: 17px;
+      color: #e2e8f0;
+      margin-bottom: 10px;
+      padding: 8px 14px;
+      background: rgba(138, 43, 226, 0.1);
+      border-left: 3px solid rgba(138, 43, 226, 0.5);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .faction-pack-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .pack-card {
+      background: rgba(30, 30, 60, 0.8);
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .pack-card:hover {
+      border-color: rgba(138, 43, 226, 0.6);
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .pack-icon { font-size: 48px; margin-bottom: 12px; }
+    .pack-name { font-family: 'Cinzel', serif; font-size: 18px; margin-bottom: 4px; }
+    .pack-desc { font-size: 13px; color: #94a3b8; margin-bottom: 12px; }
+    .pack-price { font-size: 20px; font-weight: 700; color: #fbbf24; margin-bottom: 12px; }
+
+    .market-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .market-search {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 14px;
+      background: rgba(30, 30, 60, 0.8);
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+    }
+    .market-search:focus { border-color: rgba(138, 43, 226, 0.7); box-shadow: 0 0 12px rgba(138, 43, 226, 0.3); }
+    
+    .filter-btn {
+      padding: 10px 16px;
+      background: rgba(30, 30, 60, 0.8);
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-radius: 8px;
+      color: #94a3b8;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn.active { background: rgba(138, 43, 226, 0.3); border-color: rgba(138, 43, 226, 0.6); color: #e2e8f0; }
+    .filter-btn:hover { border-color: rgba(138, 43, 226, 0.5); color: #c4b5fd; }
+
+    .market-grid, .sell-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .owned-badge { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+
+    /* Pack Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    
+    .modal {
+      background: rgba(25, 25, 50, 0.95);
+      border: 2px solid rgba(138, 43, 226, 0.5);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 600px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal h2 { font-family: 'Cinzel', serif; margin-bottom: 20px; color: #fbbf24; }
+    .modal-cards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+    
+    .modal-card {
+      background: rgba(30, 30, 60, 0.8);
+      border: 2px solid rgba(100, 100, 140, 0.4);
+      border-radius: 10px;
+      padding: 12px;
+      width: 110px;
+      text-align: center;
+      animation: packCardReveal 0.5s ease-out backwards;
+    }
+    .modal-card.common { border-color: rgba(156, 163, 175, 0.5); }
+    .modal-card.rare { border-color: rgba(59, 130, 246, 0.6); box-shadow: 0 0 12px rgba(59, 130, 246, 0.2); }
+    .modal-card.legendary { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
+    .modal-card .card-img { width: 70px; height: 70px; }
+    .modal-card .card-name { font-size: 11px; }
+
+    @keyframes packCardReveal {
+      0% { opacity: 0; transform: scale(0.5) rotateY(180deg); }
+      60% { transform: scale(1.05) rotateY(0deg); }
+      100% { opacity: 1; transform: scale(1) rotateY(0deg); }
+    }
+
+    .close-btn {
+      padding: 10px 32px;
+      background: rgba(138, 43, 226, 0.4);
+      border: 1px solid rgba(138, 43, 226, 0.5);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .close-btn:hover { background: rgba(138, 43, 226, 0.6); }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(30, 30, 60, 0.95);
+      border: 1px solid rgba(138, 43, 226, 0.5);
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 14px;
+      z-index: 300;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(34, 197, 94, 0.6); color: #4ade80; }
+    .toast.error { border-color: rgba(239, 68, 68, 0.6); color: #f87171; }
+
+    .empty-state { text-align: center; padding: 40px; color: #64748b; font-size: 14px; }
+    .loading { text-align: center; padding: 40px; color: #94a3b8; }
+    .spinner {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      border: 3px solid rgba(138, 43, 226, 0.2);
+      border-top-color: #8b5cf6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <button class="back-btn" onclick="window.location.href='/'">← Back</button>
+    <div class="shop-title">🪙 Shop</div>
+    <div class="gold-display">🪙 <span id="goldAmount">0</span></div>
+  </div>
+
+  <div class="shop-content">
+    <div class="tabs">
+      <button class="tab active" data-tab="deals">Daily Deals</button>
+      <button class="tab" data-tab="packs">Faction Packs</button>
+      <button class="tab" data-tab="exclusives">Exclusives</button>
+      <button class="tab" data-tab="sell">Sell Cards</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-deals">
+      <div class="section-header">
+        Today's Deals
+        <span class="subtitle">15 discounted cards from your unlocked factions — refreshes daily</span>
+      </div>
+      <div class="deal-timer" id="dealTimer">Refreshes in --:--:--</div>
+      <div class="deals-grid" id="dealsGrid">
+        <div class="loading"><div class="spinner"></div><p>Loading deals...</p></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-packs">
+      <div class="section-header">Faction Packs <span class="subtitle">Buy packs from unlocked factions</span></div>
+      <div class="packs-grid" id="packsGrid">
+        <div class="loading"><div class="spinner"></div><p>Loading packs...</p></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-exclusives">
+      <div class="section-header">Shop Exclusives <span class="subtitle">Cards only available here!</span></div>
+      <div class="market-grid" id="exclusivesGrid">
+        <div class="empty-state">Coming soon! Check back later for exclusive cards.</div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-sell">
+      <div class="section-header">Sell Cards <span class="subtitle">Sell for 40% of buy price</span></div>
+      <div class="market-controls">
+        <input type="text" class="market-search" id="sellSearch" placeholder="Search your collection...">
+      </div>
+      <div class="sell-grid" id="sellGrid">
+        <div class="loading"><div class="spinner"></div><p>Loading collection...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="packModal">
+    <div class="modal">
+      <h2 id="modalTitle">Pack Opened!</h2>
+      <div class="modal-cards" id="modalCards"></div>
+      <button class="close-btn" id="modalClose">Continue</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let currentUser = null;
+    let allCards = [];
+    let shopData = null;
+    let cardCollection = {};
+    let currentGold = 0;
+
+    const PRICES = { common: 50, rare: 150, legendary: 2000 };
+    const SELL_MULT = 0.4;
+
+    function loadUser() {
+      const stored = localStorage.getItem('gridCardUser');
+      if (stored) {
+        currentUser = JSON.parse(stored);
+        currentGold = currentUser.gold || 0;
+        cardCollection = currentUser.cardCollection || {};
+        updateGoldDisplay();
+      } else {
+        showToast('Please log in first!', 'error');
+        setTimeout(() => window.location.href = '/', 1500);
+      }
+    }
+
+    function updateGoldDisplay() {
+      document.getElementById('goldAmount').textContent = currentGold.toLocaleString();
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast ' + type;
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    async function apiPost(endpoint, data) {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, userId: currentUser.id })
+      });
+      return res.json();
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Rarity filter - removed (no more card market tab)
+
+    document.getElementById('sellSearch').addEventListener('input', () => renderSellGrid());
+
+    // Deal timer
+    function updateDealTimer() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setHours(24, 0, 0, 0);
+      const diff = tomorrow - now;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      document.getElementById('dealTimer').textContent = 
+        `Refreshes in ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    setInterval(updateDealTimer, 1000);
+    updateDealTimer();
+
+    async function loadShop() {
+      try {
+        const [shopRes, cardsRes] = await Promise.all([
+          fetch('/api/shop?userId=' + currentUser.id).then(r => r.json()),
+          fetch('/api/all-cards').then(r => r.json())
+        ]);
+        
+        shopData = shopRes;
+        
+        // Deduplicate cards by key
+        const seen = new Set();
+        allCards = cardsRes.cards.filter(c => {
+          if (seen.has(c.key)) return false;
+          seen.add(c.key);
+          return true;
+        });
+
+        renderDeals();
+        renderPacks();
+        renderExclusives();
+        renderSellGrid();
+      } catch (err) {
+        console.error('Shop load error:', err);
+        showToast('Failed to load shop data', 'error');
+      }
+    }
+
+    function findCard(key) {
+      return allCards.find(c => c.key === key);
+    }
+
+    function cardBackHtml(card) {
+      const typeLabel = card.type === 'spell' ? 'Spell' : card.type === 'structure' ? 'Structure' : 'Unit';
+      const statsLine = card.type === 'spell' ? 'Cost: ' + card.cost + ' ⚡' : '⚔ ' + card.atk + '  ♥ ' + card.hp + '  ⚡ ' + card.cost;
+      const effectHtml = card.effectDesc 
+        ? '<div class="effect-label">' + (card.effect || 'Effect') + '</div><div class="effect-text">' + card.effectDesc + '</div>'
+        : '<div class="no-effect">No special effect</div>';
+      const rarityColor = card.rarity === 'legendary' ? '#fbbf24' : card.rarity === 'rare' ? '#60a5fa' : '#94a3b8';
+      
+      return `
+        <div class="card-back-header">
+          <div class="card-back-name">${card.name}</div>
+          <span class="rarity-badge ${card.rarity}">${card.rarity}</span>
+          <div class="card-back-stats">${typeLabel} • ${statsLine}</div>
+        </div>
+        <div class="card-back-effect">${effectHtml}</div>
+        <div class="card-back-footer">Tap to flip back</div>
+      `;
+    }
+
+    function toggleFlip(el, e) {
+      // Don't flip if clicking a button
+      if (e.target.closest('button')) return;
+      const inner = el.querySelector('.card-flip-inner');
+      if (inner) inner.classList.toggle('flipped');
+    }
+
+    function renderDeals() {
+      const grid = document.getElementById('dealsGrid');
+      if (!shopData || !shopData.dailyDeals) {
+        grid.innerHTML = '<div class="empty-state">No deals available</div>';
+        return;
+      }
+
+      grid.innerHTML = shopData.dailyDeals.map(deal => {
+        const card = findCard(deal.cardKey);
+        if (!card) return '';
+        const owned = cardCollection[deal.cardKey] || 0;
+        const canAfford = currentGold >= deal.salePrice;
+        
+        return `
+          <div class="deal-card" onclick="toggleFlip(this, event)">
+            <div class="card-flip-inner">
+              <div class="card-front">
+                <div class="deal-badge">-${deal.discount}%</div>
+                <img class="card-img" src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
+                <div class="card-name-bar"><div class="card-name">${card.name}</div></div>
+                <div class="card-hover-overlay">
+                  <div class="card-name" style="font-size:16px;margin-bottom:4px">${card.name}</div>
+                  <span class="rarity-badge ${deal.rarity}">${deal.rarity}</span>
+                  <div class="card-stats-line">${card.type === 'spell' ? 'Spell' : '⚔' + card.atk + ' ♥' + card.hp} • ⚡${card.cost}</div>
+                  <div class="owned-badge">Owned: ${owned}</div>
+                  <div class="price-line">
+                    <span class="price-original">🪙 ${deal.fullPrice}</span>
+                    <span class="price-current">🪙 ${deal.salePrice}</span>
+                  </div>
+                  <button class="buy-btn" onclick="buyDeal('${deal.cardKey}')" ${!canAfford ? 'disabled' : ''}>
+                    ${canAfford ? 'Buy' : 'Not enough gold'}
+                  </button>
+                </div>
+              </div>
+              <div class="card-back">
+                ${cardBackHtml(card)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderPacks() {
+      const grid = document.getElementById('packsGrid');
+      if (!shopData || !shopData.packs || !shopData.unlockedDecks) return;
+
+      const factionIcons = {
+        'medieval': '🏰', 'void-alien': '👽', 'western-skeleton': '💀',
+        'crimson-court': '🧛', 'jeweled-court': '💎', 'elunes-chosen': '🌙',
+        'dragon-wizard': '🐉', 'celestial-host': '👼', '8bit-battalion': '🎮'
+      };
+      const factionNames = shopData.factionNames || {};
+      const packTypes = Object.values(shopData.packs);
+      
+      let html = '';
+      for (const deckId of shopData.unlockedDecks) {
+        const icon = factionIcons[deckId] || '📦';
+        const name = factionNames[deckId] || deckId;
+        
+        html += `<div class="faction-packs-section">
+          <div class="faction-pack-header">${icon} ${name}</div>
+          <div class="faction-pack-row">`;
+        
+        for (const pack of packTypes) {
+          const canAfford = currentGold >= pack.price;
+          const packIcon = pack.id === 'small' ? '📦' : '🎁';
+          html += `
+            <div class="pack-card">
+              <div class="pack-icon">${packIcon}</div>
+              <div class="pack-name">${pack.name}</div>
+              <div class="pack-desc">${pack.description}</div>
+              <div class="pack-price">🪙 ${pack.price}</div>
+              <button class="buy-btn" onclick="buyPack('${pack.id}', '${deckId}')" ${!canAfford ? 'disabled' : ''}>
+                ${canAfford ? 'Open Pack' : 'Not enough gold'}
+              </button>
+            </div>
+          `;
+        }
+        
+        html += `</div></div>`;
+      }
+      
+      grid.innerHTML = html || '<div class="empty-state">Unlock factions in campaign to buy packs!</div>';
+    }
+
+    function renderExclusives() {
+      const grid = document.getElementById('exclusivesGrid');
+      if (!shopData || !shopData.exclusives || shopData.exclusives.length === 0) {
+        grid.innerHTML = '<div class="empty-state">🔮 Coming soon! Check back later for exclusive cards.</div>';
+        return;
+      }
+
+      grid.innerHTML = shopData.exclusives.map(exc => {
+        const owned = cardCollection[exc.key] || 0;
+        const canAfford = currentGold >= exc.price;
+        const borderClass = exc.rarity === 'rare' ? ' rare-border' : exc.rarity === 'legendary' ? ' legendary-border' : '';
+        
+        return `
+          <div class="market-card" onclick="toggleFlip(this, event)">
+            <div class="card-flip-inner">
+              <div class="card-front${borderClass}">
+                <img class="card-img" src="${exc.art}" alt="${exc.name}" onerror="this.style.display='none'">
+                <div class="card-name-bar"><div class="card-name">${exc.name}</div></div>
+                <div class="card-hover-overlay">
+                  <div class="card-name" style="font-size:15px;margin-bottom:4px">${exc.name}</div>
+                  <span class="rarity-badge ${exc.rarity}">${exc.rarity}</span>
+                  <div class="card-stats-line">${exc.type === 'spell' ? 'Spell' : '⚔' + exc.atk + ' ♥' + exc.hp} • ⚡${exc.cost}</div>
+                  <div class="owned-badge">Owned: ${owned}</div>
+                  <div class="price-current" style="margin-top:6px;font-size:16px">🪙 ${exc.price}</div>
+                  <button class="buy-btn" onclick="buyExclusive('${exc.key}')" ${!canAfford ? 'disabled' : ''}>
+                    ${canAfford ? 'Buy' : 'Not enough gold'}
+                  </button>
+                </div>
+              </div>
+              <div class="card-back">
+                ${cardBackHtml(exc)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function buyExclusive(cardKey) {
+      try {
+        const result = await apiPost('/api/shop/buy-exclusive', { cardKey });
+        if (result.success) {
+          currentGold = result.gold;
+          cardCollection = result.cardCollection;
+          updateGoldDisplay();
+          updateLocalUser();
+          renderExclusives();
+          renderSellGrid();
+          const exc = shopData.exclusives.find(e => e.key === cardKey);
+          showToast('Purchased ' + (exc ? exc.name : cardKey) + '!');
+        } else {
+          showToast(result.error || 'Purchase failed', 'error');
+        }
+      } catch (err) { showToast('Purchase failed', 'error'); }
+    }
+
+    function renderSellGrid() {
+      const grid = document.getElementById('sellGrid');
+      const search = document.getElementById('sellSearch').value.toLowerCase();
+      
+      const ownedCards = Object.entries(cardCollection)
+        .filter(([key, count]) => count > 0)
+        .map(([key, count]) => ({ key, count, card: findCard(key) }))
+        .filter(item => item.card)
+        .filter(item => {
+          if (search && !item.card.name.toLowerCase().includes(search) && !item.key.includes(search)) return false;
+          return true;
+        });
+
+      if (ownedCards.length === 0) {
+        grid.innerHTML = '<div class="empty-state">No cards to sell</div>';
+        return;
+      }
+
+      const rarityOrder = { legendary: 0, rare: 1, common: 2 };
+      ownedCards.sort((a, b) => (rarityOrder[a.card.rarity] || 3) - (rarityOrder[b.card.rarity] || 3) || a.card.name.localeCompare(b.card.name));
+
+      grid.innerHTML = ownedCards.map(item => {
+        const sellPrice = Math.floor((PRICES[item.card.rarity] || 50) * SELL_MULT);
+        const borderClass = item.card.rarity === 'rare' ? ' rare-border' : item.card.rarity === 'legendary' ? ' legendary-border' : '';
+        return `
+          <div class="sell-card-item" onclick="toggleFlip(this, event)">
+            <div class="card-flip-inner">
+              <div class="card-front${borderClass}">
+                <img class="card-img" src="${item.card.art}" alt="${item.card.name}" onerror="this.style.display='none'">
+                <div class="card-name-bar"><div class="card-name">${item.card.name}</div></div>
+                <div class="card-hover-overlay">
+                  <div class="card-name" style="font-size:15px;margin-bottom:4px">${item.card.name}</div>
+                  <span class="rarity-badge ${item.card.rarity}">${item.card.rarity}</span>
+                  <div class="owned-badge" style="margin-top:6px">Owned: ${item.count}</div>
+                  <div class="price-current" style="margin-top:6px; color: #4ade80; font-size:16px">+🪙 ${sellPrice}</div>
+                  <button class="buy-btn sell-btn" onclick="sellCard('${item.key}')">Sell 1</button>
+                </div>
+              </div>
+              <div class="card-back">
+                ${cardBackHtml(item.card)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function buyDeal(cardKey) {
+      try {
+        const result = await apiPost('/api/shop/buy-deal', { cardKey, unlockedDecks: shopData.unlockedDecks });
+        if (result.success) {
+          currentGold = result.gold;
+          cardCollection = result.cardCollection;
+          updateGoldDisplay();
+          updateLocalUser();
+          renderDeals();
+          renderSellGrid();
+          const card = findCard(cardKey);
+          showToast(`Deal purchased: ${card ? card.name : cardKey}!`);
+        } else {
+          showToast(result.error || 'Purchase failed', 'error');
+        }
+      } catch (err) { showToast('Purchase failed', 'error'); }
+    }
+
+    async function buyPack(packId, deckId) {
+      try {
+        const result = await apiPost('/api/shop/buy-pack', { packId, deckId });
+        if (result.success) {
+          currentGold = result.gold;
+          cardCollection = result.cardCollection;
+          updateGoldDisplay();
+          updateLocalUser();
+          renderPacks();
+          renderSellGrid();
+          showPackModal(result.cards);
+        } else {
+          showToast(result.error || 'Purchase failed', 'error');
+        }
+      } catch (err) { showToast('Purchase failed', 'error'); }
+    }
+
+    async function sellCard(cardKey) {
+      try {
+        const result = await apiPost('/api/shop/sell-card', { cardKey });
+        if (result.success) {
+          currentGold = result.gold;
+          cardCollection = result.cardCollection;
+          updateGoldDisplay();
+          updateLocalUser();
+          renderSellGrid();
+          const card = findCard(cardKey);
+          showToast(`Sold ${card ? card.name : cardKey} for 🪙 ${result.sellPrice}!`);
+        } else {
+          showToast(result.error || 'Sale failed', 'error');
+        }
+      } catch (err) { showToast('Sale failed', 'error'); }
+    }
+
+    function updateLocalUser() {
+      currentUser.gold = currentGold;
+      currentUser.cardCollection = cardCollection;
+      localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+    }
+
+    function showPackModal(cards) {
+      const modal = document.getElementById('packModal');
+      const modalCards = document.getElementById('modalCards');
+      
+      modalCards.innerHTML = cards.map((cardKey, i) => {
+        const card = findCard(cardKey);
+        if (!card) return '';
+        const rarity = card.rarity || 'common';
+        return `
+          <div class="modal-card ${rarity}" style="animation-delay: ${i * 0.15}s">
+            <img class="card-img ${rarity}" src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
+            <div class="card-name">${card.name}</div>
+            <span class="rarity-badge ${rarity}">${rarity}</span>
+          </div>
+        `;
+      }).join('');
+      
+      modal.classList.add('active');
+    }
+
+    document.getElementById('modalClose').addEventListener('click', () => {
+      document.getElementById('packModal').classList.remove('active');
+    });
+
+    loadUser();
+    loadShop();
+  </script>
+</body>
+</html>
