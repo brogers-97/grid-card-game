@@ -9083,24 +9083,29 @@ io.on("connection", (socket) => {
     emitLobbyState(lobbies[code]);
     emitGameState(lobbies[code]);
 
-    // Kick off the script after a brief delay so the client has time to render
-    setTimeout(() => processTutorialScript(lobbies[code]), 600);
+    // Kick off the script after the client has loaded game.html and rejoined.
+    // The delay needs to cover: page navigation + load + socket reconnect.
+    // 600ms was fine locally but too short over the network — use 2000ms.
+    setTimeout(() => processTutorialScript(lobbies[code]), 2000);
   });
 
   // ========== Tutorial state-machine helpers ==========
   function emitTutorialDialog(lobby, step) {
     if (!lobby.hostSocket) return;
     const nextStep = TUTORIAL_SCRIPT[lobby.tutorialStep + 1];
-    lobby.hostSocket.emit("tutorialDialog", {
+    const payload = {
       speaker: step.speaker,
       text: step.text,
       hint: step.hint,
       nextAction:    nextStep && nextStep.type === 'gate' ? nextStep.action : null,
       nextHighlight: step.nextHighlight || null
-    });
+    };
+    lobby.pendingTutorialEvent = { type: 'dialog', payload };
+    lobby.hostSocket.emit("tutorialDialog", payload);
   }
   function emitTutorialGate(lobby, step) {
     if (!lobby.hostSocket) return;
+    lobby.pendingTutorialEvent = { type: 'gate', payload: step };
     lobby.hostSocket.emit("tutorialGate", step);
   }
   function emitTutorialFinish(lobby) {
@@ -9499,16 +9504,23 @@ io.on("connection", (socket) => {
     if (data.isHost) {
       lobby.hostSocket = socket;
       socket.emit("role", "gold");
-      
+
       // If it's AI's turn and this is a campaign game, restart AI processing
       if (lobby.isAIGame && lobby.ai && lobby.gameState.state.activeSide === "silver" && !lobby.gameState.state.gameOver) {
         setTimeout(() => processAITurn(lobby), 1000);
+      }
+
+      // Re-send the current tutorial dialog or gate so the new socket sees it
+      if (lobby.isTutorial && lobby.pendingTutorialEvent) {
+        const ev = lobby.pendingTutorialEvent;
+        if (ev.type === 'dialog') socket.emit('tutorialDialog', ev.payload);
+        else if (ev.type === 'gate') socket.emit('tutorialGate', ev.payload);
       }
     } else {
       lobby.guestSocket = socket;
       socket.emit("role", "silver");
     }
-    
+
     emitGameState(lobby);
   });
 
