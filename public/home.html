@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Grid Card Game - Home</title>
+  <script>
+    // Suppress login-screen flash for returning logged-in users
+    (function() {
+      if (localStorage.getItem('gridCardUser')) {
+        var s = document.createElement('style');
+        s.textContent = '#loginScreen{display:none!important}';
+        document.head.appendChild(s);
+      }
+    })();
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
     
@@ -3833,25 +3843,27 @@
     }
     
     // Restore position if returning from shop/deckbuilder/collections
-    const savedMusic = sessionStorage.getItem('homeMusicState');
-    if (savedMusic) {
-      try {
-        const ms = JSON.parse(savedMusic);
-        sessionStorage.removeItem('homeMusicState');
-        if (ms.playing) {
-          bgMusic.volume = ms.volume ?? 0.4;
-          bgMusic.currentTime = ms.time ?? 0;
-          bgMusic.play().then(() => {
-            musicPlaying = true;
-            musicControl.textContent = '🔊';
-            musicControl.classList.add('playing');
-          }).catch(() => tryAutoplay());
-        } else {
-          musicControl.textContent = '🔇';
-        }
-      } catch { tryAutoplay(); }
-    } else {
-      tryAutoplay();
+    if (!window.electronMusic) {
+      const savedMusic = sessionStorage.getItem('homeMusicState');
+      if (savedMusic) {
+        try {
+          const ms = JSON.parse(savedMusic);
+          sessionStorage.removeItem('homeMusicState');
+          if (ms.playing) {
+            bgMusic.volume = ms.volume ?? 0.4;
+            bgMusic.currentTime = ms.time ?? 0;
+            bgMusic.play().then(() => {
+              musicPlaying = true;
+              musicControl.textContent = '🔊';
+              musicControl.classList.add('playing');
+            }).catch(() => tryAutoplay());
+          } else {
+            musicControl.textContent = '🔇';
+          }
+        } catch { tryAutoplay(); }
+      } else {
+        tryAutoplay();
+      }
     }
     
     // Toggle music and show/hide volume slider
@@ -3902,7 +3914,43 @@
         volumeSliderContainer.classList.remove('visible');
       }
     });
-    
+
+    // Electron persistent audio bridge — keeps music playing across page navigations
+    if (window.electronMusic) {
+      bgMusic.volume = 0; // Silence local element; Electron hidden window provides audio
+      let eVol = 0.4;
+      let eReady = false;
+
+      electronMusic.getState().then(state => {
+        eReady = true;
+        if (state && !state.paused && state.src) {
+          // Already playing in Electron (navigated back from another page) — just sync UI
+          musicPlaying = true;
+          musicControl.textContent = '🔊';
+          musicControl.classList.add('playing');
+          eVol = state.volume || 0.4;
+          volumeSlider.value = Math.round(eVol * 100);
+        } else {
+          // Start music for the first time via Electron
+          const src = bgMusic.src || (location.origin + '/audio/music/music_home.mp3');
+          electronMusic.play(src, 0, eVol);
+          musicPlaying = true;
+          musicControl.textContent = '🔊';
+          musicControl.classList.add('playing');
+        }
+      }).catch(() => { eReady = true; });
+
+      // Forward bgMusic events to Electron (existing toggle handler calls bgMusic.play/pause)
+      bgMusic.addEventListener('pause', () => { if (eReady) electronMusic.pause(); });
+      bgMusic.addEventListener('play',  () => { if (eReady) electronMusic.resume(); });
+
+      // Volume slider: also drive Electron volume
+      volumeSlider.addEventListener('input', e => {
+        eVol = e.target.value / 100;
+        electronMusic.setVolume(eVol);
+      });
+    }
+
   </script>
   <div id="game-tooltip"></div>
   <script>

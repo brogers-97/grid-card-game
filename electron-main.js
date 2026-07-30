@@ -1,8 +1,27 @@
-const { app, BrowserWindow, shell, Menu } = require('electron');
+const { app, BrowserWindow, shell, Menu, ipcMain } = require('electron');
+const path = require('path');
 Menu.setApplicationMenu(null);
 
 // ── Set this to your deployed server URL after deploying ──────────────────────
 const GAME_URL = process.env.GAME_URL || 'https://grid-card-game-production.up.railway.app';
+
+let audioWin = null;
+
+function createAudioWindow() {
+  audioWin = new BrowserWindow({
+    show: false,
+    width: 1,
+    height: 1,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false,
+      autoplayPolicy: 'no-user-gesture-required',
+    },
+  });
+  audioWin.loadFile(path.join(__dirname, 'audio-player.html'));
+  audioWin.on('closed', () => { audioWin = null; });
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -10,6 +29,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration:  false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'audio-preload.js'),
     },
     title:           'Convergence',
     backgroundColor: '#1a1a2e',
@@ -71,6 +91,27 @@ app.whenReady().then(() => {
   const { session } = require('electron');
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
     callback(false);
+  });
+
+  createAudioWindow();
+
+  ipcMain.handle('emus-play', (_, d) => {
+    if (audioWin) audioWin.webContents.send('music-cmd', { type: 'play', ...d });
+  });
+  ipcMain.handle('emus-pause', () => {
+    if (audioWin) audioWin.webContents.send('music-cmd', { type: 'pause' });
+  });
+  ipcMain.handle('emus-resume', () => {
+    if (audioWin) audioWin.webContents.send('music-cmd', { type: 'resume' });
+  });
+  ipcMain.handle('emus-volume', (_, vol) => {
+    if (audioWin) audioWin.webContents.send('music-cmd', { type: 'volume', vol });
+  });
+  ipcMain.handle('emus-state', () => {
+    if (!audioWin) return null;
+    return audioWin.webContents.executeJavaScript(
+      '(()=>{const a=document.getElementById("a");if(!a)return null;return{src:a.src,time:a.currentTime,paused:a.paused,volume:a.volume};})()'
+    );
   });
 
   createWindow();

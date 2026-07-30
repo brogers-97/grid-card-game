@@ -28,6 +28,8 @@
     "productName": "Convergence",
     "files": [
       "electron-main.js",
+      "audio-preload.js",
+      "audio-player.html",
       "package.json"
     ],
     "win": {

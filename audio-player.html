@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<audio id="a" loop></audio>
+<script>
+const { ipcRenderer } = require('electron');
+const a = document.getElementById('a');
+
+ipcRenderer.on('music-cmd', (_, c) => {
+  switch (c.type) {
+    case 'play': {
+      const currentFile = a.src ? a.src.split('/').pop().split('?')[0] : '';
+      const newFile = c.src ? c.src.split('/').pop().split('?')[0] : '';
+      const sameTrack = currentFile && currentFile === newFile;
+      a.volume = c.vol != null ? c.vol : a.volume;
+      if (!sameTrack) {
+        a.src = c.src;
+        a.addEventListener('canplay', () => {
+          a.currentTime = c.time || 0;
+          a.play().catch(() => {});
+        }, { once: true });
+        a.load();
+      } else {
+        if (a.paused) a.play().catch(() => {});
+      }
+      break;
+    }
+    case 'pause':
+      a.pause();
+      break;
+    case 'resume':
+      a.play().catch(() => {});
+      break;
+    case 'volume':
+      a.volume = c.vol;
+      break;
+  }
+});
+</script>
+</body>
+</html>

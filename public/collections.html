@@ -6,6 +6,7 @@
   <title>Collections Gallery - Grid Card Game</title>
   <script>
     (function() {
+      if (window.electronMusic) return; // Electron hidden window handles persistent audio
       const ms = JSON.parse(sessionStorage.getItem('homeMusicState') || 'null');
       if (!ms || !ms.playing) return;
       const _t = JSON.parse(localStorage.getItem('homeMusicTrack') || 'null');
@@ -837,8 +838,10 @@
 
     function setHomeMusic(key, name, file) {
       localStorage.setItem('homeMusicTrack', JSON.stringify({ key, name, file }));
-      // Update live audio on this page if playing
-      if (window._homeBgMusic) {
+      if (window.electronMusic) {
+        // Tell the Electron audio window to switch tracks (volume preserved in hidden window)
+        electronMusic.play(location.origin + file, 0, null);
+      } else if (window._homeBgMusic) {
         const wasPlaying = !window._homeBgMusic.paused;
         const vol = window._homeBgMusic.volume;
         window._homeBgMusic.src = file;
