@@ -244,6 +244,24 @@
     .achievement-tile.locked .achievement-tile-icon {
       filter: grayscale(0.7) brightness(0.7);
     }
+    /* Image lazy-load spinner */
+    .img-loading {
+      position: relative;
+    }
+    .img-loading::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 20px; height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid rgba(251,191,36,0.2);
+      border-top-color: #fbbf24;
+      border-radius: 50%;
+      animation: imgLoadSpin 0.7s linear infinite;
+      pointer-events: none;
+      z-index: 5;
+    }
+    @keyframes imgLoadSpin { to { transform: rotate(360deg); } }
     
     .achievement-tile-name {
       font-size: 10px;
@@ -729,7 +747,7 @@
         
         return `
           <div class="gallery-item rarity-${rarity}${holoClass}" data-url="${artUrl}" data-title="${cardName}" data-subtitle="${escapeForAttr(subtitle)}" onclick="openLightbox(this)">
-            <div class="gallery-art" style="background-image: url('${artUrl}')"></div>
+            <div class="gallery-art img-loading" data-bg="${artUrl}"></div>
             <div class="gallery-info">
               <div class="gallery-name">${holoOnly ? '✨ ' : ''}${card.name}</div>
               <div class="gallery-subtitle">${rarity.charAt(0).toUpperCase() + rarity.slice(1)} • ${card.cost}⚡</div>
@@ -738,8 +756,9 @@
           </div>
         `;
       }).join('');
+      applyLazyBg(galleryGrid);
     }
-    
+
     function renderBackgrounds() {
       const unlockedBackgrounds = currentUser.unlockedBackgrounds || ['medieval'];
       
@@ -757,7 +776,7 @@
         const archName = escapeForAttr(arch.name);
         return `
           <div class="gallery-item" data-url="${arch.bgImage}" data-title="${archName}" data-subtitle="Background" onclick="openLightbox(this)">
-            <div class="gallery-art bg-art" style="background-image: url('${arch.bgImage}')"></div>
+            <div class="gallery-art bg-art img-loading" data-bg="${arch.bgImage}"></div>
             <div class="gallery-info">
               <div class="gallery-name">${arch.name}</div>
               <div class="gallery-subtitle">Background</div>
@@ -765,8 +784,9 @@
           </div>
         `;
       }).join('');
+      applyLazyBg(galleryGrid);
     }
-    
+
     function renderMats() {
       const unlockedDecks = currentUser.unlockedDecks || ['medieval'];
       
@@ -784,7 +804,7 @@
         const archName = escapeForAttr(arch.name);
         return `
           <div class="gallery-item" data-url="${arch.matImage}" data-title="${archName}" data-subtitle="Game Mat" onclick="openLightbox(this)">
-            <div class="gallery-art mat-art" style="background-image: url('${arch.matImage}')"></div>
+            <div class="gallery-art mat-art img-loading" data-bg="${arch.matImage}"></div>
             <div class="gallery-info">
               <div class="gallery-name">${arch.name}</div>
               <div class="gallery-subtitle">Game Mat</div>
@@ -792,8 +812,23 @@
           </div>
         `;
       }).join('');
+      applyLazyBg(galleryGrid);
     }
-    
+
+    function applyLazyBg(container) {
+      container.querySelectorAll('[data-bg]').forEach(function(el) {
+        var url = el.dataset.bg;
+        if (!url) { el.classList.remove('img-loading'); return; }
+        var img = new Image();
+        img.onload = function() {
+          el.style.backgroundImage = "url('" + url + "')";
+          el.classList.remove('img-loading');
+        };
+        img.onerror = function() { el.classList.remove('img-loading'); };
+        img.src = url;
+      });
+    }
+
     const HOME_TRACK = { key: 'home', name: 'Home Theme', musicFile: '/audio/music/music_home.mp3' };
 
     function getHomeMusicKey() {
@@ -1025,7 +1060,7 @@
           <div class="${classes}" ${tooltipData}>
             ${hasReward ? '<div class="achievement-reward-badge">🎁</div>' : ''}
             ${isUnlocked ? '<div class="achievement-complete-badge">✓</div>' : ''}
-            <div class="achievement-tile-icon">${isMystery ? '❓' : `<img src="/images/achievements/${id}.png" alt="${ach.name}">`}</div>
+            <div class="achievement-tile-icon${isMystery ? '' : ' img-loading'}">${isMystery ? '❓' : `<img src="/images/achievements/${id}.png" alt="${ach.name}" onload="this.parentElement.classList.remove('img-loading')" onerror="this.parentElement.classList.remove('img-loading')">`}</div>
             <div class="achievement-tile-name">${displayName}</div>
             <div class="achievement-progress-bar">
               <div class="achievement-progress-fill" style="width: ${progressPercent}%"></div>

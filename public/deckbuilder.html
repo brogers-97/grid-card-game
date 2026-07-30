@@ -250,7 +250,10 @@
     .deck-card-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(30, 30, 60, 0.5); border: 2px solid #c9a132; border-radius: 6px; margin-bottom: 4px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 4px rgba(201,161,50,0.25); }
     .deck-card-item:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
     .deck-card-item.selected { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
-    .deck-card-art { width: 28px; height: 28px; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: cover; background-position: center; border-radius: 4px; }
+    .deck-card-art { width: 28px; height: 28px; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: contain; background-position: center; background-repeat: no-repeat; border-radius: 4px; }
+    .img-loading { position: relative; }
+    .img-loading::after { content: ''; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid rgba(251,191,36,0.2); border-top-color: #fbbf24; border-radius: 50%; animation: imgLoadSpin 0.7s linear infinite; pointer-events: none; z-index: 5; }
+    @keyframes imgLoadSpin { to { transform: rotate(360deg); } }
     .deck-card-info { flex: 1; min-width: 0; }
     .deck-card-name { font-size: 11px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .deck-card-type { font-size: 8px; color: #64748b; }
@@ -866,7 +869,7 @@
           if (key === selectedCardKey && !selectedCardKey.endsWith('_holo')) cls += ' selected'; 
           if (inDeck > 0) cls += ' in-deck'; 
           if (owned === 0) cls += ' not-owned';
-          html += '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')" onmousedown="startCardDrag(event,\'' + key + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + owned + '/' + maxCopies + '</div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+          html += '<div class="' + cls + '" onclick="selectCard(\'' + key + '\')" onmousedown="startCardDrag(event,\'' + key + '\')"><div class="card-art img-loading ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" data-bg="' + artUrl + '"></div><div class="card-cost">' + card.cost + '</div><div class="card-count ' + (owned === 0 ? 'none' : '') + '">' + owned + '/' + maxCopies + '</div><div class="card-info"><div class="card-name">' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
         }
         
         // Add holo version if player owns any (skip if regular filter is set)
@@ -876,11 +879,12 @@
           let holoCls = 'collection-card rarity-' + rarity + ' holo';
           if (holoKey === selectedCardKey) holoCls += ' selected';
           if (holoInDeck > 0) holoCls += ' in-deck';
-          html += '<div class="' + holoCls + '" onclick="selectCard(\'' + holoKey + '\')" onmousedown="startCardDrag(event,\'' + holoKey + '\')"><div class="card-art ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" style="background-image:url(\'' + artUrl + '\');"></div><div class="card-cost">' + card.cost + '</div><div class="card-count">' + holoOwned + '/' + maxCopies + '</div><div class="card-info"><div class="card-name">✨ ' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
+          html += '<div class="' + holoCls + '" onclick="selectCard(\'' + holoKey + '\')" onmousedown="startCardDrag(event,\'' + holoKey + '\')"><div class="card-art img-loading ' + (card.archetype === 'void-alien' ? 'void-alien' : '') + '" data-bg="' + artUrl + '"></div><div class="card-cost">' + card.cost + '</div><div class="card-count">' + holoOwned + '/' + maxCopies + '</div><div class="card-info"><div class="card-name">✨ ' + card.name + '</div><div class="card-stats"><span class="card-atk">⚔' + card.atk + '</span><span class="card-hp">♥' + card.hp + '</span></div></div></div>';
         }
         
         return html;
       }).join('');
+      applyLazyBg(cardGrid);
     }
     function renderDeck() {
       const count = currentDeck.length, isValid = count >= 25 && count <= 35;
@@ -902,8 +906,22 @@
         const rarity = card.rarity || 'common';
         const holoClass = isHolo ? ' holo-deck-card holo-' + rarity : '';
         const holoPrefix = isHolo ? '✨ ' : '';
-        return '<div class="deck-card-item' + holoClass + ' ' + (key === selectedCardKey ? 'selected' : '') + '" onclick="selectCard(\'' + key + '\')" onmousedown="startCardDrag(event,\'' + key + '\',true)"><div class="deck-card-art" style="background-image:url(\'' + artUrl + '\'); background-size: contain; background-position: center; background-repeat: no-repeat;"></div><div class="deck-card-info"><div class="deck-card-name">' + holoPrefix + card.name + '</div><div class="deck-card-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + '</div></div><div class="deck-card-cost">' + card.cost + '</div></div>';
+        return '<div class="deck-card-item' + holoClass + ' ' + (key === selectedCardKey ? 'selected' : '') + '" onclick="selectCard(\'' + key + '\')" onmousedown="startCardDrag(event,\'' + key + '\',true)"><div class="deck-card-art img-loading" data-bg="' + artUrl + '"></div><div class="deck-card-info"><div class="deck-card-name">' + holoPrefix + card.name + '</div><div class="deck-card-type">' + (card.type === 'spell' ? 'Spell' : 'Unit') + '</div></div><div class="deck-card-cost">' + card.cost + '</div></div>';
       }).join('');
+      applyLazyBg(deckCards);
+    }
+    function applyLazyBg(container) {
+      container.querySelectorAll('[data-bg]').forEach(function(el) {
+        var url = el.dataset.bg;
+        if (!url) { el.classList.remove('img-loading'); return; }
+        var img = new Image();
+        img.onload = function() {
+          el.style.backgroundImage = "url('" + url + "')";
+          el.classList.remove('img-loading');
+        };
+        img.onerror = function() { el.classList.remove('img-loading'); };
+        img.src = url;
+      });
     }
     function updateEnergyCurve() {
       const counts = [0, 0, 0, 0, 0, 0];
