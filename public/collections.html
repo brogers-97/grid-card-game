@@ -4,6 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Collections Gallery - Grid Card Game</title>
+  <script>
+    (function() {
+      const ms = JSON.parse(sessionStorage.getItem('homeMusicState') || 'null');
+      if (!ms || !ms.playing) return;
+      const _t = JSON.parse(localStorage.getItem('homeMusicTrack') || 'null');
+      const audio = new Audio(_t && _t.file ? _t.file : '/audio/music/music_home.mp3');
+      audio.loop = true;
+      audio.volume = ms.volume ?? 0.4;
+      const elapsed = ms.savedAt ? (Date.now() - ms.savedAt) / 1000 : 0;
+      audio.currentTime = (ms.time ?? 0) + elapsed;
+      audio.play().catch(() => {});
+      window._homeBgMusic = audio;
+      window.addEventListener('beforeunload', () => {
+        sessionStorage.setItem('homeMusicState', JSON.stringify({ playing: !audio.paused, time: audio.currentTime, volume: audio.volume, savedAt: Date.now() }));
+      });
+    })();
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17,29 +34,33 @@
     .page-container { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
     
     /* Header */
-    .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: rgba(20, 20, 40, 0.9); border-bottom: 2px solid rgba(138, 43, 226, 0.4); }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: rgba(20, 20, 40, 0.9); border-bottom: 2px solid rgba(251, 191, 36, 0.35); }
     .header-left { display: flex; align-items: center; gap: 20px; }
-    .back-btn { padding: 8px 16px; background: rgba(138, 43, 226, 0.3); border: 1px solid rgba(138, 43, 226, 0.5); border-radius: 8px; color: #e2e8f0; text-decoration: none; font-size: 13px; transition: all 0.2s; }
-    .back-btn:hover { background: rgba(138, 43, 226, 0.5); }
+    .back-btn { position: relative; padding: 8px 16px; background: rgba(20, 20, 40, 0.8); border: 1.5px solid rgba(251, 191, 36, 0.7); color: #f59e0b; text-decoration: none; font-size: 13px; transition: all 0.2s; }
+    .back-btn::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; border: 1px solid rgba(251, 191, 36, 0.3); pointer-events: none; transition: border-color 0.2s; }
+    .back-btn:hover { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border-color: rgba(251, 191, 36, 1); }
+    .back-btn:hover::before { border-color: rgba(251, 191, 36, 0.6); }
     .page-title { font-family: 'Cinzel', serif; font-size: 24px; color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
     
     /* Tab Navigation */
-    .tab-nav { display: flex; gap: 5px; padding: 15px 25px; background: rgba(20, 20, 40, 0.5); border-bottom: 1px solid rgba(138, 43, 226, 0.3); flex-wrap: wrap; }
-    .tab-btn { padding: 10px 20px; background: rgba(30, 30, 60, 0.5); border: 2px solid rgba(138, 43, 226, 0.3); border-radius: 8px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .tab-btn:hover { background: rgba(138, 43, 226, 0.2); color: #e2e8f0; }
-    .tab-btn.active { background: linear-gradient(135deg, rgba(138, 43, 226, 0.4), rgba(168, 85, 247, 0.4)); border-color: #a855f7; color: #fbbf24; }
+    .tab-nav { display: flex; padding: 0 25px; background: rgba(20, 20, 40, 0.5); border-bottom: 1px solid rgba(255, 255, 255, 0.07); flex-wrap: wrap; }
+    .tab-btn { padding: 12px 20px; background: none; border: none; color: #475569; font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; transition: color 0.2s, transform 0.2s; }
+    .tab-btn.active { color: #fbbf24; }
+    .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent 0%, #c9a132 25%, #fbbf24 50%, #c9a132 75%, transparent 100%); box-shadow: 0 0 8px rgba(251, 191, 36, 0.4); }
+    .tab-btn:hover:not(.active) { color: #fbbf24; transform: scale(1.07); }
     
     /* Main content */
     .main-content { flex: 1; padding: 20px 25px; overflow-y: auto; }
     
     /* Gallery Grid */
-    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
-    .gallery-grid.backgrounds { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-    .gallery-grid.music { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+    .gallery-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+    .gallery-item { width: 180px; flex-shrink: 0; }
+    .gallery-grid.backgrounds .gallery-item { width: 280px; }
+    .gallery-grid.music .gallery-item { width: 100%; }
     
     /* Card Item */
     .gallery-item { position: relative; background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9)); border: 2px solid rgba(138, 43, 226, 0.4); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s; }
-    .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3); }
+    .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(201, 161, 50, 0.3); border-color: rgba(251, 191, 36, 0.6); }
     .gallery-item.locked { opacity: 0.4; filter: grayscale(0.7); cursor: not-allowed; }
     .gallery-item.locked:hover { transform: none; box-shadow: none; }
     
@@ -77,16 +98,19 @@
     .music-title { font-family: 'Cinzel', serif; font-size: 16px; color: #e2e8f0; margin-bottom: 4px; }
     .music-archetype { font-size: 12px; color: #64748b; }
     .music-controls { display: flex; gap: 10px; }
-    .music-btn { padding: 8px 16px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; transition: all 0.2s; }
-    .music-btn:hover { transform: scale(1.05); }
-    .music-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .music-btn.playing { background: linear-gradient(135deg, #10b981, #059669); }
+    .music-btn { position: relative; padding: 8px 16px; background: rgba(20, 20, 40, 0.8); border: 1.5px solid rgba(251, 191, 36, 0.7); color: #f59e0b; font-size: 12px; font-family: 'Cinzel', serif; cursor: pointer; transition: all 0.2s; }
+    .music-btn::before { content: ''; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px; border: 1px solid rgba(251, 191, 36, 0.3); pointer-events: none; }
+    .music-btn:hover:not(:disabled) { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border-color: #fbbf24; }
+    .music-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .music-btn.playing { border-color: rgba(34, 197, 94, 0.8); color: #4ade80; background: rgba(20, 50, 30, 0.6); }
+    .music-btn.home-active { border-color: rgba(251,191,36,0.9); color: #fbbf24; background: rgba(40,30,5,0.7); }
+    .music-home-badge { font-size: 10px; color: #fbbf24; font-family: 'Cinzel', serif; letter-spacing: 0.05em; margin-top: 3px; }
     
     /* Archetype filter */
     .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-    .filter-label { font-size: 13px; color: #94a3b8; }
-    .filter-select { padding: 8px 12px; background: rgba(20, 20, 40, 0.8); border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 6px; color: #e2e8f0; font-size: 12px; cursor: pointer; }
-    .filter-select:focus { outline: none; border-color: #a855f7; }
+    .filter-label { font-size: 13px; color: #f59e0b; font-weight: 700; }
+    .filter-select { padding: 6px 10px; background: rgba(30, 30, 60, 0.8); border: 1px solid rgba(251, 191, 36, 0.45); border-radius: 5px; color: #e2e8f0; font-size: 12px; cursor: pointer; }
+    .filter-select:focus { outline: none; border-color: rgba(251, 191, 36, 0.9); }
     
     /* Lightbox modal */
     .lightbox { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 40px; }
@@ -98,6 +122,10 @@
     .lightbox-subtitle { font-size: 14px; color: #94a3b8; }
     .lightbox-close { position: absolute; top: -40px; right: 0; background: none; border: none; color: #e2e8f0; font-size: 32px; cursor: pointer; }
     .lightbox-close:hover { color: #fbbf24; }
+    .lightbox-prev, .lightbox-next { background: rgba(20,20,40,0.85); border: 1.5px solid rgba(251,191,36,0.7); color: #f59e0b; font-size: 36px; width: 64px; height: 80px; margin: 0 20px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; flex-shrink: 0; align-self: center; }
+    .lightbox-prev::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; border: 1px solid rgba(251,191,36,0.3); pointer-events: none; }
+    .lightbox-next::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; border: 1px solid rgba(251,191,36,0.3); pointer-events: none; }
+    .lightbox-prev:hover, .lightbox-next:hover { background: rgba(251,191,36,0.12); color: #fbbf24; border-color: #fbbf24; }
     
     /* Stats bar */
     .stats-bar { display: flex; gap: 20px; padding: 10px 25px; background: rgba(20, 20, 40, 0.5); border-bottom: 1px solid rgba(138, 43, 226, 0.2); font-size: 12px; color: #94a3b8; }
@@ -110,9 +138,12 @@
     .empty-text { font-size: 14px; }
     
     /* Achievements styles - Grid of achievement tiles */
-    .gallery-grid.achievements { 
+    .gallery-grid.achievements {
       display: flex;
       flex-direction: column;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      align-items: stretch;
       gap: 25px;
       padding: 20px;
     }
@@ -333,11 +364,11 @@
     </header>
     
     <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="cards">🃏 Cards</button>
-      <button class="tab-btn" data-tab="backgrounds">🖼️ Backgrounds</button>
-      <button class="tab-btn" data-tab="mats">🎴 Game Mats</button>
-      <button class="tab-btn" data-tab="music">🎵 Music</button>
-      <button class="tab-btn" data-tab="achievements">🏆 Achievements</button>
+      <button class="tab-btn active" data-tab="cards">Cards</button>
+      <button class="tab-btn" data-tab="backgrounds">Backgrounds</button>
+      <button class="tab-btn" data-tab="mats">Game Mats</button>
+      <button class="tab-btn" data-tab="music">Music</button>
+      <button class="tab-btn" data-tab="achievements">Achievements</button>
     </nav>
     
     <div class="stats-bar">
@@ -374,6 +405,7 @@
   
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
+    <button class="lightbox-prev" id="lightboxPrev">&#8249;</button>
     <div class="lightbox-content">
       <button class="lightbox-close" id="lightboxClose">&times;</button>
       <img class="lightbox-image" id="lightboxImage" src="" alt="">
@@ -382,6 +414,7 @@
         <div class="lightbox-subtitle" id="lightboxSubtitle"></div>
       </div>
     </div>
+    <button class="lightbox-next" id="lightboxNext">&#8250;</button>
   </div>
   
   <audio id="audioPlayer"></audio>
@@ -685,7 +718,7 @@
         const subtitle = `${archName} • ${rarity.charAt(0).toUpperCase() + rarity.slice(1)}${holoOnly ? ' • ✨ HOLO' : ''}`;
         
         return `
-          <div class="gallery-item rarity-${rarity}${holoClass}" onclick="openLightbox('${artUrl}', '${cardName}', '${escapeForAttr(subtitle)}')">
+          <div class="gallery-item rarity-${rarity}${holoClass}" data-url="${artUrl}" data-title="${cardName}" data-subtitle="${escapeForAttr(subtitle)}" onclick="openLightbox(this)">
             <div class="gallery-art" style="background-image: url('${artUrl}')"></div>
             <div class="gallery-info">
               <div class="gallery-name">${holoOnly ? '✨ ' : ''}${card.name}</div>
@@ -713,7 +746,7 @@
       galleryGrid.innerHTML = unlocked.map(([key, arch]) => {
         const archName = escapeForAttr(arch.name);
         return `
-          <div class="gallery-item" onclick="openLightbox('${arch.bgImage}', '${archName}', 'Background')">
+          <div class="gallery-item" data-url="${arch.bgImage}" data-title="${archName}" data-subtitle="Background" onclick="openLightbox(this)">
             <div class="gallery-art bg-art" style="background-image: url('${arch.bgImage}')"></div>
             <div class="gallery-info">
               <div class="gallery-name">${arch.name}</div>
@@ -740,7 +773,7 @@
       galleryGrid.innerHTML = unlocked.map(([key, arch]) => {
         const archName = escapeForAttr(arch.name);
         return `
-          <div class="gallery-item" onclick="openLightbox('${arch.matImage}', '${archName}', 'Game Mat')">
+          <div class="gallery-item" data-url="${arch.matImage}" data-title="${archName}" data-subtitle="Game Mat" onclick="openLightbox(this)">
             <div class="gallery-art mat-art" style="background-image: url('${arch.matImage}')"></div>
             <div class="gallery-info">
               <div class="gallery-name">${arch.name}</div>
@@ -751,33 +784,51 @@
       }).join('');
     }
     
+    const HOME_TRACK = { key: 'home', name: 'Home Theme', musicFile: '/audio/music/music_home.mp3' };
+
+    function getHomeMusicKey() {
+      const stored = JSON.parse(localStorage.getItem('homeMusicTrack') || 'null');
+      return stored ? stored.key : 'home';
+    }
+
+    function setHomeMusic(key, name, file) {
+      localStorage.setItem('homeMusicTrack', JSON.stringify({ key, name, file }));
+      // Update live audio on this page if playing
+      if (window._homeBgMusic) {
+        const wasPlaying = !window._homeBgMusic.paused;
+        const vol = window._homeBgMusic.volume;
+        window._homeBgMusic.src = file;
+        window._homeBgMusic.volume = vol;
+        if (wasPlaying) window._homeBgMusic.play().catch(() => {});
+      }
+      renderMusic();
+    }
+
     function renderMusic() {
       const unlockedMusic = currentUser.unlockedMusic || ['medieval'];
-      
-      // Only show unlocked music
-      const unlocked = Object.entries(ARCHETYPES).filter(([key]) => unlockedMusic.includes(key));
-      
-      if (unlocked.length === 0) {
-        galleryGrid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎵</div><div class="empty-text">No music unlocked yet. Defeat bosses to unlock!</div></div>`;
-        galleryGrid.className = 'gallery-grid music';
-        return;
-      }
-      
+      const activeHomeKey = getHomeMusicKey();
+
+      // Always show Home Theme first, then unlocked archetype themes
+      const unlockedEntries = Object.entries(ARCHETYPES).filter(([key]) => unlockedMusic.includes(key));
+      const allEntries = [[HOME_TRACK.key, HOME_TRACK], ...unlockedEntries];
+
       galleryGrid.className = 'gallery-grid music';
-      galleryGrid.innerHTML = unlocked.map(([key, arch]) => {
+      galleryGrid.innerHTML = allEntries.map(([key, arch]) => {
         const isPlaying = currentlyPlaying === key;
-        
+        const isHomeSet = activeHomeKey === key;
         return `
           <div class="gallery-item">
             <div class="music-item">
-              <div class="music-icon">🎵</div>
               <div class="music-info">
                 <div class="music-title">${arch.name}</div>
-                <div class="music-archetype">Theme Music</div>
+                ${isHomeSet ? `<div class="music-home-badge">Home Music</div>` : ''}
               </div>
               <div class="music-controls">
                 <button class="music-btn${isPlaying ? ' playing' : ''}" onclick="toggleMusic('${key}')">
                   ${isPlaying ? '⏹ Stop' : '▶ Play'}
+                </button>
+                <button class="music-btn${isHomeSet ? ' home-active' : ''}" onclick="setHomeMusic('${key}','${arch.name}','${arch.musicFile}')" ${isHomeSet ? 'disabled' : ''}>
+                  ${isHomeSet ? 'Home Set' : 'Set as Home'}
                 </button>
               </div>
             </div>
@@ -801,7 +852,9 @@
         boss_fairy: { name: 'Gem Breaker', desc: 'Defeat The Garnet Queen', icon: '🧚', category: 'boss' },
         boss_elf: { name: "Moon's Eclipse", desc: 'Defeat Moon Shadow Sentinel', icon: '🌙', category: 'boss' },
         boss_dragon: { name: 'Dragon Slayer', desc: 'Defeat The Arcane Dragonlord', icon: '🐉', category: 'boss' },
-        
+        boss_seraph: { name: 'Judgment Passed', desc: 'Defeat The Seraph of Judgment', icon: '😇', category: 'boss' },
+        boss_final: { name: 'Game Over', desc: 'Defeat The Final Boss', icon: '👾', category: 'boss' },
+
         // Challenge Mode
         challenge_first: { name: 'Challenger', desc: 'Beat your first Challenge Boss', icon: '⚔️', category: 'challenge' },
         challenge_three: { name: 'Challenge Accepted', desc: 'Beat 3 Challenge Bosses', icon: '⚔️', category: 'challenge', threshold: 3 },
@@ -809,7 +862,7 @@
         
         // Campaign
         campaign_half: { name: 'Halfway There', desc: 'Beat 3 Campaign Bosses', icon: '🏆', category: 'campaign' },
-        campaign_complete: { name: 'Campaign Victor', desc: 'Beat all 6 Campaign Bosses', icon: '🏆', category: 'campaign', reward: '🖼️ Champion BG' },
+        campaign_complete: { name: 'Campaign Victor', desc: 'Beat all 8 Campaign Bosses', icon: '🏆', category: 'campaign', reward: '🖼️ Champion BG' },
         campaign_perfect: { name: 'Perfectionist', desc: 'Get 3 stars on all Campaign Bosses', icon: '⭐', category: 'campaign', reward: '🎵 Starlight Music' },
         
         // Wins
@@ -1024,48 +1077,81 @@
     }
     
     function toggleMusic(key) {
-      const arch = ARCHETYPES[key];
+      const arch = key === HOME_TRACK.key ? HOME_TRACK : ARCHETYPES[key];
       if (!arch) return;
-      
+
       if (currentlyPlaying === key) {
-        // Stop
         audioPlayer.pause();
         audioPlayer.currentTime = 0;
         currentlyPlaying = null;
+        // Resume background music
+        if (window._homeBgMusic) window._homeBgMusic.play().catch(() => {});
       } else {
-        // Play
+        // Pause background music
+        if (window._homeBgMusic) window._homeBgMusic.pause();
         audioPlayer.src = arch.musicFile;
         audioPlayer.play().catch(e => console.log('Audio play failed:', e));
         currentlyPlaying = key;
       }
-      
+
       renderMusic();
     }
     
     // Audio ended handler
     audioPlayer.addEventListener('ended', () => {
       currentlyPlaying = null;
+      if (window._homeBgMusic) window._homeBgMusic.play().catch(() => {});
       if (currentTab === 'music') renderMusic();
     });
     
-    function openLightbox(imageUrl, title, subtitle) {
-      lightboxImage.src = imageUrl;
-      lightboxTitle.textContent = title;
-      lightboxSubtitle.textContent = subtitle;
+    let lightboxItems = [], lightboxIndex = 0;
+
+    function openLightbox(el) {
+      const allItems = Array.from(document.querySelectorAll('#galleryGrid .gallery-item[data-url]'));
+      lightboxItems = allItems.map(item => ({
+        url: item.dataset.url,
+        title: item.dataset.title,
+        subtitle: item.dataset.subtitle
+      }));
+      lightboxIndex = allItems.indexOf(el);
+      showLightboxItem(lightboxIndex);
       lightbox.classList.add('active');
     }
-    
+
+    function showLightboxItem(index) {
+      const item = lightboxItems[index];
+      if (!item) return;
+      lightboxImage.src = item.url;
+      lightboxTitle.textContent = item.title;
+      lightboxSubtitle.textContent = item.subtitle;
+      document.getElementById('lightboxPrev').style.opacity = lightboxItems.length > 1 ? '1' : '0';
+      document.getElementById('lightboxNext').style.opacity = lightboxItems.length > 1 ? '1' : '0';
+    }
+
+    function navigateLightbox(dir) {
+      lightboxIndex = (lightboxIndex + dir + lightboxItems.length) % lightboxItems.length;
+      showLightboxItem(lightboxIndex);
+    }
+
     function closeLightbox() {
       lightbox.classList.remove('active');
     }
-    
-    // Keyboard shortcut to close lightbox
+
+    document.getElementById('lightboxPrev').addEventListener('click', (e) => { e.stopPropagation(); navigateLightbox(-1); });
+    document.getElementById('lightboxNext').addEventListener('click', (e) => { e.stopPropagation(); navigateLightbox(1); });
+
+    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
+      if (!lightbox.classList.contains('active')) return;
       if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigateLightbox(-1);
+      if (e.key === 'ArrowRight') navigateLightbox(1);
     });
     
     // Init on load
     init();
   </script>
+  <script src="debug-overlay.js"></script>
+  <script src="hover-sound.js"></script>
 </body>
 </html>

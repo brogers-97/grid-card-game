@@ -3,7 +3,7 @@ const path = require("path");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { connectDB, User, CAMPAIGN_BOSSES, CARD_RARITIES, CARD_PRICES, PACKS, CAMPAIGN_GOLD, authHelpers, shopHelpers, getDailyDeals, getBuyPrice, getSellPrice } = require("./database");
+const { connectDB, User, CAMPAIGN_BOSSES, CARD_RARITIES, CARD_PRICES, PACKS, FACTION_NAMES, CAMPAIGN_GOLD, CAMPAIGN_GEMS, authHelpers, shopHelpers, cardCreatorHelpers, getDailyDeals, getBuyPrice, getSellPrice } = require("./database");
 const GameAI = require("./gameAI");
 
 const app = express();
@@ -24,9 +24,31 @@ app.get("/", (req, res) => {
 // REST API endpoints for auth
 app.post("/api/register", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, email } = req.body;
     const user = await authHelpers.register(username, password);
+    // Save optional email if provided
+    if (email && email.trim()) {
+      const { User } = require('./database');
+      await User.findByIdAndUpdate(user.id, { email: email.trim().toLowerCase() });
+      user.email = email.trim().toLowerCase();
+    }
     res.json({ success: true, user });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/admin/reset-password", async (req, res) => {
+  try {
+    const { adminKey, username, newPassword } = req.body;
+    if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+    if (!username || !newPassword || newPassword.length < 4) {
+      return res.status(400).json({ success: false, error: 'Username and newPassword (min 4 chars) required' });
+    }
+    const result = await authHelpers.adminResetPassword(username, newPassword);
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
@@ -38,6 +60,54 @@ app.post("/api/login", async (req, res) => {
     const user = await authHelpers.login(username, password);
     res.json({ success: true, user });
   } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/change-username", async (req, res) => {
+  try {
+    const { userId, password, newUsername } = req.body;
+    const user = await authHelpers.changeUsername(userId, password, newUsername);
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/change-password", async (req, res) => {
+  try {
+    const { userId, currentPassword, newPassword } = req.body;
+    await authHelpers.changePassword(userId, currentPassword, newPassword);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/delete-account", async (req, res) => {
+  try {
+    const { userId, password } = req.body;
+    await authHelpers.deleteAccount(userId, password);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/tutorial-status", async (req, res) => {
+  try {
+    const { userId, completed } = req.body;
+    console.log(`[TUTORIAL] /api/tutorial-status userId=${userId} completed=${completed}`);
+    if (!userId || userId === 'admin') return res.json({ success: true });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    user.set('preferences.tutorialCompleted', !!completed);
+    user.markModified('preferences');
+    await user.save();
+    console.log(`[TUTORIAL] Saved tutorialCompleted=${user.preferences.tutorialCompleted} for user ${user.username}`);
+    res.json({ success: true, tutorialCompleted: user.preferences.tutorialCompleted });
+  } catch (err) {
+    console.error('[TUTORIAL] Save error:', err);
     res.status(400).json({ success: false, error: err.message });
   }
 });
@@ -287,22 +357,37 @@ app.post("/api/saveDeck", async (req, res) => {
     // Validate that user owns all cards in deck
     const cardCounts = {};
     const holoCardCounts = {};
+    const customCardCounts = {};
     cards.forEach(key => {
-      if (key.endsWith('_holo')) {
+      if (key.startsWith('custom_')) {
+        customCardCounts[key] = (customCardCounts[key] || 0) + 1;
+      } else if (key.endsWith('_holo')) {
         const baseKey = key.replace('_holo', '');
         holoCardCounts[baseKey] = (holoCardCounts[baseKey] || 0) + 1;
       } else {
         cardCounts[key] = (cardCounts[key] || 0) + 1;
       }
     });
-    
+
     // Check regular cards
     for (const [key, count] of Object.entries(cardCounts)) {
       const owned = user.cardCollection.get(key) || 0;
       if (count > owned) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `You don't own enough copies of ${key}` 
+        return res.status(400).json({
+          success: false,
+          error: `You don't own enough copies of ${key}`
+        });
+      }
+    }
+
+    // Check custom (Card Creator) cards
+    for (const [key, count] of Object.entries(customCardCounts)) {
+      const customCard = user.customCards.get(key);
+      const owned = customCard ? (customCard.count || 0) : 0;
+      if (count > owned) {
+        return res.status(400).json({
+          success: false,
+          error: `You don't own enough copies of custom card ${key}`
         });
       }
     }
@@ -377,13 +462,29 @@ app.post("/api/deleteDeck", async (req, res) => {
 
 // ==================== SHOP API ROUTES ====================
 
-// Get shop data (daily deals, packs, prices)
-app.get("/api/shop", (req, res) => {
-  res.json({
-    dailyDeals: getDailyDeals(),
-    packs: PACKS,
-    prices: CARD_PRICES
-  });
+// Get shop data (daily deals, packs, prices, unlocked factions)
+app.get("/api/shop", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    let unlockedDecks = ['medieval'];
+
+    if (userId === 'admin') {
+      unlockedDecks = Object.keys(FACTION_NAMES);
+    } else if (userId) {
+      const user = await User.findById(userId);
+      if (user) unlockedDecks = user.unlockedDecks || ['medieval'];
+    }
+
+    res.json({
+      dailyDeals: getDailyDeals(),
+      packs: PACKS,
+      prices: CARD_PRICES,
+      unlockedDecks,
+      factionNames: FACTION_NAMES
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Buy a card from the market
@@ -416,11 +517,11 @@ app.post("/api/shop/buy-deal", async (req, res) => {
 // Buy a pack
 app.post("/api/shop/buy-pack", async (req, res) => {
   try {
-    const { userId, packId } = req.body;
+    const { userId, packId, deckId } = req.body;
     if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
     if (!PACKS[packId]) return res.status(400).json({ success: false, error: 'Invalid pack' });
-    
-    const result = await shopHelpers.buyPack(userId, packId);
+
+    const result = await shopHelpers.buyPack(userId, packId, deckId);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -435,6 +536,37 @@ app.post("/api/shop/sell-card", async (req, res) => {
     if (!CARD_RARITIES[cardKey]) return res.status(400).json({ success: false, error: 'Invalid card' });
     
     const result = await shopHelpers.sellCard(userId, cardKey);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Card Creator: get the curated effect bank for the builder UI
+app.get("/api/cardcreator/effects", (req, res) => {
+  res.json({ effects: cardCreatorHelpers.getEffectBank() });
+});
+
+// Card Creator: build a deliberate custom card
+app.post("/api/cardcreator/build", async (req, res) => {
+  try {
+    const { userId, name, atk, hp, effectId } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+
+    const result = await cardCreatorHelpers.buildCard(userId, { name, atk, hp, effectId });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Card Creator: build a discounted random card
+app.post("/api/cardcreator/random", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+
+    const result = await cardCreatorHelpers.buildRandomCard(userId);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -1513,11 +1645,25 @@ function generateLobbyCode() {
   return lobbies[code] ? generateLobbyCode() : code;
 }
 
+// Fetch a user's custom-built cards as a plain {key: template} lookup for getCardTemplate
+async function getCustomCardDefs(userId) {
+  if (!userId || userId === 'admin') return {};
+  const user = await User.findById(userId);
+  if (!user || !user.customCards) return {};
+  const defs = {};
+  for (const [key, card] of user.customCards) {
+    const { count, ...template } = card;
+    defs[key] = template;
+  }
+  return defs;
+}
+
 function genId() { return Math.random().toString(36).slice(2, 10); }
 function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
-// Get card template by key from any deck
-function getCardTemplate(cardKey) {
+// Get card template by key from any deck, or from a player's custom-built cards
+function getCardTemplate(cardKey, customDefs) {
+  if (customDefs && customDefs[cardKey]) return customDefs[cardKey];
   for (const deckId in DECKS) {
     const card = DECKS[deckId].cards.find(c => c.key === cardKey);
     if (card) return card;
@@ -1526,13 +1672,13 @@ function getCardTemplate(cardKey) {
 }
 
 // Create deck from array of card keys (for custom decks)
-function createDeckFromKeys(cardKeys) {
+function createDeckFromKeys(cardKeys, customDefs) {
   const result = cardKeys.map(key => {
     // Check if this is a holo card
     const isHolo = key.endsWith('_holo');
     const baseKey = isHolo ? key.replace('_holo', '') : key;
-    
-    const template = getCardTemplate(baseKey);
+
+    const template = getCardTemplate(baseKey, customDefs);
     if (!template) {
       console.warn(`Unknown card key: ${baseKey}`);
       return null;
@@ -1677,7 +1823,7 @@ function generateBuffTiles() {
   return buffTiles;
 }
 
-function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCustomCards = null) {
+function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCustomCards = null, hostCustomDefs = null, guestCustomDefs = null) {
   const buffTiles = generateBuffTiles();
   const state = { 
     board: Array.from({length:ROWS}, () => Array(COLS).fill(null)), 
@@ -1704,11 +1850,11 @@ function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCusto
   
   // Create decks - use custom cards if provided, otherwise default deck
   
-  const goldDeckCards = hostCustomCards && hostCustomCards.length >= 25 
-    ? shuffle(createDeckFromKeys(hostCustomCards)) 
+  const goldDeckCards = hostCustomCards && hostCustomCards.length >= 25
+    ? shuffle(createDeckFromKeys(hostCustomCards, hostCustomDefs))
     : shuffle(createDeck(hostDeck));
-  const silverDeckCards = guestCustomCards && guestCustomCards.length >= 25 
-    ? shuffle(createDeckFromKeys(guestCustomCards)) 
+  const silverDeckCards = guestCustomCards && guestCustomCards.length >= 25
+    ? shuffle(createDeckFromKeys(guestCustomCards, guestCustomDefs))
     : shuffle(createDeck(guestDeck));
   
   
@@ -1720,6 +1866,178 @@ function createGameState(hostDeck, guestDeck, hostCustomCards = null, guestCusto
     if (players.gold.deck.length) players.gold.hand.push(players.gold.deck.pop()); 
     if (players.silver.deck.length) players.silver.hand.push(players.silver.deck.pop()); 
   }
+  return { state, players };
+}
+
+// Build a single card instance from a deck key (looks it up in the medieval deck)
+function makeCardByKey(deckId, key) {
+  const deck = DECKS[deckId];
+  if (!deck) return null;
+  const def = deck.cards.find(c => c.key === key);
+  if (!def) return null;
+  return { ...def, id: genId(), maxHp: def.hp };
+}
+
+// Build a unit instance on the board (returns the unit's id)
+function placeTutorialUnit(state, deckId, key, owner, row, col) {
+  const def = DECKS[deckId]?.cards.find(c => c.key === key);
+  if (!def) return null;
+  const id = genId();
+  state.units[id] = { ...def, id, owner, maxHp: def.hp };
+  state.board[row][col] = id;
+  return id;
+}
+
+// =====================================================================================
+// TUTORIAL SCRIPT — sequential steps the server walks through.
+// Each step is one of:
+//   { type: 'dialog', speaker, text, hint? }                      — show a dialog, wait for tutorialAdvance
+//   { type: 'gate', action, ...params }                            — lock player UI to a specific action
+//   { type: 'enemyAction', do: '...', ...params }                  — execute a scripted enemy action
+//   { type: 'endEnemyTurn' }                                       — finish enemy turn, hand back to player
+//   { type: 'finish', win: bool }                                  — outro then return to home / mark complete
+// Coordinates use server rows: A=0 (gold back), B=1, C=2, D=3, E=4, F=5, G=6 (silver back).
+// Columns 0-5 (display 1-6).
+// =====================================================================================
+const TUTORIAL_SCRIPT = [
+  // === Intro ===
+  { type: 'dialog', speaker: 'Lost King', text: "What a strange land have I been taken to?! No matter — fight me or die, traveler!" },
+  { type: 'dialog', speaker: 'Trainer', text: "Each card costs Dimensional Energy to summon. You can see how much energy you have above your hand.", nextHighlight: 'energy' },
+  { type: 'gate', action: 'drawCard' },
+
+  // === Player Turn 1 ===
+  { type: 'dialog', speaker: 'Trainer', text: "The cost of each card's energy is shown in the top right of the card. Cards also have ATK and HP. Now summon your Archer to A1.", nextHighlight: 'cardCost' },
+  { type: 'gate', action: 'playCard', cardKey: 'archer', target: { type: 'spawn-row', row: 0, col: 0 } },
+
+  { type: 'dialog', speaker: 'Lost King', text: "An Archer! That isn't enough to defeat me!" },
+  { type: 'dialog', speaker: 'Trainer', text: "Some cards have special abilities. SHIFT + click the Archer to read its effect.", nextHighlight: 'archer' },
+  { type: 'dialog', speaker: 'Trainer', text: "Select your Archer then click on the enemy card to strike!", nextHighlight: 'archer' },
+  { type: 'gate', action: 'attack', fromKey: 'archer', toUnit: { row: 2, col: 0 } },
+
+  { type: 'dialog', speaker: 'Trainer', text: "The Squire has a special ability — after being placed it can leap to any tile next to a Knight. First, summon it to A2 in your home row." },
+  { type: 'gate', action: 'playCard', cardKey: 'squire', target: { type: 'spawn-row', row: 0, col: 1 } },
+  { type: 'dialog', speaker: 'Trainer', text: "Now use the Squire's Knight Leap — move it to E6, right beside your Knight." },
+  { type: 'gate', action: 'move', fromUnit: { row: 0, col: 1 }, toTile: { row: 4, col: 5 } },
+
+  { type: 'dialog', speaker: 'Lost King', text: "No fair! Grrrrrrrr" },
+
+  { type: 'dialog', speaker: 'Trainer', text: "In order to destroy the enemy heart you have to move your units closer.", nextHighlight: 'enemyHeart' },
+  { type: 'dialog', speaker: 'Trainer', text: "But first you have to take down the enemy's defensive rows. They usually have 15 HP but his front wall is already cracked at 1. Attack row F with your Squire to bring it down." },
+  { type: 'gate', action: 'attack', fromUnit: { row: 4, col: 5 }, toRow: 5 },
+
+  { type: 'dialog', speaker: 'Trainer', text: "Move forward to press the attack! Advance your Knight to the broken row and attack row G!" },
+  { type: 'gate', action: 'move', fromUnit: { row: 4, col: 4 }, toTile: { row: 5, col: 4 } },
+  { type: 'gate', action: 'attack', fromUnit: { row: 5, col: 4 }, toRow: 6 },
+
+  { type: 'dialog', speaker: 'Trainer', text: "When you have no more moves or energy, end your turn." },
+  { type: 'gate', action: 'endTurn' },
+
+  // === Enemy Turn 1 ===
+  { type: 'dialog', speaker: 'Lost King', text: "I will destroy your heart and defend my land!" },
+  { type: 'enemyAction', do: 'attack', fromUnit: { row: 2, col: 0 }, toUnit: { row: 0, col: 0 } },
+  { type: 'enemyAction', do: 'attack', fromUnit: { row: 2, col: 1 }, toRow: 1 },
+  { type: 'enemyAction', do: 'move', fromUnit: { row: 2, col: 0 }, toTile: { row: 1, col: 0 } },
+  { type: 'enemyAction', do: 'move', fromUnit: { row: 2, col: 1 }, toTile: { row: 1, col: 1 } },
+  { type: 'enemyAction', do: 'spawn', cardKey: 'warhound', tile: { row: 6, col: 1 } },
+  { type: 'enemyAction', do: 'move', fromUnit: { row: 6, col: 1 }, toTile: { row: 5, col: 1 } },
+  { type: 'enemyAction', do: 'move', fromUnit: { row: 5, col: 1 }, toTile: { row: 4, col: 0 } },
+  { type: 'endEnemyTurn' },
+
+  // === Player Turn 2 ===
+  { type: 'dialog', speaker: 'Trainer', text: "Some units, like the War Hound, can move twice. Draw and counter-attack." },
+  { type: 'gate', action: 'drawCard' },
+  { type: 'dialog', speaker: 'Trainer', text: "You drew Royal Guard. It can only be summoned to your home rows — place it at A2, next to your Archer." },
+  { type: 'gate', action: 'playCard', cardKey: 'royalguard', target: { type: 'spawn-row', row: 0, col: 1 } },
+  { type: 'dialog', speaker: 'Trainer', text: "Strike down the Crusader before it pushes further!" },
+  { type: 'gate', action: 'attack', fromUnit: { row: 0, col: 1 }, toUnit: { row: 1, col: 1 } },
+
+  { type: 'dialog', speaker: 'Trainer', text: "Cards attack in all four directions — up, down, left, and right. Move your Archer to B1 and hit the weakened Crusader from the side!" },
+  { type: 'gate', action: 'move', fromUnit: { row: 0, col: 0 }, toTile: { row: 1, col: 0 } },
+  { type: 'gate', action: 'attack', fromUnit: { row: 1, col: 0 }, toUnit: { row: 1, col: 1 } },
+
+  { type: 'dialog', speaker: 'Lost King', text: "You will never destroy my army!!" },
+  { type: 'dialog', speaker: 'Trainer', text: "You've learned the basics! The rest is up to you — finish the fight and take down the Lost King!" },
+  { type: 'freePlay' }
+];
+
+// Tutorial encounter — Lost King (medieval) with a pre-set board.
+// Server row layout (gold viewFlipped, gold's home at bottom of their view):
+//   server row 0 = A (gold back home, bottom of view)
+//   server row 1 = B (gold front home)
+//   server row 2 = C
+//   server row 3 = D
+//   server row 4 = E
+//   server row 5 = F (silver front home)
+//   server row 6 = G (silver back home, top of view)
+// Player Knight at E5  -> row 4, col 4
+// Enemy Archer at C1   -> row 2, col 0
+// Enemy Crusader at C2 -> row 2, col 1
+// Row HP: A=15, B=2, F=1, G=15
+function createTutorialState() {
+  const buffTiles = generateBuffTiles();
+  const state = {
+    board: Array.from({length:ROWS}, () => Array(COLS).fill(null)),
+    rowHP: [15, 2, 0, 0, 0, 1, 15],
+    rowOwner: Array(ROWS).fill(null),
+    heartHP: { gold: START_HEART_HP, silver: 8 }, // Lost King has 8 HP for a quicker tutorial
+    units: {},
+    activeSide: "gold",
+    turnNumber: 1,
+    gameOver: false,
+    spawn: { gold: null, silver: null },
+    movedThisTurn: new Set(),
+    attackedThisTurn: new Set(),
+    firstTurn: false, // Skip first-turn restrictions; the tutorial gates moves itself
+    buffTiles: buffTiles,
+    moveCountThisTurn: {},
+    attackCountThisTurn: {},
+    pendingCoffinResurrects: { gold: [], silver: [] },
+    bossTurnCount: 0,
+    bossEventWarning: null,
+    bossEventOccurrence: 0
+  };
+
+  // Place pre-set units (display positions in comments)
+  placeTutorialUnit(state, "medieval", "knight", "gold", 4, 4);     // Player Knight at E5
+  placeTutorialUnit(state, "medieval", "archer", "silver", 2, 0);   // Enemy Archer at C1
+  placeTutorialUnit(state, "medieval", "crusader", "silver", 2, 1); // Enemy Crusader at C2
+
+  // Player hand: 2x Squire + 1x Archer
+  const playerHand = [
+    makeCardByKey("medieval", "squire"),
+    makeCardByKey("medieval", "squire"),
+    makeCardByKey("medieval", "archer")
+  ].filter(Boolean);
+
+  // Player deck order (top of deck = end of array, since draws use .pop()):
+  // First three draws should be Battering Ram, Royal Guard, Paladin.
+  // Build the rest of the medieval deck for filler, then append the three scripted draws last.
+  const fullDeck = createDeck("medieval"); // unshuffled
+  const scriptedDrawKeys = ["paladin", "royalguard", "siegeram"]; // pop order: siegeram first
+  const scriptedDraws = scriptedDrawKeys.map(k => makeCardByKey("medieval", k)).filter(Boolean);
+  // Remove ONE copy of each scripted card from the filler so they're not duplicated
+  const filler = [];
+  const usedKeys = { paladin: 1, royalguard: 1, siegeram: 1 };
+  for (const c of fullDeck) {
+    if (usedKeys[c.key] > 0) { usedKeys[c.key]--; continue; }
+    // Also strip cards we put in hand
+    if (c.key === "squire" && (usedKeys.squire = (usedKeys.squire || 2)) > 0) { usedKeys.squire--; continue; }
+    if (c.key === "archer" && (usedKeys.archer = (usedKeys.archer || 1)) > 0) { usedKeys.archer--; continue; }
+    filler.push(c);
+  }
+  shuffle(filler);
+  const playerDeck = [...filler, ...scriptedDraws]; // pop() gets siegeram first, then royalguard, then paladin
+
+  // Enemy (silver) deck — basic medieval, shuffled. The scripted AI ignores it but it has to exist.
+  const enemyDeck = shuffle(createDeck("medieval"));
+  const enemyHand = [];
+  for (let i = 0; i < START_HAND_SIZE; i++) if (enemyDeck.length) enemyHand.push(enemyDeck.pop());
+
+  const players = {
+    gold:   { deck: playerDeck, hand: playerHand, discard: [], energy: START_ENERGY, maxEnergy: START_ENERGY, hasDrawn: false },
+    silver: { deck: enemyDeck,  hand: enemyHand,  discard: [], energy: START_ENERGY, maxEnergy: START_ENERGY, hasDrawn: false }
+  };
+
   return { state, players };
 }
 
@@ -5182,13 +5500,16 @@ async function handleCampaignVictory(lobby) {
     
     const result = await authHelpers.completeBoss(lobby.hostUserId, lobby.bossId, stars, lobby.aiLevel, lobby.isChallenge);
     
-    // Award gold based on difficulty
+    // Award gold + Rift Gems based on difficulty
     const goldAmount = CAMPAIGN_GOLD[lobby.isChallenge ? 4 : (lobby.aiLevel || 1)] || 5;
+    const gemAmount = CAMPAIGN_GEMS[lobby.isChallenge ? 4 : (lobby.aiLevel || 1)] || 3;
     let goldResult = null;
+    let gemResult = null;
     if (lobby.hostUserId) {
       goldResult = await shopHelpers.addGold(lobby.hostUserId, goldAmount);
+      gemResult = await shopHelpers.addGems(lobby.hostUserId, gemAmount);
     }
-    
+
     // Send rewards to player
     if (lobby.hostSocket) {
       lobby.hostSocket.emit("campaignVictory", {
@@ -5197,14 +5518,17 @@ async function handleCampaignVictory(lobby) {
         rewards: result.rewards,
         goldEarned: goldAmount,
         newGold: goldResult ? goldResult.gold : 0,
+        gemsEarned: gemAmount,
+        newGems: gemResult ? gemResult.riftGems : 0,
         user: result.user,
-        isChallenge: lobby.isChallenge
+        isChallenge: lobby.isChallenge,
+        newAchievements: result.newAchievements || []
       });
     }
-    
+
     const difficultyNames = { 1: 'Easy', 2: 'Medium', 3: 'Hard', 4: 'Challenge' };
     const diffLabel = lobby.isChallenge ? 'Challenge' : difficultyNames[stars];
-    logToLobby(lobby, "🎉 Boss defeated on " + diffLabel + "!" + (lobby.isChallenge ? " ✨ HOLO CARDS!" : " Earned " + stars + " star(s)!") + " 🪙 +" + goldAmount + " gold!");
+    logToLobby(lobby, "🎉 Boss defeated on " + diffLabel + "!" + (lobby.isChallenge ? " ✨ HOLO CARDS!" : " Earned " + stars + " star(s)!") + " 🪙 +" + goldAmount + " gold! 🔮 +" + gemAmount + " Rift Gems!");
     
     // Format card names for log
     const cardNames = result.rewards.cards.map(c => {
@@ -6639,6 +6963,30 @@ function emitLobbyState(lobby) {
   if (lobby.guestSocket) lobby.guestSocket.emit("lobbyState", { ...info, isHost: false });
 }
 
+function checkFreePlayReactions(lobby) {
+  if (!lobby.tutorialFreePlay || !lobby.fpDialogs || !lobby.hostSocket) return;
+  const state = lobby.gameState.state;
+  const fp = lobby.fpDialogs;
+
+  const currentSilverCount = Object.values(state.units).filter(u => u.owner === 'silver').length;
+  if (currentSilverCount < fp.prevSilverCount) fp.silverDeaths += fp.prevSilverCount - currentSilverCount;
+  fp.prevSilverCount = currentSilverCount;
+
+  if (!fp.fiveDeathsShown && fp.silverDeaths >= 5) {
+    fp.fiveDeathsShown = true;
+    setTimeout(() => lobby.hostSocket?.emit('loreDialog', { speaker: 'Lost King', text: "My army will gladly die for me." }), 400);
+  }
+  if (!fp.lastWallShown && fp.prevRowGHP > 0 && state.rowHP[6] <= 0) {
+    fp.lastWallShown = true;
+    setTimeout(() => lobby.hostSocket?.emit('loreDialog', { speaker: 'Lost King', text: "Grrrr, no matter, I will still win." }), 400);
+  }
+  if (!fp.heartHitShown && state.heartHP.silver < fp.silverHeartAtStart) {
+    fp.heartHitShown = true;
+    setTimeout(() => lobby.hostSocket?.emit('loreDialog', { speaker: 'Lost King', text: "Ughhh, leave me be!!" }), 400);
+  }
+  fp.prevRowGHP = state.rowHP[6];
+}
+
 function emitGameState(lobby) {
   if (!lobby.gameState) return;
   const { state, players } = lobby.gameState;
@@ -6932,6 +7280,8 @@ function emitGameState(lobby) {
     enemyMaxEnergy: players.gold.maxEnergy,
     enemyDiscard: players.gold.discard
   });
+
+  checkFreePlayReactions(lobby);
 }
 
 // Helper to log board state for AI debugging (condensed)
@@ -8530,6 +8880,7 @@ io.on("connection", (socket) => {
 
   // Start campaign game against AI
   socket.on("startCampaign", async (data) => {
+    try {
     const { bossId, deckId, username, userId, difficulty } = data;
     const boss = CAMPAIGN_BOSSES.find(b => b.id === bossId);
     if (!boss) return socket.emit("lobbyError", "Invalid boss.");
@@ -8644,7 +8995,8 @@ io.on("connection", (socket) => {
     socket.data.username = username || "Guest";
     
     // Pass custom deck cards if available
-    lobbies[code].gameState = createGameState(deckId || "medieval", bossDeckId, customDeckCards, null);
+    const hostCustomDefs = await getCustomCardDefs(userId);
+    lobbies[code].gameState = createGameState(deckId || "medieval", bossDeckId, customDeckCards, null, hostCustomDefs, null);
     
     // Debug: log initial hasDrawn state
     console.log(`[CAMPAIGN] Created lobby ${code}, gold.hasDrawn=${lobbies[code].gameState.players.gold.hasDrawn}, canDraw=${!lobbies[code].gameState.players.gold.hasDrawn && lobbies[code].gameState.players.gold.hand.length < 10}`);
@@ -8669,6 +9021,264 @@ io.on("connection", (socket) => {
     logToLobby(lobbies[code], "GOLD's turn");
     emitLobbyState(lobbies[code]);
     emitGameState(lobbies[code]);
+    } catch (err) {
+      console.error('[startCampaign] Unexpected error:', err);
+      socket.emit("lobbyError", "Failed to start campaign. Please try again.");
+    }
+  });
+
+  // Start the tutorial encounter (Boss 0 — scripted Medieval king)
+  socket.on("startTutorial", (data) => {
+    const username = data?.username || "Recruit";
+    const userId = data?.userId || null;
+    const code = generateLobbyCode();
+
+    lobbies[code] = {
+      code,
+      hostSocket: socket,
+      guestSocket: null,
+      hostDeck: "medieval",
+      guestDeck: "medieval",
+      hostReady: true,
+      guestReady: true,
+      gameStarted: true,
+      gameState: null,
+      log: [],
+      hostUsername: username,
+      guestUsername: "Lost King",
+      hostUserId: userId,
+      guestUserId: null,
+      isAIGame: true,
+      isTutorial: true,
+      tutorialStep: 0,         // current step index in the script (filled in later)
+      bossId: 0,
+      aiLevel: 1,
+      ai: null,                // tutorial uses scripted moves, not GameAI
+      canAutoPlay: false,
+      autoPlay: false,
+      playerAI: null
+    };
+
+    socket.data.lobbyCode = code;
+    socket.data.isHost = true;
+    socket.data.username = username;
+
+    // Pre-set tutorial board: Knight at E5, enemy Archer/Crusader at C1/C2, weak walls, scripted draws.
+    lobbies[code].gameState = createTutorialState();
+
+    console.log(`[TUTORIAL] Created tutorial lobby ${code} for ${username}`);
+
+    socket.emit("role", "gold");
+    socket.emit("tutorialStart", {
+      code,
+      myDeck: "medieval",
+      enemyDeck: "medieval",
+      bossName: "Lost King",
+      music: "medieval",
+      background: "medieval"
+    });
+    socket.emit("enemyInfo", { username: "Lost King", isAI: true });
+    logToLobby(lobbies[code], "=== TUTORIAL: THE LOST KING ===");
+    logToLobby(lobbies[code], "GOLD's turn");
+    emitLobbyState(lobbies[code]);
+    emitGameState(lobbies[code]);
+
+    // Kick off the script after a brief delay so the client has time to render
+    setTimeout(() => processTutorialScript(lobbies[code]), 600);
+  });
+
+  // ========== Tutorial state-machine helpers ==========
+  function emitTutorialDialog(lobby, step) {
+    if (!lobby.hostSocket) return;
+    const nextStep = TUTORIAL_SCRIPT[lobby.tutorialStep + 1];
+    lobby.hostSocket.emit("tutorialDialog", {
+      speaker: step.speaker,
+      text: step.text,
+      hint: step.hint,
+      nextAction:    nextStep && nextStep.type === 'gate' ? nextStep.action : null,
+      nextHighlight: step.nextHighlight || null
+    });
+  }
+  function emitTutorialGate(lobby, step) {
+    if (!lobby.hostSocket) return;
+    lobby.hostSocket.emit("tutorialGate", step);
+  }
+  function emitTutorialFinish(lobby) {
+    if (!lobby.hostSocket) return;
+    lobby.hostSocket.emit("tutorialFinish", { win: true });
+  }
+
+  // Run a single scripted enemy action against the live game state
+  function executeTutorialEnemyAction(lobby, step) {
+    const state = lobby.gameState.state;
+    const fromPos = step.fromUnit;
+    const toPos = step.toUnit || step.toTile;
+    const sock = lobby.hostSocket;
+
+    if (step.do === 'spawn') {
+      const id = placeTutorialUnit(state, "medieval", step.cardKey, "silver", step.tile.row, step.tile.col);
+      logToLobby(lobby, "Lost King summons " + (state.units[id]?.name || step.cardKey));
+
+    } else if (step.do === 'move' && fromPos && toPos) {
+      const fromId = state.board[fromPos.row][fromPos.col];
+      if (!fromId) return;
+      if (sock) sock.emit("animate", { type: "move", unitId: fromId,
+        fromRow: fromPos.row, fromCol: fromPos.col, toRow: toPos.row, toCol: toPos.col });
+      state.board[fromPos.row][fromPos.col] = null;
+      state.board[toPos.row][toPos.col] = fromId;
+      logToLobby(lobby, (state.units[fromId]?.name || "Unit") + " advances");
+
+    } else if (step.do === 'attack' && fromPos) {
+      const attackerId = state.board[fromPos.row][fromPos.col];
+      const attacker = attackerId ? state.units[attackerId] : null;
+      if (!attacker) return;
+
+      if (step.toRow !== undefined) {
+        if (sock) sock.emit("animate", { type: "attack",
+          attackerRow: fromPos.row, attackerCol: fromPos.col,
+          targetRow: step.toRow, targetCol: fromPos.col });
+        const dmg = attacker.atk;
+        state.rowHP[step.toRow] = Math.max(0, state.rowHP[step.toRow] - dmg);
+        logToLobby(lobby, attacker.name + " hits the wall for " + dmg);
+
+      } else if (step.toUnit) {
+        const targetId = state.board[step.toUnit.row][step.toUnit.col];
+        const target = targetId ? state.units[targetId] : null;
+        if (!target) return;
+        if (sock) sock.emit("animate", { type: "attack",
+          attackerRow: fromPos.row, attackerCol: fromPos.col,
+          targetRow: step.toUnit.row, targetCol: step.toUnit.col });
+        target.hp -= attacker.atk;
+        logToLobby(lobby, attacker.name + " strikes " + target.name + " for " + attacker.atk);
+        if (sock) sock.emit("animate", { type: "damage", row: step.toUnit.row, col: step.toUnit.col });
+        if (target.hp <= 0) {
+          state.board[step.toUnit.row][step.toUnit.col] = null;
+          delete state.units[targetId];
+          if (sock) sock.emit("animate", { type: "destroy", row: step.toUnit.row, col: step.toUnit.col });
+          logToLobby(lobby, target.name + " falls!");
+        }
+      }
+    }
+    emitGameState(lobby);
+  }
+
+  // Walk the script forward from the current step until we hit a gate or run out of steps
+  function processTutorialScript(lobby) {
+    if (!lobby || !lobby.isTutorial) return;
+    while (lobby.tutorialStep < TUTORIAL_SCRIPT.length) {
+      const step = TUTORIAL_SCRIPT[lobby.tutorialStep];
+      if (step.type === 'dialog') {
+        emitTutorialDialog(lobby, step);
+        return; // wait for tutorialAdvance
+      }
+      if (step.type === 'gate') {
+        emitTutorialGate(lobby, step);
+        return; // wait for player to perform the gated action
+      }
+      if (step.type === 'enemyAction') {
+        executeTutorialEnemyAction(lobby, step);
+        lobby.tutorialStep++;
+        const delay = step.do === 'spawn' ? 1000 : 800;
+        setTimeout(() => processTutorialScript(lobby), delay);
+        return;
+      }
+      if (step.type === 'endEnemyTurn') {
+        lobby.gameState.state.activeSide = "gold";
+        lobby.gameState.state.turnNumber++;
+        const p = lobby.gameState.players.gold;
+        p.energy = Math.min((p.maxEnergy = (p.maxEnergy || 8) + 0), 10);
+        p.hasDrawn = false;
+        emitGameState(lobby);
+        lobby.tutorialStep++;
+        setTimeout(() => processTutorialScript(lobby), 600);
+        return;
+      }
+      if (step.type === 'freePlay') {
+        lobby.isTutorial = false;
+        lobby.tutorialFreePlay = true;
+        lobby.ai = new GameAI(1);
+        lobby.tutorialStep++;
+        const { state } = lobby.gameState;
+        lobby.fpDialogs = {
+          prevSilverCount: Object.values(state.units).filter(u => u.owner === 'silver').length,
+          silverDeaths: 0,
+          silverHeartAtStart: state.heartHP.silver,
+          prevRowGHP: state.rowHP[6],
+          lastWallShown: false,
+          fiveDeathsShown: false,
+          heartHitShown: false
+        };
+        if (lobby.hostSocket) lobby.hostSocket.emit('tutorialFreePlay', {});
+        if (state.activeSide === 'silver' && !state.gameOver) processAITurn(lobby);
+        return;
+      }
+      if (step.type === 'finish') {
+        emitTutorialFinish(lobby);
+        // Persist tutorialCompleted on the user
+        if (lobby.hostUserId) {
+          User.findById(lobby.hostUserId).then(user => {
+            if (user) {
+              user.set('preferences.tutorialCompleted', true);
+              user.markModified('preferences');
+              return user.save();
+            }
+          }).catch(err => console.error('[TUTORIAL] failed to persist completion:', err));
+        }
+        delete lobbies[lobby.code];
+        return;
+      }
+      lobby.tutorialStep++;
+    }
+  }
+
+  // Check whether a player action satisfies the current tutorial gate; if so, advance the script
+  function tryAdvanceTutorialFromAction(lobby, payload) {
+    if (!lobby || !lobby.isTutorial) return;
+    const step = TUTORIAL_SCRIPT[lobby.tutorialStep];
+    if (!step || step.type !== 'gate') return;
+
+    let matches = false;
+    if (step.action === 'drawCard' && payload.type === 'drawCard') matches = true;
+    else if (step.action === 'endTurn' && payload.type === 'endTurn') matches = true;
+    else if (step.action === 'playCard' && payload.type === 'playCard') matches = true;
+    else if (step.action === 'attack' && (payload.type === 'attack' || payload.type === 'attackUnit' || payload.type === 'attackRow' || payload.type === 'attackFromSpawn')) matches = true;
+    else if (step.action === 'attackHeart' && (payload.type === 'attackHeart' || payload.targetHeart)) matches = true;
+    else if (step.action === 'move' && payload.type === 'move') matches = true;
+
+    if (matches) {
+      lobby.tutorialStep++;
+      // Use a small delay so the player sees the action complete before next dialog/gate
+      setTimeout(() => processTutorialScript(lobby), 350);
+    }
+  }
+
+  // Tutorial: player skipped mid-flow → close the lobby cleanly
+  socket.on("tutorialSkip", () => {
+    const code = socket.data.lobbyCode;
+    const lobby = lobbies[code];
+    if (!lobby || !lobby.isTutorial) return;
+    console.log(`[TUTORIAL] Player skipped tutorial — closing lobby ${code}`);
+    delete lobbies[code];
+  });
+
+  // Tutorial: client clicked through a dialog → advance the script
+  socket.on("tutorialAdvance", () => {
+    const lobby = lobbies[socket.data.lobbyCode];
+    if (!lobby || !lobby.isTutorial) return;
+    const step = TUTORIAL_SCRIPT[lobby.tutorialStep];
+    if (step && step.type === 'dialog') {
+      lobby.tutorialStep++;
+      processTutorialScript(lobby);
+    }
+  });
+
+  // Tutorial: after each player action, check if it satisfies the current gate.
+  // Runs AFTER the main "action" handler because Socket.IO fires listeners in order
+  // and the main handler is synchronous (deferred via setTimeout).
+  socket.on("action", (payload) => {
+    const lobby = lobbies[socket.data.lobbyCode];
+    if (!lobby || !lobby.isTutorial) return;
+    setTimeout(() => tryAdvanceTutorialFromAction(lobby, payload), 50);
   });
 
   // Toggle auto-play on/off during campaign game
@@ -8807,7 +9417,9 @@ io.on("connection", (socket) => {
     // Look up custom decks for both players
     let hostCustomCards = null;
     let guestCustomCards = null;
-    
+    let hostCustomDefs = {};
+    let guestCustomDefs = {};
+
     // Handle admin for host
     if (lobby.hostUserId === 'admin') {
       const customDeck = adminCustomDecks.find(d => d.id === lobby.hostDeck);
@@ -8822,10 +9434,13 @@ io.on("connection", (socket) => {
           if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
             hostCustomCards = customDeck.cards;
           }
+          if (hostUser.customCards) {
+            for (const [key, card] of hostUser.customCards) { const { count, ...template } = card; hostCustomDefs[key] = template; }
+          }
         }
       } catch (err) { console.error('Error loading host custom deck:', err); }
     }
-    
+
     // Handle admin for guest
     if (lobby.guestUserId === 'admin') {
       const customDeck = adminCustomDecks.find(d => d.id === lobby.guestDeck);
@@ -8840,12 +9455,15 @@ io.on("connection", (socket) => {
           if (customDeck && customDeck.cards && customDeck.cards.length >= 25) {
             guestCustomCards = customDeck.cards;
           }
+          if (guestUser.customCards) {
+            for (const [key, card] of guestUser.customCards) { const { count, ...template } = card; guestCustomDefs[key] = template; }
+          }
         }
       } catch (err) { console.error('Error loading guest custom deck:', err); }
     }
-    
+
     lobby.gameStarted = true;
-    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck, hostCustomCards, guestCustomCards);
+    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck, hostCustomCards, guestCustomCards, hostCustomDefs, guestCustomDefs);
     lobby.hostSocket.emit("role", "gold");
     lobby.hostSocket.emit("enemyInfo", { username: lobby.guestUsername, isAI: false });
     lobby.guestSocket.emit("role", "silver");
@@ -8859,8 +9477,8 @@ io.on("connection", (socket) => {
   socket.on("rejoinGame", (data) => {
     const code = data.code?.toUpperCase();
     const lobby = lobbies[code];
-    
-    console.log(`[REJOIN] Attempt to rejoin lobby: ${code}, isHost: ${data.isHost}`);
+    const ts = new Date().toISOString().slice(11, 23);
+    console.log(`[REJOIN ${ts}] sock=${socket.id} code=${code} isHost=${data.isHost} hasLobby=${!!lobby} availableLobbies=[${Object.keys(lobbies).join(', ')}]`);
     
     if (!lobby) {
       console.log(`[REJOIN] Lobby not found: ${code}`);
@@ -8912,12 +9530,29 @@ io.on("connection", (socket) => {
     delete lobbies[code];
   });
 
-  socket.on("restartGame", () => {
+  socket.on("restartGame", async () => {
     const lobby = lobbies[socket.data.lobbyCode];
     if (!lobby || !socket.data.isHost) return;
-    
+
+    // Tutorial restarts to the scripted starting board, not a default game.
+    if (lobby.isTutorial) {
+      lobby.gameState = createTutorialState();
+      lobby.tutorialStep = 0;
+      lobby.aiStopped = false;
+      lobby.aiProcessing = false;
+      lobby.autoPlay = false;
+      logToLobby(lobby, "=== TUTORIAL RESTARTED ===");
+      logToLobby(lobby, "GOLD's turn");
+      emitGameState(lobby);
+      return;
+    }
+
     // Reset game state - use stored custom deck cards for campaign games
-    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck, lobby.hostCustomDeckCards || null, lobby.guestCustomDeckCards || null);
+    const [restartHostDefs, restartGuestDefs] = await Promise.all([
+      getCustomCardDefs(lobby.hostUserId),
+      getCustomCardDefs(lobby.guestUserId)
+    ]);
+    lobby.gameState = createGameState(lobby.hostDeck, lobby.guestDeck, lobby.hostCustomDeckCards || null, lobby.guestCustomDeckCards || null, restartHostDefs, restartGuestDefs);
     
     // Recreate AI instances for campaign games (fresh state)
     if (lobby.isAIGame) {
@@ -8937,13 +9572,14 @@ io.on("connection", (socket) => {
 
   socket.on("action", (payload) => {
     const lobby = lobbies[socket.data.lobbyCode];
-    
-    // Debug logging for action issues
-    console.log(`[ACTION] Received action type: ${payload.type}, lobbyCode: ${socket.data.lobbyCode}, isHost: ${socket.data.isHost}`);
-    
+    const ts = new Date().toISOString().slice(11, 23);
+    console.log(`[ACTION ${ts}] sock=${socket.id} type=${payload.type} lobbyCode=${socket.data.lobbyCode} isHost=${socket.data.isHost} cardId=${payload.cardId || '-'} hasLobby=${!!lobby}`);
+
     if (!lobby) {
-      console.log(`[ACTION DEBUG] No lobby found for code: ${socket.data.lobbyCode}, available lobbies: ${Object.keys(lobbies).join(', ')}`);
-      return socket.emit("log", "Lobby not found. Try refreshing the page.");
+      console.log(`[ACTION ${ts}] NO LOBBY — code=${socket.data.lobbyCode} availableLobbies=[${Object.keys(lobbies).join(', ')}] -> needRejoin sent`);
+      // Likely a race: client emitted action before its rejoin reached us. Ask client to rejoin + retry the action.
+      socket.emit("needRejoin", { retry: payload });
+      return;
     }
     if (!lobby.gameStarted) {
       console.log(`[ACTION DEBUG] Game not started for lobby: ${socket.data.lobbyCode}`);
@@ -9522,7 +10158,7 @@ io.on("connection", (socket) => {
 
     if (payload.type === "discardCard") {
       const p = players[role]; const idx = p.hand.findIndex(c => c.id === payload.cardId);
-      if (idx === -1) return socket.emit("log", "Card not found.");
+      if (idx === -1) return; // stale client state — ignore silently
       const card = p.hand.splice(idx, 1)[0]; p.discard.push(card);
       logToLobby(lobby, role.toUpperCase() + " discards " + card.name);
       return emitGameState(lobby);
@@ -9530,7 +10166,7 @@ io.on("connection", (socket) => {
 
     if (payload.type === "playCard") {
       const { cardId, row, col, spawn, targetUnitId } = payload; const p = players[role];
-      const idx = p.hand.findIndex(c => c.id === cardId); if (idx === -1) return socket.emit("log", "Card not found.");
+      const idx = p.hand.findIndex(c => c.id === cardId); if (idx === -1) return; // stale state, ignore
       const card = p.hand[idx]; let cost = card.cost || 0;
       
       // GREEDISGOOD cheat: all cards cost 1 energy
@@ -10740,8 +11376,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    const code = socket.data.lobbyCode; 
-    const lobby = lobbies[code]; 
+    const code = socket.data.lobbyCode;
+    const lobby = lobbies[code];
+    const ts = new Date().toISOString().slice(11, 23);
+    console.log(`[DISCONNECT ${ts}] sock=${socket.id} lobbyCode=${code} isHost=${socket.data.isHost} hasLobby=${!!lobby} gameStarted=${lobby?.gameStarted}`);
     if (!lobby) return;
     
     // If game has started, give time for rejoin (page redirect)
@@ -10755,21 +11393,30 @@ io.on("connection", (socket) => {
         lobby.guestSocket = null;
       }
       
-      // Wait 5 seconds for rejoin before notifying other player
+      // AI games get a longer reconnect window; multiplayer is 5 seconds
+      const isAIGame = lobby.isAIGame;
+      const timeoutMs = isAIGame ? 30000 : 5000;
+      console.log(`[DISCONNECT ${ts}] starting ${timeoutMs}ms reconnect timer for ${code} (isAIGame=${isAIGame})`);
       setTimeout(() => {
         const currentLobby = lobbies[code];
-        if (!currentLobby) return; // Lobby already closed
-        
+        const ts2 = new Date().toISOString().slice(11, 23);
+        if (!currentLobby) {
+          console.log(`[TIMER ${ts2}] ${code} already deleted, no-op`);
+          return;
+        }
+
         if (wasHost && !currentLobby.hostSocket) {
-          // Host didn't rejoin
+          console.log(`[TIMER ${ts2}] DELETING ${code}: host did not rejoin`);
           if (currentLobby.guestSocket) currentLobby.guestSocket.emit("lobbyError", "Host disconnected.");
           delete lobbies[code];
-        } else if (!wasHost && !currentLobby.guestSocket) {
-          // Guest didn't rejoin
+        } else if (!wasHost && !isAIGame && !currentLobby.guestSocket) {
+          console.log(`[TIMER ${ts2}] DELETING ${code}: guest did not rejoin`);
           if (currentLobby.hostSocket) currentLobby.hostSocket.emit("lobbyError", "Opponent disconnected.");
           delete lobbies[code];
+        } else {
+          console.log(`[TIMER ${ts2}] ${code} survived (host rejoined or AI game)`);
         }
-      }, 5000);
+      }, timeoutMs);
       return;
     }
     

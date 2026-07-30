@@ -10,113 +10,174 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
-      font-family: 'Inter', sans-serif;
       min-height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(135deg, #08060f 0%, #120a1e 40%, #0d0818 70%, #06040d 100%);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+    }
+    /* Login screen */
+    #loginScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; }
+    .login-panel { width: 320px; }
+    .login-title { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 24px; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* Campaign/multiplayer overlays */
+    .screen-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 20; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); }
+    .campaign-panel { width: 850px; height: 810px; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+    .campaign-wrapper { position: relative; }
+    .campaign-title-img { position: absolute; bottom: 100%; left: 0; height: 80px; width: auto; margin-bottom: -10px; pointer-events: none; z-index: 5; }
+
+    .campaign-boss-desc-container {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: calc(50% - 425px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .campaign-boss-desc {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      padding: 70px 40px;
+      text-align: center;
+      font-family: 'Cinzel', serif;
+      font-size: 17px;
+      line-height: 1.65;
+      color: #fbbf24;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 14px rgba(251,191,36,0.25);
+      transition: opacity 0.3s ease;
+    }
+    .campaign-boss-desc::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      -webkit-mask-image: radial-gradient(ellipse 65% 75% at center, #000 35%, transparent 100%);
+      mask-image: radial-gradient(ellipse 65% 75% at center, #000 35%, transparent 100%);
+      z-index: -1;
+    }
+    .mp-panel { width: 480px; max-height: 85vh; overflow-y: auto; position: relative; }
+
+    /* Multiplayer screen overlay */
+    #multiplayerScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 20; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); }
+
+    /* Account badge (fixed top-right) */
+    #accountBadge { position: fixed; top: 20px; right: 20px; z-index: 50; }
+    .account-badge-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(15, 15, 35, 0.92); border: 1.5px solid rgba(251,191,36,0.6); border-radius: 6px; color: #fbbf24; font-family: 'Cinzel', serif; font-size: 13px; cursor: pointer; backdrop-filter: blur(10px); transition: all 0.2s ease; width: auto !important; }
+    .account-badge-btn:hover { border-color: rgba(251,191,36,1); box-shadow: 0 0 14px rgba(251,191,36,0.3); }
+    .badge-gold { color: #fbbf24; }
+    .badge-sep { color: rgba(251,191,36,0.4); margin: 0 2px; }
+
+    /* Account modal */
+    #accountModal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(4px); }
+
+    /* Tutorial welcome modal */
+    #tutorialWelcomeModal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 250; backdrop-filter: blur(6px);
+    }
+    .tutorial-welcome-content {
+      position: relative;
+      background: rgba(20,20,40,0.95);
+      padding: 50px 40px 32px;
+      width: 460px;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .tutorial-welcome-title {
+      font-family: 'Cinzel', serif;
+      font-size: 26px;
+      color: #fbbf24;
+      margin: 0 0 18px;
+      letter-spacing: 1px;
+    }
+    .tutorial-welcome-text {
+      font-family: 'Cinzel', serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #e2e8f0;
+      margin: 0 0 28px;
+    }
+    .tutorial-welcome-buttons {
       display: flex;
       justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      color: #e2e8f0;
-      padding: 20px;
-      overflow-x: hidden;
+      gap: 16px;
     }
-    
-    /* Animated background particles */
-    .bg-particles {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-    }
-    .particle {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background: rgba(251, 191, 36, 0.6);
-      border-radius: 50%;
-      box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
-    }
-    .particle.float-up {
-      animation: float-up linear infinite;
-    }
-    .particle.float-diagonal {
-      animation: float-diagonal linear infinite;
-    }
-    .particle.float-side {
-      animation: float-side linear infinite;
-    }
-    .particle.drift {
-      animation: drift ease-in-out infinite;
-    }
-    @keyframes float-up {
-      0% { transform: translateY(100vh) translateX(0) scale(0); opacity: 0; }
-      10% { opacity: 1; transform: scale(1); }
-      90% { opacity: 1; }
-      100% { transform: translateY(-20vh) translateX(50px) scale(0.5); opacity: 0; }
-    }
-    @keyframes float-diagonal {
-      0% { transform: translate(0, 100vh) scale(0); opacity: 0; }
-      10% { opacity: 1; transform: scale(1); }
-      90% { opacity: 1; }
-      100% { transform: translate(200px, -100vh) scale(0.5); opacity: 0; }
-    }
-    @keyframes float-side {
-      0% { transform: translateX(-50px) translateY(0) scale(0); opacity: 0; }
-      10% { opacity: 1; transform: scale(1); }
-      90% { opacity: 1; }
-      100% { transform: translateX(100vw) translateY(-100px) scale(0.5); opacity: 0; }
-    }
-    @keyframes drift {
-      0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
-      25% { transform: translate(30px, -50px) scale(1.2); opacity: 0.8; }
-      50% { transform: translate(-20px, -100px) scale(1); opacity: 0.5; }
-      75% { transform: translate(40px, -150px) scale(0.8); opacity: 0.8; }
-      100% { transform: translate(0, -200px) scale(0.5); opacity: 0; }
-    }
-    
-    /* Glowing orbs in background */
-    .bg-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(60px);
-      opacity: 0.5;
-      animation: pulse-orb 2s ease-in-out infinite;
-      z-index: 0;
-    }
-    .bg-orb-1 { width: 400px; height: 400px; background: #a855f7; top: -100px; left: -100px; }
-    .bg-orb-2 { width: 300px; height: 300px; background: #fbbf24; bottom: -50px; right: -50px; animation-delay: -1s; }
-    .bg-orb-3 { width: 200px; height: 200px; background: #3b82f6; top: 50%; left: 50%; animation-delay: -0.5s; }
-    @keyframes pulse-orb {
-      0%, 100% { transform: scale(1); opacity: 0.4; filter: blur(60px); }
-      50% { transform: scale(1.3); opacity: 0.7; filter: blur(40px); }
-    }
-    
-    .main-container {
-      display: flex;
-      gap: 20px;
+    .account-modal-content { background: rgba(15,15,35,0.97); border: 1.5px solid rgba(251,191,36,0.6); border-radius: 8px; padding: 28px 32px; width: 280px; position: relative; }
+    .account-modal-content h2 { font-family: 'Cinzel', serif; font-size: 18px; color: #fbbf24; text-align: center; margin-bottom: 20px; }
+    .account-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(251,191,36,0.1); font-size: 14px; }
+    .account-stat-row:last-of-type { border-bottom: none; }
+    .account-stat-label { color: #94a3b8; }
+    .account-stat-value { color: #e2e8f0; font-weight: 600; }
+    #closeAccountModal { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; line-height: 1; width: auto !important; padding: 4px; }
+    #closeAccountModal:hover { color: #fbbf24; }
+
+    .game-title-img {
       max-width: 900px;
-      width: 100%;
-      position: relative;
-      z-index: 1;
+      width: 90vw;
+      height: auto;
+      display: block;
+      margin-bottom: -89px;
     }
-    
+    .game-title {
+      font-family: 'Cinzel', serif;
+      font-size: 70px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shine 3s linear infinite;
+      letter-spacing: 2px;
+      text-align: center;
+    }
     .panel {
+      position: relative;
       background: rgba(20, 20, 40, 0.9);
-      border: 2px solid rgba(138, 43, 226, 0.4);
-      border-radius: 20px;
+      border: none;
+      border-radius: 4px;
       padding: 30px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 60px rgba(138, 43, 226, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 12px rgba(251, 191, 36, 0.1), 0 0 60px rgba(138, 43, 226, 0.15);
       backdrop-filter: blur(10px);
       transition: all 0.3s ease;
     }
     .panel:hover {
-      border-color: rgba(138, 43, 226, 0.6);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 80px rgba(138, 43, 226, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(251, 191, 36, 0.22), 0 0 80px rgba(138, 43, 226, 0.25);
     }
-    
-    .auth-panel { width: 280px; flex-shrink: 0; height: 650px; }
-    .game-panel { flex: 1; min-width: 400px; height: 650px; }
+    .panel-frame {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 1.5px solid rgba(251, 191, 36, 0.7);
+      pointer-events: none;
+      z-index: 10;
+      transition: border-color 0.3s ease;
+    }
+    .panel-frame::before {
+      content: '';
+      position: absolute;
+      top: 5px; left: 5px; right: 5px; bottom: 5px;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+    }
+    .panel:hover .panel-frame { border-color: rgba(251, 191, 36, 1); }
+    .panel:hover .panel-frame::before { border-color: rgba(251, 191, 36, 0.65); }
+    .panel-corner {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      background: #fbbf24;
+      z-index: 11;
+    }
+    .panel-corner.tl { top: -1px; left: -1px; }
+    .panel-corner.tr { top: -1px; right: -1px; }
+    .panel-corner.bl { bottom: -1px; left: -1px; }
+    .panel-corner.br { bottom: -1px; right: -1px; }
     
     h1 {
       font-family: 'Cinzel', serif;
@@ -145,119 +206,6 @@
     }
     
     .subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
-    
-    /* Update Notes Banner */
-    .update-banner {
-      background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
-      border: 2px solid rgba(251, 191, 36, 0.4);
-      border-radius: 12px;
-      margin-top: 20px;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-    .update-banner:hover {
-      border-color: rgba(251, 191, 36, 0.6);
-      box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
-    }
-    .update-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      background: linear-gradient(90deg, rgba(251, 191, 36, 0.1), transparent);
-      border-bottom: 1px solid rgba(251, 191, 36, 0.2);
-    }
-    .update-icon {
-      font-size: 18px;
-    }
-    .update-title {
-      font-family: 'Cinzel', serif;
-      font-weight: 700;
-      color: #fbbf24;
-      flex: 1;
-    }
-    .update-version {
-      font-size: 12px;
-      color: #94a3b8;
-      background: rgba(100, 116, 139, 0.3);
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-    .update-content {
-      padding: 12px 16px;
-      max-height: 160px;
-      overflow-y: auto;
-    }
-    .update-content::-webkit-scrollbar {
-      width: 6px;
-    }
-    .update-content::-webkit-scrollbar-track {
-      background: rgba(30, 30, 50, 0.5);
-      border-radius: 3px;
-    }
-    .update-content::-webkit-scrollbar-thumb {
-      background: rgba(251, 191, 36, 0.4);
-      border-radius: 3px;
-    }
-    .update-content::-webkit-scrollbar-thumb:hover {
-      background: rgba(251, 191, 36, 0.6);
-    }
-    .update-section {
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(100, 116, 139, 0.2);
-    }
-    .update-section:last-child {
-      margin-bottom: 0;
-      padding-bottom: 0;
-      border-bottom: none;
-    }
-    .update-date {
-      font-size: 11px;
-      color: #64748b;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    .update-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .update-list li {
-      font-size: 12px;
-      color: #cbd5e1;
-      padding: 4px 0;
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .update-new {
-      font-size: 9px;
-      font-weight: 700;
-      color: #22c55e;
-      background: rgba(34, 197, 94, 0.2);
-      padding: 2px 5px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .update-fix {
-      font-size: 9px;
-      font-weight: 700;
-      color: #3b82f6;
-      background: rgba(59, 130, 246, 0.2);
-      padding: 2px 5px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .update-change {
-      font-size: 9px;
-      font-weight: 700;
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 0.2);
-      padding: 2px 5px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
     
     /* Music control button */
     .music-control-container {
@@ -469,8 +417,9 @@
     }
     .modal-container {
       background: linear-gradient(145deg, rgba(26, 26, 46, 0.98), rgba(15, 15, 35, 0.98));
-      border: 2px solid rgba(251, 191, 36, 0.5);
-      border-radius: 20px;
+      border: none;
+      border-radius: 4px;
+      position: relative;
       width: 95%;
       max-width: 950px;
       max-height: 90vh;
@@ -768,17 +717,83 @@
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(100, 116, 139, 0.3); }
     .divider span { padding: 0 12px; }
     
+    /* ── Reusable pixel-corner border frame ── */
+    .pixel-border-frame {
+      display: flex;
+      clip-path: polygon(
+        0% 10px, 5px 10px, 5px 5px, 10px 5px, 10px 0%,
+        calc(100% - 10px) 0%, calc(100% - 10px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 10px, 100% 10px,
+        100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) calc(100% - 5px), calc(100% - 10px) calc(100% - 5px), calc(100% - 10px) 100%,
+        10px 100%, 10px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 10px), 0% calc(100% - 10px)
+      );
+      background: rgba(251, 191, 36, 0.6);
+    }
+    .pixel-border-frame > .user-info,
+    .pixel-border-frame > .update-banner {
+      flex: 1;
+      margin: 2px;
+      width: calc(100% - 4px);
+      border: none !important;
+      border-radius: 0 !important;
+      clip-path: polygon(
+        0% 10px, 5px 10px, 5px 5px, 10px 5px, 10px 0%,
+        calc(100% - 10px) 0%, calc(100% - 10px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 10px, 100% 10px,
+        100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) calc(100% - 5px), calc(100% - 10px) calc(100% - 5px), calc(100% - 10px) 100%,
+        10px 100%, 10px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 10px), 0% calc(100% - 10px)
+      );
+    }
+
     .user-info {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 10px;
+      background: rgb(20, 20, 42);
       padding: 15px;
       text-align: center;
-      margin-bottom: 20px;
     }
     .user-name { font-family: 'Cinzel', serif; font-size: 18px; color: #4ade80; margin-bottom: 5px; }
     .user-stats { font-size: 12px; color: #94a3b8; }
-    
+
+    .nav-btn-row { display: flex; gap: 16px; align-items: center; justify-content: center; }
+    .nav-icon-btn {
+      width: auto !important;
+      padding: 0;
+      background: none;
+      border: none !important;
+      border-radius: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .nav-icon-btn img { width: 56px; height: 56px; display: block; }
+    .nav-icon-btn:hover { transform: translateY(-2px); filter: drop-shadow(0 0 2px #fbbf24) drop-shadow(0 0 4px #f59e0b); }
+
+    /* Custom game-style tooltip */
+    #game-tooltip {
+      position: fixed;
+      z-index: 9999;
+      pointer-events: none;
+      padding: 6px 14px;
+      background: rgba(8, 6, 20, 0.97);
+      border: 1px solid rgba(251, 191, 36, 0.65);
+      border-radius: 4px;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fbbf24;
+      letter-spacing: 0.06em;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.18), 0 4px 16px rgba(0,0,0,0.7);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    #game-tooltip.visible { opacity: 1; }
+    #game-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(251, 191, 36, 0.65);
+    }
+
     .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
     .tab {
       flex: 1;
@@ -896,6 +911,499 @@
     .boss-stars-label { font-size: 10px; color: #64748b; margin-left: 6px; }
     .boss-stars-label.diamond { color: #22d3ee; }
     
+    /* Account Modal */
+    .user-info { cursor: pointer; }
+    .user-info:hover { background: rgb(26, 26, 50); }
+    .pixel-border-frame:has(.user-info):hover { background: rgba(251, 191, 36, 0.75); }
+    .account-modal-container {
+      background: linear-gradient(145deg, rgba(26, 26, 46, 0.98), rgba(15, 15, 35, 0.98));
+      border: none;
+      border-radius: 4px;
+      position: relative;
+      width: 95%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .account-modal-container { transform: scale(1); }
+    .account-tabs { display: flex; background: rgba(20, 20, 40, 0.95); border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
+    .account-tab {
+      flex: 1;
+      padding: 12px 8px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #64748b;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: auto !important;
+    }
+    .account-tab:hover { color: #a78bfa; }
+    .account-tab.active { color: #fbbf24; border-bottom-color: #fbbf24; }
+    .account-body { padding: 24px; overflow-y: auto; flex: 1; }
+    .account-section { display: none; }
+    .account-section.active { display: block; }
+    .account-field { margin-bottom: 18px; }
+    .account-field label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .account-field input {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(30, 30, 60, 0.8);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .account-field input:focus { outline: none; border-color: rgba(251, 191, 36, 0.5); }
+    .account-msg { font-size: 13px; margin-top: 10px; min-height: 20px; }
+    .account-msg.success { color: #4ade80; }
+    .account-msg.error { color: #f87171; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card {
+      background: rgba(30, 30, 60, 0.6);
+      border: 1px solid rgba(138, 43, 226, 0.2);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-card-value { font-family: 'Cinzel', serif; font-size: 22px; color: #fbbf24; }
+    .stat-card-label { font-size: 10px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .danger-zone { border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 16px; margin-top: 8px; }
+    .danger-zone p { font-size: 13px; color: #94a3b8; margin-bottom: 14px; }
+
+    /* ── Star Field ── */
+    .star-field {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--s-color, #fff);
+      animation: starTwinkle ease-in-out infinite;
+    }
+    .star::before, .star::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      background-image:
+        linear-gradient(to right, transparent, var(--s-color, #fff), transparent),
+        linear-gradient(to bottom, transparent, var(--s-color, #fff), transparent);
+      background-size: 100% 1px, 1px 100%;
+      background-position: center, center;
+      background-repeat: no-repeat;
+    }
+    .star::before {
+      width: var(--s-arm, 8px); height: var(--s-arm, 8px);
+      transform: translate(-50%, -50%);
+    }
+    .star::after {
+      width: calc(var(--s-arm, 8px) * 0.65); height: calc(var(--s-arm, 8px) * 0.65);
+      transform: translate(-50%, -50%) rotate(45deg);
+      opacity: 0.7;
+    }
+    @keyframes starTwinkle {
+      0%, 100% { opacity: var(--s-lo); transform: scale(1); }
+      50%       { opacity: var(--s-hi); transform: scale(var(--s-scale, 2.2)); }
+    }
+
+    /* ── Card Rain ── */
+    .card-rain {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 2;
+    }
+    @keyframes cardFall {
+      0%   { transform: translateY(-160px) rotate(var(--rot)); opacity: 0; }
+      8%   { opacity: var(--peak-op, 0.18); }
+      90%  { opacity: var(--peak-op, 0.18); }
+      100% { transform: translateY(900px) rotate(var(--rot)); opacity: 0; }
+    }
+    .falling-card {
+      position: absolute;
+      top: 0;
+      border-radius: 6px;
+      background: linear-gradient(145deg, #141c30, #0a1020);
+      border: 2px solid rgb(139, 92, 246);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.8), inset 0 0 0 1px rgb(139,92,246);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: cardFall linear infinite;
+    }
+    .rain-card-art {
+      flex: 1;
+      background-size: cover;
+      background-position: center top;
+      background-color: #2d1b69;
+      position: relative;
+    }
+    .rain-card-art::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 50%;
+      background: linear-gradient(to top, rgb(10,16,32), transparent);
+    }
+    .rain-card-footer {
+      padding: 3px 4px 4px;
+      background: rgb(10, 16, 32);
+      border-top: 1px solid rgba(139, 92, 246, 0.25);
+    }
+    .rain-card-name {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 6px;
+      color: #e2e8f0;
+      text-transform: uppercase;
+      text-align: center;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.3px;
+    }
+    #mainMenuScreen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; gap: 18px; }
+
+    /* ── Back button ── */
+    .back-btn {
+      width: auto !important;
+      padding: 6px 14px;
+      background: rgba(30,30,60,0.8);
+      border: 1px solid rgba(138,43,226,0.4) !important;
+      border-radius: 8px;
+      color: #a78bfa;
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 14px;
+      transition: all 0.2s ease;
+    }
+    .back-btn:hover { border-color: rgba(251,191,36,0.5) !important; color: #fbbf24; }
+
+    /* ── Main Menu ── */
+    .main-menu-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .main-menu-buttons { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 340px; }
+
+    /* Stepped pixel-corner border frame */
+    .menu-btn-frame {
+      clip-path: polygon(
+        0% 10px, 5px 10px, 5px 5px, 10px 5px, 10px 0%,
+        calc(100% - 10px) 0%, calc(100% - 10px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 10px, 100% 10px,
+        100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) calc(100% - 5px), calc(100% - 10px) calc(100% - 5px), calc(100% - 10px) 100%,
+        10px 100%, 10px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 10px), 0% calc(100% - 10px)
+      );
+      background: rgba(251, 191, 36, 0.6);
+      display: flex;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .menu-btn-frame:hover {
+      background: rgba(251, 191, 36, 0.85);
+    }
+
+    .main-menu-btn {
+      margin: 2px;
+      width: calc(100% - 4px);
+      padding: 18px 24px;
+      font-family: 'Cinzel', serif;
+      font-size: 17px;
+      font-weight: 700;
+      border-radius: 0;
+      cursor: pointer;
+      border: none !important;
+      background: rgb(28, 28, 58);
+      color: #fbbf24;
+      transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      /* Same polygon as the wrapper — margin: 2px shifts it inward, leaving a uniform 2px gold strip on all edges including the steps */
+      clip-path: polygon(
+        0% 10px, 5px 10px, 5px 5px, 10px 5px, 10px 0%,
+        calc(100% - 10px) 0%, calc(100% - 10px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 10px, 100% 10px,
+        100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) calc(100% - 5px), calc(100% - 10px) calc(100% - 5px), calc(100% - 10px) 100%,
+        10px 100%, 10px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 10px), 0% calc(100% - 10px)
+      );
+    }
+    .main-menu-btn:hover { background: rgb(36, 36, 72); }
+
+    /* ── Campaign Screen ── */
+    #campaignScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 20; background: rgba(0,0,0,0.72); }
+    .campaign-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: rgba(30,30,60,0.85);
+      border-bottom: 1px solid rgba(251,191,36,0.25);
+      margin: -30px -30px 0 -30px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .campaign-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .campaign-deck-dropdown { position: relative; flex-shrink: 0; }
+    .campaign-deck-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(20,20,40,0.9);
+      border: 1px solid rgba(138,43,226,0.4);
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .campaign-deck-btn:hover { border-color: rgba(138,43,226,0.75); }
+    .campaign-deck-btn .deck-arrow { flex-shrink: 0; opacity: 0.6; transition: transform 0.15s; }
+    .campaign-deck-btn.open .deck-arrow { transform: rotate(180deg); }
+    .campaign-deck-label { overflow: hidden; text-overflow: ellipsis; }
+    .campaign-deck-menu {
+      position: absolute;
+      top: calc(100% + 5px);
+      left: 0;
+      background: rgba(12,10,28,0.97);
+      border: 1px solid rgba(138,43,226,0.4);
+      border-radius: 8px;
+      min-width: 160px;
+      z-index: 200;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      display: none;
+    }
+    .campaign-deck-menu.open { display: block; }
+    .campaign-deck-option {
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #e2e8f0;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .campaign-deck-option:hover { background: rgba(138,43,226,0.2); }
+    .campaign-deck-option.selected { color: #fbbf24; }
+    .campaign-deck-option[data-disabled] { opacity: 0.35; cursor: default; pointer-events: none; }
+    .campaign-boss-name { display: block; height: 56px; width: auto; margin-top: 12px; }
+    .campaign-header-stars { font-size: 16px; letter-spacing: 1px; }
+    .campaign-stars-label { font-size: 10px; color: #94a3b8; text-align: center; letter-spacing: 0.05em; margin-top: 2px; text-transform: uppercase; }
+    .campaign-diff-select { display: flex; gap: 4px; }
+    .campaign-diff-btn {
+      padding: 4px 8px;
+      font-size: 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(138,43,226,0.3) !important;
+      background: rgba(30,30,60,0.8);
+      color: #64748b;
+      cursor: pointer;
+      font-family: 'Cinzel', serif;
+      width: auto !important;
+      transition: all 0.15s;
+    }
+    .campaign-diff-btn.active { border-color: rgba(251,191,36,0.7) !important; color: #fbbf24; }
+    .campaign-diff-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .campaign-fight-row { position: absolute; bottom: 16px; right: 16px; z-index: 10; }
+    .campaign-return-row { position: absolute; bottom: 16px; left: 16px; z-index: 10; }
+
+    /* Stepped pixel-corner action button (smaller variant of menu-btn-frame) */
+    .action-btn-frame {
+      clip-path: polygon(
+        0% 10px, 5px 10px, 5px 5px, 10px 5px, 10px 0%,
+        calc(100% - 10px) 0%, calc(100% - 10px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 10px, 100% 10px,
+        100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) calc(100% - 5px), calc(100% - 10px) calc(100% - 5px), calc(100% - 10px) 100%,
+        10px 100%, 10px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 10px), 0% calc(100% - 10px)
+      );
+      background: rgba(251, 191, 36, 0.6);
+      display: inline-flex;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .action-btn-frame:hover { background: rgba(251, 191, 36, 0.95); }
+    .action-btn-frame:has(.action-btn:disabled) { background: rgba(251, 191, 36, 0.25); }
+    .action-btn {
+      margin: 2px;
+      padding: 8px 24px;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 700;
+      border: none !important;
+      background: rgb(28, 28, 58);
+      color: #fbbf24;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      clip-path: polygon(
+        0% 10px, 5px 10px, 5px 5px, 10px 5px, 10px 0%,
+        calc(100% - 10px) 0%, calc(100% - 10px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 10px, 100% 10px,
+        100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) calc(100% - 5px), calc(100% - 10px) calc(100% - 5px), calc(100% - 10px) 100%,
+        10px 100%, 10px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 10px), 0% calc(100% - 10px)
+      );
+    }
+    .action-btn:hover:not(:disabled) { background: rgb(36, 36, 72); }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; color: #94a3b8; }
+    .campaign-map-container { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 10px 20px 0; margin: 0 -30px -30px -30px; }
+    .campaign-bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center top; background-repeat: no-repeat; z-index: -1; pointer-events: none; }
+
+    /* Hyperspace flash + border ripple — subtle dimension jump */
+    .campaign-warp-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 50;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.55) 0%, rgba(192,160,255,0.3) 40%, rgba(120,80,220,0) 75%);
+    }
+    .campaign-panel.warping .campaign-warp-flash { animation: warpFlash 420ms ease-out; }
+    .campaign-panel.warping .campaign-map { animation: mapWarp 420ms ease-out; }
+    .campaign-panel.warping .campaign-bg-layer { animation: none; }
+    .campaign-panel.warping { animation: borderRipple 700ms ease-out; }
+    .campaign-panel.warping .campaign-boss-name { animation: titleMaterialize 600ms ease-out; }
+    @keyframes warpFlash {
+      0%   { opacity: 0; transform: scale(0.8); }
+      45%  { opacity: 0.8; transform: scale(1.3); }
+      100% { opacity: 0; transform: scale(1.7); }
+    }
+    @keyframes mapWarp {
+      0%   { transform: scale(1); }
+      45%  { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+    @keyframes bgWarp {
+      0%   { filter: blur(0) brightness(1); }
+      45%  { filter: blur(3px) brightness(1.18); }
+      100% { filter: blur(0) brightness(1); }
+    }
+    @keyframes titleMaterialize {
+      0%   { opacity: 0; transform: scale(0.55) translateY(-8px); }
+      45%  { opacity: 0.85; }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes borderRipple {
+      0%   { box-shadow: 0 0 0 0 rgba(251,191,36,0.6), 0 0 0 0 rgba(168,85,247,0.5); }
+      30%  { box-shadow: 0 0 0 8px rgba(251,191,36,0.5), 0 0 0 0 rgba(168,85,247,0.55); }
+      55%  { box-shadow: 0 0 0 18px rgba(251,191,36,0.15), 0 0 0 12px rgba(168,85,247,0.35); }
+      80%  { box-shadow: 0 0 0 30px rgba(251,191,36,0.05), 0 0 0 28px rgba(168,85,247,0.12); }
+      100% { box-shadow: 0 0 0 44px rgba(251,191,36,0), 0 0 0 44px rgba(168,85,247,0); }
+    }
+    .campaign-map-container { scrollbar-width: none; }
+    .campaign-map-container::-webkit-scrollbar { display: none; }
+    .campaign-map { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 280px; }
+    .map-node-row { display: flex; align-items: center; width: 100%; justify-content: center; position: relative; z-index: 1; }
+    .map-connector-wrap { display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 0; }
+    .map-connector { width: 4px; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.75) 0px, rgba(255,255,255,0.75) 6px, transparent 6px, transparent 14px); transform-origin: center center; border-radius: 2px; transition: background 0.25s ease; }
+    .map-connector.path-traveled { background: repeating-linear-gradient(to bottom, #fbbf24 0px, #fbbf24 6px, transparent 6px, transparent 14px); }
+    .map-node {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      border: 4px solid rgba(255,255,255,0.9);
+      outline: 2px solid rgba(0,0,0,0.85);
+      background: rgba(20,20,50,0.95);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .map-node:hover:not(.locked) { border-color: #fff; transform: scale(1.08); }
+    .map-node.completed { border-color: rgba(255,255,255,0.85); }
+    .map-node.locked { border-color: rgba(255,255,255,0.25); background: rgba(15,15,30,0.9); cursor: default; opacity: 0.55; }
+    .map-node.path-traveled { outline-color: #fbbf24; }
+    .map-node.selected,
+    .map-node.selected.completed {
+      border-color: #fbbf24;
+      outline-color: #fbbf24;
+      transform: scale(1.25);
+      box-shadow: 0 0 20px rgba(251,191,36,0.8), 0 0 40px rgba(251,191,36,0.4);
+      z-index: 5;
+    }
+    .map-node.selected:hover:not(.locked) { transform: scale(1.28); }
+    .map-node-stars { position: absolute; bottom: 3px; left: 0; right: 0; text-align: center; font-size: 9px; letter-spacing: 0; line-height: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+    .map-node-lock { font-size: 18px; }
+
+    /* ── Multiplayer Screen ── */
+    #mpCreateView { display: flex; flex-direction: column; }
+    .mp-stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 12px 16px;
+      background: rgba(30,30,60,0.6);
+      border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+    .mp-stat { text-align: center; }
+    .mp-stat-value { font-family: 'Cinzel', serif; font-size: 22px; color: #fbbf24; }
+    .mp-stat-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tier-badge {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      color: #fbbf24;
+      background: rgba(251,191,36,0.08);
+      border: 1.5px solid rgba(251,191,36,0.4);
+      border-radius: 10px;
+      padding: 6px 18px;
+    }
+    .mp-mode-buttons { display: flex; gap: 10px; margin-bottom: 14px; }
+    .mp-mode-btn {
+      flex: 1;
+      padding: 11px 8px;
+      border-radius: 10px;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1.5px solid rgba(100,116,139,0.3) !important;
+      background: rgba(20,20,40,0.7);
+      color: #475569;
+      cursor: not-allowed;
+      opacity: 0.6;
+      position: relative;
+      width: auto !important;
+    }
+    .mp-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%; transform: translateX(-50%);
+      background: rgba(20,20,40,0.97);
+      border: 1px solid rgba(138,43,226,0.4);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #94a3b8;
+      white-space: nowrap;
+      display: none;
+      pointer-events: none;
+      font-family: sans-serif;
+      font-weight: 400;
+      z-index: 50;
+    }
+    .mp-mode-btn:hover .mp-tooltip { display: block; }
+    .mp-deck-row { margin-bottom: 14px; }
+    .mp-deck-row label { display: block; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .mp-deck-row select { width: 100%; padding: 9px 12px; background: rgba(30,30,60,0.8); border: 1px solid rgba(138,43,226,0.3); border-radius: 8px; color: #e2e8f0; font-size: 14px; }
+    .mp-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; }
+    .mp-action-box { background: rgba(30,30,60,0.5); border: 1px solid rgba(138,43,226,0.25); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .mp-action-title { font-family: 'Cinzel', serif; font-size: 13px; color: #a78bfa; }
+    .mp-action-box input { width: 100%; padding: 9px 10px; background: rgba(20,20,40,0.9); border: 1px solid rgba(138,43,226,0.3); border-radius: 8px; color: #e2e8f0; font-size: 15px; letter-spacing: 3px; text-align: center; text-transform: uppercase; box-sizing: border-box; }
+    #mpLobbyView { display: flex; flex-direction: column; }
+
     .lobby-code {
       background: rgba(30, 30, 60, 0.6);
       border: 2px dashed rgba(251, 191, 36, 0.5);
@@ -930,223 +1438,249 @@
     .btn-group button { flex: 1; }
     .copy-btn { margin-top: 10px; padding: 8px 16px; font-size: 12px; background: rgba(138, 43, 226, 0.3); border: 1px solid rgba(138, 43, 226, 0.5); color: #a78bfa; }
 
-    @media (max-width: 768px) {
-      .main-container { flex-direction: column; }
-      .auth-panel { width: 100%; }
-    }
   </style>
 </head>
 <body>
-  <!-- Animated Background -->
-  <div class="bg-orb bg-orb-1"></div>
-  <div class="bg-orb bg-orb-2"></div>
-  <div class="bg-orb bg-orb-3"></div>
-  <div class="bg-particles" id="particles"></div>
-  
+  <!-- Fixed full-screen background layers -->
+  <div class="star-field" id="starField"></div>
+  <div class="card-rain" id="cardRain"></div>
+
   <!-- Background Music -->
   <audio id="bgMusic" loop>
     <source src="/audio/music/music_home.mp3" type="audio/mpeg">
   </audio>
-  
+
   <!-- Music Control with Volume Slider -->
   <div class="music-control-container">
     <div class="volume-slider-container" id="volumeSliderContainer">
       <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="40">
     </div>
-    <button class="music-control playing" id="musicControl" title="Toggle Music">🔊</button>
+    <button class="music-control playing" id="musicControl" data-tooltip="Toggle Music">🔊</button>
   </div>
-  
-  <div class="main-container">
-    <!-- Auth Panel -->
-    <div class="panel auth-panel">
-      <h2>👤 Account</h2>
-      
-      <div id="loginSection">
-        <div class="error" id="authError"></div>
-        <div class="success" id="authSuccess"></div>
-        
-        <div class="section">
-          <div class="section-title">Username</div>
-          <input type="text" id="usernameInput" placeholder="Enter username" maxlength="20">
-        </div>
-        
-        <div class="section">
-          <div class="section-title">Password</div>
-          <div class="password-wrapper">
-            <input type="password" id="passwordInput" placeholder="Enter password">
-            <button type="button" class="password-toggle" id="passwordToggle" tabindex="-1">
-              <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-              <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
-                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
-        
-        <div class="btn-group">
-          <button class="btn-primary" id="loginBtn">Login</button>
-          <button class="btn-secondary" id="registerBtn">Register</button>
-        </div>
-        
-        <div class="divider"><span>or</span></div>
-        <button class="btn-secondary" id="guestBtn">Play as Guest</button>
+
+  <!-- Account Badge (top-right, shown when logged in) -->
+  <div id="accountBadge" class="hidden">
+    <button class="account-badge-btn" id="accountBadgeBtn">
+      👤 <span id="badgeUsername">Player</span>
+      <span class="badge-sep">·</span>
+      🪙 <span class="badge-gold" id="badgeGold">0</span>
+    </button>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen">
+    <div class="panel login-panel">
+      <div class="panel-frame">
+        <span class="panel-corner tl"></span>
+        <span class="panel-corner tr"></span>
+        <span class="panel-corner bl"></span>
+        <span class="panel-corner br"></span>
       </div>
-      
-      <div id="userSection" class="hidden">
-        <div class="user-info">
-          <div class="user-name" id="displayUsername">Player</div>
-          <div class="user-stats">
-            <span id="statsWins">0</span> wins • Level <span id="statsLevel">1</span> • 🪙 <span id="statsGold">0</span>
-          </div>
-        </div>
-        <button class="btn-secondary" id="deckBuilderBtn" style="margin-bottom: 10px;">🛠️ Deck Builder</button>
-        <button class="btn-secondary" id="collectionsBtn" style="margin-bottom: 10px;">🖼️ Collections</button>
-        <button class="btn-secondary" id="shopBtn" style="margin-bottom: 10px; background: linear-gradient(135deg, #f59e0b, #b45309);">🪙 Shop</button>
-        <button class="btn-secondary hidden" id="playtestBtn" style="margin-bottom: 10px; background: linear-gradient(135deg, #f59e0b, #d97706);">🧪 Playtest</button>
-        <button class="btn-danger" id="logoutBtn">Logout</button>
-        
-        <!-- Update Notes Banner -->
-        <div class="update-banner" id="updateBanner">
-          <div class="update-header">
-            <span class="update-icon">📜</span>
-            <span class="update-title">Latest Update</span>
-            <span class="update-version">v0.9.8</span>
-          </div>
-          <div class="update-content" id="updateContent">
-            <div class="update-section">
-              <div class="update-date">January 9, 2025</div>
-              <ul class="update-list">
-                <li><span class="update-new">NEW</span> Card-specific attack sounds for all units!</li>
-                <li><span class="update-new">NEW</span> 26 unique attack sound effects by weapon/creature type</li>
-                <li><span class="update-new">NEW</span> Blood Chalice buff now shows in card inspector</li>
-                <li><span class="update-change">CHANGE</span> Armory now works as passive aura (affects ALL friendly units)</li>
-                <li><span class="update-change">CHANGE</span> Reset Button now properly resets buffed stats when shuffling</li>
-                <li><span class="update-fix">FIX</span> Buff tile names now display correctly in Active Buffs UI</li>
-                <li><span class="update-fix">FIX</span> AI no longer gets stuck during Bankruptcy event with full hand</li>
-                <li><span class="update-fix">FIX</span> Save State card art now displays correctly in victory screen</li>
-              </ul>
-            </div>
-            <div class="update-section">
-              <div class="update-date">January 4, 2025</div>
-              <ul class="update-list">
-                <li><span class="update-new">NEW</span> Celestial Host Challenge deck - army of Archangels!</li>
-                <li><span class="update-new">NEW</span> 8-Bit Battalion Challenge deck - infinite respawns!</li>
-                <li><span class="update-change">CHANGE</span> First-time boss fights now play boss's theme music</li>
-                <li><span class="update-fix">FIX</span> Styled event log messages for Ghost Train, Void Collapse, Eclipse, Polymorph</li>
-              </ul>
-            </div>
-            <div class="update-section">
-              <div class="update-date">January 3, 2025</div>
-              <ul class="update-list">
-                <li><span class="update-new">NEW</span> CHEAT CODE ACTIVATED boss event for The Final Boss!</li>
-                <li><span class="update-new">NEW</span> 5 cheat codes: IDKFA, BIGHEAD, HESOYAM, HOWDOITURNTHISON, GREEDISGOOD</li>
-                <li><span class="update-new">NEW</span> Retro cinematic with CRT scanlines and typewriter effect</li>
-                <li><span class="update-new">NEW</span> Divine Judgment boss event for Seraph of Judgment!</li>
-                <li><span class="update-new">NEW</span> 4-phase judgment: Warning → Repent → Smite → Spare</li>
-                <li><span class="update-fix">FIX</span> Divine Judgment cinematic blocking fixed</li>
-              </ul>
-            </div>
-            <div class="update-section">
-              <div class="update-date">January 2, 2025</div>
-              <ul class="update-list">
-                <li><span class="update-new">NEW</span> Achievements system with 63 achievements to unlock!</li>
-                <li><span class="update-new">NEW</span> 15 cosmetic rewards: 6 mats, 6 backgrounds, 3 music tracks</li>
-                <li><span class="update-new">NEW</span> Mystery achievements with hidden requirements</li>
-                <li><span class="update-new">NEW</span> Achievements tab in Collections gallery</li>
-              </ul>
-            </div>
-            <div class="update-section">
-              <div class="update-date">January 1, 2025</div>
-              <ul class="update-list">
-                <li><span class="update-new">NEW</span> Gem Rain boss event for The Garnet Queen!</li>
-                <li><span class="update-new">NEW</span> 5 gem types: Ruby, Emerald, Topaz, Obsidian, Diamond</li>
-                <li><span class="update-new">NEW</span> Warning phase with glowing tiles before gems fall</li>
-              </ul>
-            </div>
-          </div>
+      <div class="login-title">Break the Grid</div>
+      <div class="error" id="authError"></div>
+      <div class="success" id="authSuccess"></div>
+      <div class="section">
+        <div class="section-title">Username</div>
+        <input type="text" id="usernameInput" placeholder="Enter username" maxlength="20">
+      </div>
+      <div class="section">
+        <div class="section-title">Password</div>
+        <div class="password-wrapper">
+          <input type="password" id="passwordInput" placeholder="Enter password">
+          <button type="button" class="password-toggle" id="passwordToggle" tabindex="-1">
+            <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
         </div>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8;margin:6px 2px 12px;cursor:pointer;user-select:none;">
+        <input type="checkbox" id="rememberMeChk" checked style="width:16px;height:16px;accent-color:#a855f7;cursor:pointer;">
+        Remember me
+      </label>
+      <!-- Email field - shown only when registering -->
+      <div class="section" id="emailSection" style="display:none;">
+        <div class="section-title">Email <span style="color:#64748b;font-size:11px;">(optional — helps recover your account)</span></div>
+        <input type="email" id="emailInput" placeholder="your@email.com">
+      </div>
+      <div class="btn-group">
+        <button class="btn-primary" id="loginBtn">Login</button>
+        <button class="btn-secondary" id="registerBtn">Register</button>
+      </div>
+      <div style="text-align:right;margin-top:6px;">
+        <button id="forgotPasswordBtn" style="background:none;border:none;color:#64748b;font-size:12px;cursor:pointer;padding:0;text-decoration:underline;">Forgot password?</button>
+      </div>
+      <div id="forgotPasswordMsg" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:4px;font-size:12px;color:#c084fc;line-height:1.5;">
+        Password recovery isn't automated yet. Message the game admin with your username and they can reset it for you.
+      </div>
+      <div class="divider"><span>or</span></div>
+      <button class="btn-secondary" id="guestBtn">Play as Guest</button>
     </div>
-    
-    <!-- Game Panel -->
-    <div class="panel game-panel">
-      <div id="homeScreen">
-        <h1>⚔️ Grid Card Game</h1>
-        <p class="subtitle">Medieval tactical card battles</p>
-        
-        <button class="btn-help" id="howToPlayBtn">📖 How To Play</button>
-        
-        <div class="error" id="errorMessage"></div>
-        
-        <div class="tabs">
-          <div class="tab active" data-tab="multiplayer">⚔️ Multiplayer</div>
-          <div class="tab" data-tab="campaign">🏰 Campaign</div>
-        </div>
-        
-        <div class="tab-content active" id="multiplayerTab">
-          <div class="section">
-            <div class="section-title">Choose Your Deck</div>
-            <select id="deckSelect"></select>
-            <p class="deck-description" id="deckDescription"></p>
+  </div>
+
+  <!-- MAIN MENU SCREEN (shown after login) -->
+  <div id="mainMenuScreen" class="hidden">
+    <img src="/images/ui/logo.png" class="game-title-img" alt="Break the Grid">
+    <div class="main-menu-buttons">
+      <div class="menu-btn-frame"><button class="main-menu-btn" id="menuCampaignBtn">Campaign</button></div>
+      <div class="menu-btn-frame"><button class="main-menu-btn" id="menuMultiplayerBtn">Multiplayer</button></div>
+      <div class="menu-btn-frame"><button class="main-menu-btn" id="menuHowToPlayBtn">How To Play</button></div>
+      <div class="menu-btn-frame"><button class="main-menu-btn" id="menuSettingsBtn">Settings</button></div>
+    </div>
+    <div class="nav-btn-row">
+      <button class="nav-icon-btn" id="deckBuilderBtn" data-tooltip="Deck Builder">
+        <img src="/images/ui/btn-deckbuilder.png" alt="Deck Builder">
+      </button>
+      <button class="nav-icon-btn" id="collectionsBtn" data-tooltip="Collections">
+        <img src="/images/ui/btn-collections.png" alt="Collections">
+      </button>
+      <button class="nav-icon-btn" id="shopBtn" data-tooltip="Shop">
+        <img src="/images/ui/btn-shop.png" alt="Shop">
+      </button>
+      <button class="nav-icon-btn hidden" id="playtestBtn" data-tooltip="Playtest">
+        <img src="/images/ui/btn-shop.png" alt="Playtest">
+      </button>
+      <button class="nav-icon-btn" id="logoutBtn" data-tooltip="Logout">
+        <img src="/images/ui/btn-logout.png" alt="Logout">
+      </button>
+    </div>
+  </div>
+
+  <!-- CAMPAIGN SCREEN (overlay) -->
+  <div id="campaignScreen" class="screen-overlay hidden">
+   <div class="campaign-boss-desc-container">
+    <div class="campaign-boss-desc" id="campaignBossDesc"></div>
+   </div>
+   <div class="campaign-wrapper">
+    <img src="/images/ui/campaign-title.png" class="campaign-title-img" alt="Dimensional Map">
+    <div class="panel campaign-panel" id="campaignPanel">
+      <div class="campaign-bg-layer" id="campaignBgLayer"></div>
+      <div class="panel-frame">
+        <span class="panel-corner tl"></span>
+        <span class="panel-corner tr"></span>
+        <span class="panel-corner bl"></span>
+        <span class="panel-corner br"></span>
+      </div>
+      <div class="campaign-header">
+        <img class="campaign-boss-name" id="campaignBossName" alt="">
+
+        <div class="campaign-header-row">
+          <div class="campaign-deck-dropdown" id="campaignDeckDropdown">
+            <button class="campaign-deck-btn" id="campaignDeckBtn" type="button">
+              <span class="deck-label" id="campaignDeckLabel">Deck</span>
+              <svg class="deck-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="campaign-deck-menu" id="campaignDeckMenu"></div>
           </div>
-          
-          <button class="btn-gold" id="createBtn">Create Game</button>
-          
-          <div class="divider"><span>or join a friend</span></div>
-          
-          <div class="section">
-            <input type="text" id="codeInput" placeholder="Enter invite code" maxlength="5" style="text-transform: uppercase; text-align: center; font-size: 18px; letter-spacing: 4px;">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="campaign-header-stars" id="campaignHeaderStars">☆☆☆</div>
+            <div class="campaign-stars-label" id="campaignStarsLabel"></div>
           </div>
-          
-          <button class="btn-primary" id="joinBtn">Join Game</button>
-        </div>
-        
-        <div class="tab-content" id="campaignTab">
-          <div class="section">
-            <div class="section-title">Select Deck</div>
-            <select id="campaignDeckSelect"></select>
+          <div class="campaign-diff-select" id="campaignDiffSelect">
+            <button class="campaign-diff-btn active" data-diff="1">Easy</button>
+            <button class="campaign-diff-btn" data-diff="2">Med</button>
+            <button class="campaign-diff-btn" data-diff="3">Hard</button>
+            <button class="campaign-diff-btn" id="challengeDiffBtn" data-diff="4" disabled>Challenge</button>
           </div>
-          
-          <div class="section">
-            <div class="section-title">Select Boss</div>
-            <div class="boss-list" id="bossList"></div>
-          </div>
-          
-          <button class="btn-gold" id="startCampaignBtn" disabled>Start Battle</button>
-          <p id="campaignLoginHint" class="hidden" style="text-align: center; color: #f59e0b; font-size: 12px; margin-top: 10px;">
-            ⚠️ Login to save progress and earn rewards!
-          </p>
         </div>
       </div>
-      
-      <div id="lobbyScreen" class="hidden">
-        <h1>⚔️ Game Lobby</h1>
-        <p class="subtitle" id="lobbySubtitle">Waiting for opponent...</p>
-        
+      <div class="campaign-map-container">
+        <div class="campaign-map" id="campaignMap"></div>
+      </div>
+      <p id="campaignLoginHint" class="hidden" style="text-align:center;color:#f59e0b;font-size:12px;margin-top:8px;">Login to save progress and earn rewards!</p>
+      <div class="campaign-return-row">
+        <div class="action-btn-frame">
+          <button class="action-btn" id="campaignBackBtn" type="button">Return</button>
+        </div>
+      </div>
+      <div class="campaign-fight-row">
+        <div class="action-btn-frame">
+          <button class="action-btn" id="startCampaignBtn" type="button" disabled>Fight!</button>
+        </div>
+      </div>
+      <div class="campaign-warp-flash"></div>
+    </div>
+   </div>
+  </div>
+
+  <!-- MULTIPLAYER SCREEN (overlay) -->
+  <div id="multiplayerScreen" class="screen-overlay hidden">
+    <div class="panel mp-panel">
+      <div class="panel-frame">
+        <span class="panel-corner tl"></span>
+        <span class="panel-corner tr"></span>
+        <span class="panel-corner bl"></span>
+        <span class="panel-corner br"></span>
+      </div>
+      <!-- Create / Join view -->
+      <div id="mpCreateView">
+        <button class="back-btn" id="mpBackBtn">← Back</button>
+        <div class="mp-stats-bar">
+          <div class="mp-stat">
+            <div class="mp-stat-value" id="mpWins">0</div>
+            <div class="mp-stat-label">Wins</div>
+          </div>
+          <div class="mp-stat">
+            <div class="mp-stat-value" id="mpLosses">0</div>
+            <div class="mp-stat-label">Losses</div>
+          </div>
+          <div class="tier-badge" id="mpTier">Tier I</div>
+        </div>
+        <div class="mp-mode-buttons">
+          <button class="mp-mode-btn" disabled>
+            🏆 Ranked Online
+            <span class="mp-tooltip">🚧 Under Construction</span>
+          </button>
+          <button class="mp-mode-btn" disabled>
+            🎲 Random Match
+            <span class="mp-tooltip">🚧 Under Construction</span>
+          </button>
+        </div>
+        <div class="mp-deck-row">
+          <label>Deck</label>
+          <select id="deckSelect"></select>
+        </div>
+        <div class="mp-actions">
+          <div class="mp-action-box">
+            <div class="mp-action-title">👑 Host Game</div>
+            <button class="btn-gold" id="createBtn">Create Game</button>
+            <div class="error" id="errorMessage"></div>
+          </div>
+          <div class="mp-action-box">
+            <div class="mp-action-title">🔍 Find Game</div>
+            <input type="text" id="codeInput" placeholder="ENTER CODE" maxlength="5">
+            <button class="btn-primary" id="joinBtn">Join Game</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lobby view -->
+      <div id="mpLobbyView" class="hidden">
+        <button class="back-btn" id="lobbyBackBtn">← Cancel</button>
+        <h2 style="font-family:'Cinzel',serif;color:#fbbf24;text-align:center;margin-bottom:6px;">⚔️ Game Lobby</h2>
+        <p class="subtitle" id="lobbySubtitle" style="margin-bottom:16px;">Waiting for opponent...</p>
         <div class="error" id="lobbyError"></div>
-        
         <div class="lobby-code">
-          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 5px;">INVITE CODE</div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:5px;">INVITE CODE</div>
           <div class="lobby-code-value" id="lobbyCodeDisplay">-----</div>
           <button class="copy-btn" id="copyCodeBtn">📋 Copy Code</button>
         </div>
-        
         <div class="player-status">
           <div class="player-info">
             <div class="player-icon gold">👑</div>
             <div>
               <div class="player-name" id="hostPlayerName">Host</div>
-              <div class="player-deck" id="hostDeckName">Medieval Kingdom</div>
+              <div class="player-deck" id="hostDeckName">—</div>
             </div>
           </div>
           <div id="hostReady">✅</div>
         </div>
-        
         <div class="player-status">
           <div class="player-info">
             <div class="player-icon silver">⚔️</div>
@@ -1157,18 +1691,61 @@
           </div>
           <div id="guestReady">⏳</div>
         </div>
-        
         <div id="hostControls" class="hidden">
           <button class="btn-green" id="startBtn" disabled>Start Game</button>
         </div>
-        
         <div id="guestControls" class="hidden">
-          <p class="waiting" style="text-align: center; margin-top: 15px;">Waiting for host to start...</p>
+          <p class="waiting" style="text-align:center;margin-top:15px;">Waiting for host to start...</p>
         </div>
       </div>
     </div>
   </div>
-  
+
+  <!-- ACCOUNT MODAL -->
+  <!-- Tutorial Welcome Modal -->
+  <div id="tutorialWelcomeModal" class="hidden">
+    <div class="tutorial-welcome-content">
+      <div class="panel-frame">
+        <span class="panel-corner tl"></span>
+        <span class="panel-corner tr"></span>
+        <span class="panel-corner bl"></span>
+        <span class="panel-corner br"></span>
+      </div>
+      <h2 class="tutorial-welcome-title">Welcome, Traveler</h2>
+      <p class="tutorial-welcome-text">
+        A tutorial battle awaits — face a confused king who's been pulled into this dimension.
+        Learn the rules of war before challenging the real bosses.
+      </p>
+      <div class="tutorial-welcome-buttons">
+        <div class="action-btn-frame"><button class="action-btn" id="tutorialPlayBtn" type="button">Play Tutorial</button></div>
+        <div class="action-btn-frame"><button class="action-btn" id="tutorialSkipBtn" type="button">Skip</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="accountModal" class="hidden">
+    <div class="account-modal-content">
+      <button id="closeAccountModal">✕</button>
+      <h2>Account</h2>
+      <div class="account-stat-row">
+        <span class="account-stat-label">Username</span>
+        <span class="account-stat-value" id="displayUsername">Player</span>
+      </div>
+      <div class="account-stat-row">
+        <span class="account-stat-label">Level</span>
+        <span class="account-stat-value" id="statsLevel">1</span>
+      </div>
+      <div class="account-stat-row">
+        <span class="account-stat-label">Wins</span>
+        <span class="account-stat-value" id="statsWins">0</span>
+      </div>
+      <div class="account-stat-row">
+        <span class="account-stat-label">Gold</span>
+        <span class="account-stat-value" id="statsGold">0</span>
+      </div>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -1182,10 +1759,13 @@
     let selectedBossId = null;
     
     // Elements
-    const loginSection = document.getElementById('loginSection');
-    const userSection = document.getElementById('userSection');
-    const homeScreen = document.getElementById('homeScreen');
-    const lobbyScreen = document.getElementById('lobbyScreen');
+    const loginScreen = document.getElementById('loginScreen');
+    const accountBadge = document.getElementById('accountBadge');
+    const mainMenuScreen = document.getElementById('mainMenuScreen');
+    const campaignScreen = document.getElementById('campaignScreen');
+    const multiplayerScreen = document.getElementById('multiplayerScreen');
+    const mpCreateView = document.getElementById('mpCreateView');
+    const mpLobbyView = document.getElementById('mpLobbyView');
     const usernameInput = document.getElementById('usernameInput');
     const passwordInput = document.getElementById('passwordInput');
     const passwordToggle = document.getElementById('passwordToggle');
@@ -1214,14 +1794,16 @@
     const statsLevel = document.getElementById('statsLevel');
     const statsGold = document.getElementById('statsGold');
     const deckSelect = document.getElementById('deckSelect');
-    const campaignDeckSelect = document.getElementById('campaignDeckSelect');
-    const deckDescription = document.getElementById('deckDescription');
+    const campaignDeckBtn = document.getElementById('campaignDeckBtn');
+    const campaignDeckLabel = document.getElementById('campaignDeckLabel');
+    const campaignDeckMenu = document.getElementById('campaignDeckMenu');
+    let campaignDeckId = 'medieval';
     const createBtn = document.getElementById('createBtn');
     const joinBtn = document.getElementById('joinBtn');
     const codeInput = document.getElementById('codeInput');
-    const bossListEl = document.getElementById('bossList');
     const startCampaignBtn = document.getElementById('startCampaignBtn');
     const campaignLoginHint = document.getElementById('campaignLoginHint');
+    const campaignMap = document.getElementById('campaignMap');
     const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
     const copyCodeBtn = document.getElementById('copyCodeBtn');
     const hostPlayerName = document.getElementById('hostPlayerName');
@@ -1237,26 +1819,44 @@
     const errorMessage = document.getElementById('errorMessage');
     const lobbyError = document.getElementById('lobbyError');
     
+    // Screen navigation
+    const SCREENS = [loginScreen, mainMenuScreen, campaignScreen, multiplayerScreen];
+    function showScreen(screen) {
+      SCREENS.forEach(s => s.classList.add('hidden'));
+      screen.classList.remove('hidden');
+    }
+
     // Check for saved session
     const savedUser = localStorage.getItem('gridCardUser');
     if (savedUser) {
       try {
         currentUser = JSON.parse(savedUser);
-        showLoggedIn();
       } catch (e) {
         localStorage.removeItem('gridCardUser');
       }
+      if (currentUser) showLoggedIn();
+    } else {
+      // No active session — try remembered credentials and auto-login
+      const remembered = localStorage.getItem('gridCardRememberMe');
+      if (remembered) {
+        try {
+          const { username, password } = JSON.parse(remembered);
+          usernameInput.value = username;
+          passwordInput.value = password;
+          setTimeout(() => login(), 0);
+        } catch (e) {
+          localStorage.removeItem('gridCardRememberMe');
+        }
+      }
     }
-    
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
-      });
-    });
+
+    function getTier(wins, played) {
+      if (!played) return 'Tier I';
+      const rate = wins / played;
+      const tier = Math.min(10, Math.floor(rate * 10) + 1);
+      const numerals = ['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+      return 'Tier ' + numerals[tier - 1];
+    }
     
     // Socket events
     socket.on('deckList', (decks) => {
@@ -1266,7 +1866,7 @@
     
     socket.on('campaignBosses', (bosses) => {
       bossList = bosses;
-      renderBossList();
+      renderCampaignMap();
     });
     
     function updateDeckSelects() {
@@ -1317,119 +1917,186 @@
       }).join('');
       
       deckSelect.innerHTML = options;
-      campaignDeckSelect.innerHTML = options;
-      
+
+      // Build campaign custom dropdown items
+      const campaignItems = deckList.map(d => {
+        const isLocked = !unlockedDecks.includes(d.id);
+        const slotNum = slotNumbers[d.id] || 1;
+        const customDeck = customDecks.find(cd => cd.id === d.id);
+        const hasValidDeck = customDeck && customDeck.cards && customDeck.cards.length >= 25;
+        if (isLocked) return { id: d.id, label: `🔒 Slot ${slotNum}`, disabled: true };
+        if (d.id === 'medieval') return { id: d.id, label: hasValidDeck ? customDeck.name : 'Your First Deck', disabled: false };
+        if (hasValidDeck) return { id: d.id, label: customDeck.name, disabled: false };
+        return { id: d.id, label: `📝 Slot ${slotNum} (empty)`, disabled: true };
+      });
+
+      campaignDeckMenu.innerHTML = campaignItems.map(item =>
+        `<div class="campaign-deck-option${item.disabled ? '' : ''}" data-id="${item.id}"${item.disabled ? ' data-disabled' : ''}>${item.label}</div>`
+      ).join('');
+
+      campaignDeckMenu.querySelectorAll('.campaign-deck-option:not([data-disabled])').forEach(el => {
+        el.addEventListener('click', () => {
+          campaignDeckId = el.dataset.id;
+          campaignDeckLabel.textContent = el.textContent;
+          campaignDeckMenu.querySelectorAll('.campaign-deck-option').forEach(o => o.classList.remove('selected'));
+          el.classList.add('selected');
+          campaignDeckMenu.classList.remove('open');
+          campaignDeckBtn.classList.remove('open');
+        });
+      });
+
       // Try to select a valid deck - first custom deck with cards, or fall back to medieval
       const firstValidDeck = deckList.find(d => {
-        if (d.id === 'medieval') return true; // Always valid due to starter deck
+        if (d.id === 'medieval') return true;
         const customDeck = customDecks.find(cd => cd.id === d.id);
         return customDeck && customDeck.cards && customDeck.cards.length >= 25;
       });
-      
+
       const selectedId = firstValidDeck ? firstValidDeck.id : 'medieval';
       deckSelect.value = selectedId;
-      campaignDeckSelect.value = selectedId;
-      deckDescription.textContent = 'Build your own deck with cards you\'ve collected!';
+      campaignDeckId = selectedId;
+      const selectedItem = campaignItems.find(i => i.id === selectedId);
+      if (selectedItem) {
+        campaignDeckLabel.textContent = selectedItem.label;
+        const selectedEl = campaignDeckMenu.querySelector(`[data-id="${selectedId}"]`);
+        if (selectedEl) selectedEl.classList.add('selected');
+      }
     }
-    
-    deckSelect.addEventListener('change', () => {
-      const deck = deckList.find(d => d.id === deckSelect.value);
-      if (deck) deckDescription.textContent = deck.description;
-    });
-    
-    function renderBossList() {
+
+    let selectedDifficulty = 1;
+
+    const BOSS_DESCRIPTIONS = {
+      1: "First contact — and not the kind you'd hope for. A scout from beyond the stars has arrived to test our mettle, and the report it sends home will decide if Earth gets visitors… or invaders.",
+      2: "He was buried six feet under with his star still pinned to his chest. Twenty years later, the dust kicked up again. Boot Hill couldn't hold him, and neither can you. Draw fast.",
+      3: "Crowned in rubies and rumor. The Countess has outlived empires by sipping from the throats of kings. She finds your courage charming. She would like to taste it.",
+      4: "A fairy queen with a jeweler's eye. Every champion she defeats becomes another sparkle in her crown — so smile, dear hero, you'd look stunning as a garnet.",
+      5: "Carved from moonstone and devotion, she has stood watch since the first eclipse. Elune whispers, the stars listen, and her blade answers. Pray she finds you worthy.",
+      6: "He read the forbidden tomes, then ate them. Now scales and sigils share the same skin, and every spell he casts arrives on a wing of fire. Bring something flame-resistant.",
+      7: "He does not warn. He does not bargain. The Seraph descends with six wings unfurled and a verdict already written. Repent quickly, or fight harder than you ever have.",
+      8: "He's the boss at the end of the cartridge — the one with three health bars and a smug grin. Every hit makes him angrier, every defeat makes him cheat. GAME OVER incoming."
+    };
+
+    function renderCampaignMap() {
       const currentLevel = currentUser?.campaign?.currentLevel || 1;
-      const completedLevels = currentUser?.campaign?.completedLevels || [];
       const stars = currentUser?.campaign?.stars || {};
-      
-      bossListEl.innerHTML = bossList.map(boss => {
+
+      // Preload all boss background and title images so switching is instant
+      bossList.forEach(b => {
+        new Image().src = `/images/bosses/bg-${b.id}.png`;
+        new Image().src = `/images/bosses/title-${b.id}.png`;
+        new Image().src = `/images/bosses/boss-${b.id}.png`;
+      });
+
+      // Deterministic but irregular offsets — seeded by index so they never change
+      const offsets = bossList.map((_, i) => Math.round(Math.sin(i * 2.3 + 0.7) * 85 / 10) * 10);
+      const GAP = 90; // vertical gap between nodes
+
+      campaignMap.innerHTML = '<div style="flex-shrink:0;width:1px;height:40px;"></div>' + (bossList.map((boss, i) => {
         const isLocked = boss.id > currentLevel;
         const earnedStars = stars[String(boss.id)] || 0;
-        
-        // Challenge mode unlocks after beating hard difficulty (3 stars)
-        const challengeUnlocked = earnedStars >= 3;
-        // Challenge completed = 4 stars
+        const isCompleted = earnedStars > 0;
         const challengeCompleted = earnedStars >= 4;
-        
-        // Star labels: Easy, Medium, Hard
-        const starLabels = ['Easy', 'Medium', 'Hard'];
-        // If challenge completed, all stars turn diamond color
-        const starsHtml = [1,2,3].map(i => {
-          const isEarned = i <= Math.min(earnedStars, 3); // Cap at 3 for display purposes
-          const starClass = challengeCompleted ? 'star diamond' : (isEarned ? 'star earned' : 'star');
-          return `<span class="${starClass}" title="${starLabels[i-1]}">★</span>`;
-        }).join('');
-        
-        // Show highest difficulty beaten
-        let difficultyLabel;
-        if (challengeCompleted) {
-          difficultyLabel = ''; // Diamond stars speak for themselves
-        } else if (earnedStars > 0) {
-          difficultyLabel = `<span class="boss-stars-label">(${starLabels[earnedStars - 1]} beaten)</span>`;
-        } else {
-          difficultyLabel = `<span class="boss-stars-label">(Not beaten)</span>`;
+        const starsText = [1,2,3].map(n => n <= Math.min(earnedStars, 3) ? '★' : '☆').join('');
+        const starsDisplay = challengeCompleted ? `<span style="color:#22d3ee;text-shadow:0 0 8px rgba(34,211,238,0.7)">${starsText}</span>` : starsText;
+        const offset = offsets[i];
+        const imgStyle = isLocked ? '' : `background-image:url('/images/bosses/boss-${boss.id}.png');background-size:cover;background-position:center;`;
+
+        let connector = '';
+        if (i < bossList.length - 1) {
+          const nextOffset = offsets[i + 1];
+          const deltaX = nextOffset - offset;
+          const midX = (offset + nextOffset) / 2;
+          const thisGap = (i === bossList.length - 2) ? 50 : GAP; // shorter gap before final boss
+          const vertDist = thisGap + 90; // center-to-center vertical distance (gap + node diameter)
+          const dist = Math.sqrt(deltaX * deltaX + vertDist * vertDist);
+          const lineLen = (dist - 90).toFixed(1); // edge-to-edge: subtract both 45px radii
+          const angle = (Math.atan2(-deltaX, vertDist) * 180 / Math.PI).toFixed(1);
+          connector = `<div class="map-connector-wrap" data-to-boss-id="${bossList[i + 1].id}" style="height:${thisGap}px;transform:translateX(${midX}px);">
+            <div class="map-connector" style="height:${lineLen}px;transform:rotate(${angle}deg);"></div>
+          </div>`;
         }
-        
-        // Challenge button - only show if boss has a challenge deck
-        const challengeBtn = boss.challengeDeckId 
-          ? `<div class="diff-btn challenge ${challengeUnlocked ? '' : 'locked'} ${challengeCompleted ? 'completed' : ''}" data-diff="4" title="${challengeCompleted ? 'Challenge Complete!' : (challengeUnlocked ? 'Challenge Mode' : 'Beat Hard to Unlock')}"></div>`
-          : '';
-        
+
         return `
-          <div class="boss-card ${isLocked ? 'locked' : ''}" data-boss-id="${boss.id}" data-difficulty="2" data-has-challenge="${boss.challengeDeckId ? '1' : '0'}">
-            <div class="boss-header">
-              <span class="boss-name">${isLocked ? '🔒 ' : ''}${boss.name}</span>
-              <div class="difficulty-toggles">
-                <div class="diff-btn easy" data-diff="1" title="Easy"></div>
-                <div class="diff-btn medium selected" data-diff="2" title="Medium"></div>
-                <div class="diff-btn hard" data-diff="3" title="Hard"></div>
-                ${challengeBtn}
-              </div>
-            </div>
-            <div class="boss-desc">${boss.description}</div>
-            <div class="boss-stars">
-              ${starsHtml}
-              ${difficultyLabel}
+          <div class="map-node-row" style="transform: translateX(${offset}px);">
+            <div class="map-node ${isLocked ? 'locked' : ''} ${isCompleted ? 'completed' : ''}"
+                 data-boss-id="${boss.id}" data-has-challenge="${boss.challengeDeckId ? '1' : '0'}"
+                 style="${imgStyle}">
+              ${isLocked ? `<span class="map-node-lock"></span>` : ''}
             </div>
           </div>
+          ${connector}
         `;
-      }).join('');
-      
-      // Handle boss card selection
-      document.querySelectorAll('.boss-card:not(.locked)').forEach(card => {
-        card.addEventListener('click', (e) => {
-          // Don't select card if clicking difficulty buttons
-          if (e.target.classList.contains('diff-btn')) return;
-          
-          document.querySelectorAll('.boss-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          selectedBossId = parseInt(card.dataset.bossId);
-          startCampaignBtn.disabled = false;
-        });
-        
-        // Handle difficulty toggle clicks
-        card.querySelectorAll('.diff-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            
-            // Don't allow clicking locked challenge button
-            if (btn.classList.contains('locked')) return;
-            
-            const diff = btn.dataset.diff;
-            card.dataset.difficulty = diff;
-            card.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            
-            // Also select this boss card
-            document.querySelectorAll('.boss-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            selectedBossId = parseInt(card.dataset.bossId);
-            startCampaignBtn.disabled = false;
+      }).join('')) + '<div style="flex-shrink:0;width:1px;height:100px;"></div>';
+
+      campaignMap.querySelectorAll('.map-node:not(.locked)').forEach(node => {
+        node.addEventListener('click', () => {
+          campaignMap.querySelectorAll('.map-node').forEach(n => n.classList.remove('selected'));
+          node.classList.add('selected');
+          const bossId = parseInt(node.dataset.bossId);
+
+          campaignMap.querySelectorAll('.map-connector-wrap').forEach(wrap => {
+            const toId = parseInt(wrap.dataset.toBossId);
+            const line = wrap.querySelector('.map-connector');
+            if (line) line.classList.toggle('path-traveled', toId <= bossId);
           });
+          campaignMap.querySelectorAll('.map-node').forEach(n => {
+            const id = parseInt(n.dataset.bossId);
+            n.classList.toggle('path-traveled', id <= bossId);
+          });
+
+          // Hyperspace warp on dimension change (skip on auto-select)
+          if (!suppressWarp) {
+            const panel = document.getElementById('campaignPanel');
+            panel.classList.remove('warping');
+            requestAnimationFrame(() => {
+              panel.classList.add('warping');
+              setTimeout(() => panel.classList.remove('warping'), 720);
+            });
+          }
+
+          selectedBossId = bossId;
+          document.getElementById('campaignBgLayer').style.backgroundImage = `url('/images/bosses/bg-${bossId}.png')`;
+          const boss = bossList.find(b => b.id === bossId);
+          const earnedStars = (currentUser?.campaign?.stars || {})[String(bossId)] || 0;
+          const challengeCompleted = earnedStars >= 4;
+          const hasChallenge = node.dataset.hasChallenge === '1';
+
+          const bossNameEl = document.getElementById('campaignBossName');
+          bossNameEl.src = `/images/bosses/title-${bossId}.png`;
+          bossNameEl.alt = boss?.name || '';
+          const TITLE_HEIGHTS = { 2: 46, 3: 68, 4: 68 };
+          bossNameEl.style.height = (TITLE_HEIGHTS[bossId] || 56) + 'px';
+          document.getElementById('campaignBossDesc').textContent = BOSS_DESCRIPTIONS[bossId] || '';
+          const starsStr = [1,2,3].map(n => n <= Math.min(earnedStars, 3) ? '★' : '☆').join('');
+          document.getElementById('campaignHeaderStars').innerHTML = challengeCompleted
+            ? `<span style="color:#22d3ee;text-shadow:0 0 8px rgba(34,211,238,0.7)">${starsStr}</span>`
+            : starsStr;
+          const diffLabels = ['', 'Easy', 'Medium', 'Hard', 'Challenge'];
+          const topDiff = Math.min(earnedStars, 4);
+          document.getElementById('campaignStarsLabel').textContent = topDiff > 0 ? diffLabels[topDiff] + ' cleared' : '';
+
+          const challengeBtn = document.getElementById('challengeDiffBtn');
+          challengeBtn.disabled = !(earnedStars >= 3 || hasChallenge && challengeCompleted);
+          if (!hasChallenge) challengeBtn.style.display = 'none';
+          else challengeBtn.style.display = '';
+
+          startCampaignBtn.disabled = false;
+          selectedDifficulty = 1;
+          document.querySelectorAll('.campaign-diff-btn').forEach(b => b.classList.remove('active'));
+          document.querySelector('.campaign-diff-btn[data-diff="1"]').classList.add('active');
         });
       });
+
+      // Auto-select boss 1 on load (without triggering warp effect)
+      const firstNode = campaignMap.querySelector('.map-node[data-boss-id="1"]:not(.locked)');
+      if (firstNode) {
+        suppressWarp = true;
+        firstNode.click();
+        suppressWarp = false;
+      }
     }
-    
+    let suppressWarp = false;
+
     // Auth functions
     async function login() {
       const username = usernameInput.value.trim();
@@ -1451,6 +2118,11 @@
         if (data.success) {
           currentUser = data.user;
           localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+          if (document.getElementById('rememberMeChk')?.checked) {
+            localStorage.setItem('gridCardRememberMe', JSON.stringify({ username, password }));
+          } else {
+            localStorage.removeItem('gridCardRememberMe');
+          }
           showLoggedIn();
           showAuthSuccess('Welcome back, ' + currentUser.username + '!');
         } else {
@@ -1478,10 +2150,10 @@
         const res = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ username, password, email: document.getElementById('emailInput')?.value.trim() || '' })
         });
         const data = await res.json();
-        
+
         if (data.success) {
           currentUser = data.user;
           localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
@@ -1497,53 +2169,51 @@
     
     function playAsGuest() {
       currentUser = null;
-      loginSection.classList.add('hidden');
-      userSection.classList.remove('hidden');
+      document.getElementById('badgeUsername').textContent = 'Guest';
+      document.getElementById('badgeGold').textContent = '0';
+      accountBadge.classList.remove('hidden');
       displayUsername.textContent = 'Guest';
       statsWins.textContent = '0';
       statsLevel.textContent = '1';
       deckBuilderBtn.classList.add('hidden');
       shopBtn.classList.add('hidden');
       campaignLoginHint.classList.remove('hidden');
-      renderBossList();
+      showScreen(mainMenuScreen);
+      renderCampaignMap();
     }
-    
+
     function logout() {
       currentUser = null;
       localStorage.removeItem('gridCardUser');
-      loginSection.classList.remove('hidden');
-      userSection.classList.add('hidden');
-      deckBuilderBtn.classList.remove('hidden');
-      campaignLoginHint.classList.add('hidden');
+      localStorage.removeItem('gridCardRememberMe');
+      accountBadge.classList.add('hidden');
+      showScreen(loginScreen);
       usernameInput.value = '';
       passwordInput.value = '';
-      renderBossList();
+      renderCampaignMap();
     }
-    
+
     function showLoggedIn() {
-      loginSection.classList.add('hidden');
-      userSection.classList.remove('hidden');
       displayUsername.textContent = currentUser.username;
       statsWins.textContent = currentUser.stats?.campaignWins || 0;
       statsLevel.textContent = currentUser.campaign?.currentLevel || 1;
       statsGold.textContent = currentUser.gold || 0;
+      document.getElementById('badgeUsername').textContent = currentUser.username;
+      document.getElementById('badgeGold').textContent = currentUser.gold || 0;
+      accountBadge.classList.remove('hidden');
       deckBuilderBtn.classList.remove('hidden');
       shopBtn.classList.remove('hidden');
       campaignLoginHint.classList.add('hidden');
-      
-      // Show playtest button for admin users
+
       if (currentUser.username === 'admin' || currentUser.username === 'Admin') {
         playtestBtn.classList.remove('hidden');
       } else {
         playtestBtn.classList.add('hidden');
       }
-      
-      // Update deck selects with user's custom decks
-      if (deckList.length > 0) {
-        updateDeckSelects();
-      }
-      
-      renderBossList();
+
+      if (deckList.length > 0) updateDeckSelects();
+      showScreen(mainMenuScreen);
+      renderCampaignMap();
     }
     
     function showAuthError(msg) {
@@ -1576,7 +2246,15 @@
     
     // Event listeners
     loginBtn.addEventListener('click', login);
-    registerBtn.addEventListener('click', register);
+    registerBtn.addEventListener('click', () => {
+      document.getElementById('emailSection').style.display = 'block';
+      register();
+    });
+
+    document.getElementById('forgotPasswordBtn').addEventListener('click', () => {
+      const msg = document.getElementById('forgotPasswordMsg');
+      msg.style.display = msg.style.display === 'none' ? 'block' : 'none';
+    });
     guestBtn.addEventListener('click', playAsGuest);
     logoutBtn.addEventListener('click', logout);
     
@@ -1584,15 +2262,27 @@
       if (e.key === 'Enter') login();
     });
     
+    function saveMusicState() {
+      sessionStorage.setItem('homeMusicState', JSON.stringify({
+        playing: musicPlaying,
+        time: bgMusic.currentTime,
+        volume: bgMusic.volume,
+        savedAt: Date.now()
+      }));
+    }
+
     deckBuilderBtn.addEventListener('click', () => {
+      saveMusicState();
       window.location.href = '/deckbuilder.html';
     });
-    
+
     collectionsBtn.addEventListener('click', () => {
+      saveMusicState();
       window.location.href = '/collections.html';
     });
-    
+
     shopBtn.addEventListener('click', () => {
+      saveMusicState();
       window.location.href = '/shop.html';
     });
     
@@ -1652,36 +2342,128 @@
       socket.emit('startGame');
     });
     
-    // Campaign
+    // Main menu buttons
+    function isTutorialDone() {
+      if (currentUser) return !!currentUser.preferences?.tutorialCompleted;
+      return localStorage.getItem('gridCardTutorialDone') === '1';
+    }
+    function markTutorialDone() {
+      if (currentUser) {
+        currentUser.preferences = currentUser.preferences || {};
+        currentUser.preferences.tutorialCompleted = true;
+        localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+        const userId = getUserId();
+        if (userId) fetch('/api/tutorial-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, completed: true })
+        }).catch(() => {});
+      }
+      localStorage.setItem('gridCardTutorialDone', '1');
+    }
+
+    document.getElementById('tutorialPlayBtn').addEventListener('click', () => {
+      markTutorialDone();
+      document.getElementById('tutorialWelcomeModal').classList.add('hidden');
+      socket.emit('startTutorial', { username: getUsername(), userId: getUserId() });
+    });
+    document.getElementById('tutorialSkipBtn').addEventListener('click', () => {
+      markTutorialDone();
+      document.getElementById('tutorialWelcomeModal').classList.add('hidden');
+      showScreen(campaignScreen);
+      document.querySelector('.campaign-map-container').scrollTop = 0;
+      renderCampaignMap();
+    });
+
+    document.getElementById('menuCampaignBtn').addEventListener('click', () => {
+      if (!isTutorialDone()) {
+        document.getElementById('tutorialWelcomeModal').classList.remove('hidden');
+        return;
+      }
+      showScreen(campaignScreen);
+      document.querySelector('.campaign-map-container').scrollTop = 0;
+      renderCampaignMap();
+    });
+
+    document.getElementById('menuMultiplayerBtn').addEventListener('click', () => {
+      showScreen(multiplayerScreen);
+      mpCreateView.classList.remove('hidden');
+      mpLobbyView.classList.add('hidden');
+      const s = currentUser?.stats || {};
+      const wins = s.pvpWins || 0;
+      const played = s.gamesPlayed || 0;
+      const losses = Math.max(0, played - (s.gamesWon || 0));
+      document.getElementById('mpWins').textContent = wins;
+      document.getElementById('mpLosses').textContent = losses;
+      document.getElementById('mpTier').textContent = getTier(wins, played);
+    });
+
+    document.getElementById('menuHowToPlayBtn').addEventListener('click', () => {
+      document.getElementById('howToPlayModal').classList.add('active');
+    });
+
+    document.getElementById('menuSettingsBtn').addEventListener('click', () => {
+      document.getElementById('settingsModal').classList.add('active');
+    });
+
+    // Campaign deck custom dropdown toggle
+    campaignDeckBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = campaignDeckMenu.classList.toggle('open');
+      campaignDeckBtn.classList.toggle('open', isOpen);
+    });
+    document.addEventListener('click', (e) => {
+      if (!campaignDeckBtn.contains(e.target) && !campaignDeckMenu.contains(e.target)) {
+        campaignDeckMenu.classList.remove('open');
+        campaignDeckBtn.classList.remove('open');
+      }
+    });
+
+    // Back buttons
+    document.getElementById('campaignBackBtn').addEventListener('click', () => showScreen(mainMenuScreen));
+    document.getElementById('mpBackBtn').addEventListener('click', () => showScreen(mainMenuScreen));
+    document.getElementById('lobbyBackBtn').addEventListener('click', () => {
+      socket.emit('leaveLobby');
+      mpLobbyView.classList.add('hidden');
+      mpCreateView.classList.remove('hidden');
+    });
+
+    // Campaign difficulty buttons
+    document.querySelectorAll('.campaign-diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        document.querySelectorAll('.campaign-diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedDifficulty = parseInt(btn.dataset.diff);
+      });
+    });
+
+    // Campaign start
     startCampaignBtn.addEventListener('click', () => {
       if (!selectedBossId) return;
-      const selectedCard = document.querySelector(`.boss-card[data-boss-id="${selectedBossId}"]`);
-      const difficulty = selectedCard ? parseInt(selectedCard.dataset.difficulty) : 2;
-      const campaignData = {
+      socket.emit('startCampaign', {
         bossId: selectedBossId,
-        deckId: campaignDeckSelect.value,
+        deckId: campaignDeckId,
         username: getUsername(),
         userId: getUserId(),
-        difficulty: difficulty
-      };
-      console.log('Starting campaign with:', campaignData);
-      socket.emit('startCampaign', campaignData);
+        difficulty: selectedDifficulty
+      });
     });
-    
+
     // Lobby state
     socket.on('lobbyState', (lobby) => {
       currentLobby = lobby;
-      homeScreen.classList.add('hidden');
-      lobbyScreen.classList.remove('hidden');
-      
+      showScreen(multiplayerScreen);
+      mpCreateView.classList.add('hidden');
+      mpLobbyView.classList.remove('hidden');
+
       isHost = lobby.isHost;
       lobbyCodeDisplay.textContent = lobby.code;
-      
-      // Use custom deck name if provided, otherwise look up built-in deck name
+
       const hostDeck = deckList.find(d => d.id === lobby.hostDeck);
       hostDeckName.textContent = lobby.hostDeckName || (hostDeck ? hostDeck.name : lobby.hostDeck);
       hostPlayerName.textContent = lobby.hostUsername || 'Host';
-      
+
       if (lobby.guestJoined) {
         const guestDeck = deckList.find(d => d.id === lobby.guestDeck);
         guestDeckName.textContent = lobby.guestDeckName || (guestDeck ? guestDeck.name : lobby.guestDeck);
@@ -1694,7 +2476,7 @@
         guestReady.textContent = '⏳';
         lobbySubtitle.textContent = 'Waiting for opponent...';
       }
-      
+
       if (isHost) {
         hostControls.classList.remove('hidden');
         guestControls.classList.add('hidden');
@@ -1704,21 +2486,187 @@
         guestControls.classList.remove('hidden');
       }
     });
-    
+
     socket.on('lobbyError', (msg) => {
-      if (!lobbyScreen.classList.contains('hidden')) {
+      if (!mpLobbyView.classList.contains('hidden')) {
         lobbyError.textContent = msg;
         lobbyError.classList.add('show');
       } else {
         showError(msg);
       }
     });
+
+    // ── Star Field ──
+    (function createStars() {
+      const field = document.getElementById('starField');
+      if (!field) return;
+      const colors = [
+        '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff',
+        '#ffe066', '#fbbf24', '#f0c040',
+        '#9b59b6', '#7c3aed', '#a855f7',
+      ];
+      for (let i = 0; i < 280; i++) {
+        const size  = Math.random() < 0.7 ? 1 : 1.5;
+        const arm   = (2.5 + Math.random() * 4).toFixed(1);
+        const lo    = (0.1 + Math.random() * 0.2).toFixed(2);
+        const hi    = (parseFloat(lo) + 0.5 + Math.random() * 0.4).toFixed(2);
+        const dur   = (1.0 + Math.random() * 2.5).toFixed(1);
+        const del   = -(Math.random() * parseFloat(dur)).toFixed(1);
+        const scale = (1.6 + Math.random() * 1.2).toFixed(1);
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.cssText = `width:${size}px;height:${size}px;left:${(Math.random()*100).toFixed(1)}%;top:${(Math.random()*100).toFixed(1)}%;--s-lo:${lo};--s-hi:${hi};--s-scale:${scale};--s-color:${color};--s-arm:${arm}px;animation-duration:${dur}s;animation-delay:${del}s;`;
+        field.appendChild(s);
+      }
+    })();
+
+    // ── Card Rain ──
+    const RAIN_CARDS = [
+      'Archer.png','Knight.png','Peasant.png','Squire.png','Crusader.png',
+      'Royal Guard.png','Shield Bearer.png','Man-at-Arms.png','Stone Giant.png',
+      'Vampire Lord.png','Elder Vampire.png','Nosferatu.png','Blood Priest.png',
+      'Blood Countess.png','Moonlit Blade Dancer.png','Lunar Priestess.png',
+      'Star Invoker.png','Moon Sentinel.png','Moonstone Witch.png',
+      'Dusty Rattler.png','Undead Sheriff.png','Bone Deputy.png','Coffin Trapper.png',
+      'Ruby Sprite.png','Prismatic Fairy.png','Diamond Guardian.png',
+      'Garnet Queen.png','Topaz Miner.png','Emerald Forager.png','Amethyst Enchanter.png',
+      'Spore Titan.png','Neural Harvester.png','Phase Skirmisher.png','UFO Scraper.png',
+      'Psionic Overseer.png','Eclipse Devourer.png','Void Broodmother.png',
+      'Burrower Beast.png','Spitter Crawler.png','Phantom Scout.png',
+    ];
+    (function createRain() {
+      const rain = document.getElementById('cardRain');
+      if (!rain) return;
+
+      function spawnCard(opts) {
+        const name = RAIN_CARDS[Math.floor(Math.random() * RAIN_CARDS.length)];
+        const cardName = name.replace('.png', '');
+        const height = Math.round(opts.width * 1.38);
+        const duration = (opts.minDur + Math.random() * opts.durRange).toFixed(1);
+        const delay    = -(Math.random() * parseFloat(duration)).toFixed(1);
+        const rot      = (Math.random() * 30 - 15).toFixed(1);
+
+        const card = document.createElement('div');
+        card.className = 'falling-card';
+        card.style.cssText = `width:${opts.width}px;height:${height}px;left:${opts.left}%;--rot:${rot}deg;--peak-op:${opts.op};animation-duration:${duration}s;animation-delay:${delay}s;`;
+
+        const art = document.createElement('div');
+        art.className = 'rain-card-art';
+        art.style.backgroundImage = `url('/images/${encodeURIComponent(name)}')`;
+
+        const footer = document.createElement('div');
+        footer.className = 'rain-card-footer';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'rain-card-name';
+        nameEl.textContent = cardName;
+        footer.appendChild(nameEl);
+
+        card.appendChild(art);
+        card.appendChild(footer);
+        rain.appendChild(card);
+      }
+
+      // Background layer — small, dim, slow
+      for (let i = 0; i < 18; i++) {
+        spawnCard({
+          width: 32 + Math.floor(Math.random() * 22),
+          left: -12 + Math.random() * 116,
+          op: 0.18,
+          minDur: 20, durRange: 14
+        });
+      }
+
+      // Foreground layer — full size, normal opacity, some hanging off edges
+      for (let i = 0; i < 28; i++) {
+        spawnCard({
+          width: 58 + Math.floor(Math.random() * 36),
+          left: -10 + Math.random() * 112,
+          op: 0.55,
+          minDur: 13, durRange: 14
+        });
+      }
+    })();
+
+    // Account badge click handler — open simple account modal
+    document.getElementById('accountBadgeBtn').addEventListener('click', () => {
+      document.getElementById('accountModal').classList.remove('hidden');
+    });
+    // Simple accountModal close
+    document.getElementById('closeAccountModal').addEventListener('click', () => {
+      document.getElementById('accountModal').classList.add('hidden');
+    });
+    document.getElementById('accountModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('accountModal')) {
+        document.getElementById('accountModal').classList.add('hidden');
+      }
+    });
+
+
+    // Settings modal — deferred because modal HTML is after this script block
+    document.addEventListener('DOMContentLoaded', () => {
+      const settingsModal = document.getElementById('settingsModal');
+      document.getElementById('closeSettingsModal').addEventListener('click', () => settingsModal.classList.remove('active'));
+      settingsModal.addEventListener('click', e => { if (e.target === settingsModal) settingsModal.classList.remove('active'); });
+
+      document.getElementById('replayTutorialBtn').addEventListener('click', () => {
+        if (currentUser) {
+          currentUser.preferences = currentUser.preferences || {};
+          currentUser.preferences.tutorialCompleted = false;
+          localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+          const userId = getUserId();
+          if (userId) fetch('/api/tutorial-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, completed: false })
+          }).catch(() => {});
+        }
+        localStorage.removeItem('gridCardTutorialDone');
+        settingsModal.classList.remove('active');
+        document.getElementById('tutorialWelcomeModal').classList.remove('hidden');
+      });
+
+      function bindToggle(checkboxId, labelId) {
+        const cb = document.getElementById(checkboxId);
+        const lbl = document.getElementById(labelId);
+        cb.addEventListener('change', () => { lbl.textContent = cb.checked ? 'On' : 'Off'; });
+      }
+      bindToggle('settingMusic', 'settingMusicLabel');
+      bindToggle('settingSfx', 'settingSfxLabel');
+      bindToggle('settingParticles', 'settingParticlesLabel');
+
+      document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+        const settings = {
+          music: document.getElementById('settingMusic').checked,
+          sfx: document.getElementById('settingSfx').checked,
+          particles: document.getElementById('settingParticles').checked,
+          musicVol: document.getElementById('settingMusicVol').value,
+          sfxVol: document.getElementById('settingSfxVol').value,
+        };
+        localStorage.setItem('gameSettings', JSON.stringify(settings));
+        setMsg('settingsMsg', 'Settings saved!', 'success');
+        setTimeout(() => setMsg('settingsMsg', '', ''), 2000);
+      });
+
+      settingsModal.addEventListener('transitionend', () => {
+        if (!settingsModal.classList.contains('active')) return;
+        const saved = JSON.parse(localStorage.getItem('gameSettings') || '{}');
+        if (saved.music !== undefined) document.getElementById('settingMusic').checked = saved.music;
+        if (saved.sfx !== undefined) document.getElementById('settingSfx').checked = saved.sfx;
+        if (saved.particles !== undefined) document.getElementById('settingParticles').checked = saved.particles;
+        if (saved.musicVol) document.getElementById('settingMusicVol').value = saved.musicVol;
+        if (saved.sfxVol) document.getElementById('settingSfxVol').value = saved.sfxVol;
+        ['settingMusic','settingSfx','settingParticles'].forEach(id => {
+          document.getElementById(id).dispatchEvent(new Event('change'));
+        });
+      });
+    });
     
     socket.on('role', (role) => {
       // Only handle role for multiplayer (campaign uses campaignStart)
       if (!currentLobby.code) return;
       
-      document.querySelector('.main-container').innerHTML = '<p style="text-align:center; color: #94a3b8; padding: 40px;">Loading game...</p>';
+      document.body.innerHTML = '<p style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:18px;">Loading game...</p>';
       const params = new URLSearchParams({
         lobby: lobbyCodeDisplay.textContent || currentLobby.code,
         host: isHost ? '1' : '0',
@@ -1730,8 +2678,28 @@
     });
     
     // Campaign start - redirect to game with campaign info
+    socket.on('tutorialStart', (data) => {
+      document.body.innerHTML = '<p style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:18px;">Loading tutorial...</p>';
+      const params = new URLSearchParams({
+        lobby: data.code,
+        host: '1',
+        myDeck: data.myDeck,
+        enemyDeck: data.enemyDeck,
+        username: getUsername(),
+        tutorial: '1',
+        boss: data.bossName,
+        music: data.music || 'medieval',
+        background: data.background || 'medieval',
+        bossId: '0',
+        difficulty: '1',
+        canAutoPlay: '0',
+        firstTimeBoss: '1'
+      });
+      window.location.href = '/game.html?' + params.toString();
+    });
+
     socket.on('campaignStart', (data) => {
-      document.querySelector('.main-container').innerHTML = '<p style="text-align:center; color: #94a3b8; padding: 40px;">Loading campaign...</p>';
+      document.body.innerHTML = '<p style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:18px;">Loading campaign...</p>';
       const params = new URLSearchParams({
         lobby: data.code,
         host: '1',
@@ -1756,13 +2724,148 @@
       if (data.user) {
         currentUser = data.user;
         localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+        renderCampaignMap();
       }
     });
+
   </script>
   
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="account-modal-container">
+      <div class="panel-frame">
+        <span class="panel-corner tl"></span><span class="panel-corner tr"></span>
+        <span class="panel-corner bl"></span><span class="panel-corner br"></span>
+      </div>
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Settings</div>
+        <button class="modal-close" id="closeSettingsModal">✕</button>
+      </div>
+      <div class="account-body">
+        <div class="account-field" style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="margin:0;">Music</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="settingMusic" checked style="width:18px;height:18px;cursor:pointer;">
+            <span id="settingMusicLabel" style="font-size:13px;color:#a78bfa;">On</span>
+          </label>
+        </div>
+        <div class="account-field" style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="margin:0;">Sound Effects</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="settingSfx" checked style="width:18px;height:18px;cursor:pointer;">
+            <span id="settingSfxLabel" style="font-size:13px;color:#a78bfa;">On</span>
+          </label>
+        </div>
+        <div class="account-field">
+          <label>Music Volume</label>
+          <input type="range" id="settingMusicVol" min="0" max="100" value="70" style="width:100%;cursor:pointer;">
+        </div>
+        <div class="account-field">
+          <label>SFX Volume</label>
+          <input type="range" id="settingSfxVol" min="0" max="100" value="80" style="width:100%;cursor:pointer;">
+        </div>
+        <div class="account-field" style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="margin:0;">Particle Effects</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="settingParticles" checked style="width:18px;height:18px;cursor:pointer;">
+            <span id="settingParticlesLabel" style="font-size:13px;color:#a78bfa;">On</span>
+          </label>
+        </div>
+        <button class="btn-primary" id="saveSettingsBtn" style="margin-top:10px;">Save Settings</button>
+        <button class="btn-secondary" id="replayTutorialBtn" style="margin-top:8px;">Replay Tutorial</button>
+        <div class="account-msg" id="settingsMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Settings Modal (full) -->
+  <div class="modal-overlay" id="accountSettingsModal">
+    <div class="account-modal-container">
+      <div class="panel-frame">
+        <span class="panel-corner tl"></span>
+        <span class="panel-corner tr"></span>
+        <span class="panel-corner bl"></span>
+        <span class="panel-corner br"></span>
+      </div>
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Account Settings</div>
+        <button class="modal-close" id="closeAccountSettingsModal">✕</button>
+      </div>
+      <div class="account-tabs">
+        <button class="account-tab active" data-tab="profile">👤 Profile</button>
+        <button class="account-tab" data-tab="security">🔒 Security</button>
+        <button class="account-tab" data-tab="stats">📊 Stats</button>
+        <button class="account-tab" data-tab="danger">⚠️ Account</button>
+      </div>
+      <div class="account-body">
+
+        <!-- Profile Tab -->
+        <div class="account-section active" id="account-profile">
+          <div class="account-field">
+            <label>Current Username</label>
+            <input type="text" id="currentUsernameDisplay" disabled>
+          </div>
+          <div class="account-field">
+            <label>New Username</label>
+            <input type="text" id="newUsernameInput" placeholder="3-20 characters, letters/numbers/_">
+          </div>
+          <div class="account-field">
+            <label>Confirm Password</label>
+            <input type="password" id="usernameConfirmPassword" placeholder="Enter your password to confirm">
+          </div>
+          <button class="btn-primary" id="changeUsernameBtn">Save Username</button>
+          <div class="account-msg" id="usernameMsg"></div>
+        </div>
+
+        <!-- Security Tab -->
+        <div class="account-section" id="account-security">
+          <div class="account-field">
+            <label>Current Password</label>
+            <input type="password" id="currentPasswordInput" placeholder="Enter current password">
+          </div>
+          <div class="account-field">
+            <label>New Password</label>
+            <input type="password" id="newPasswordInput" placeholder="At least 6 characters">
+          </div>
+          <div class="account-field">
+            <label>Confirm New Password</label>
+            <input type="password" id="confirmNewPasswordInput" placeholder="Repeat new password">
+          </div>
+          <button class="btn-primary" id="changePasswordBtn">Save Password</button>
+          <div class="account-msg" id="passwordMsg"></div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div class="account-section" id="account-stats">
+          <div class="stat-grid" id="accountStatGrid"></div>
+        </div>
+
+        <!-- Danger Zone Tab -->
+        <div class="account-section" id="account-danger">
+          <div class="danger-zone">
+            <p>Permanently delete your account. All progress, cards, and decks will be lost and cannot be recovered.</p>
+            <div class="account-field">
+              <label>Type your password to confirm</label>
+              <input type="password" id="deleteConfirmPassword" placeholder="Enter password">
+            </div>
+            <button class="btn-danger" id="deleteAccountBtn">Delete My Account</button>
+            <div class="account-msg" id="deleteMsg"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- How To Play Modal -->
   <div class="modal-overlay" id="howToPlayModal">
     <div class="modal-container">
+      <div class="panel-frame">
+        <span class="panel-corner tl"></span>
+        <span class="panel-corner tr"></span>
+        <span class="panel-corner bl"></span>
+        <span class="panel-corner br"></span>
+      </div>
       <div class="modal-header">
         <div class="modal-title">📖 How To Play</div>
         <button class="modal-close" id="closeHowToPlay">✕</button>
@@ -2566,27 +3669,112 @@
   </div>
   
   <script>
+    // Account Settings Modal (full)
+    const accountSettingsModal = document.getElementById('accountSettingsModal');
+    const accountTabs = document.querySelectorAll('.account-tab');
+    const accountSections = document.querySelectorAll('.account-section');
+
+    document.getElementById('closeAccountSettingsModal').addEventListener('click', () => accountSettingsModal.classList.remove('active'));
+    accountSettingsModal.addEventListener('click', e => { if (e.target === accountSettingsModal) accountSettingsModal.classList.remove('active'); });
+
+    accountTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        accountTabs.forEach(t => t.classList.remove('active'));
+        accountSections.forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('account-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    function setMsg(id, text, type) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'account-msg ' + type;
+    }
+
+    document.getElementById('changeUsernameBtn').addEventListener('click', async () => {
+      const newUsername = document.getElementById('newUsernameInput').value.trim();
+      const password = document.getElementById('usernameConfirmPassword').value;
+      if (!newUsername || !password) return setMsg('usernameMsg', 'Please fill in all fields.', 'error');
+      try {
+        const res = await fetch('/api/change-username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id, password, newUsername })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentUser = data.user;
+          localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+          document.getElementById('currentUsernameDisplay').value = currentUser.username;
+          document.getElementById('displayUsername').textContent = currentUser.username;
+          setMsg('usernameMsg', 'Username updated successfully!', 'success');
+        } else {
+          setMsg('usernameMsg', data.error, 'error');
+        }
+      } catch { setMsg('usernameMsg', 'Something went wrong.', 'error'); }
+    });
+
+    document.getElementById('changePasswordBtn').addEventListener('click', async () => {
+      const currentPassword = document.getElementById('currentPasswordInput').value;
+      const newPassword = document.getElementById('newPasswordInput').value;
+      const confirmNew = document.getElementById('confirmNewPasswordInput').value;
+      if (!currentPassword || !newPassword || !confirmNew) return setMsg('passwordMsg', 'Please fill in all fields.', 'error');
+      if (newPassword !== confirmNew) return setMsg('passwordMsg', 'New passwords do not match.', 'error');
+      try {
+        const res = await fetch('/api/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id, currentPassword, newPassword })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMsg('passwordMsg', 'Password changed successfully!', 'success');
+          document.getElementById('currentPasswordInput').value = '';
+          document.getElementById('newPasswordInput').value = '';
+          document.getElementById('confirmNewPasswordInput').value = '';
+        } else {
+          setMsg('passwordMsg', data.error, 'error');
+        }
+      } catch { setMsg('passwordMsg', 'Something went wrong.', 'error'); }
+    });
+
+    document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+      const password = document.getElementById('deleteConfirmPassword').value;
+      if (!password) return setMsg('deleteMsg', 'Enter your password to confirm.', 'error');
+      if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
+      try {
+        const res = await fetch('/api/delete-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.removeItem('gridCardUser');
+          location.reload();
+        } else {
+          setMsg('deleteMsg', data.error, 'error');
+        }
+      } catch { setMsg('deleteMsg', 'Something went wrong.', 'error'); }
+    });
+
     // How To Play Modal
-    const howToPlayBtn = document.getElementById('howToPlayBtn');
     const howToPlayModal = document.getElementById('howToPlayModal');
     const closeHowToPlay = document.getElementById('closeHowToPlay');
     const helpNavBtns = document.querySelectorAll('.modal-nav-btn');
     const helpSections = document.querySelectorAll('.help-section');
-    
-    howToPlayBtn.addEventListener('click', () => {
-      howToPlayModal.classList.add('active');
-    });
-    
+
     closeHowToPlay.addEventListener('click', () => {
       howToPlayModal.classList.remove('active');
     });
-    
+
     howToPlayModal.addEventListener('click', (e) => {
       if (e.target === howToPlayModal) {
         howToPlayModal.classList.remove('active');
       }
     });
-    
+
     helpNavBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const section = btn.dataset.section;
@@ -2599,6 +3787,9 @@
     
     // Background Music
     const bgMusic = document.getElementById('bgMusic');
+    // Use stored home music track if set
+    const _storedTrack = JSON.parse(localStorage.getItem('homeMusicTrack') || 'null');
+    if (_storedTrack && _storedTrack.file) bgMusic.src = _storedTrack.file;
     const musicControl = document.getElementById('musicControl');
     const volumeSlider = document.getElementById('volumeSlider');
     const volumeSliderContainer = document.getElementById('volumeSliderContainer');
@@ -2636,8 +3827,27 @@
       });
     }
     
-    // Try autoplay on page load
-    tryAutoplay();
+    // Restore position if returning from shop/deckbuilder/collections
+    const savedMusic = sessionStorage.getItem('homeMusicState');
+    if (savedMusic) {
+      try {
+        const ms = JSON.parse(savedMusic);
+        sessionStorage.removeItem('homeMusicState');
+        if (ms.playing) {
+          bgMusic.volume = ms.volume ?? 0.4;
+          bgMusic.currentTime = ms.time ?? 0;
+          bgMusic.play().then(() => {
+            musicPlaying = true;
+            musicControl.textContent = '🔊';
+            musicControl.classList.add('playing');
+          }).catch(() => tryAutoplay());
+        } else {
+          musicControl.textContent = '🔇';
+        }
+      } catch { tryAutoplay(); }
+    } else {
+      tryAutoplay();
+    }
     
     // Toggle music and show/hide volume slider
     musicControl.addEventListener('click', (e) => {
@@ -2688,45 +3898,45 @@
       }
     });
     
-    // Create floating particles
-    const particlesContainer = document.getElementById('particles');
-    const animationTypes = ['float-up', 'float-diagonal', 'float-side', 'drift'];
-    
-    function createParticle() {
-      const particle = document.createElement('div');
-      const animType = animationTypes[Math.floor(Math.random() * animationTypes.length)];
-      particle.className = 'particle ' + animType;
-      
-      // Position randomly across entire screen
-      particle.style.left = Math.random() * 100 + '%';
-      particle.style.top = Math.random() * 100 + '%';
-      
-      // Varying sizes
-      const size = 3 + Math.random() * 5;
-      particle.style.width = size + 'px';
-      particle.style.height = size + 'px';
-      
-      particle.style.animationDuration = (6 + Math.random() * 10) + 's';
-      particle.style.animationDelay = Math.random() * 2 + 's';
-      
-      // Random colors
-      const colors = ['rgba(251, 191, 36, 0.6)', 'rgba(139, 92, 246, 0.6)', 'rgba(59, 130, 246, 0.6)', 'rgba(16, 185, 129, 0.5)'];
-      particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-      particle.style.boxShadow = `0 0 ${5 + Math.random() * 10}px ${particle.style.background}`;
-      
-      particlesContainer.appendChild(particle);
-      
-      // Remove after animation
-      setTimeout(() => particle.remove(), 16000);
-    }
-    
-    // Create initial particles
-    for (let i = 0; i < 20; i++) {
-      setTimeout(createParticle, i * 200);
-    }
-    
-    // Keep creating particles
-    setInterval(createParticle, 800);
   </script>
+  <div id="game-tooltip"></div>
+  <script>
+    (function () {
+      var tip = document.getElementById('game-tooltip');
+      var hideTimer = null;
+
+      document.addEventListener('mouseover', function (e) {
+        var el = e.target.closest('[data-tooltip]');
+        if (!el) return;
+        clearTimeout(hideTimer);
+        tip.textContent = el.getAttribute('data-tooltip');
+
+        var rect = el.getBoundingClientRect();
+        tip.classList.remove('visible'); // reset so offsetWidth is measurable
+        tip.style.opacity = '0';
+        // Temporarily show off-screen to measure width
+        tip.style.left = '-9999px';
+        tip.style.top = '-9999px';
+        tip.classList.add('visible');
+        var tw = tip.offsetWidth;
+        var left = rect.left + rect.width / 2 - tw / 2;
+        var top = rect.top - tip.offsetHeight - 10;
+        // Clamp to viewport
+        left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+        tip.style.left = left + 'px';
+        tip.style.top = top + 'px';
+      });
+
+      document.addEventListener('mouseout', function (e) {
+        var el = e.target.closest('[data-tooltip]');
+        if (!el) return;
+        hideTimer = setTimeout(function () {
+          tip.classList.remove('visible');
+        }, 80);
+      });
+    })();
+  </script>
+  <script src="debug-overlay.js"></script>
+  <script src="hover-sound.js"></script>
 </body>
 </html>

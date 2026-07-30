@@ -555,6 +555,236 @@ const isHost = urlParams.get('host') === '1';
 myDeckId = urlParams.get('myDeck');
 enemyDeckId = urlParams.get('enemyDeck');
 const isCampaign = urlParams.get('campaign') === '1';
+const isTutorial = urlParams.get('tutorial') === '1';
+
+// ===== Tutorial dialog UI =====
+let tutorialDialogQueue = [];
+let tutorialOnAdvance = null;
+function showTutorialDialog(text, opts = {}) {
+  const dlg = document.getElementById('tutorialDialog');
+  if (!dlg) return;
+  document.getElementById('tutorialDialogText').textContent = text;
+  document.getElementById('tutorialDialogSpeaker').textContent = opts.speaker || 'Lost King';
+  const portrait = document.getElementById('tutorialDialogPortrait');
+  portrait.style.backgroundImage = opts.portrait ? `url('${opts.portrait}')` : '';
+  portrait.classList.toggle('trainer-portrait', opts.speaker === 'Trainer');
+  const dlgEl = document.getElementById('tutorialDialog');
+  dlgEl.classList.toggle('trainer-speaker', opts.speaker === 'Trainer');
+  dlgEl.classList.toggle('king-position',   opts.speaker === 'Lost King');
+  document.getElementById('tutorialDialogHint').textContent = opts.hint || 'Click to continue ▶';
+  tutorialOnAdvance = opts.onAdvance || null;
+  dlg.classList.remove('hidden');
+}
+function hideTutorialDialog() {
+  const dlg = document.getElementById('tutorialDialog');
+  if (dlg) dlg.classList.add('hidden');
+  tutorialOnAdvance = null;
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const dlg = document.getElementById('tutorialDialog');
+  if (!dlg) return;
+  dlg.addEventListener('click', (e) => {
+    if (e.target.id === 'tutorialSkipBtn') return; // handled separately
+    const cb = tutorialOnAdvance;
+    hideTutorialDialog();
+    if (cb) cb();
+  });
+  const skipBtn = document.getElementById('tutorialSkipBtn');
+  if (skipBtn) skipBtn.addEventListener('click', () => {
+    if (!confirm('Skip the tutorial? You can replay it from Settings later.')) return;
+    socket.emit('tutorialSkip');
+    window.location.href = '/home.html';
+  });
+});
+
+// Server-driven dialog (used by the script in step 9)
+function applyDialogHighlight(type) {
+  if (!type) return;
+  if (type === 'energy') {
+    const el = document.getElementById('energyDisplay');
+    if (el) el.classList.add('tutorial-glow');
+  } else if (type === 'cardCost') {
+    document.querySelectorAll('.cardCost').forEach(el => el.classList.add('tutorial-glow'));
+  } else if (type === 'archer') {
+    for (const id in S.units) {
+      const u = S.units[id];
+      if (u.key === 'archer' && u.owner === myRole) {
+        const pos = getUnitPos(id);
+        if (pos) {
+          const cellEl = document.getElementById(cellId(toViewRow(pos.r), pos.c));
+          if (cellEl) cellEl.classList.add('tutorial-glow');
+        }
+      }
+    }
+    const archerInHand = myHand.find(c => c.key === 'archer');
+    if (archerInHand && cardElements[archerInHand.id]) cardElements[archerInHand.id].classList.add('tutorial-glow');
+  } else if (type === 'enemyHeart') {
+    const heartEl = document.getElementById('enemyHeartHP');
+    if (heartEl) { heartEl.classList.add('tutorial-glow'); heartEl.parentElement?.classList.add('tutorial-glow'); }
+  }
+}
+
+socket.on('tutorialDialog', (data) => {
+  tutorialGate = null;
+  clearTutorialHighlights();
+  showTutorialDialog(data.text, {
+    speaker: data.speaker,
+    portrait: data.portrait,
+    hint: data.hint,
+    onAdvance: () => socket.emit('tutorialAdvance')
+  });
+  if (data.nextAction === 'drawCard') {
+    const drawBtn = document.getElementById('drawBtn');
+    if (drawBtn) drawBtn.classList.add('tutorial-glow');
+  } else if (data.nextAction === 'playCard') {
+    document.querySelectorAll('.cardCost').forEach(el => el.classList.add('tutorial-glow'));
+  }
+  if (data.nextHighlight) applyDialogHighlight(data.nextHighlight);
+});
+
+// Reactive lore dialog during free play — shows without affecting game locks
+socket.on('loreDialog', (data) => {
+  showTutorialDialog(data.text, {
+    speaker: data.speaker,
+    hint: 'Click to continue',
+    onAdvance: () => hideTutorialDialog()
+  });
+});
+socket.on('tutorialHide', () => hideTutorialDialog());
+
+// Server tells client what action is currently allowed; everything else is locked
+let tutorialGate = null;
+socket.on('tutorialGate', (gate) => {
+  console.log('[TUTORIAL] gate received:', gate);
+  tutorialGate = gate;
+  hideTutorialDialog();
+  applyTutorialHighlights();
+});
+
+socket.on('tutorialFinish', (data) => {
+  tutorialGate = null;
+  clearTutorialHighlights();
+  showTutorialDialog(data.win ? "Tutorial complete! Returning to the map..." : "Tutorial ended.", {
+    speaker: 'Trainer',
+    hint: 'Click to continue',
+    onAdvance: () => { window.location.href = '/home.html'; }
+  });
+});
+
+let tutorialFreePlay = false;
+socket.on('tutorialFreePlay', () => {
+  tutorialFreePlay = true;
+  tutorialGate = null;
+  clearTutorialHighlights();
+  hideTutorialDialog();
+});
+
+// In tutorial mode, gate-block any action that doesn't match the current gate
+function tutorialBlocks(actionDescriptor) {
+  if (!isTutorial || tutorialFreePlay) return false;
+  if (!tutorialGate) {
+    // Block everything while a dialog is being shown
+    const dlg = document.getElementById('tutorialDialog');
+    return !!(dlg && !dlg.classList.contains('hidden'));
+  }
+  const g = tutorialGate;
+  if (actionDescriptor.type !== g.action) return true;
+  // Match details
+  if (g.action === 'playCard') {
+    if (g.cardKey && actionDescriptor.cardKey !== g.cardKey) return true;
+    if (g.target?.row !== undefined && actionDescriptor.row !== g.target.row) return true;
+    if (g.target?.col !== undefined && actionDescriptor.col !== g.target.col) return true;
+  }
+  if (g.action === 'attack') {
+    if (g.fromKey && actionDescriptor.fromKey !== g.fromKey) return true;
+    if (g.fromUnit && (actionDescriptor.fromRow !== g.fromUnit.row || actionDescriptor.fromCol !== g.fromUnit.col)) return true;
+    if (g.toUnit && (actionDescriptor.toRow !== g.toUnit.row || actionDescriptor.toCol !== g.toUnit.col)) return true;
+    if (g.toRow !== undefined && actionDescriptor.toRow !== g.toRow) return true;
+  }
+  if (g.action === 'move') {
+    if (g.fromUnit && (actionDescriptor.fromRow !== g.fromUnit.row || actionDescriptor.fromCol !== g.fromUnit.col)) return true;
+    if (g.toTile && (actionDescriptor.toRow !== g.toTile.row || actionDescriptor.toCol !== g.toTile.col)) return true;
+  }
+  return false;
+}
+
+function clearTutorialHighlights() {
+  document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
+  document.body.classList.remove('tutorial-locked');
+}
+
+function applyTutorialHighlights() {
+  clearTutorialHighlights();
+  if (!isTutorial || tutorialFreePlay || !tutorialGate) return;
+  document.body.classList.add('tutorial-locked');
+  const g = tutorialGate;
+  if (g.action === 'drawCard') {
+    const drawBtn = document.getElementById('drawBtn');
+    if (drawBtn) drawBtn.classList.add('tutorial-glow');
+  } else if (g.action === 'endTurn') {
+    const endTurnBtn = document.getElementById('endTurnBtn');
+    if (endTurnBtn) endTurnBtn.classList.add('tutorial-glow');
+  } else if (g.action === 'playCard' && g.cardKey) {
+    // Glow the matching card in hand
+    const card = myHand.find(c => c.key === g.cardKey);
+    if (card && cardElements[card.id]) cardElements[card.id].classList.add('tutorial-glow');
+    // Glow target tile/spawn
+    if (g.target?.type === 'spawn-row' || (g.target?.row !== undefined && g.target?.col !== undefined)) {
+      const cellEl = document.getElementById(cellId(toViewRow(g.target.row), g.target.col));
+      if (cellEl) cellEl.classList.add('tutorial-glow');
+    }
+  } else if (g.action === 'attack') {
+    // Glow the attacker (by key or by unit position) and the target
+    if (g.fromKey) {
+      for (const id in S.units) {
+        const u = S.units[id];
+        if (u.key === g.fromKey && u.owner === myRole) {
+          const pos = getUnitPos(id);
+          if (pos) {
+            const cellEl = document.getElementById(cellId(toViewRow(pos.r), pos.c));
+            if (cellEl) cellEl.classList.add('tutorial-glow');
+          }
+        }
+      }
+    } else if (g.fromUnit) {
+      const cellEl = document.getElementById(cellId(toViewRow(g.fromUnit.row), g.fromUnit.col));
+      if (cellEl) cellEl.classList.add('tutorial-glow');
+    }
+    if (g.toUnit) {
+      const cellEl = document.getElementById(cellId(toViewRow(g.toUnit.row), g.toUnit.col));
+      if (cellEl) cellEl.classList.add('tutorial-glow');
+    } else if (g.toRow !== undefined) {
+      // Glow the row HP indicator
+      const hpEl = document.getElementById(rowHpId(toViewRow(g.toRow)));
+      if (hpEl) hpEl.classList.add('tutorial-glow');
+    }
+  } else if (g.action === 'move' && g.fromUnit) {
+    const fromEl = document.getElementById(cellId(toViewRow(g.fromUnit.row), g.fromUnit.col));
+    if (fromEl) fromEl.classList.add('tutorial-glow');
+    if (g.toTile) {
+      const toEl = document.getElementById(cellId(toViewRow(g.toTile.row), g.toTile.col));
+      if (toEl) toEl.classList.add('tutorial-glow');
+    }
+  } else if (g.action === 'attackHeart') {
+    const heartEl = document.getElementById('enemyHeartHP');
+    if (heartEl?.parentElement) heartEl.parentElement.classList.add('tutorial-glow');
+  }
+}
+
+// Helper for tutorial gate matching (server uses server-row coords)
+function getUnitPos(unitId) {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (S.board[r][c] === unitId) return { r, c };
+  return null;
+}
+function toViewRow(serverRow) { return viewFlipped ? (ROWS - 1 - serverRow) : serverRow; }
+
+// Re-apply highlights whenever the hand or board re-renders
+const _origRenderHand = window.renderHand;
+// We can't intercept here cleanly — instead the gate listener re-runs when state arrives.
+socket.on('state', () => {
+  // Defer to allow state to render first
+  setTimeout(() => applyTutorialHighlights(), 50);
+});
 const bossName = urlParams.get('boss');
 const bossId = urlParams.get('bossId');
 const canAutoPlay = urlParams.get('canAutoPlay') === '1';
@@ -844,15 +1074,15 @@ function positionOpponentDiscardTooltip(e) {
 
 // Rejoin lobby when connected
 socket.on('connect', () => {
-  console.log(`[SOCKET] Connected! Socket ID: ${socket.id}`);
+  const ts = new Date().toISOString().slice(11, 23);
+  console.log(`[CONNECT ${ts}] sock=${socket.id} (this fires on every reconnect)`);
   if (playtestMode) {
-    console.log(`[SOCKET] Starting playtest mode`);
     socket.emit('startPlaytest', { username: 'Tester' });
   } else if (lobbyCode) {
-    console.log(`[SOCKET] Attempting to rejoin lobby: ${lobbyCode}, isHost: ${isHost}`);
+    console.log(`[CONNECT ${ts}] emitting rejoinGame code=${lobbyCode} isHost=${isHost}`);
     socket.emit('rejoinGame', { code: lobbyCode, isHost: isHost });
   } else {
-    console.log(`[SOCKET] No lobby code found in URL`);
+    console.warn(`[CONNECT ${ts}] no lobby code in URL`);
   }
 });
 
@@ -881,7 +1111,11 @@ let prevHeartHP = { gold: 30, silver: 30 };
 let cardElements = {};
 
 // ===== TOOLTIP FUNCTIONS =====
-let tooltipsEnabled = true;
+let tooltipsEnabled = !isTutorial;
+if (tooltipToggleBtn) {
+  tooltipToggleBtn.textContent = tooltipsEnabled ? '💬' : '🚫';
+  tooltipToggleBtn.classList.toggle('muted', !tooltipsEnabled);
+}
 
 function showTooltip(unitId, x, y, buff) {
   if (!tooltipsEnabled) return;
@@ -1160,11 +1394,10 @@ function showCardInspector(unitId) {
     artEl.style.backgroundImage = '';
   }
   
-  // Set name
-  document.getElementById('inspectorName').textContent = u.name;
-  
-  // Set type
-  document.getElementById('inspectorType').textContent = `${u.owner.toUpperCase()}'s ${u.type || 'Monster'}`;
+  // Set name — coloured by owner
+  const nameEl = document.getElementById('inspectorName');
+  nameEl.textContent = u.name;
+  nameEl.style.color = u.owner === 'gold' ? '#fbbf24' : '#cbd5e1';
   
   // Calculate and display stats with buff indicators
   updateCardInspectorStats(unitId);
@@ -1173,7 +1406,8 @@ function showCardInspector(unitId) {
   const effectEl = document.getElementById('inspectorEffect');
   if (u.effectDesc) {
     effectEl.innerHTML = `
-      <div class="inspector-effect-title">✨ Effect</div>
+      <div class="inspector-effect-title">Effect</div>
+      <div class="inspector-effect-divider"></div>
       <div class="inspector-effect-desc">${u.effectDesc}</div>
     `;
     effectEl.style.display = 'block';
@@ -1182,6 +1416,14 @@ function showCardInspector(unitId) {
   }
   
   inspector.classList.add('visible');
+
+  // Position: equal gap on both sides between screen-left and centerArea-left
+  const centerArea = document.getElementById('centerArea');
+  if (centerArea) {
+    const boardLeft = centerArea.getBoundingClientRect().left;
+    const left = Math.max(8, (boardLeft - inspector.offsetWidth) / 2);
+    inspector.style.left = left + 'px';
+  }
 }
 
 function updateCardInspectorStats(unitId) {
@@ -1675,6 +1917,8 @@ let selectedSpawnUnit = null; // Track if we selected our spawn unit
 let myHand = [];
 let selectedCardId = null;
 let deployCardId = null;
+let dragDropSucceeded = false;
+let dragDropPos = null; // { x, y } where the user dropped — used as anim source
 
 let myEnergy = 0;
 let myMaxEnergy = 0;
@@ -2620,16 +2864,89 @@ function hasHpBuff(unitId) {
 }
 
 function sendAction(payload) {
+  const ts = new Date().toISOString().slice(11, 23);
   if (!socket.connected) {
-    console.error("[ACTION] Socket not connected! Payload:", payload);
+    console.error(`[ACTION ${ts}] Socket NOT CONNECTED! Payload:`, payload);
     log("Connection lost. Please refresh the page.", "system");
+    return;
+  }
+  // Tutorial: block any action that doesn't match the current scripted gate
+  if (isTutorial && tutorialGate && !gateAllowsPayload(payload)) {
+    console.log(`[TUTORIAL] blocked action ${payload.type} — current gate is ${tutorialGate.action}`);
+    log("Follow the highlighted step.", "system");
     return;
   }
   if (playtestMode) {
     payload.playtestRole = myRole;
   }
-  console.log("[ACTION] Sending:", payload.type, payload);
+  console.log(`[ACTION ${ts}] Sending sock=${socket.id} type=${payload.type} cardId=${payload.cardId || '-'}`);
   socket.emit("action", payload);
+}
+
+// Tutorial gate matcher — translates client payloads to the server's gate descriptor
+function gateAllowsPayload(payload) {
+  if (!isTutorial || !tutorialGate) return true;
+  const g = tutorialGate;
+  const actionMap = {
+    drawCard: 'drawCard',
+    endTurn: 'endTurn',
+    playCard: 'playCard',
+    attackUnit: 'attack',
+    attackRow: 'attack',
+    attackFromSpawn: 'attack',
+    attackHeart: 'attackHeart',
+    move: 'move',
+    moveFromSpawn: 'move'
+  };
+  if (actionMap[payload.type] !== g.action) return false;
+
+  if (g.action === 'playCard') {
+    const card = myHand.find(c => c.id === payload.cardId);
+    if (!card) return false;
+    if (g.cardKey && card.key !== g.cardKey) return false;
+    if (g.target?.type === 'spawn-row') {
+      if (payload.spawn) return true;
+      if (payload.row === undefined || payload.col === undefined) return false;
+      if (payload.row !== g.target.row) return false;
+      return true; // any column in the home row is fine
+    }
+    if (g.target?.type === 'tile') {
+      if (payload.row !== g.target.row || payload.col !== g.target.col) return false;
+    }
+    return true;
+  }
+
+  if (g.action === 'attack') {
+    const attackerId = payload.attackerId;
+    const attacker = attackerId ? S.units[attackerId] : null;
+    const pos = attacker ? getUnitPos(attackerId) : null;
+    if (g.fromKey && attacker && attacker.key !== g.fromKey) return false;
+    if (g.fromUnit && pos && (pos.r !== g.fromUnit.row || pos.c !== g.fromUnit.col)) return false;
+    if (g.toUnit) {
+      if (payload.type !== 'attackUnit' && payload.type !== 'attackFromSpawn') return false;
+      const tPos = getUnitPos(payload.targetId);
+      if (!tPos || tPos.r !== g.toUnit.row || tPos.c !== g.toUnit.col) return false;
+    }
+    if (g.toRow !== undefined) {
+      if (payload.type !== 'attackRow') return false;
+      if (payload.row !== g.toRow) return false;
+    }
+    return true;
+  }
+
+  if (g.action === 'move') {
+    if (g.fromUnit) {
+      const id = payload.unitId;
+      const pos = id ? getUnitPos(id) : null;
+      if (!pos || pos.r !== g.fromUnit.row || pos.c !== g.fromUnit.col) return false;
+    }
+    if (g.toTile) {
+      if (payload.toRow !== g.toTile.row || payload.toCol !== g.toTile.col) return false;
+    }
+    return true;
+  }
+
+  return true;
 }
 
 function spawnClick(spawnSide){ // spawnSide = "gold" | "silver"
@@ -2722,6 +3039,24 @@ if (spawnYouEl) spawnYouEl.addEventListener("click", () => {
   spawnClick(spawnSide);
 });
 
+if (spawnYouEl) {
+  spawnYouEl.addEventListener("dragover", (e) => {
+    if (!deployCardId || !spawnYouEl.classList.contains("deploy-valid")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    spawnYouEl.classList.add("drag-hover");
+  });
+  spawnYouEl.addEventListener("dragleave", () => spawnYouEl.classList.remove("drag-hover"));
+  spawnYouEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    spawnYouEl.classList.remove("drag-hover");
+    if (!deployCardId) return;
+    dragDropSucceeded = true;
+    dragDropPos = { x: e.clientX, y: e.clientY };
+    spawnClick(myRole);
+  });
+}
+
 
 function cellId(vr, c) { return `cell-${vr}-${c}`; }
 function rowHpId(vr) { return `rowhp-${vr}`; }
@@ -2729,6 +3064,8 @@ function rowHpId(vr) { return `rowhp-${vr}`; }
 function buildBoardOnce() {
   if (!boardEl) return;
   boardEl.innerHTML = "";
+  const rowHpColumn = document.getElementById("rowHpColumn");
+  if (rowHpColumn) rowHpColumn.innerHTML = "";
 
   for (let vr = 0; vr < ROWS; vr++) {
     for (let c = 0; c < COLS; c++) {
@@ -2736,13 +3073,32 @@ function buildBoardOnce() {
       cell.className = "cell";
       cell.id = cellId(vr, c);
       cell.addEventListener("click", (e) => onCellClick(vr, c, e));
+      cell.addEventListener("dragover", (e) => {
+        if (!deployCardId) return;
+        const isValid = cell.classList.contains("deploy-valid") || cell.classList.contains("move-valid") ||
+          cell.classList.contains("attack-valid") || cell.classList.contains("row-attack-valid") ||
+          cell.classList.contains("swap-valid");
+        if (!isValid) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        cell.classList.add("drag-hover");
+      });
+      cell.addEventListener("dragleave", () => cell.classList.remove("drag-hover"));
+      cell.addEventListener("drop", (e) => {
+        e.preventDefault();
+        cell.classList.remove("drag-hover");
+        if (!deployCardId) return;
+        dragDropSucceeded = true;
+        dragDropPos = { x: e.clientX, y: e.clientY };
+        onCellClick(vr, c, { shiftKey: false });
+      });
       boardEl.appendChild(cell);
     }
 
     const hp = document.createElement("div");
     hp.className = "rowHP";
     hp.id = rowHpId(vr);
-    boardEl.appendChild(hp);
+    (rowHpColumn || boardEl).appendChild(hp);
   }
 }
 
@@ -2879,7 +3235,12 @@ function renderHand() {
 
     el.onclick = () => {
       if (!isMyTurn()) return log("Not your turn.", "system");
-      
+      // Tutorial: only allow selecting/playing the highlighted card
+      if (isTutorial && tutorialGate) {
+        if (tutorialGate.action !== 'playCard') return log("Follow the highlighted step.", "system");
+        if (tutorialGate.cardKey && card.key !== tutorialGate.cardKey) return log("Follow the highlighted step.", "system");
+      }
+
       // If clicking the same card, deselect it
       if (selectedCardId === card.id) {
         selectedCardId = null;
@@ -2915,14 +3276,48 @@ function renderHand() {
       highlightDeployTiles();
     };
     
-    // Tooltip on hover
-    el.onmouseenter = (e) => showCardTooltip(card, e.clientX, e.clientY);
+    // Tooltip on hover (suppressed during drag and during scripted tutorial)
+    el.onmouseenter = (e) => { if (!deployCardId && (!isTutorial || tutorialFreePlay)) showCardTooltip(card, e.clientX, e.clientY); };
     el.onmousemove = (e) => {
-      if (tooltipEl?.classList.contains("visible")) {
+      if (!deployCardId && tooltipEl?.classList.contains("visible")) {
         positionTooltip(e.clientX, e.clientY);
       }
     };
     el.onmouseleave = hideTooltip;
+
+    // Drag-and-drop to board (skip instant non-targeted spells — they play immediately)
+    if (!(card.effect === "instant" && !card.requiresTarget)) {
+      el.draggable = true;
+      el.addEventListener("dragstart", (e) => {
+        if (!isMyTurn()) { e.preventDefault(); return; }
+        // Tutorial: block dragging the wrong card
+        if (isTutorial && tutorialGate) {
+          if (tutorialGate.action !== 'playCard') { e.preventDefault(); return; }
+          if (tutorialGate.cardKey && card.key !== tutorialGate.cardKey) { e.preventDefault(); return; }
+        }
+        const effectiveCost = S.cheatGreedActive ? 1 : card.cost;
+        if (myEnergy < effectiveCost) { e.preventDefault(); return; }
+        dragDropSucceeded = false;
+        selectedCardId = card.id;
+        deployCardId = card.id;
+        selectedUnitId = null;
+        selectedSpawnUnit = null;
+        e.dataTransfer.setData("text/plain", card.id);
+        e.dataTransfer.effectAllowed = "move";
+        hideTooltip();
+        requestAnimationFrame(() => { el.style.opacity = "0"; highlightDeployTiles(); });
+      });
+      el.addEventListener("dragend", () => {
+        el.style.opacity = "";
+        if (!dragDropSucceeded) {
+          selectedCardId = null;
+          deployCardId = null;
+          clearHighlights();
+          renderHand();
+        }
+        dragDropSucceeded = false;
+      });
+    }
 
     handEl.appendChild(el);
     
@@ -2966,6 +3361,10 @@ function renderHand() {
       drawBtn.classList.add("must-draw");
     } else {
       drawBtn.classList.remove("must-draw");
+    }
+    // Preserve tutorial glow across renderAll calls
+    if (isTutorial && !tutorialFreePlay && tutorialGate && tutorialGate.action === 'drawCard') {
+      drawBtn.classList.add('tutorial-glow');
     }
   }
 }
@@ -3371,9 +3770,15 @@ function renderAll() {
       if (damagingCells.has(damageKey)) {
         wrap.classList.add("taking-damage");
       }
-      
-      // Attack animation is applied directly when animate event arrives
-      // Do NOT re-apply on renderAll — this prevents double budge
+
+      // Re-apply attack budge animation if renderAll fires before it completes
+      const attackKey = `${sr}-${c}`;
+      if (attackingCells.has(attackKey)) {
+        const { budgeX, budgeY } = attackingCells.get(attackKey);
+        wrap.style.setProperty('--budge-x', `${budgeX}px`);
+        wrap.style.setProperty('--budge-y', `${budgeY}px`);
+        wrap.classList.add('attacking');
+      }
       
       // Add effect source animation (AOE caster glowing)
       const effectKey = `${sr}-${c}`;
@@ -3596,6 +4001,7 @@ function renderAll() {
 if (endTurnBtn) {
   endTurnBtn.onclick = () => {
     if (!isMyTurn()) return log("Not your turn.", "system");
+    if (isTutorial && tutorialGate && tutorialGate.action !== 'endTurn') return log("Follow the highlighted step.", "system");
     deployCardId = null;
     selectedCardId = null;
     selectedUnitId = null;
@@ -3609,6 +4015,7 @@ if (drawBtn) {
   drawBtn.onclick = () => {
     if (!isMyTurn()) return log("Not your turn.", "system");
     if (!canDraw) return log("Already drew this turn.", "system");
+    if (isTutorial && tutorialGate && tutorialGate.action !== 'drawCard') return log("Follow the highlighted step.", "system");
     playSFX('draw'); // Play draw sound immediately
     sendAction({ type: "drawCard" });
   };
@@ -3932,6 +4339,20 @@ function onCellClick(viewRow, col, event) {
       return;
     }
 
+    // Tutorial: only allow selecting the unit the script wants to act with
+    if (isTutorial && tutorialGate && (tutorialGate.action === 'attack' || tutorialGate.action === 'move' || tutorialGate.action === 'attackHeart')) {
+      if (clickedUnit.owner !== myRole) return log("Follow the highlighted step.", "system");
+      if (tutorialGate.fromUnit) {
+        const pos = getUnitPos(occId);
+        if (!pos || pos.r !== tutorialGate.fromUnit.row || pos.c !== tutorialGate.fromUnit.col) return log("Follow the highlighted step.", "system");
+      } else if (tutorialGate.fromKey) {
+        if (clickedUnit.key !== tutorialGate.fromKey) return log("Follow the highlighted step.", "system");
+      }
+    } else if (isTutorial && tutorialGate && tutorialGate.action !== 'playCard') {
+      // gate is for something else (drawCard, endTurn) — no unit selection allowed
+      return log("Follow the highlighted step.", "system");
+    }
+
     selectedUnitId = occId;
     selectedSpawnUnit = null;
     selectedCardId = null;
@@ -4056,6 +4477,19 @@ function onCellClick(viewRow, col, event) {
 
 socket.on("connect", () => log("Connected: " + socket.id, "system"));
 socket.on("disconnect", () => log("Disconnected", "system"));
+socket.on("needRejoin", (data) => {
+  const ts = new Date().toISOString().slice(11, 23);
+  console.warn(`[NEEDREJOIN ${ts}] server lost session — re-rejoining lobby=${lobbyCode} retryAction=${data?.retry?.type || 'none'}`);
+  if (!lobbyCode) return;
+  socket.emit('rejoinGame', { code: lobbyCode, isHost: isHost });
+  // Retry the action after the rejoin completes (server will set socket.data.lobbyCode again)
+  if (data?.retry) {
+    setTimeout(() => {
+      console.warn(`[NEEDREJOIN] retrying action: ${data.retry.type}`);
+      socket.emit("action", data.retry);
+    }, 200);
+  }
+});
 socket.on("log", (data) => {
   // Handle both old string format and new object format
   if (typeof data === 'string') {
@@ -5242,7 +5676,7 @@ function showVoidCollapseSequence(tiles, destroyedCount, destroyedUnits = []) {
       sortedTiles.forEach((tile, index) => {
         setTimeout(() => {
           playSFX('implosion');
-          animateVoidCollapse(tile.r, tile.c);
+          animateVoidCollapseTile(tile.r, tile.c);
           
           // Find if there's a unit on this tile and animate its death
           const unitOnTile = destroyedUnits.find(u => u.r === tile.r && u.c === tile.c);
@@ -5338,8 +5772,8 @@ function animateUnitVoidDeath(serverRow, col, artPath) {
   }, 150);
 }
 
-// Animate void collapse destruction effect on a single tile
-function animateVoidCollapse(serverRow, col) {
+// Animate void collapse destruction effect on a single tile (boss event)
+function animateVoidCollapseTile(serverRow, col) {
   const viewRow = toViewRow(serverRow);
   const cellEl = document.getElementById(cellId(viewRow, col));
   if (!cellEl) return;
@@ -8887,22 +9321,28 @@ function animateCardPlay(card, targetEl, callback) {
   
   const sourceRect = sourceEl.getBoundingClientRect();
   const targetRect = targetEl.getBoundingClientRect();
-  
+
+  // If the card was dragged, start the animation from the drop position instead of the hand
+  const dropPos = dragDropPos;
+  dragDropPos = null;
+  const sourceLeft = dropPos ? dropPos.x - 34 : sourceRect.left;
+  const sourceTop = dropPos ? dropPos.y - 47 : sourceRect.top;
+
   // Create animated card element
   const animCard = document.createElement("div");
   animCard.className = "animating-card";
-  
+
   const icon = CARD_ICONS[card.key] || '⚔️';
   const hasArt = card.art;
   const artStyle = hasArt ? `background: url('${card.art}') center/cover no-repeat` : '';
-  
+
   animCard.innerHTML = `
     <div class="cardArt ${card.type === 'spell' ? 'spell-art' : ''}" style="${artStyle}">${hasArt ? '' : icon}</div>
   `;
-  
+
   // Position at source
-  animCard.style.left = sourceRect.left + 'px';
-  animCard.style.top = sourceRect.top + 'px';
+  animCard.style.left = sourceLeft + 'px';
+  animCard.style.top = sourceTop + 'px';
   
   animationLayer.appendChild(animCard);
   
@@ -9235,10 +9675,20 @@ if (resumeBtn) {
 }
 
 if (restartBtn) {
+  // Tutorial mode: always show "Restart Tutorial"
+  if (isTutorial) {
+    restartBtn.textContent = "Restart Tutorial";
+    restartBtn.style.display = "block";
+  }
   restartBtn.onclick = () => {
     if (playtestMode) {
       if (confirm("Restart playtest? This will reset the board.")) {
         socket.emit("startPlaytest", { username: "Tester" });
+        if (gameMenu) gameMenu.classList.add("hidden");
+      }
+    } else if (isTutorial) {
+      if (confirm("Restart the tutorial from the beginning?")) {
+        socket.emit("restartGame");
         if (gameMenu) gameMenu.classList.add("hidden");
       }
     } else if (confirm("Restart the game? This will reset all progress.")) {
@@ -9249,9 +9699,20 @@ if (restartBtn) {
 }
 
 if (leaveBtn) {
+  // Tutorial mode: relabel + remove the "ends game for both players" hint
+  if (isTutorial) {
+    leaveBtn.textContent = "Exit Tutorial";
+    const hint = document.querySelector('.menuHint');
+    if (hint) hint.style.display = "none";
+  }
   leaveBtn.onclick = () => {
     if (playtestMode) {
       window.location.href = "/home.html";
+    } else if (isTutorial) {
+      if (confirm("Exit the tutorial? You can replay it from Settings later.")) {
+        socket.emit("tutorialSkip");
+        window.location.href = "/home.html";
+      }
     } else if (confirm("Leave the game? This will end it for both players.")) {
       socket.emit("leaveGame");
       window.location.href = "/home.html";
@@ -9422,6 +9883,41 @@ socket.on("campaignVictory", (data) => {
   // Show victory popup
   showCampaignVictoryPopup(data);
 });
+
+function showAchievementNotifications(achievements) {
+  if (!achievements || achievements.length === 0) return;
+  achievements.forEach((achievement, index) => {
+    setTimeout(() => showSingleAchievementNotification(achievement), index * 2000);
+  });
+}
+
+function showSingleAchievementNotification(achievement) {
+  let container = document.getElementById('achievementNotifContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'achievementNotifContainer';
+    container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+    document.body.appendChild(container);
+  }
+
+  const notif = document.createElement('div');
+  notif.style.cssText = 'background:rgba(10,10,25,0.97);border:1.5px solid rgba(251,191,36,0.75);padding:14px 18px;max-width:290px;transform:translateX(120%);transition:transform 0.4s ease;box-shadow:0 0 24px rgba(251,191,36,0.2);position:relative;';
+  notif.innerHTML = `
+    <div style="position:absolute;top:5px;left:5px;right:5px;bottom:5px;border:1px solid rgba(251,191,36,0.25);pointer-events:none;"></div>
+    <div style="font-family:'Cinzel',serif;font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;">Achievement Unlocked</div>
+    <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#fbbf24;">${achievement.icon} ${achievement.name}</div>
+  `;
+  container.appendChild(notif);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    notif.style.transform = 'translateX(0)';
+  }));
+
+  setTimeout(() => {
+    notif.style.transform = 'translateX(120%)';
+    setTimeout(() => notif.remove(), 420);
+  }, 3500);
+}
 
 function showCampaignVictoryPopup(data) {
   const popup = document.createElement("div");
@@ -9899,6 +10395,13 @@ function showCampaignVictoryPopup(data) {
       font-size: 14px;
       margin-top: 10px;
       transition: opacity 0.5s ease;
+    }
+    .achievement-unlock {
+      color: #fbbf24;
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 6px;
+      padding: 6px 10px;
+      background: rgba(251,191,36,0.08);
     }
     .victory-btn {
       margin-top: 20px;
@@ -10390,8 +10893,11 @@ function showCampaignVictoryPopup(data) {
     const bgUnlock = document.getElementById('bgUnlock');
     if (musicUnlock) musicUnlock.style.opacity = '1';
     if (bgUnlock) bgUnlock.style.opacity = '1';
+    if (data.newAchievements && data.newAchievements.length > 0) {
+      showAchievementNotifications(data.newAchievements);
+    }
   }, 3800);
-  
+
   // Show continue button after everything
   setTimeout(() => {
     document.getElementById('victoryBtn').style.opacity = '1';
@@ -10400,6 +10906,7 @@ function showCampaignVictoryPopup(data) {
 
 // Handle errors (disconnection, etc)
 socket.on("lobbyError", (msg) => {
+  console.error("[LOBBY ERROR]", msg);
   alert(msg);
   window.location.href = "/home.html";
 });

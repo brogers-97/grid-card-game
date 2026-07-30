@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  email: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -95,7 +99,8 @@ const userSchema = new mongoose.Schema({
   preferences: {
     selectedDeck: { type: String, default: 'medieval' },
     selectedMusic: { type: String, default: 'medieval' },
-    selectedBackground: { type: String, default: 'medieval' }
+    selectedBackground: { type: String, default: 'medieval' },
+    tutorialCompleted: { type: Boolean, default: false }
   },
   
   // Stats
@@ -141,6 +146,19 @@ const userSchema = new mongoose.Schema({
   gold: {
     type: Number,
     default: 0
+  },
+
+  // Rift Gems currency - used by the Card Creator
+  riftGems: {
+    type: Number,
+    default: 0
+  },
+
+  // Custom cards built in the Card Creator (key -> full card def + count owned)
+  customCards: {
+    type: Map,
+    of: mongoose.Schema.Types.Mixed,
+    default: () => new Map()
   }
 });
 
@@ -174,6 +192,8 @@ userSchema.methods.toPublicJSON = function() {
     stats: this.stats,
     achievements: Object.fromEntries(this.achievements || new Map()),
     gold: this.gold || 0,
+    riftGems: this.riftGems || 0,
+    customCards: Object.fromEntries(this.customCards || new Map()),
     createdAt: this.createdAt
   };
 };
@@ -314,7 +334,150 @@ const CARD_RARITIES = {
   'wizardnpc': 'legendary',
   'finalboss': 'legendary',
   'resetbutton': 'legendary',
-  'ragequit': 'legendary'
+  'ragequit': 'legendary',
+  // Medieval Kingdom
+  'peasant': 'common',
+  'squire': 'common',
+  'archer': 'common',
+  'manatarms': 'common',
+  'battlefieldmedic': 'common',
+  'knight': 'common',
+  'castlewalls': 'common',
+  'treasury': 'common',
+  'rally': 'common',
+  'shieldbearer': 'rare',
+  'warhound': 'rare',
+  'royalguard': 'rare',
+  'siegeram': 'rare',
+  'warbanner': 'rare',
+  'shrine': 'rare',
+  'armory': 'rare',
+  'crusader': 'legendary',
+  'paladin': 'legendary'
+};
+
+// Card Creator effect bank - curated, generalized monster effects a player can
+// attach to a custom card. tier seeds the cost floor (see TIER_FLOORS) and the
+// deck-copy-limit bucket (reuses the same common/rare/legendary buckets as real cards).
+// trigger mirrors the `effect` field real cards use; extraFields are static
+// properties some effects need on the card object beyond atk/hp/effectId.
+const EFFECT_BANK = {
+  // --- Common ---
+  spawn_slimelings:        { tier: 'common', trigger: 'onDeath', name: 'Slime Burst', desc: 'On death, spawn two 1/1 Slimeling tokens in adjacent empty tiles.' },
+  respawn_once:            { tier: 'common', trigger: 'onDeath', name: 'Second Wind', desc: 'The first time this unit dies, it returns to your spawn tile instead.' },
+  explode_aoe:             { tier: 'common', trigger: 'onDeath', name: 'Death Explosion', desc: 'On death, deal 3 damage to all adjacent enemies.' },
+  heal_adjacent_and_death: { tier: 'common', trigger: 'endOfTurn', name: 'Healing Spirit', desc: 'At end of turn, heal adjacent allies 1 HP. On death, heal all allies 1 HP.' },
+  cherub_draw:             { tier: 'common', trigger: 'onDeploy', name: 'Inspired Arrival', desc: 'On deploy, draw a card.' },
+  attendant_heal:          { tier: 'common', trigger: 'startOfTurn', name: 'Gentle Mending', desc: 'At start of turn, heal adjacent allies 1 HP.' },
+  maiden_heal:             { tier: 'common', trigger: 'startOfTurn', name: 'Devoted Ward', desc: 'At start of turn, heal your heart 1 HP.' },
+  blood_bite:              { tier: 'common', trigger: 'passive', name: 'Double Bite', desc: 'Attacks twice; the second attack deals 1 damage.' },
+  lifesteal:               { tier: 'common', trigger: 'passive', name: 'Lifesteal', desc: 'Heals 1 HP whenever this unit attacks.' },
+  meditation_buff:         { tier: 'common', trigger: 'startOfTurn', name: 'Meditation', desc: 'At start of turn, give a random friendly unit +1 ATK or +1 HP. Cannot move.', extraFields: { stationary: true } },
+  anti_effect:             { tier: 'common', trigger: 'passive', name: 'Effect Hunter', desc: '+1 ATK when attacking units that have an effect.' },
+  splash_random:           { tier: 'common', trigger: 'onAttack', name: 'Wild Splash', desc: 'On attack, deal 1 splash damage to a random other enemy.' },
+  sentinel_growth:         { tier: 'common', trigger: 'startOfTurn', name: 'Growing Resolve', desc: 'At start of turn, gain +1 HP if adjacent to 2+ allies.' },
+  starweave_ranged:        { tier: 'common', trigger: 'passive', name: 'Ranged Support', desc: 'Range 2. Gains +1 ATK for each adjacent ally.' },
+  blade_dance:             { tier: 'common', trigger: 'onKill', name: 'Blade Dance', desc: 'On kill, this unit can move again this turn.' },
+  heal_attack:             { tier: 'common', trigger: 'passive', name: 'Mending Strike', desc: 'Can attack allies to heal them for its ATK instead of dealing damage.' },
+  death_gem_card:          { tier: 'common', trigger: 'onDeath', name: 'Shard Drop', desc: 'On death, add a 1/1 Gem Shard card to your hand.' },
+  gem_spawn:               { tier: 'common', trigger: 'onDeploy', name: 'Gem Seeding', desc: 'On deploy, summon a 1/1 Gem Shard token in an adjacent empty tile.' },
+  fairy_swap:              { tier: 'common', trigger: 'passive', name: 'Swap', desc: 'Can swap positions with any friendly unit instead of moving.' },
+  gem_adjacent_buff:       { tier: 'common', trigger: 'endOfTurn', name: 'Gem Empowerment', desc: 'At end of turn, gain +1 ATK if adjacent to a Gem Shard token.' },
+  diagonal_attack:         { tier: 'common', trigger: 'passive', name: 'Diagonal Strike', desc: 'Can attack diagonally.' },
+  knight_leap:             { tier: 'common', trigger: 'passive', name: "Knight's Leap", desc: 'Can move to any friendly unit instead of a normal move.' },
+  ranged:                  { tier: 'common', trigger: 'passive', name: 'Ranged', desc: 'Can attack targets 2 tiles away.' },
+  heal_adjacent:           { tier: 'common', trigger: 'endOfTurn', name: 'Field Medic', desc: 'At end of turn, heal adjacent allies 1 HP.' },
+  drone_death_damage:      { tier: 'common', trigger: 'onDeath', name: 'Parting Shot', desc: 'On death, deal 1 damage to a random enemy.' },
+  energy_on_death:         { tier: 'common', trigger: 'onDeath', name: 'Energy Burst', desc: 'On death, gain 1 energy.' },
+  drain_energy:            { tier: 'common', trigger: 'onKill', name: 'Energy Drain', desc: 'On kill, drain 1 energy from your opponent.' },
+  energy_on_hit:           { tier: 'common', trigger: 'onAttack', name: 'Energized Strike', desc: 'On attack, if the target survives, gain 1 energy.' },
+  spawn_bone_pile:         { tier: 'common', trigger: 'onDeath', name: 'Bone Pile', desc: 'On death, summon a 1/1 Bone Pile token.' },
+  phantom:                 { tier: 'common', trigger: 'passive', name: 'Phantom', desc: "Untargetable during the opponent's first turn after being deployed." },
+
+  // --- Rare ---
+  triple_move:             { tier: 'rare', trigger: 'passive', name: 'Triple Step', desc: 'Can move three times per turn.' },
+  spawn_pixel:             { tier: 'rare', trigger: 'endOfTurn', name: 'Pixel Factory', desc: 'At end of turn, spawn a 1/1 Pixel token in a random adjacent empty tile.' },
+  destruction_heart:       { tier: 'rare', trigger: 'onKill', name: 'Heartpiercer', desc: 'On kill, deal 1 damage directly to the enemy heart.' },
+  seraphic_range:          { tier: 'rare', trigger: 'passive', name: 'Extended Range', desc: 'Range 3. Can only move or attack each turn, not both.', extraFields: { range: 3 } },
+  grow_max_hp_on_ally_death: { tier: 'rare', trigger: 'passive', name: 'Mourning Growth', desc: 'Gains +1 max HP whenever a friendly unit dies.' },
+  steal_card:              { tier: 'rare', trigger: 'onKill', name: 'Soul Collector', desc: 'On kill, add a copy of the killed unit to your hand.' },
+  lifesteal_weaken:        { tier: 'rare', trigger: 'passive', name: 'Draining Presence', desc: 'Lifesteal (heal 1 HP on attack). Adjacent enemies deal -1 damage.' },
+  mana_drain_kill:         { tier: 'rare', trigger: 'onKill', name: 'Mana Siphon', desc: 'On kill, the enemy loses 1 energy.' },
+  arcane_link:             { tier: 'rare', trigger: 'passive', name: 'Arcane Link', desc: 'When this unit takes damage, deal 1 damage to the nearest enemy.' },
+  spell_echo:              { tier: 'rare', trigger: 'passive', name: 'Spell Echo', desc: 'Whenever you cast a spell, deal 1 damage to a random enemy.' },
+  arcane_reflection:       { tier: 'rare', trigger: 'passive', name: 'Mirror Ward', desc: 'When this unit takes damage, reflect that damage back to the attacker.' },
+  volcanic_death:          { tier: 'rare', trigger: 'onDeath', name: 'Volcanic Collapse', desc: 'On death, set all adjacent units (and units adjacent to them) to 1 HP.' },
+  stone_shield:            { tier: 'rare', trigger: 'passive', name: 'Stone Shield', desc: 'When an adjacent ally would take damage, this unit takes it instead.' },
+  ambush_deploy:           { tier: 'rare', trigger: 'passive', name: 'Ambush', desc: 'Can be deployed into the neutral middle rows.' },
+  shadow_root:             { tier: 'rare', trigger: 'onAttack', name: 'Shadow Root', desc: 'On attack, the target cannot move next turn.' },
+  moonflare_aura:          { tier: 'rare', trigger: 'passive', name: 'Moonflare Aura', desc: 'Adjacent allies gain +1 ATK and +1 HP.' },
+  reflect_damage:          { tier: 'rare', trigger: 'passive', name: 'Thorns', desc: 'Reflects 1 damage back to attackers.' },
+  bodyguard:               { tier: 'rare', trigger: 'passive', name: 'Bodyguard', desc: 'When an adjacent friendly unit takes damage, this unit takes 1 of that damage instead.' },
+  consume_gem:             { tier: 'rare', trigger: 'passive', name: 'Gem Devourer', desc: 'Can attack friendly Gem Shard tokens to gain +2/+2.' },
+  shield_aura:             { tier: 'rare', trigger: 'passive', name: 'Shield Aura', desc: 'Adjacent allies take 1 less damage.' },
+  double_move:             { tier: 'rare', trigger: 'passive', name: 'Double Move', desc: 'Can move twice per turn.' },
+  cleave:                  { tier: 'rare', trigger: 'passive', name: 'Cleave', desc: 'Deals half damage to enemies adjacent to its attack target.' },
+  siege:                   { tier: 'rare', trigger: 'passive', name: 'Siege', desc: 'Deals double damage to row structures.' },
+  burrow:                  { tier: 'rare', trigger: 'passive', name: 'Burrow', desc: 'Untargetable for 2 turns after deploying. Can deploy adjacent to allies.' },
+  attack_aura:             { tier: 'rare', trigger: 'passive', name: 'Attack Aura', desc: 'Adjacent allies gain +1 ATK.' },
+  half_damage_aura:        { tier: 'rare', trigger: 'passive', name: 'Splash Attacks', desc: 'Attacks also deal 1 splash damage to enemies adjacent to the target.' },
+  draw_on_kill:            { tier: 'rare', trigger: 'onKill', name: 'Grave Robbing', desc: 'On kill, draw 1 card.' },
+  ranged_pierce:           { tier: 'rare', trigger: 'passive', name: 'Piercing Shot', desc: 'Ranged (2 tiles). Ignores shield effects.' },
+  weaken_aura:             { tier: 'rare', trigger: 'passive', name: 'Weaken Aura', desc: 'Adjacent enemies deal 1 less damage.' },
+  root_aura:               { tier: 'rare', trigger: 'passive', name: 'Root Aura', desc: 'Adjacent enemies cannot move.' },
+  grow_on_ally_death:      { tier: 'rare', trigger: 'passive', name: 'Vengeful Growth', desc: 'Gains +1/+1 whenever a friendly unit dies.' },
+
+  // --- Legendary ---
+  stacking_aura:           { tier: 'legendary', trigger: 'passive', name: 'Growing Presence', desc: "Buffs adjacent allies, starting at +1/+1 and growing +1/+1 each turn it doesn't move (max +4/+4). Resets if it moves." },
+  rage_mode:               { tier: 'legendary', trigger: 'passive', name: "Berserker's Rage", desc: 'Gains +1 ATK for each HP it has lost.' },
+  adapt_hp:                { tier: 'legendary', trigger: 'passive', name: 'Adaptive Growth', desc: 'Gains +1 max HP whenever it survives damage.' },
+  absorb_ally:             { tier: 'legendary', trigger: 'passive', name: 'Absorption', desc: 'Can attack a friendly unit to absorb their stats.' },
+  death_explosion:         { tier: 'legendary', trigger: 'onDeath', name: 'Final Detonation', desc: 'On death, deal 2 damage to all adjacent enemies.' },
+  stampede:                { tier: 'legendary', trigger: 'passive', name: 'Stampede', desc: 'Can move up to 2 tiles. Deals +2 damage to structures.' },
+  thick_bones:             { tier: 'legendary', trigger: 'passive', name: 'Thick Bones', desc: 'Takes 1 less damage from all sources.' },
+  lifesteal_grow:          { tier: 'legendary', trigger: 'passive', name: 'Bloodthirst', desc: 'Lifesteal (heal 1 HP on attack). On kill, gain +1/+1.' },
+  immortal:                { tier: 'legendary', trigger: 'passive', name: 'Immortal', desc: 'The first time this unit would die, it heals to full HP instead (once per game).' },
+  lifesteal_lord:          { tier: 'legendary', trigger: 'passive', name: 'Vampiric Lordship', desc: 'Can attack diagonally. All friendly units gain Lifesteal.' },
+  garnet_aura:             { tier: 'legendary', trigger: 'passive', name: 'Royal Decree', desc: 'Adjacent enemies have their ATK capped at 2. Adjacent allies gain +1 ATK.' },
+  gem_transform:           { tier: 'legendary', trigger: 'onKill', name: 'Gem Curse', desc: 'On kill, transform the killed unit into a 1/1 Gem Shard. Gains +1 ATK per Gem Shard on the field.' },
+  gem_death_aoe:           { tier: 'legendary', trigger: 'passive', name: 'Shattering Grief', desc: 'Whenever a friendly Gem Shard dies, all enemies take 1 damage.' },
+  heal_on_kill:            { tier: 'legendary', trigger: 'onKill', name: 'Vengeful Healing', desc: 'On kill, heal 2 HP (can exceed max HP).' },
+  energy_on_kill:          { tier: 'legendary', trigger: 'onKill', name: 'Energized Victory', desc: 'On kill, gain 1 energy.' },
+  spawn_drone:             { tier: 'legendary', trigger: 'onKill', name: 'Brood Mother', desc: 'On kill, spawn a Void Drone token. Gains +1 ATK for each Void Drone you control.' },
+  starlit_slayer:          { tier: 'legendary', trigger: 'onKill', name: 'Starlit Ascension', desc: 'On kill, gain 1 energy and permanently gain +1 ATK.' },
+  star_strike:             { tier: 'legendary', trigger: 'startOfTurn', name: 'Star Strike', desc: 'At start of turn, deal 2 damage to a random enemy.' },
+  red_wizard:              { tier: 'legendary', trigger: 'passive', name: 'Vital Resonance', desc: 'Whenever any unit on the field gains HP, this unit also gains +1 HP.' },
+  blue_wizard:             { tier: 'legendary', trigger: 'passive', name: 'Power Resonance', desc: 'Whenever any unit on the field gains ATK, this unit also gains +1 ATK.' },
+  time_rift:               { tier: 'legendary', trigger: 'onDeploy', name: 'Time Rift', desc: 'On deploy, resurrect a unit from your discard pile adjacent to this unit, with full stats.' },
+  michael_rampage:         { tier: 'legendary', trigger: 'onKill', name: 'Relentless Assault', desc: 'The first kill each turn lets this unit move and attack again.' },
+  uriel_wisdom:            { tier: 'legendary', trigger: 'passive', name: 'Arcane Wisdom', desc: 'Gain 1 energy whenever you draw a card. Draw a card whenever this unit kills an enemy.' },
+  gabriel_wrath:           { tier: 'legendary', trigger: 'onAttack', name: 'Wrathful Strike', desc: 'On attack, deal 1 damage to all enemies in the same row as the target.' },
+  raphael_shield:          { tier: 'legendary', trigger: 'passive', name: 'Guardian Ward', desc: 'Immune to damage when deployed. Allies within 3 tiles behind it take no damage.' },
+  lucifer_curse:           { tier: 'legendary', trigger: 'startOfTurn', name: 'Hellfire Pact', desc: 'Can be deployed to any space on the board. At the start of each turn, deal 3 damage to your own heart.', extraFields: { deployAnywhere: true } }
+};
+
+const FACTION_CARDS = {
+  'medieval':          ['peasant','squire','archer','manatarms','battlefieldmedic','knight','castlewalls','treasury','rally','shieldbearer','warhound','royalguard','siegeram','warbanner','shrine','armory','crusader','paladin'],
+  'void-alien':        ['voiddrone','scavengerlarva','spittercrawler','phaseskirmisher','energyleech','burrowerbeast','psionicoverseer','neuralharvester','adaptivecolossus','sporetitan','voidbroodmother','eclipsedevourer','ufoscraper','assimilation','voidcollapse','hiveascension'],
+  'western-skeleton':  ['bonedeputy','dustyrattler','graverobber','phantomscout','bonerevolver','undeadsheriff','coffintrapper','undertaker','thehangedman','ghostlystampede','bonecolossus','deadmanshand','mostwanted','shallowgrave','highnoon'],
+  'crimson-court':     ['thrall','bloodfamiliar','nightstalker','cryptkeeper','vampirespawn','bloodpriest','soulcollector','nosferatu','coffin','bloodcountess','eldervampire','vampirelord','bloodpact','bloodtransfusion','crimsonrevival','sanguinefeast'],
+  'jeweled-court':     ['rubysprite','emeraldforager','sapphiredancer','topazminer','amethystenchanter','diamondguardian','opaldevourer','pearlblessing','garnetqueen','moonstonewitch','prismaticfairy','gemstonecurse','fairyring'],
+  'elunes-chosen':     ['moonsentinel','starweavearcher','moonlitbladedancer','lunarpriestess','twilightsrespite','huntinggodsblessing','stonegiant','nightshadeambusher','moonshadowwarden','elunesmoonwell','lunarprayer','moonflaresorceress','starlitchampion','starinvoker','templeofthemoon','lunarbarrage'],
+  'dragon-wizard':     ['wizardsrune','meditationmonk','wyrmwhelp','cinderwing','manasiphonmage','arcanetether','stormdrake','mirrorwizard','volcanicdragon','redwizard','bluewizard','chronodrake','polymorph','manadrain','arcanesurge'],
+  'celestial-host':    ['cherubhymnist','angelicattendant','maidenofvirtue','angelofdestruction','seraphichunter','archangelmichael','archangeluriel','archangelgabriel','archangelraphael','luciferfallenangel','gardenofeden','blessingofmight','blessingofvigor','blessingofprotection','blessingofkings','angelicdescent','heavenlyrescue','layonhands','resurrection','wrathofgod'],
+  '8bit-battalion':    ['slimesprite','skeletonwarrior8bit','barrel','healerfairy','bosskey','newgameplus','knighterrant','pixelproducer','cheatcode','savestate','wizardnpc','finalboss','resetbutton','ragequit']
+};
+
+const FACTION_NAMES = {
+  'medieval':         'Medieval Kingdom',
+  'void-alien':       'Void Alien',
+  'western-skeleton': 'Western Skeleton',
+  'crimson-court':    'Crimson Court',
+  'jeweled-court':    'Jeweled Court',
+  'elunes-chosen':    "Elune's Chosen",
+  'dragon-wizard':    'Dragon Wizard',
+  'celestial-host':   'Celestial Host',
+  '8bit-battalion':   '8-Bit Battalion'
 };
 
 // Campaign Bosses Definition
@@ -569,6 +732,63 @@ const authHelpers = {
     return user.toPublicJSON();
   },
   
+  async changeUsername(userId, password, newUsername) {
+    if (userId === 'admin') throw new Error('Cannot change admin username');
+    if (!newUsername || newUsername.length < 3 || newUsername.length > 20) {
+      throw new Error('Username must be 3-20 characters');
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
+      throw new Error('Username can only contain letters, numbers, and underscores');
+    }
+    if (newUsername.toLowerCase() === ADMIN_USERNAME) throw new Error('Username not available');
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) throw new Error('Incorrect password');
+
+    const existing = await User.findOne({ username: newUsername.toLowerCase() });
+    if (existing) throw new Error('Username already taken');
+
+    user.username = newUsername.toLowerCase();
+    await user.save();
+    return user.toPublicJSON();
+  },
+
+  async changePassword(userId, currentPassword, newPassword) {
+    if (userId === 'admin') throw new Error('Cannot change admin password');
+    if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters');
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) throw new Error('Incorrect current password');
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    return true;
+  },
+
+  async deleteAccount(userId, password) {
+    if (userId === 'admin') throw new Error('Cannot delete admin account');
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) throw new Error('Incorrect password');
+    await User.deleteOne({ _id: userId });
+    return true;
+  },
+
+  async adminResetPassword(username, newPassword) {
+    const user = await User.findOne({ username });
+    if (!user) throw new Error(`No account found with username "${username}"`);
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    return { username: user.username, email: user.email || '(no email set)' };
+  },
+
   async getUser(userId) {
     if (userId === 'admin') return null; // Admin doesn't persist
     const user = await User.findById(userId);
@@ -750,9 +970,12 @@ const authHelpers = {
     
     // Update stats
     user.stats.campaignWins++;
-    
+
+    // Award achievements
+    const newAchievements = checkAndAwardAchievements(user);
+
     await user.save();
-    
+
     return {
       user: user.toPublicJSON(),
       rewards: {
@@ -760,7 +983,8 @@ const authHelpers = {
         isHolo: isChallenge,
         music: boss.unlocks.music,
         background: boss.unlocks.background
-      }
+      },
+      newAchievements
     };
   }
 };
@@ -864,6 +1088,20 @@ const ACHIEVEMENTS = {
     icon: '🐉',
     category: 'boss'
   },
+  boss_seraph: {
+    id: 'boss_seraph',
+    name: 'Judgment Passed',
+    description: 'Defeat The Seraph of Judgment',
+    icon: '😇',
+    category: 'boss'
+  },
+  boss_final: {
+    id: 'boss_final',
+    name: 'Game Over',
+    description: 'Defeat The Final Boss',
+    icon: '👾',
+    category: 'boss'
+  },
 
   // ===== CHALLENGE MODE (3) =====
   challenge_first: {
@@ -901,7 +1139,7 @@ const ACHIEVEMENTS = {
   campaign_complete: {
     id: 'campaign_complete',
     name: 'Campaign Victor',
-    description: 'Beat all 6 Campaign Bosses',
+    description: 'Beat all 8 Campaign Bosses',
     icon: '🏆',
     category: 'campaign',
     reward: { type: 'background', id: 'champion' }
@@ -1339,6 +1577,52 @@ const ACHIEVEMENTS = {
   }
 };
 
+const BOSS_ID_TO_ACHIEVEMENT = {
+  1: 'boss_void',
+  2: 'boss_skeleton',
+  3: 'boss_vampire',
+  4: 'boss_fairy',
+  5: 'boss_elf',
+  6: 'boss_dragon',
+  7: 'boss_seraph',
+  8: 'boss_final'
+};
+
+function checkAndAwardAchievements(user) {
+  const newlyUnlocked = [];
+
+  function award(key) {
+    if (ACHIEVEMENTS[key] && !user.achievements.get(key)) {
+      user.achievements.set(key, true);
+      newlyUnlocked.push({ id: key, name: ACHIEVEMENTS[key].name, icon: ACHIEVEMENTS[key].icon });
+    }
+  }
+
+  // Boss victories
+  for (const [bossId, achievKey] of Object.entries(BOSS_ID_TO_ACHIEVEMENT)) {
+    if (user.campaign.completedLevels.includes(Number(bossId))) {
+      award(achievKey);
+    }
+  }
+
+  // Campaign progress
+  const completedCount = user.campaign.completedLevels.length;
+  if (completedCount >= 3) award('campaign_half');
+  if (completedCount >= 8) award('campaign_complete');
+
+  // Campaign perfect — all 8 bosses with 3+ stars
+  const allPerfect = [1,2,3,4,5,6,7,8].every(id => (user.campaign.stars.get(String(id)) || 0) >= 3);
+  if (allPerfect) award('campaign_perfect');
+
+  // Challenge mode — count bosses beaten on challenge (4 stars = challenge)
+  const challengeWins = [1,2,3,4,5,6,7,8].filter(id => (user.campaign.stars.get(String(id)) || 0) >= 4).length;
+  if (challengeWins >= 1) award('challenge_first');
+  if (challengeWins >= 3) award('challenge_three');
+  if (challengeWins >= 8) award('challenge_all');
+
+  return newlyUnlocked;
+}
+
 // Helper to get all achievements as array
 function getAllAchievements() {
   return Object.values(ACHIEVEMENTS);
@@ -1419,6 +1703,45 @@ const CAMPAIGN_GOLD = {
   4: 50   // Challenge
 };
 
+// Campaign Rift Gem rewards by difficulty (roughly 60% of the gold reward)
+const CAMPAIGN_GEMS = {
+  1: 3,   // Easy
+  2: 6,   // Medium
+  3: 12,  // Hard
+  4: 30   // Challenge
+};
+
+// Card Creator cost formula - effect tier sets a cost floor (so a powerful
+// effect can't be cheesed by minimizing ATK/HP), stats add a smaller amount on top.
+const TIER_FLOORS = {
+  common:    { energy: 1, gems: 50 },
+  rare:      { energy: 4, gems: 200 },
+  legendary: { energy: 7, gems: 450 }
+};
+const GEM_PER_STAT_POINT = { common: 5, rare: 15, legendary: 30 };
+const CUSTOM_CARD_ATK_RANGE = { min: 0, max: 8 };
+const CUSTOM_CARD_HP_RANGE = { min: 1, max: 12 };
+const RANDOM_CARD_DISCOUNT = 0.35; // gem-cost-only discount for the random generator
+
+function calculateCustomCardCost(atk, hp, effectId) {
+  const tier = (EFFECT_BANK[effectId] && EFFECT_BANK[effectId].tier) || 'common';
+  const statPoints = atk + hp;
+  const energyCost = Math.min(9, TIER_FLOORS[tier].energy + Math.floor(statPoints / 3));
+  const gemCost = TIER_FLOORS[tier].gems + statPoints * GEM_PER_STAT_POINT[tier];
+  return { energyCost, gemCost, tier };
+}
+
+// Simple deterministic hash so identical (atk, hp, effectId) combos always
+// resolve to the same custom card key (building a duplicate just adds a copy).
+function customCardKey(atk, hp, effectId) {
+  const str = atk + '_' + hp + '_' + effectId;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return 'custom_' + Math.abs(hash).toString(36);
+}
+
 // Generate daily deals (3 cards at discounted prices) - seeded by date
 function getDailyDeals() {
   const today = new Date();
@@ -1463,11 +1786,12 @@ function getDailyDeals() {
 }
 
 // Open a pack - returns array of card keys
-function openPack(packId) {
+function openPack(packId, deckId) {
   const pack = PACKS[packId];
   if (!pack) return null;
-  
-  const allCards = Object.keys(CARD_RARITIES);
+
+  const cardPool = (deckId && FACTION_CARDS[deckId]) ? FACTION_CARDS[deckId] : Object.keys(CARD_RARITIES);
+  const allCards = cardPool.filter(k => CARD_RARITIES[k]);
   const cards = [];
   
   // Handle guarantees first
@@ -1542,20 +1866,20 @@ const shopHelpers = {
     return { success: true, gold: user.gold, cardCollection: Object.fromEntries(user.cardCollection) };
   },
   
-  async buyPack(userId, packId) {
-    if (userId === 'admin') return { success: true, gold: 99999, cards: openPack(packId) };
-    
+  async buyPack(userId, packId, deckId) {
+    if (userId === 'admin') return { success: true, gold: 99999, cards: openPack(packId, deckId) };
+
     const pack = PACKS[packId];
     if (!pack) throw new Error('Invalid pack');
-    
+
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
-    
+
     if (user.gold < pack.price) throw new Error('Not enough gold');
-    
+
     user.gold -= pack.price;
-    
-    const cards = openPack(packId);
+
+    const cards = openPack(packId, deckId);
     for (const cardKey of cards) {
       const currentCount = user.cardCollection.get(cardKey) || 0;
       user.cardCollection.set(cardKey, currentCount + 1);
@@ -1589,13 +1913,108 @@ const shopHelpers = {
   
   async addGold(userId, amount) {
     if (userId === 'admin') return { success: true, gold: 99999 };
-    
+
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
-    
+
     user.gold += amount;
     await user.save();
     return { success: true, gold: user.gold };
+  },
+
+  async addGems(userId, amount) {
+    if (userId === 'admin') return { success: true, riftGems: 99999 };
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    user.riftGems = (user.riftGems || 0) + amount;
+    await user.save();
+    return { success: true, riftGems: user.riftGems };
+  }
+};
+
+// Card Creator helpers
+const cardCreatorHelpers = {
+  getEffectBank() {
+    return EFFECT_BANK;
+  },
+
+  async _commitCard(user, atk, hp, effectId, name, gemCostOverride) {
+    const { energyCost, gemCost: fullGemCost, tier } = calculateCustomCardCost(atk, hp, effectId);
+    const gemCost = gemCostOverride != null ? gemCostOverride : fullGemCost;
+    if ((user.riftGems || 0) < gemCost) throw new Error('Not enough Rift Gems');
+
+    const bankEntry = EFFECT_BANK[effectId];
+    const key = customCardKey(atk, hp, effectId);
+
+    user.riftGems -= gemCost;
+    const existing = user.customCards.get(key);
+    if (existing) {
+      existing.count = (existing.count || 1) + 1;
+      user.customCards.set(key, existing);
+    } else {
+      user.customCards.set(key, {
+        key, name, atk, hp, cost: energyCost,
+        type: 'monster', archetype: 'custom',
+        effect: bankEntry.trigger, effectId,
+        effectDesc: bankEntry.desc, rarity: tier,
+        ...(bankEntry.extraFields || {}),
+        count: 1
+      });
+    }
+
+    // Mongoose doesn't auto-detect in-place mutation of Mixed values inside a Map
+    user.markModified('customCards');
+    await user.save();
+    return {
+      success: true,
+      riftGems: user.riftGems,
+      gemCost, energyCost, tier, key,
+      customCards: Object.fromEntries(user.customCards)
+    };
+  },
+
+  async buildCard(userId, { name, atk, hp, effectId }) {
+    if (userId === 'admin') return { success: true, riftGems: 99999 };
+
+    if (!EFFECT_BANK[effectId]) throw new Error('Unknown effect');
+    if (typeof atk !== 'number' || atk < CUSTOM_CARD_ATK_RANGE.min || atk > CUSTOM_CARD_ATK_RANGE.max) {
+      throw new Error('ATK out of range');
+    }
+    if (typeof hp !== 'number' || hp < CUSTOM_CARD_HP_RANGE.min || hp > CUSTOM_CARD_HP_RANGE.max) {
+      throw new Error('HP out of range');
+    }
+    const trimmedName = (name || '').trim().slice(0, 30);
+    if (!trimmedName) throw new Error('Card name is required');
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    return cardCreatorHelpers._commitCard(user, atk, hp, effectId, trimmedName);
+  },
+
+  async buildRandomCard(userId) {
+    if (userId === 'admin') return { success: true, riftGems: 99999 };
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const atk = CUSTOM_CARD_ATK_RANGE.min + Math.floor(Math.random() * (CUSTOM_CARD_ATK_RANGE.max - CUSTOM_CARD_ATK_RANGE.min + 1));
+    const hp = CUSTOM_CARD_HP_RANGE.min + Math.floor(Math.random() * (CUSTOM_CARD_HP_RANGE.max - CUSTOM_CARD_HP_RANGE.min + 1));
+
+    const roll = Math.random();
+    const targetTier = roll < 0.6 ? 'common' : (roll < 0.9 ? 'rare' : 'legendary');
+    const tierEffectIds = Object.keys(EFFECT_BANK).filter(id => EFFECT_BANK[id].tier === targetTier);
+    const effectId = tierEffectIds[Math.floor(Math.random() * tierEffectIds.length)];
+
+    const { gemCost } = calculateCustomCardCost(atk, hp, effectId);
+    const discountedGemCost = Math.floor(gemCost * (1 - RANDOM_CARD_DISCOUNT));
+
+    const flavorNames = ['Mystery Beast', 'Rift Anomaly', 'Wild Construct', 'Chance Creature', 'Unstable Spawn'];
+    const name = flavorNames[Math.floor(Math.random() * flavorNames.length)];
+
+    return cardCreatorHelpers._commitCard(user, atk, hp, effectId, name, discountedGemCost);
   }
 };
 
@@ -1606,13 +2025,18 @@ module.exports = {
   CARD_RARITIES,
   CARD_PRICES,
   PACKS,
+  FACTION_CARDS,
+  FACTION_NAMES,
   CAMPAIGN_GOLD,
+  CAMPAIGN_GEMS,
+  EFFECT_BANK,
   ACHIEVEMENTS,
   getAllAchievements,
   getAchievementsByCategory,
   getAchievementReward,
   authHelpers,
   shopHelpers,
+  cardCreatorHelpers,
   getDailyDeals,
   getBuyPrice,
   getSellPrice

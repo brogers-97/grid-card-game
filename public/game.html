@@ -65,194 +65,105 @@
       margin: 0 auto;
     }
 
-    /* ===== LEFT SIDEBAR - Turn indicator + Card Inspector ===== */
+    /* ===== LEFT SIDEBAR - inspector is fixed-position, sidebar is a spacer ===== */
     #leftSidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 200px;
+      width: 0;
+      overflow: visible;
       flex-shrink: 0;
-      align-self: flex-start;
-      padding-top: 40px;
     }
 
     /* ===== PINNED CARD INSPECTOR ===== */
     #cardInspector {
       display: none;
-      background: linear-gradient(145deg, rgba(30, 30, 60, 0.98), rgba(20, 20, 40, 0.98));
-      border: 2px solid rgba(138, 43, 226, 0.6);
-      border-radius: 12px;
-      padding: 12px;
-      width: 200px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      position: relative;
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(6, 6, 18, 0.98);
+      border: 3px solid rgba(251, 191, 36, 0.85);
+      border-radius: 0;
+      width: 230px;
+      z-index: 50;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.75), 0 0 18px rgba(201,161,50,0.2);
     }
-    
-    #cardInspector.visible {
-      display: block;
-    }
-    
-    #cardInspector .inspector-close {
-      position: absolute;
-      top: 6px;
-      right: 8px;
-      width: 20px;
-      height: 20px;
-      background: rgba(239, 68, 68, 0.3);
-      border: 1px solid rgba(239, 68, 68, 0.5);
-      border-radius: 50%;
-      color: #f87171;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    
-    #cardInspector .inspector-close:hover {
-      background: rgba(239, 68, 68, 0.5);
-      transform: scale(1.1);
-    }
-    
+    #cardInspector.visible { display: block; }
+
     #cardInspector .inspector-art {
       width: 100%;
-      height: 100px;
-      border-radius: 8px;
+      height: 160px;
       background-size: cover;
-      background-position: center;
-      margin-bottom: 10px;
-      border: 1px solid rgba(138, 43, 226, 0.4);
+      background-position: center top;
+      border-bottom: 1px solid rgba(251, 191, 36, 0.2);
     }
-    
-    #cardInspector .inspector-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    
+
     #cardInspector .inspector-name {
       font-family: 'Cinzel', serif;
       font-size: 13px;
       font-weight: 700;
-      color: #e2e8f0;
-      flex: 1;
+      text-align: center;
+      padding: 10px 20px 4px;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
     }
-    
+
     #cardInspector .inspector-stats {
       display: flex;
-      gap: 8px;
+      justify-content: center;
+      gap: 12px;
+      padding: 4px 20px 12px;
     }
-    
+
     #cardInspector .inspector-stat {
       display: flex;
       align-items: center;
       gap: 3px;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 11px;
     }
-    
-    #cardInspector .inspector-stat.atk { color: #fb923c; }
-    #cardInspector .inspector-stat.hp { color: #22d3ee; }
+    #cardInspector .inspector-stat.atk    { color: #fb923c; }
+    #cardInspector .inspector-stat.hp     { color: #22d3ee; }
     #cardInspector .inspector-stat.buffed { color: #c084fc; }
-    
-    #cardInspector .inspector-type {
-      font-size: 10px;
-      color: #94a3b8;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-    
+
     #cardInspector .inspector-section {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(138, 43, 226, 0.3);
+      padding: 0 14px 10px;
+      border-top: 1px solid rgba(251,191,36,0.15);
     }
-    
     #cardInspector .inspector-section-title {
-      font-size: 10px;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 8px 0 5px;
     }
-    
-    #cardInspector .inspector-buff-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    
-    #cardInspector .inspector-buff-item {
-      font-size: 11px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    #cardInspector .inspector-buff-item.buff {
-      color: #4ade80;
-    }
-    
-    #cardInspector .inspector-buff-item.debuff {
-      color: #f87171;
-    }
-    
-    #cardInspector .inspector-buff-item .buff-value {
-      font-weight: 700;
-    }
-    
-    #cardInspector .inspector-buff-item .buff-source {
-      color: #94a3b8;
-      font-size: 10px;
-    }
-    
-    #cardInspector .inspector-status-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    
-    #cardInspector .inspector-status-item {
-      font-size: 11px;
-      color: #e2e8f0;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    #cardInspector .inspector-status-item.positive {
-      color: #4ade80;
-    }
-    
-    #cardInspector .inspector-status-item.negative {
-      color: #f87171;
-    }
-    
-    #cardInspector .inspector-effect {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(138, 43, 226, 0.3);
-    }
-    
+    #cardInspector .inspector-buff-list  { display: flex; flex-direction: column; gap: 4px; }
+    #cardInspector .inspector-buff-item  { font-size: 11px; display: flex; align-items: center; gap: 4px; }
+    #cardInspector .inspector-buff-item.buff   { color: #4ade80; }
+    #cardInspector .inspector-buff-item.debuff { color: #f87171; }
+    #cardInspector .inspector-buff-item .buff-value  { font-weight: 700; }
+    #cardInspector .inspector-buff-item .buff-source { color: #94a3b8; font-size: 10px; }
+    #cardInspector .inspector-status-list { display: flex; flex-direction: column; gap: 4px; }
+    #cardInspector .inspector-status-item { font-size: 11px; color: #e2e8f0; display: flex; align-items: center; gap: 4px; }
+    #cardInspector .inspector-status-item.positive { color: #4ade80; }
+    #cardInspector .inspector-status-item.negative { color: #f87171; }
+
+    #inspectorEffect { padding: 8px 20px 26px 20px; }
     #cardInspector .inspector-effect-title {
-      font-size: 10px;
-      font-weight: 700;
-      color: #a78bfa;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-    
-    #cardInspector .inspector-effect-desc {
+      font-family: 'Cinzel', serif;
       font-size: 11px;
+      font-weight: 700;
+      color: #c9a132;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 7px;
+    }
+    #cardInspector .inspector-effect-divider {
+      width: 100%;
+      height: 1px;
+      background: rgba(201, 161, 50, 0.6);
+      margin-bottom: 8px;
+    }
+    #cardInspector .inspector-effect-desc {
+      font-size: 12px;
       color: #cbd5e1;
-      line-height: 1.4;
+      line-height: 1.55;
     }
 
     #turnIndicator {
@@ -530,12 +441,31 @@
       gap: 10px;
     }
 
+    /* ===== GOLD CORNER PANEL FRAME (matches campaign modal) ===== */
+    .panel-frame {
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(251, 191, 36, 0.6);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .panel-corner {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      background: #fbbf24;
+      z-index: 11;
+    }
+    .panel-corner.tl { top: -1px; left: -1px; }
+    .panel-corner.tr { top: -1px; right: -1px; }
+    .panel-corner.bl { bottom: -1px; left: -1px; }
+    .panel-corner.br { bottom: -1px; right: -1px; }
+
     /* ===== OPPONENT INFO PANEL ===== */
     #opponentPanel {
       background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9));
-      border: 2px solid rgba(239, 68, 68, 0.3);
-      border-radius: 10px;
       padding: 10px;
+      position: relative;
     }
 
     #opponentHeader {
@@ -701,12 +631,11 @@
       flex-shrink: 0;
       height: 630px;
       background: rgba(20, 20, 40, 0.95);
-      border: 2px solid rgba(138, 43, 226, 0.3);
-      border-radius: 12px;
       display: flex;
       flex-direction: column;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
       align-self: center;
+      position: relative;
     }
 
     #logTabs {
@@ -790,8 +719,6 @@
       justify-content: center;
       padding: 12px 16px;
       background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 40, 0.9));
-      border: 2px solid rgba(138, 43, 226, 0.3);
-      border-radius: 10px;
       position: relative;
     }
 
@@ -1801,49 +1728,7 @@
       font-size: 16px;
     }
 
-    /* ===== TURN INDICATOR (Left side) ===== */
-    #turnIndicator {
-      position: fixed;
-      left: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: linear-gradient(145deg, rgba(30, 30, 60, 0.95), rgba(20, 20, 40, 0.95));
-      border: 2px solid rgba(138, 43, 226, 0.4);
-      border-radius: 16px;
-      padding: 20px 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-      z-index: 100;
-    }
-
-    #turnIndicator #turnLabel {
-      font-family: 'Cinzel', serif;
-      font-weight: 800;
-      font-size: 18px;
-      color: #fbbf24;
-      text-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
-    }
-
-    #turnIndicator #turnLabel.gold {
-      color: #fbbf24;
-      text-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
-    }
-
-    #turnIndicator #turnLabel.silver {
-      color: #e2e8f0;
-      text-shadow: 0 0 15px rgba(226, 232, 240, 0.6);
-    }
-
-    #turnText {
-      font-size: 10px;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
+    #turnIndicator { display: none; }
 
     /* ===== CONTROL BAR (Energy + End Turn) ===== */
     #controlBar {
@@ -1911,9 +1796,21 @@
     #endTurnBtn:disabled{ opacity: 0.4; cursor: not-allowed; }
 
     /* ===== BOARD - 7 rows x 6 columns ===== */
+    #boardWrapper {
+      display: flex;
+      gap: 4px;
+      align-items: stretch;
+    }
+    #rowHpColumn {
+      display: grid;
+      grid-template-rows: repeat(7, 85px);
+      gap: 3px;
+      padding: 8px 4px;
+      width: 38px;
+    }
     .board{
       display: grid;
-      grid-template-columns: repeat(6, 65px) 38px;
+      grid-template-columns: repeat(6, 65px);
       grid-template-rows: repeat(7, 85px);
       gap: 3px;
       padding: 8px;
@@ -6899,114 +6796,66 @@
 
     /* Holo unit on board - rainbow shimmer effect */
     /* ===== HOLO CARD EFFECTS BY RARITY ===== */
-    
-    /* Base holo unit styles */
-    .unit.holo-unit {
-      position: relative;
-    }
-    
-    /* COMMON: Subtle silver shimmer - barely noticeable */
+    @keyframes unitRarePulse { 0%, 100% { box-shadow: 0 0 8px rgba(59,130,246,0.5), 0 0 16px rgba(59,130,246,0.25); } 50% { box-shadow: 0 0 16px rgba(59,130,246,0.8), 0 0 30px rgba(59,130,246,0.5); } }
+    @keyframes unitLegendaryBreath { 0%, 100% { box-shadow: 0 0 10px rgba(251,191,36,0.55), 0 0 20px rgba(251,191,36,0.25); } 50% { box-shadow: 0 0 20px rgba(251,191,36,0.85), 0 0 38px rgba(251,191,36,0.5); } }
+    @keyframes unitShimmerSweep { 0% { transform: translateX(-200%) skewX(-15deg); } 100% { transform: translateX(400%) skewX(-15deg); } }
+    @keyframes unitRainbowDrift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    @keyframes unitRareBorderCycle { 0%, 100% { border-color: rgba(59,130,246,0.95); box-shadow: 0 0 10px rgba(59,130,246,0.65), 0 0 22px rgba(59,130,246,0.35); } 33% { border-color: rgba(6,182,212,1); box-shadow: 0 0 15px rgba(6,182,212,0.85), 0 0 32px rgba(6,182,212,0.5); } 66% { border-color: rgba(139,92,246,0.95); box-shadow: 0 0 12px rgba(139,92,246,0.75), 0 0 26px rgba(139,92,246,0.4); } }
+    @keyframes unitRareSwipe1 { 0% { transform: translateX(-200%) skewX(-32deg); } 100% { transform: translateX(500%) skewX(-32deg); } }
+    @keyframes unitRareSwipe2 { 0% { transform: translateX(-200%) skewX(24deg); } 100% { transform: translateX(500%) skewX(24deg); } }
+    @keyframes unitLegendaryGoldPulse { 0%, 100% { border-color: rgba(251,191,36,1); box-shadow: 0 0 14px rgba(251,191,36,0.85), 0 0 28px rgba(251,191,36,0.5), 0 0 50px rgba(251,191,36,0.2); } 50% { border-color: rgba(255,225,80,1); box-shadow: 0 0 22px rgba(255,225,80,1), 0 0 45px rgba(251,191,36,0.75), 0 0 80px rgba(251,191,36,0.35); } }
+    @keyframes unitPrismaticSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes unitLegendarySparkle { 0%, 100% { opacity: 0.3; } 25% { opacity: 1; } 75% { opacity: 0.55; } }
+
+    /* COMMON: Subtle silver shimmer sweep */
     .unit.holo-common::after {
       content: '';
       position: absolute;
-      inset: 0;
-      border-radius: 8px;
-      background: linear-gradient(
-        105deg,
-        transparent 40%,
-        rgba(255, 255, 255, 0.25) 45%,
-        rgba(255, 255, 255, 0.4) 50%,
-        rgba(255, 255, 255, 0.25) 55%,
-        transparent 60%
-      );
-      background-size: 200% 100%;
-      animation: shimmerCommon 2.5s ease-in-out infinite;
+      top: 0; left: 0;
+      width: 35%; height: 100%;
+      background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.45) 50%, transparent 80%);
+      animation: unitShimmerSweep 3s ease-in-out infinite;
       pointer-events: none;
       z-index: 10;
     }
-    
-    @keyframes shimmerCommon {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+
+    /* RARE: Two shimmer sweeps at steep opposing angles */
+    .unit.holo-rare { animation: unitRareBorderCycle 4s ease-in-out infinite; }
+    .unit.holo-rare::before {
+      content: '';
+      position: absolute;
+      top: -10%; left: 0;
+      width: 35%; height: 120%;
+      background: linear-gradient(to right, transparent, rgba(130,215,255,0.75), transparent);
+      animation: unitRareSwipe1 2.8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 9;
     }
-    
-    /* RARE: Rainbow holographic border + rainbow overlay */
-    .unit.holo-rare {
-      box-shadow: 0 0 12px rgba(255, 100, 255, 0.6), 0 0 20px rgba(100, 200, 255, 0.4);
-    }
-    
     .unit.holo-rare::after {
       content: '';
       position: absolute;
-      inset: 0;
-      border-radius: 8px;
-      background: linear-gradient(
-        135deg,
-        rgba(255, 0, 0, 0.2) 0%,
-        rgba(255, 154, 0, 0.2) 14%,
-        rgba(255, 255, 0, 0.2) 28%,
-        rgba(0, 255, 0, 0.2) 42%,
-        rgba(0, 200, 255, 0.2) 57%,
-        rgba(0, 100, 255, 0.2) 71%,
-        rgba(150, 0, 255, 0.2) 85%,
-        rgba(255, 0, 150, 0.2) 100%
-      );
-      background-size: 300% 300%;
-      animation: holoRainbow 2s ease infinite;
+      top: -10%; left: 0;
+      width: 30%; height: 120%;
+      background: linear-gradient(to right, transparent, rgba(185,145,255,0.65), transparent);
+      animation: unitRareSwipe2 4.2s ease-in-out infinite 1.6s;
       pointer-events: none;
       z-index: 10;
     }
-    
-    @keyframes holoRainbow {
-      0% { background-position: 0% 0%; }
-      50% { background-position: 100% 100%; }
-      100% { background-position: 0% 0%; }
-    }
-    
-    /* LEGENDARY: Golden glow + sparkle particles + pulsing aura */
-    .unit.holo-legendary {
-      filter: drop-shadow(0 0 10px gold) drop-shadow(0 0 20px rgba(255, 215, 0, 0.7));
-      animation: legendaryPulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes legendaryPulse {
-      0%, 100% { filter: drop-shadow(0 0 12px #ffd700) drop-shadow(0 0 25px rgba(255, 200, 0, 0.8)); }
-      50% { filter: drop-shadow(0 0 18px #ffcc00) drop-shadow(0 0 35px rgba(255, 180, 0, 1)); }
-    }
-    
-    .unit.holo-legendary::after {
+
+    /* LEGENDARY: Prismatic foil - rotating conic rainbow + gold pulse border */
+    .unit.holo-legendary { animation: unitLegendaryGoldPulse 2s ease-in-out infinite; }
+    .unit.holo-legendary::before {
       content: '';
       position: absolute;
-      inset: 0;
-      border-radius: 8px;
-      background: 
-        radial-gradient(circle at 20% 20%, rgba(255, 230, 100, 0.9) 0%, transparent 15%),
-        radial-gradient(circle at 80% 30%, rgba(255, 215, 0, 0.85) 0%, transparent 12%),
-        radial-gradient(circle at 30% 70%, rgba(255, 240, 150, 0.9) 0%, transparent 14%),
-        radial-gradient(circle at 75% 75%, rgba(255, 200, 50, 0.8) 0%, transparent 10%),
-        linear-gradient(
-          135deg,
-          rgba(255, 200, 0, 0.45) 0%,
-          rgba(255, 230, 100, 0.35) 25%,
-          rgba(255, 180, 0, 0.5) 50%,
-          rgba(255, 230, 100, 0.35) 75%,
-          rgba(255, 200, 0, 0.45) 100%
-        );
-      background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 300% 300%;
-      animation: holoLegendaryShimmer 2s ease infinite, sparkleFloat 1.5s ease-in-out infinite;
+      top: -25%; left: -25%;
+      width: 150%; height: 150%;
+      background: conic-gradient(from 0deg at center,
+        rgba(255,0,80,0.25), rgba(255,120,0,0.25), rgba(255,230,0,0.25),
+        rgba(0,220,80,0.25), rgba(0,140,255,0.25), rgba(120,0,255,0.25),
+        rgba(255,0,180,0.25), rgba(255,0,80,0.25));
+      animation: unitPrismaticSpin 8s linear infinite;
       pointer-events: none;
-      z-index: 10;
-    }
-    
-    @keyframes holoLegendaryShimmer {
-      0% { background-position: 0 0, 0 0, 0 0, 0 0, 0% 0%; }
-      50% { background-position: 0 0, 0 0, 0 0, 0 0, 100% 100%; }
-      100% { background-position: 0 0, 0 0, 0 0, 0 0, 0% 0%; }
-    }
-    
-    @keyframes sparkleFloat {
-      0%, 100% { opacity: 0.7; }
-      50% { opacity: 1; }
+      z-index: 9;
     }
 
     /* Enemy unit styling - red glow/border */
@@ -7061,6 +6910,7 @@
         rgba(56, 189, 248, 0.8),
         rgba(147, 197, 253, 0.9)) border-box;
       -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
       animation: shieldRotate 3s linear infinite;
@@ -7661,6 +7511,13 @@
       border-color: #a855f7 !important;
     }
 
+    .cell.drag-hover, .spawn.drag-hover {
+      outline: 4px solid #fff !important;
+      outline-offset: -3px;
+      filter: brightness(1.4);
+      transition: filter 0.08s ease;
+    }
+
     .attack-icon {
       position: absolute;
       top: 4px;
@@ -7751,112 +7608,59 @@
       opacity: 0.8;
     }
 
-    /* Holo cards - rainbow shimmer effect */
     /* ===== HOLO HAND CARD EFFECTS BY RARITY ===== */
-    
-    .handCard.holo-card {
-      position: relative;
-    }
-    
-    /* COMMON: Subtle silver shimmer */
+    .handCard.holo-card { position: relative; overflow: hidden; }
+
+    /* COMMON: Silver shimmer sweep */
     .handCard.holo-common::after {
       content: '';
       position: absolute;
-      inset: 0;
-      border-radius: 6px;
-      background: linear-gradient(
-        105deg,
-        transparent 40%,
-        rgba(255, 255, 255, 0.25) 45%,
-        rgba(255, 255, 255, 0.35) 50%,
-        rgba(255, 255, 255, 0.25) 55%,
-        transparent 60%
-      );
-      background-size: 200% 100%;
-      animation: shimmerCommon 3s ease-in-out infinite;
+      top: 0; left: 0;
+      width: 40%; height: 100%;
+      background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.45) 50%, transparent 80%);
+      animation: unitShimmerSweep 3s ease-in-out infinite;
       pointer-events: none;
       z-index: 10;
     }
-    
-    .handCard.holo-common:hover::after {
-      animation-duration: 1.5s;
+    .handCard.holo-common:hover::after { animation-duration: 1.5s; }
+
+    /* RARE: Two shimmer sweeps at steep opposing angles */
+    .handCard.holo-rare { animation: unitRareBorderCycle 4s ease-in-out infinite; }
+    .handCard.holo-rare::before {
+      content: '';
+      position: absolute;
+      top: -10%; left: 0;
+      width: 38%; height: 120%;
+      background: linear-gradient(to right, transparent, rgba(130,215,255,0.75), transparent);
+      animation: unitRareSwipe1 2.8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 9;
     }
-    
-    /* RARE: Rainbow holographic glow */
-    .handCard.holo-rare {
-      box-shadow: 0 0 12px rgba(255, 100, 255, 0.5), 0 0 24px rgba(100, 200, 255, 0.4);
-    }
-    
     .handCard.holo-rare::after {
       content: '';
       position: absolute;
-      inset: 0;
-      border-radius: 6px;
-      background: linear-gradient(
-        135deg,
-        rgba(255, 0, 0, 0.2) 0%,
-        rgba(255, 154, 0, 0.2) 14%,
-        rgba(255, 255, 0, 0.2) 28%,
-        rgba(0, 255, 0, 0.2) 42%,
-        rgba(0, 200, 255, 0.2) 57%,
-        rgba(0, 100, 255, 0.2) 71%,
-        rgba(150, 0, 255, 0.2) 85%,
-        rgba(255, 0, 150, 0.2) 100%
-      );
-      background-size: 300% 300%;
-      animation: holoRainbow 2s ease infinite;
+      top: -10%; left: 0;
+      width: 32%; height: 120%;
+      background: linear-gradient(to right, transparent, rgba(185,145,255,0.65), transparent);
+      animation: unitRareSwipe2 4.2s ease-in-out infinite 1.6s;
       pointer-events: none;
       z-index: 10;
     }
-    
-    .handCard.holo-rare:hover {
-      box-shadow: 0 0 18px rgba(255, 100, 255, 0.7), 0 0 35px rgba(100, 200, 255, 0.6);
-    }
-    
-    .handCard.holo-rare:hover::after {
-      animation-duration: 1s;
-    }
-    
-    /* LEGENDARY: Epic golden glow with pulsing aura */
-    .handCard.holo-legendary {
-      box-shadow: 0 0 18px rgba(255, 200, 0, 0.7), 0 0 35px rgba(255, 180, 0, 0.5);
-      animation: legendaryCardPulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes legendaryCardPulse {
-      0%, 100% { box-shadow: 0 0 18px rgba(255, 200, 0, 0.7), 0 0 35px rgba(255, 180, 0, 0.5); }
-      50% { box-shadow: 0 0 25px rgba(255, 180, 0, 0.9), 0 0 50px rgba(255, 160, 0, 0.7); }
-    }
-    
-    .handCard.holo-legendary::after {
+
+    /* LEGENDARY: Prismatic foil - rotating conic rainbow + gold pulse border */
+    .handCard.holo-legendary { animation: unitLegendaryGoldPulse 2s ease-in-out infinite; }
+    .handCard.holo-legendary::before {
       content: '';
       position: absolute;
-      inset: 0;
-      border-radius: 6px;
-      background: 
-        radial-gradient(circle at 20% 20%, rgba(255, 230, 100, 0.85) 0%, transparent 12%),
-        radial-gradient(circle at 80% 30%, rgba(255, 200, 50, 0.8) 0%, transparent 10%),
-        radial-gradient(circle at 30% 70%, rgba(255, 240, 120, 0.8) 0%, transparent 12%),
-        radial-gradient(circle at 75% 75%, rgba(255, 190, 30, 0.75) 0%, transparent 8%),
-        linear-gradient(
-          135deg,
-          rgba(255, 190, 0, 0.4) 0%,
-          rgba(255, 220, 80, 0.3) 50%,
-          rgba(255, 190, 0, 0.4) 100%
-        );
-      background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 300% 300%;
-      animation: holoLegendaryShimmer 2s ease infinite;
+      top: -25%; left: -25%;
+      width: 150%; height: 150%;
+      background: conic-gradient(from 0deg at center,
+        rgba(255,0,80,0.25), rgba(255,120,0,0.25), rgba(255,230,0,0.25),
+        rgba(0,220,80,0.25), rgba(0,140,255,0.25), rgba(120,0,255,0.25),
+        rgba(255,0,180,0.25), rgba(255,0,80,0.25));
+      animation: unitPrismaticSpin 8s linear infinite;
       pointer-events: none;
-      z-index: 10;
-    }
-    
-    .handCard.holo-legendary:hover {
-      box-shadow: 0 0 30px rgba(255, 180, 0, 1), 0 0 60px rgba(255, 150, 0, 0.8);
-      animation: none;
-    }
-    
-    .handCard.holo-legendary:hover::after {
-      animation-duration: 1s;
+      z-index: 9;
     }
     
 
@@ -7874,6 +7678,118 @@
     .unit.spell-unit {
       border-color: rgba(168, 85, 247, 0.7);
       background: linear-gradient(145deg, rgba(126, 34, 206, 0.3), rgba(15, 23, 42, 0.95));
+    }
+
+    /* ===== TUTORIAL GLOW (highlight the allowed action) ===== */
+    .tutorial-glow {
+      animation: tutorialGlow 1.4s ease-in-out infinite;
+      position: relative;
+      z-index: 100 !important;
+    }
+    @keyframes tutorialGlow {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(251,191,36,0.55), 0 0 12px 4px rgba(251,191,36,0.4); }
+      50%      { box-shadow: 0 0 0 4px rgba(251,191,36,0.95), 0 0 24px 8px rgba(251,191,36,0.65); }
+    }
+    body.tutorial-locked { cursor: default; }
+
+    /* ===== TUTORIAL DIALOG BANNER ===== */
+    #tutorialDialog {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      width: 880px;
+      max-width: 94vw;
+      z-index: 2000;
+      cursor: pointer;
+      animation: tutDialogIn 250ms ease-out;
+    }
+    #tutorialDialog.king-position {
+      bottom: auto;
+      top: 24px;
+      animation-name: tutDialogInTop;
+    }
+    #tutorialDialog.hidden { display: none; }
+    .tutorial-dialog-frame {
+      position: relative;
+      display: flex;
+      gap: 20px;
+      padding: 22px 28px;
+      background: rgba(12, 10, 28, 0.96);
+      align-items: center;
+      min-height: 130px;
+    }
+    .tutorial-dialog-portrait {
+      width: 96px;
+      height: 96px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: rgba(40, 35, 70, 0.9) center/cover no-repeat;
+      border: 2px solid rgba(251, 191, 36, 0.6);
+    }
+    .tutorial-dialog-portrait.trainer-portrait {
+      border-color: rgba(109, 40, 217, 0.85);
+      box-shadow: 0 0 12px rgba(109, 40, 217, 0.4);
+    }
+    #tutorialDialog.trainer-speaker .panel-frame {
+      border-color: rgba(109, 40, 217, 0.75);
+    }
+    #tutorialDialog.trainer-speaker .panel-corner {
+      background: rgb(109, 40, 217);
+    }
+    .tutorial-dialog-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .tutorial-dialog-speaker {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      color: #fbbf24;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .tutorial-dialog-text {
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      line-height: 1.55;
+      color: #e2e8f0;
+    }
+    .tutorial-dialog-hint {
+      font-size: 11px;
+      color: rgba(251, 191, 36, 0.7);
+      align-self: flex-end;
+      margin-top: 4px;
+      animation: tutHintPulse 1.6s ease-in-out infinite;
+    }
+    #tutorialSkipBtn {
+      position: absolute;
+      top: -34px;
+      right: 0;
+      padding: 6px 14px;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 1px;
+      background: rgba(20, 20, 40, 0.85);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      color: #fbbf24;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    #tutorialSkipBtn:hover { background: rgba(40, 35, 70, 0.95); }
+    @keyframes tutDialogIn {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @keyframes tutDialogInTop {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @keyframes tutHintPulse {
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1; }
     }
 
     /* ===== UNIT TOOLTIP POPUP ===== */
@@ -8945,24 +8861,14 @@
   <div id="gameContainer">
     <!-- Left side - Turn indicator + Card Inspector -->
     <div id="leftSidebar">
-      <div id="turnIndicator">
-        <div id="turnText">Turn</div>
-        <div id="turnLabel">SILVER</div>
-        <div id="turnCounter">Turn <span id="turnNumber">1</span></div>
-      </div>
-      
       <!-- Pinned Card Inspector (Shift+Click to pin) -->
       <div id="cardInspector">
-        <div class="inspector-close" onclick="closeCardInspector()">✕</div>
         <div class="inspector-art" id="inspectorArt"></div>
-        <div class="inspector-header">
-          <div class="inspector-name" id="inspectorName">Unit Name</div>
-        </div>
+        <div class="inspector-name" id="inspectorName">Unit Name</div>
         <div class="inspector-stats" id="inspectorStats">
           <div class="inspector-stat atk"><span>⚔</span><span id="inspectorAtk">0</span></div>
           <div class="inspector-stat hp"><span>♥</span><span id="inspectorHp">0</span></div>
         </div>
-        <div class="inspector-type" id="inspectorType">Monster</div>
         <div id="inspectorBuffs"></div>
         <div id="inspectorStatus"></div>
         <div id="inspectorEffect"></div>
@@ -8993,7 +8899,10 @@
         <div class="highlight-indicator-attack" id="highlightAttack">ATTACK</div>
       </div>
 
-      <div class="board" id="board"></div>
+      <div id="boardWrapper">
+        <div class="board" id="board"></div>
+        <div id="rowHpColumn"></div>
+      </div>
 
       <!-- Your info row - ONLY heart and home -->
       <div id="playerRow">
@@ -9016,6 +8925,7 @@
     <div id="rightSidebar">
       <!-- Opponent Info Panel -->
       <div id="opponentPanel">
+        <div class="panel-frame"><span class="panel-corner tl"></span><span class="panel-corner tr"></span><span class="panel-corner bl"></span><span class="panel-corner br"></span></div>
         <div id="opponentHeader">
           <span id="opponentNameLabel">Opponent</span>
           <div id="opponentEnergy">
@@ -9045,6 +8955,7 @@
 
       <!-- Hand Controls - Energy/End Turn at top, Hand in middle, Deck/Discard at bottom -->
       <div id="handControls">
+        <div class="panel-frame"><span class="panel-corner tl"></span><span class="panel-corner tr"></span><span class="panel-corner bl"></span><span class="panel-corner br"></span></div>
         <div id="controlsTop">
           <div id="energyDisplay">
             <div class="batteryContainer">
@@ -9104,6 +9015,7 @@
 
     <!-- Battle Log - separate panel to the right -->
     <div id="logContainer">
+      <div class="panel-frame"><span class="panel-corner tl"></span><span class="panel-corner tr"></span><span class="panel-corner bl"></span><span class="panel-corner br"></span></div>
       <div id="logTabs">
         <button class="logTab active" data-tab="events">Events</button>
         <button class="logTab" data-tab="combat">Combat</button>
@@ -9115,6 +9027,20 @@
 
   <!-- Card animation container -->
   <div id="cardAnimationLayer"></div>
+
+  <!-- Tutorial dialog banner (bottom of screen) -->
+  <div id="tutorialDialog" class="hidden">
+    <div class="tutorial-dialog-frame">
+      <div class="panel-frame"><span class="panel-corner tl"></span><span class="panel-corner tr"></span><span class="panel-corner bl"></span><span class="panel-corner br"></span></div>
+      <div class="tutorial-dialog-portrait" id="tutorialDialogPortrait"></div>
+      <div class="tutorial-dialog-body">
+        <div class="tutorial-dialog-speaker" id="tutorialDialogSpeaker">Lost King</div>
+        <div class="tutorial-dialog-text" id="tutorialDialogText"></div>
+        <div class="tutorial-dialog-hint" id="tutorialDialogHint">Click to continue ▶</div>
+      </div>
+    </div>
+    <button id="tutorialSkipBtn" type="button">Skip Tutorial</button>
+  </div>
 
   <!-- Unit tooltip popup -->
   <div id="unitTooltip"></div>
@@ -9598,7 +9524,9 @@
     }
   </style>
 
+  <script src="debug-overlay.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
+  <script src="hover-sound.js"></script>
 </body>
 </html>
