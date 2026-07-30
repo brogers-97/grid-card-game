@@ -4033,12 +4033,18 @@ if (drawBtn) {
 
 
 function onCellClick(viewRow, col, event) {
-  // Shift+Click to pin card to inspector
+  // Shift+Click to pin/dismiss card inspector
   if (event && event.shiftKey) {
     const row = toServerRow(viewRow);
     const occId = S.board[row][col];
     if (occId && S.units[occId]) {
-      showCardInspector(occId);
+      if (pinnedUnitId === occId) {
+        closeCardInspector();
+      } else {
+        showCardInspector(occId);
+      }
+    } else {
+      closeCardInspector();
     }
     return;
   }
