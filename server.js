@@ -9236,24 +9236,38 @@ io.on("connection", (socket) => {
     }
   }
 
+  function gateMatchesAction(gate, payload) {
+    if (gate.action === 'drawCard' && payload.type === 'drawCard') return true;
+    if (gate.action === 'endTurn' && payload.type === 'endTurn') return true;
+    if (gate.action === 'playCard' && payload.type === 'playCard') return true;
+    if (gate.action === 'attack' && (payload.type === 'attack' || payload.type === 'attackUnit' || payload.type === 'attackRow' || payload.type === 'attackFromSpawn')) return true;
+    if (gate.action === 'attackHeart' && (payload.type === 'attackHeart' || payload.targetHeart)) return true;
+    if (gate.action === 'move' && payload.type === 'move') return true;
+    return false;
+  }
+
   // Check whether a player action satisfies the current tutorial gate; if so, advance the script
   function tryAdvanceTutorialFromAction(lobby, payload) {
     if (!lobby || !lobby.isTutorial) return;
     const step = TUTORIAL_SCRIPT[lobby.tutorialStep];
-    if (!step || step.type !== 'gate') return;
+    if (!step) return;
 
-    let matches = false;
-    if (step.action === 'drawCard' && payload.type === 'drawCard') matches = true;
-    else if (step.action === 'endTurn' && payload.type === 'endTurn') matches = true;
-    else if (step.action === 'playCard' && payload.type === 'playCard') matches = true;
-    else if (step.action === 'attack' && (payload.type === 'attack' || payload.type === 'attackUnit' || payload.type === 'attackRow' || payload.type === 'attackFromSpawn')) matches = true;
-    else if (step.action === 'attackHeart' && (payload.type === 'attackHeart' || payload.targetHeart)) matches = true;
-    else if (step.action === 'move' && payload.type === 'move') matches = true;
+    if (step.type === 'gate') {
+      if (gateMatchesAction(step, payload)) {
+        lobby.tutorialStep++;
+        setTimeout(() => processTutorialScript(lobby), 350);
+      }
+      return;
+    }
 
-    if (matches) {
-      lobby.tutorialStep++;
-      // Use a small delay so the player sees the action complete before next dialog/gate
-      setTimeout(() => processTutorialScript(lobby), 350);
+    // If the player performed the gated action before dismissing the dialog,
+    // auto-advance past both the dialog and the gate so they don't get stuck.
+    if (step.type === 'dialog') {
+      const nextStep = TUTORIAL_SCRIPT[lobby.tutorialStep + 1];
+      if (nextStep && nextStep.type === 'gate' && gateMatchesAction(nextStep, payload)) {
+        lobby.tutorialStep += 2;
+        setTimeout(() => processTutorialScript(lobby), 350);
+      }
     }
   }
 
