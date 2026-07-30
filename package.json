@@ -1,5 +1,5 @@
 {
-  "name": "grid-card-game",
+  "name": "convergence",
   "version": "1.0.0",
   "description": "A multiplayer grid-based card game",
   "main": "electron-main.js",
@@ -25,8 +25,8 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.gridcardgame.app",
-    "productName": "Grid Card Game",
+    "appId": "com.convergence.app",
+    "productName": "Convergence",
     "files": [
       "electron-main.js",
       "package.json"

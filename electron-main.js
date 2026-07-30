@@ -1,19 +1,17 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, Menu } = require('electron');
+Menu.setApplicationMenu(null);
 
 // ── Set this to your deployed server URL after deploying ──────────────────────
 const GAME_URL = process.env.GAME_URL || 'https://grid-card-game-production.up.railway.app';
 
 function createWindow() {
   const win = new BrowserWindow({
-    width:  1400,
-    height: 900,
-    minWidth:  1024,
-    minHeight: 700,
+    fullscreen: true,
     webPreferences: {
       nodeIntegration:  false,
       contextIsolation: true,
     },
-    title:           'Grid Card Game',
+    title:           'Convergence',
     backgroundColor: '#1a1a2e',
     show: false,
   });
@@ -21,7 +19,6 @@ function createWindow() {
   win.loadURL(GAME_URL + '/home.html');
 
   win.once('ready-to-show', () => {
-    win.maximize();
     win.show();
   });
 

@@ -2609,6 +2609,10 @@
       document.getElementById('closeSettingsModal').addEventListener('click', () => settingsModal.classList.remove('active'));
       settingsModal.addEventListener('click', e => { if (e.target === settingsModal) settingsModal.classList.remove('active'); });
 
+      document.getElementById('exitGameBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to exit?')) window.close();
+      });
+
       document.getElementById('replayTutorialBtn').addEventListener('click', () => {
         if (currentUser) {
           currentUser.preferences = currentUser.preferences || {};
@@ -2773,6 +2777,7 @@
         </div>
         <button class="btn-primary" id="saveSettingsBtn" style="margin-top:10px;">Save Settings</button>
         <button class="btn-secondary" id="replayTutorialBtn" style="margin-top:8px;">Replay Tutorial</button>
+        <button class="btn-secondary" id="exitGameBtn" style="margin-top:8px;border-color:rgba(239,68,68,0.5);color:#f87171;">Exit Game</button>
         <div class="account-msg" id="settingsMsg"></div>
       </div>
     </div>
@@ -3911,17 +3916,16 @@
         clearTimeout(hideTimer);
         tip.textContent = el.getAttribute('data-tooltip');
 
-        var rect = el.getBoundingClientRect();
-        tip.classList.remove('visible'); // reset so offsetWidth is measurable
-        tip.style.opacity = '0';
-        // Temporarily show off-screen to measure width
+        // Position off-screen first to measure width, then snap into place
+        tip.classList.remove('visible');
         tip.style.left = '-9999px';
         tip.style.top = '-9999px';
         tip.classList.add('visible');
+
+        var rect = el.getBoundingClientRect();
         var tw = tip.offsetWidth;
         var left = rect.left + rect.width / 2 - tw / 2;
         var top = rect.top - tip.offsetHeight - 10;
-        // Clamp to viewport
         left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
         tip.style.left = left + 'px';
         tip.style.top = top + 'px';
