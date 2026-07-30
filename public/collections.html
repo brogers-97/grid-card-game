@@ -230,6 +230,16 @@
     .achievement-tile-icon {
       font-size: 36px;
       margin-bottom: 5px;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .achievement-tile-icon img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
     }
     .achievement-tile.locked .achievement-tile-icon {
       filter: grayscale(0.7) brightness(0.7);
@@ -1015,7 +1025,7 @@
           <div class="${classes}" ${tooltipData}>
             ${hasReward ? '<div class="achievement-reward-badge">🎁</div>' : ''}
             ${isUnlocked ? '<div class="achievement-complete-badge">✓</div>' : ''}
-            <div class="achievement-tile-icon">${displayIcon}</div>
+            <div class="achievement-tile-icon">${isMystery ? '❓' : `<img src="/images/achievements/${id}.png" alt="${ach.name}">`}</div>
             <div class="achievement-tile-name">${displayName}</div>
             <div class="achievement-progress-bar">
               <div class="achievement-progress-fill" style="width: ${progressPercent}%"></div>

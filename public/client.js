@@ -10547,7 +10547,28 @@ function showCampaignVictoryPopup(data) {
     'wizardnpc': 'Wizard NPC',
     'finalboss': 'Final Boss',
     'resetbutton': 'Reset Button',
-    'ragequit': 'Rage Quit'
+    'ragequit': 'Rage Quit',
+    // Celestial Host
+    'cherubhymnist': 'Cherub Hymnist',
+    'angelicattendant': 'Angelic Attendant',
+    'maidenofvirtue': 'Maiden of Virtue',
+    'angelofdestruction': 'Angel of Destruction',
+    'seraphichunter': 'Seraphic Hunter',
+    'archangelmichael': 'Archangel Michael',
+    'archangeluriel': 'Archangel Uriel',
+    'archangelgabriel': 'Archangel Gabriel',
+    'archangelraphael': 'Archangel Raphael',
+    'luciferfallenangel': 'Lucifer Fallen Angel',
+    'gardenofeden': 'Garden of Eden',
+    'blessingofmight': 'Blessing of Might',
+    'blessingofvigor': 'Blessing of Vigor',
+    'blessingofprotection': 'Blessing of Protection',
+    'blessingofkings': 'Blessing of Kings',
+    'angelicdescent': 'Angelic Descent',
+    'heavenlyrescue': 'Heavenly Rescue',
+    'layonhands': 'Lay on Hands',
+    'resurrection': 'Resurrection',
+    'wrathofgod': 'Wrath of God'
   };
   
   // Slot machine reveal animation
@@ -10691,7 +10712,24 @@ function showCampaignVictoryPopup(data) {
     'blessingofmight': '/images/Blessing of Might.png',
     'blessingofvigor': '/images/Blessing of Vigor.png',
     'blessingofkings': '/images/Blessing of Kings.png',
-    'blessingofprotection': '/images/Blessing of Protection.png'
+    'blessingofprotection': '/images/Blessing of Protection.png',
+    // Celestial Host
+    'cherubhymnist': '/images/Cherub Hymnist.png',
+    'angelicattendant': '/images/Angelic Attendant.png',
+    'maidenofvirtue': '/images/Maiden of Virtue.png',
+    'angelofdestruction': '/images/Angel of Destruction.png',
+    'seraphichunter': '/images/Seraphic Hunter.png',
+    'archangelmichael': '/images/Archangel Michael.png',
+    'archangeluriel': '/images/Archangel Uriel.png',
+    'archangelgabriel': '/images/Archangel Gabriel.png',
+    'archangelraphael': '/images/Archangel Raphael.png',
+    'luciferfallenangel': '/images/Lucifer Fallen Angel.png',
+    'gardenofeden': '/images/Garden of Eden.png',
+    'angelicdescent': '/images/Angelic Descent.png',
+    'heavenlyrescue': '/images/Heavenly Rescue.png',
+    'layonhands': '/images/Lay on Hands.png',
+    'resurrection': '/images/Resurrection.png',
+    'wrathofgod': '/images/Wrath of God.png'
   };
   
   // Card rarities for visual effects

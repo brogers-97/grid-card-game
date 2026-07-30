@@ -66,7 +66,15 @@ function createWindow() {
   win.on('closed', () => app.quit());
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  // Silently deny any permission requests (location, camera, mic, etc.)
+  const { session } = require('electron');
+  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+    callback(false);
+  });
+
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

@@ -1902,7 +1902,7 @@ function placeTutorialUnit(state, deckId, key, owner, row, col) {
 const TUTORIAL_SCRIPT = [
   // === Intro ===
   { type: 'dialog', speaker: 'Lost King', text: "What a strange land have I been taken to?! No matter — fight me or die, traveler!" },
-  { type: 'dialog', speaker: 'Trainer', text: "Each card costs Dimensional Energy to summon. You can see how much energy you have above your hand.", nextHighlight: 'energy' },
+  { type: 'dialog', speaker: 'Trainer', text: "Each card costs Dimensional Energy to summon. You can see how much energy you have above your hand. Click draw and a card from your deck will appear in your hand.", nextHighlight: 'energy' },
   { type: 'gate', action: 'drawCard' },
 
   // === Player Turn 1 ===
