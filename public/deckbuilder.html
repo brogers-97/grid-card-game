@@ -25,13 +25,13 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #e2e8f0; }
+    body { font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; background-color: #0d0c1a; background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/></svg>"), linear-gradient(160deg, #1a1a2e 0%, #12121f 50%, #0d1220 100%); background-repeat: repeat, no-repeat; background-size: 200px 200px, 100% 100%; color: #e2e8f0; }
     .bg-orb { position: fixed; border-radius: 50%; filter: blur(60px); opacity: 0.4; animation: pulse-orb 3s ease-in-out infinite; z-index: 0; pointer-events: none; }
     .bg-orb-1 { width: 400px; height: 400px; background: #a855f7; top: -100px; left: -100px; }
     .bg-orb-2 { width: 300px; height: 300px; background: #fbbf24; bottom: -50px; right: -50px; animation-delay: -1.5s; }
     @keyframes pulse-orb { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.5; } }
     .page-container { display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; z-index: 1; }
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: linear-gradient(135deg, rgba(80, 58, 8, 0.97) 0%, rgba(55, 40, 6, 0.98) 100%); border-bottom: 3px solid rgba(201, 161, 50, 0.8); position: relative; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: rgba(14, 13, 28, 0.97); border-bottom: 3px solid rgba(201, 161, 50, 0.8); position: relative; }
     .header-left { display: flex; align-items: center; gap: 15px; }
     .header-center { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
     .back-btn { position: relative; padding: 8px 16px; background: rgba(20, 20, 40, 0.8); border: 1.5px solid rgba(251, 191, 36, 0.7); color: #f59e0b; font-size: 13px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
