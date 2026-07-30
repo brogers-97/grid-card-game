@@ -3233,12 +3233,22 @@ function renderHand() {
       </div>
     `;
 
-    el.onclick = () => {
+    el.onclick = (e) => {
       if (!isMyTurn()) return log("Not your turn.", "system");
       // Tutorial: only allow selecting/playing the highlighted card
       if (isTutorial && tutorialGate) {
         if (tutorialGate.action !== 'playCard') return log("Follow the highlighted step.", "system");
         if (tutorialGate.cardKey && card.key !== tutorialGate.cardKey) return log("Follow the highlighted step.", "system");
+      }
+
+      // Shift+click — deselect current card and hide tooltip
+      if (e.shiftKey) {
+        selectedCardId = null;
+        deployCardId = null;
+        clearHighlights();
+        hideTooltip();
+        renderHand();
+        return;
       }
 
       // If clicking the same card, deselect it
