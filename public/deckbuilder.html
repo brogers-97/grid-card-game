@@ -375,6 +375,8 @@
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(30, 30, 60, 0.95); border: 2px solid rgba(16, 185, 129, 0.6); border-radius: 10px; padding: 12px 20px; color: #e2e8f0; font-size: 13px; display: flex; align-items: center; gap: 8px; z-index: 1000; opacity: 0; transition: all 0.3s; }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     .toast.error { border-color: rgba(239, 68, 68, 0.6); }
+    .card-creator-btn { width: 100%; padding: 13px; background: rgba(20, 20, 40, 0.8); border: 0; border-top: 1.5px solid rgba(138, 43, 226, 0.35); color: #a78bfa; font-size: 14px; font-weight: 700; font-family: 'Cinzel', serif; cursor: pointer; letter-spacing: 0.04em; transition: all 0.2s; flex-shrink: 0; }
+    .card-creator-btn:hover { background: rgba(138, 43, 226, 0.15); color: #c4b5fd; border-top-color: rgba(138, 43, 226, 0.7); }
     .login-prompt { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 30px; }
     .login-prompt-icon { font-size: 48px; margin-bottom: 15px; }
     .login-prompt h2 { font-family: 'Cinzel', serif; color: #fbbf24; margin-bottom: 8px; }
@@ -394,7 +396,6 @@
         <h1 class="page-title" id="pageTitleFallback" style="display:none">⚔️ Deck Builder</h1>
       </div>
       <div class="header-right">
-<button class="back-btn" onclick="window.location.href='/card-creator.html'" style="cursor:pointer;">🔮 Card Creator</button>
         <button class="save-btn" id="saveBtn" disabled>Save Deck</button>
       </div>
     </header>
@@ -452,6 +453,7 @@
           </div>
         </div>
         <div class="deck-cards" id="deckCards"><div class="deck-empty"><div class="deck-empty-icon">🃏</div><div>Click cards to add</div></div></div>
+        <button class="card-creator-btn" onclick="window.location.href='/card-creator.html'">🔮 Card Creator</button>
       </div>
     </div>
   </div>

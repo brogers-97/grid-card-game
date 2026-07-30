@@ -9960,7 +9960,7 @@ function showCampaignVictoryPopup(data) {
         ${data.rewards.music ? `<div class="reward-unlock" id="musicUnlock" style="opacity: 0;">🎵 Unlocked: ${data.rewards.music} music!</div>` : ''}
         ${data.rewards.background ? `<div class="reward-unlock" id="bgUnlock" style="opacity: 0;">🖼️ Unlocked: ${data.rewards.background} background!</div>` : ''}
       </div>
-      <button class="victory-btn" id="victoryBtn" style="opacity: 0;" onclick="window.location.href='/home.html'">Continue</button>
+      <button class="victory-btn" id="victoryBtn" style="opacity: 0;" onclick="window.location.href='/home.html?campaign=1'">Continue</button>
     </div>
   `;
   

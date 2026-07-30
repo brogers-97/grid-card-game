@@ -2224,6 +2224,11 @@
       if (deckList.length > 0) updateDeckSelects();
       showScreen(mainMenuScreen);
       renderCampaignMap();
+      if (new URLSearchParams(window.location.search).get('campaign') === '1') {
+        history.replaceState(null, '', '/home.html');
+        showScreen(campaignScreen);
+        document.querySelector('.campaign-map-container').scrollTop = 0;
+      }
     }
     
     function showAuthError(msg) {
