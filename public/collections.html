@@ -65,7 +65,7 @@
     .gallery-item.locked:hover { transform: none; box-shadow: none; }
     
     /* Card art display */
-    .gallery-art { width: 100%; aspect-ratio: 3/4; background-size: cover; background-position: center top; background-color: rgba(30, 30, 60, 0.5); }
+    .gallery-art { width: 100%; aspect-ratio: 3/4; background-size: cover; background-position: center top; background-color: rgba(30, 30, 60, 0.5); position: relative; }
     .gallery-item.holo .gallery-art { position: relative; }
     .gallery-item.holo::before { content: ''; position: absolute; inset: -2px; background: linear-gradient(45deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0080ff, #8000ff, #ff00ff, #ff0000); background-size: 400% 400%; border-radius: 14px; z-index: -1; animation: holoShift 3s linear infinite; }
     @keyframes holoShift { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
@@ -235,7 +235,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
+    .achievement-tile-icon.img-loading img { opacity: 0; }
     .achievement-tile-icon img {
       width: 48px;
       height: 48px;
@@ -245,9 +247,6 @@
       filter: grayscale(0.7) brightness(0.7);
     }
     /* Image lazy-load spinner */
-    .img-loading {
-      position: relative;
-    }
     .img-loading::after {
       content: '';
       position: absolute;

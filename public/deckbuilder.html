@@ -250,8 +250,7 @@
     .deck-card-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(30, 30, 60, 0.5); border: 2px solid #c9a132; border-radius: 6px; margin-bottom: 4px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 4px rgba(201,161,50,0.25); }
     .deck-card-item:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
     .deck-card-item.selected { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
-    .deck-card-art { width: 28px; height: 28px; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: contain; background-position: center; background-repeat: no-repeat; border-radius: 4px; }
-    .img-loading { position: relative; }
+    .deck-card-art { width: 28px; height: 28px; background: linear-gradient(135deg, #4c1d95, #5b21b6); background-size: contain; background-position: center; background-repeat: no-repeat; border-radius: 4px; position: relative; }
     .img-loading::after { content: ''; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid rgba(251,191,36,0.2); border-top-color: #fbbf24; border-radius: 50%; animation: imgLoadSpin 0.7s linear infinite; pointer-events: none; z-index: 5; }
     @keyframes imgLoadSpin { to { transform: rotate(360deg); } }
     .deck-card-info { flex: 1; min-width: 0; }
