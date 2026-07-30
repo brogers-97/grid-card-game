@@ -1,7 +1,7 @@
 const { app, BrowserWindow, shell } = require('electron');
 
 // ── Set this to your deployed server URL after deploying ──────────────────────
-const GAME_URL = process.env.GAME_URL || 'https://your-game.up.railway.app';
+const GAME_URL = process.env.GAME_URL || 'https://grid-card-game-production.up.railway.app';
 
 function createWindow() {
   const win = new BrowserWindow({
