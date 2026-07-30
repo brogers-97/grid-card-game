@@ -376,8 +376,9 @@
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(30, 30, 60, 0.95); border: 2px solid rgba(16, 185, 129, 0.6); border-radius: 10px; padding: 12px 20px; color: #e2e8f0; font-size: 13px; display: flex; align-items: center; gap: 8px; z-index: 1000; opacity: 0; transition: all 0.3s; }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     .toast.error { border-color: rgba(239, 68, 68, 0.6); }
-    .card-creator-btn { width: 100%; padding: 13px; background: rgba(20, 20, 40, 0.85); border: 3px solid rgba(138, 43, 226, 0.55); border-radius: 0; color: #a78bfa; font-size: 14px; font-weight: 700; font-family: 'Cinzel', serif; cursor: pointer; letter-spacing: 0.04em; transition: all 0.2s; flex-shrink: 0; }
-    .card-creator-btn:hover { background: rgba(138, 43, 226, 0.15); color: #c4b5fd; border-color: rgba(138, 43, 226, 0.75); }
+    .card-creator-btn { position: relative; width: 100%; padding: 18px 13px; background: linear-gradient(135deg, #c9a132 0%, #e8c44a 40%, #c9a132 70%, #a07820 100%); border: 3px solid #e8c44a; border-radius: 0; color: #3b0764; font-size: 15px; font-weight: 800; font-family: 'Cinzel', serif; cursor: pointer; letter-spacing: 0.1em; text-shadow: 0 1px 2px rgba(255,230,100,0.3); box-shadow: 0 0 18px rgba(201,161,50,0.4), inset 0 1px 0 rgba(255,235,120,0.5), inset 0 -1px 0 rgba(100,70,0,0.4); transition: all 0.2s; flex-shrink: 0; text-transform: uppercase; }
+    .card-creator-btn::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; border: 1px solid rgba(255,220,80,0.5); pointer-events: none; }
+    .card-creator-btn:hover { background: linear-gradient(135deg, #d4ad3a 0%, #f0d060 40%, #d4ad3a 70%, #b08830 100%); box-shadow: 0 0 28px rgba(201,161,50,0.65), inset 0 1px 0 rgba(255,240,140,0.6), inset 0 -1px 0 rgba(100,70,0,0.4); color: #2e0554; }
     .login-prompt { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 30px; }
     .login-prompt-icon { font-size: 48px; margin-bottom: 15px; }
     .login-prompt h2 { font-family: 'Cinzel', serif; color: #fbbf24; margin-bottom: 8px; }
