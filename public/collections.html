@@ -1131,11 +1131,11 @@
         audioPlayer.pause();
         audioPlayer.currentTime = 0;
         currentlyPlaying = null;
-        // Resume background music
-        if (window._homeBgMusic) window._homeBgMusic.play().catch(() => {});
+        if (window.electronMusic) electronMusic.resume();
+        else if (window._homeBgMusic) window._homeBgMusic.play().catch(() => {});
       } else {
-        // Pause background music
-        if (window._homeBgMusic) window._homeBgMusic.pause();
+        if (window.electronMusic) electronMusic.pause();
+        else if (window._homeBgMusic) window._homeBgMusic.pause();
         audioPlayer.src = arch.musicFile;
         audioPlayer.play().catch(e => console.log('Audio play failed:', e));
         currentlyPlaying = key;
@@ -1147,7 +1147,8 @@
     // Audio ended handler
     audioPlayer.addEventListener('ended', () => {
       currentlyPlaying = null;
-      if (window._homeBgMusic) window._homeBgMusic.play().catch(() => {});
+      if (window.electronMusic) electronMusic.resume();
+      else if (window._homeBgMusic) window._homeBgMusic.play().catch(() => {});
       if (currentTab === 'music') renderMusic();
     });
     

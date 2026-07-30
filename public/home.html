@@ -3919,10 +3919,8 @@
     if (window.electronMusic) {
       bgMusic.volume = 0; // Silence local element; Electron hidden window provides audio
       let eVol = 0.4;
-      let eReady = false;
 
       electronMusic.getState().then(state => {
-        eReady = true;
         if (state && !state.paused && state.src) {
           // Already playing in Electron (navigated back from another page) — just sync UI
           musicPlaying = true;
@@ -3938,11 +3936,18 @@
           musicControl.textContent = '🔊';
           musicControl.classList.add('playing');
         }
-      }).catch(() => { eReady = true; });
+      }).catch(() => {});
 
-      // Forward bgMusic events to Electron (existing toggle handler calls bgMusic.play/pause)
-      bgMusic.addEventListener('pause', () => { if (eReady) electronMusic.pause(); });
-      bgMusic.addEventListener('play',  () => { if (eReady) electronMusic.resume(); });
+      // Intercept the toggle button click to drive Electron — avoids spurious bgMusic events
+      musicControl.addEventListener('click', () => {
+        // The existing listener already toggled bgMusic and musicPlaying.
+        // bgMusic.paused reflects the new intended state immediately.
+        if (bgMusic.paused) {
+          electronMusic.pause();
+        } else {
+          electronMusic.resume();
+        }
+      });
 
       // Volume slider: also drive Electron volume
       volumeSlider.addEventListener('input', e => {
