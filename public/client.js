@@ -4285,19 +4285,21 @@ function onCellClick(viewRow, col, event) {
 
     if (selectedUnitId && selectedUnitId !== occId) {
       const a = S.units[selectedUnitId];
-      
+      const _alreadyAttacked = S.attackedThisTurn && S.attackedThisTurn.includes(selectedUnitId);
+      const _alreadyMoved    = S.movedThisTurn    && S.movedThisTurn.includes(selectedUnitId);
+
       // UFO Scraper can attack friendly units to absorb them
-      const isAbsorbAttack = a && a.owner === myRole && a.effectId === "absorb_ally" && clickedUnit.owner === myRole;
-      
+      const isAbsorbAttack = a && a.owner === myRole && a.effectId === "absorb_ally" && clickedUnit.owner === myRole && !_alreadyAttacked;
+
       // Opal Devourer can attack friendly Gem Shards to consume them
-      const isConsumeGem = a && a.owner === myRole && a.effectId === "consume_gem" && clickedUnit.owner === myRole && clickedUnit.key === "gemshard";
-      
+      const isConsumeGem = a && a.owner === myRole && a.effectId === "consume_gem" && clickedUnit.owner === myRole && clickedUnit.key === "gemshard" && !_alreadyAttacked;
+
       // Lunar Priestess can attack friendly units to heal them
-      const isHealAttack = a && a.owner === myRole && a.effectId === "heal_attack" && clickedUnit.owner === myRole;
-      
+      const isHealAttack = a && a.owner === myRole && a.effectId === "heal_attack" && clickedUnit.owner === myRole && !_alreadyAttacked;
+
       // Sapphire Dancer can swap with any friendly unit
-      const isFairySwap = a && a.owner === myRole && a.effectId === "fairy_swap" && 
-                          clickedUnit.owner === myRole && occId !== selectedUnitId;
+      const isFairySwap = a && a.owner === myRole && a.effectId === "fairy_swap" &&
+                          clickedUnit.owner === myRole && occId !== selectedUnitId && !_alreadyMoved;
       
       // Handle fairy swap as a move action (server handles the swap logic)
       if (isFairySwap) {

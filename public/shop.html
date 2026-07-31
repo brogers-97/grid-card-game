@@ -6,7 +6,7 @@
   <title>Grid Card Game - Shop</title>
   <script>
     (function() {
-      if (window.electronMusic) return; // Electron hidden window handles persistent audio
+      if (window.electronMusic) return;
       const ms = JSON.parse(sessionStorage.getItem('homeMusicState') || 'null');
       if (!ms || !ms.playing) return;
       const _t = JSON.parse(localStorage.getItem('homeMusicTrack') || 'null');
@@ -24,39 +24,37 @@
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700&display=swap');
-    
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scrollbar-width: none; }
     html::-webkit-scrollbar { display: none; }
-    
+
     body {
       font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-      background: linear-gradient(135deg, rgba(26, 26, 46, 0.92) 0%, rgba(22, 33, 62, 0.92) 50%, rgba(15, 52, 96, 0.92) 100%),
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(26,26,46,0.92) 0%, rgba(22,33,62,0.92) 50%, rgba(15,52,96,0.92) 100%),
                   url('/images/Shop Background.png') center/cover no-repeat fixed;
       color: #e2e8f0;
-      overflow-x: hidden;
-      scrollbar-width: none;
     }
-    body::-webkit-scrollbar { display: none; }
 
+    /* ── TOP BAR ── */
     .top-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 12px 24px;
-      background: rgba(20, 20, 40, 0.9);
-      border-bottom: 2px solid rgba(138, 43, 226, 0.3);
-      position: sticky;
-      top: 0;
+      background: rgba(20,20,40,0.95);
+      border-bottom: 2px solid rgba(138,43,226,0.3);
+      position: relative;
       z-index: 100;
       backdrop-filter: blur(10px);
+      flex-shrink: 0;
     }
-
     .back-btn {
       position: relative;
-      background: rgba(20, 20, 40, 0.8);
-      border: 1.5px solid rgba(251, 191, 36, 0.7);
+      background: rgba(20,20,40,0.8);
+      border: 1.5px solid rgba(251,191,36,0.7);
       color: #f59e0b;
       padding: 8px 16px;
       cursor: pointer;
@@ -64,10 +62,8 @@
       font-size: 13px;
       transition: all 0.2s;
     }
-    .back-btn::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; border: 1px solid rgba(251, 191, 36, 0.3); pointer-events: none; transition: border-color 0.2s; }
-    .back-btn:hover { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border-color: rgba(251, 191, 36, 1); }
-    .back-btn:hover::before { border-color: rgba(251, 191, 36, 0.6); }
-
+    .back-btn::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; border: 1px solid rgba(251,191,36,0.3); pointer-events: none; }
+    .back-btn:hover { background: rgba(251,191,36,0.1); color: #fbbf24; border-color: rgba(251,191,36,1); }
     .shop-title {
       font-family: 'Cinzel', serif;
       font-size: 24px;
@@ -76,397 +72,703 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-
     .gold-display {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(251,191,36,0.15);
+      border: 2px solid rgba(251,191,36,0.7);
+      padding: 8px 16px;
+      font-weight: 700; font-size: 16px; color: #fbbf24;
+    }
+
+    /* ── LAYOUT SHELL ── */
+    .shop-shell {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 57px);
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      flex-shrink: 0;
+      background: rgba(14,13,28,0.6);
+    }
+    .tab {
+      flex: 1; padding: 12px 16px; background: none; border: none;
+      color: #475569; cursor: pointer;
+      font-family: 'Cinzel', serif; font-size: 14px; font-weight: 600;
+      position: relative; transition: color 0.2s;
+    }
+    .tab.active { color: #fbbf24; }
+    .tab.active::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(to right, transparent, #c9a132 25%, #fbbf24 50%, #c9a132 75%, transparent);
+      box-shadow: 0 0 8px rgba(251,191,36,0.4);
+    }
+    .tab:hover:not(.active) { color: #fbbf24; }
+    .tab-panel { display: none; flex: 1; min-height: 0; }
+    .tab-panel.active { display: flex; flex-direction: column; }
+
+    /* ── DEALS TAB: ARENA LAYOUT ── */
+    .shop-arena {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      gap: 0;
+    }
+
+    /* LEFT: SHELVES */
+    .shelves-col {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 20px 16px 20px 20px;
+      scrollbar-width: none;
+    }
+    .shelves-col::-webkit-scrollbar { display: none; }
+
+    .deal-timer-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .deal-timer-bar #dealTimer {
+      background: rgba(30,30,60,0.7);
+      border: 1px solid rgba(201,161,50,0.3);
+      padding: 5px 12px;
+      font-size: 12px;
+      color: #c9a132;
+    }
+
+    /* Shelf */
+    .shelf {
+      margin-bottom: 24px;
+    }
+    .shelf-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(251, 191, 36, 0.15);
-      border: 2px solid rgba(251, 191, 36, 0.7);
-      padding: 8px 16px;
-      font-weight: 700;
-      font-size: 16px;
-      color: #fbbf24;
+      margin-bottom: 8px;
+      padding-left: 4px;
     }
-
-    .shop-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    .tabs {
-      display: flex;
-      margin-bottom: 28px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    }
-    .tab {
-      flex: 1;
-      padding: 12px 16px;
-      background: none;
-      border: none;
-      color: #475569;
-      cursor: pointer;
+    .shelf-rarity-label {
       font-family: 'Cinzel', serif;
-      font-size: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .shelf-rarity-label.legendary { color: #fbbf24; }
+    .shelf-rarity-label.rare { color: #60a5fa; }
+    .shelf-rarity-label.common { color: #9ca3af; }
+    .shelf-count-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
       font-weight: 600;
+    }
+    .shelf-count-badge.legendary { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.35); }
+    .shelf-count-badge.rare { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid rgba(96,165,250,0.35); }
+    .shelf-count-badge.common { background: rgba(156,163,175,0.15); color: #9ca3af; border: 1px solid rgba(156,163,175,0.3); }
+
+    .shelf-scroll-wrap {
       position: relative;
-      transition: color 0.2s, transform 0.2s;
     }
-    .tab.active {
-      color: #fbbf24;
+    .shelf-cards {
+      display: flex;
+      gap: 10px;
+      overflow-x: hidden;
+      padding: 10px 4px 6px;
+      scroll-behavior: smooth;
     }
-    .tab.active::after {
+    .shelf-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 52px;
+      background: rgba(14,13,28,0.85);
+      border: 1.5px solid rgba(201,161,50,0.5);
+      color: #c9a132;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      transition: all 0.2s;
+      line-height: 1;
+      padding-bottom: 2px;
+    }
+    .shelf-arrow:hover { background: rgba(201,161,50,0.15); color: #fbbf24; border-color: #c9a132; }
+    .shelf-arrow.left { left: -2px; }
+    .shelf-arrow.right { right: -2px; }
+
+    /* Shelf board (wooden plank) */
+    .shelf-board {
+      height: 11px;
+      background: linear-gradient(180deg, #7a4f2a 0%, #5c3a1a 60%, #3a2210 100%);
+      border-radius: 2px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,200,120,0.15);
+      margin: 0 -4px;
+      position: relative;
+    }
+    .shelf-board::before {
       content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0;
+      top: 0; left: 0; right: 0;
       height: 2px;
-      background: linear-gradient(to right, transparent 0%, #c9a132 25%, #fbbf24 50%, #c9a132 75%, transparent 100%);
-      box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
-    }
-    .tab:hover:not(.active) { color: #fbbf24; transform: scale(1.07); }
-
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    .section-header {
-      font-family: 'Cinzel', serif;
-      font-size: 18px;
-      margin-bottom: 16px;
-      color: #c4b5fd;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .section-header .subtitle {
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      color: #94a3b8;
-      font-weight: 400;
+      background: rgba(255,200,120,0.2);
+      border-radius: 2px 2px 0 0;
     }
 
-    .deals-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    .deal-card {
-      perspective: 800px;
-      border-radius: 12px;
-      position: relative;
-      aspect-ratio: 3 / 4;
-      width: 200px;
+    /* Card on shelf */
+    .shelf-card {
+      width: 108px;
+      aspect-ratio: 3/4;
       flex-shrink: 0;
-    }
-
-    .market-card, .sell-card-item {
-      perspective: 800px;
-      border-radius: 10px;
+      cursor: pointer;
       position: relative;
-      aspect-ratio: 3 / 4;
-    }
-
-    /* 3D Flip Container */
-    .card-flip-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 0.5s ease;
-      transform-style: preserve-3d;
-      border-radius: inherit;
-    }
-    .card-flip-inner.flipped {
-      transform: rotateY(180deg);
-    }
-
-    /* Front and Back faces */
-    .card-front, .card-back {
-      position: absolute;
-      inset: 0;
-      backface-visibility: hidden;
-      border-radius: inherit;
+      transform: translateY(0px);
+      transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s;
+      border-radius: 4px;
       overflow: hidden;
     }
-
-    .card-front {
-      background: rgba(30, 30, 60, 0.8);
-      border: 2px solid rgba(100, 100, 140, 0.3);
-      border-radius: inherit;
+    .shelf-card:hover {
+      transform: translateY(-10px);
     }
-    .deal-card .card-front {
-      border-color: rgba(251, 191, 36, 0.3);
-    }
-
-    .card-back {
-      background: rgba(20, 20, 45, 0.98);
-      border: 2px solid rgba(138, 43, 226, 0.5);
-      border-radius: inherit;
-      transform: rotateY(180deg);
-      display: flex;
-      flex-direction: column;
-      padding: 14px;
-      overflow-y: auto;
-      scrollbar-width: none;
+    .shelf-card.selected {
+      transform: translateY(-12px);
+      outline: 3px solid #fbbf24;
+      outline-offset: 2px;
+      box-shadow: 0 0 20px rgba(251,191,36,0.5);
     }
 
-    /* Front face hover effects */
-    .deal-card:hover .card-front {
-      border-color: rgba(251, 191, 36, 0.6);
-      box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
-    }
-    .market-card:hover .card-front {
-      border-color: rgba(138, 43, 226, 0.5);
-      box-shadow: 0 0 15px rgba(138, 43, 226, 0.1);
-    }
-    .sell-card-item:hover .card-front {
-      border-color: rgba(239, 68, 68, 0.5);
-      box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
-    }
-
-    /* Rarity borders on front */
-    .card-front.rare-border { border-color: rgba(59, 130, 246, 0.4); }
-    .card-front.legendary-border { border-color: rgba(251, 191, 36, 0.4); }
-
-    .deal-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
-      z-index: 3;
-    }
-
-    /* Hover overlay for cards (front face) */
-    .card-hover-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(10, 10, 30, 0.88);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 14px;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      z-index: 2;
-      text-align: center;
-    }
-    .card-flip-inner:not(.flipped) .card-front:hover .card-hover-overlay {
-      opacity: 1;
-    }
-
-    /* Card name label at bottom (always visible on front) */
-    .card-name-bar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(transparent, rgba(10, 10, 30, 0.95));
-      padding: 24px 10px 8px;
-      z-index: 1;
-      text-align: center;
-    }
-    .card-name-bar .card-name {
-      font-weight: 700;
-      font-size: 13px;
-    }
-
-    /* Card Back Styles */
-    .card-back-header {
-      text-align: center;
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(138, 43, 226, 0.3);
-    }
-    .card-back-name {
-      font-family: 'Cinzel', serif;
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .card-back-stats {
-      font-size: 13px;
-      color: #94a3b8;
-      margin-bottom: 4px;
-    }
-
-    .card-back-effect {
-      flex: 1;
-      font-size: 12px;
-      line-height: 1.5;
-      color: #cbd5e1;
-      margin-bottom: 10px;
-    }
-    .card-back-effect .effect-label {
-      color: #a78bfa;
-      font-weight: 700;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
-    }
-    .card-back-effect .effect-text {
-      color: #e2e8f0;
-      font-size: 13px;
-    }
-    .card-back-effect .no-effect {
-      color: #64748b;
-      font-style: italic;
-    }
-
-    .card-back-footer {
-      text-align: center;
-      font-size: 11px;
-      color: #64748b;
-      margin-top: auto;
-      padding-top: 6px;
-      border-top: 1px solid rgba(100, 100, 140, 0.2);
-    }
-
-    .deal-timer {
-      text-align: center;
-      color: #94a3b8;
-      font-size: 12px;
-      margin-bottom: 16px;
-      padding: 6px 12px;
-      background: rgba(30, 30, 60, 0.6);
-      border-radius: 6px;
-      display: inline-block;
-    }
-
-    .card-img {
+    .shelf-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
-      position: absolute;
-      inset: 0;
     }
-    .card-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-    .card-stats-line { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-
-    .rarity-badge {
-      display: inline-block;
+    .shelf-card-placeholder {
+      width: 100%;
+      height: 100%;
+      background: rgba(30,30,60,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: rgba(255,255,255,0.2);
+    }
+    .shelf-card-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(5,5,18,0.95));
+      padding: 18px 6px 5px;
+      text-align: center;
+    }
+    .shelf-card-name {
       font-size: 10px;
       font-weight: 700;
-      text-transform: uppercase;
-      padding: 2px 8px;
-      border-radius: 4px;
-      margin-bottom: 8px;
+      color: #e2e8f0;
+      line-height: 1.2;
     }
-    .rarity-badge.common { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
-    .rarity-badge.rare { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-    .rarity-badge.legendary { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-
-    .price-line { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .price-original { text-decoration: line-through; color: #64748b; font-size: 13px; }
-    .price-current { color: #fbbf24; font-weight: 700; font-size: 16px; }
-
-    .buy-btn {
-      width: 100%;
-      margin-top: 10px;
-      padding: 8px 16px;
-      background: linear-gradient(135deg, #f59e0b, #b45309);
-      border: none;
-      border-radius: 8px;
+    .shelf-deal-badge {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
       color: white;
+      font-size: 9px;
       font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      z-index: 3;
+    }
+    .shelf-own-badge {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: rgba(10,10,30,0.8);
+      color: #94a3b8;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    /* Rarity glow on shelf card */
+    .shelf-card.rarity-legendary { box-shadow: 0 0 12px rgba(251,191,36,0.35); border: 1.5px solid rgba(251,191,36,0.5); }
+    .shelf-card.rarity-rare { box-shadow: 0 0 10px rgba(96,165,250,0.3); border: 1.5px solid rgba(96,165,250,0.45); }
+    .shelf-card.rarity-common { border: 1.5px solid rgba(156,163,175,0.25); }
+
+    /* RIGHT: ROBOT COLUMN */
+    .robot-col {
+      width: 320px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 14px;
+      background: rgba(8,6,18,0.5);
+      border-left: 1.5px solid rgba(138,43,226,0.2);
+      overflow: hidden;
+      gap: 10px;
+    }
+
+    /* Speech bubble */
+    .speech-bubble {
+      position: relative;
+      background: rgba(14,13,28,0.95);
+      border: 1.5px solid rgba(201,161,50,0.6);
+      border-radius: 10px;
+      padding: 10px 14px;
+      width: 100%;
+      min-height: 52px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #e2e8f0;
+      box-shadow: 0 0 12px rgba(201,161,50,0.15);
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -9px;
+      left: 48px;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-top: 9px solid rgba(201,161,50,0.6);
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50px;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 7px solid rgba(14,13,28,0.95);
+      z-index: 1;
+    }
+    #speechText { color: #e2e8f0; }
+    .type-cursor {
+      display: inline-block;
+      color: #00e5ff;
+      font-weight: 300;
+      animation: cursorBlink 0.8s infinite;
+      margin-left: 1px;
+    }
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ── ROBOT ── */
+    .robot-scene {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .robot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+      flex-shrink: 0;
+      animation: robotBob 3.5s ease-in-out infinite;
+      position: relative;
+    }
+    @keyframes robotBob {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-7px); }
+    }
+    .robot.robot-state-celebrate {
+      animation: robotCelebrate 0.75s cubic-bezier(0.36,0.07,0.19,0.97) !important;
+    }
+    @keyframes robotCelebrate {
+      0%   { transform: translateY(0) rotate(0deg) scale(1); }
+      18%  { transform: translateY(-22px) rotate(-6deg) scale(1.07); }
+      36%  { transform: translateY(0) rotate(0deg) scale(1); }
+      54%  { transform: translateY(-13px) rotate(5deg) scale(1.04); }
+      72%  { transform: translateY(0) rotate(0deg) scale(1); }
+      86%  { transform: translateY(-5px) rotate(-2deg) scale(1.01); }
+      100% { transform: translateY(0) rotate(0deg) scale(1); }
+    }
+    .robot.robot-state-sad {
+      animation: robotSad 0.5s ease-out forwards !important;
+    }
+    @keyframes robotSad {
+      0%   { transform: translateY(0) rotate(0deg); }
+      30%  { transform: translateY(6px) rotate(3deg); }
+      60%  { transform: translateY(4px) rotate(-2deg); }
+      100% { transform: translateY(3px) rotate(0deg); }
+    }
+
+    /* Antenna */
+    .robot-antenna-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: -1px;
+    }
+    .antenna-pole {
+      width: 3px;
+      height: 20px;
+      background: linear-gradient(to bottom, #7a8ea8, #4a5a6e);
+    }
+    .antenna-ball {
+      width: 11px;
+      height: 11px;
+      background: radial-gradient(circle at 35% 35%, #ff6666, #ff1111);
+      border-radius: 50%;
+      animation: antennaPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes antennaPulse {
+      0%, 100% { box-shadow: 0 0 6px #ff3333, 0 0 12px rgba(255,0,0,0.5); }
+      50% { box-shadow: 0 0 16px #ff3333, 0 0 32px rgba(255,0,0,0.6), 0 0 48px rgba(255,0,0,0.25); }
+    }
+
+    /* Head */
+    .robot-head {
+      width: 80px;
+      height: 66px;
+      background: linear-gradient(145deg, #9bb2cc 0%, #7a8ea8 45%, #56697e 100%);
+      border-radius: 9px 9px 5px 5px;
+      border: 2px solid #3e5066;
+      box-shadow: inset 0 2px 5px rgba(255,255,255,0.28), inset 0 -3px 6px rgba(0,0,0,0.35), 0 4px 14px rgba(0,0,0,0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      position: relative;
+      z-index: 2;
+    }
+    .robot.robot-talking .robot-head {
+      animation: headBob 0.45s ease-in-out infinite;
+    }
+    @keyframes headBob {
+      0%, 100% { transform: rotate(0deg) translateY(0); }
+      25%  { transform: rotate(-5deg) translateY(-3px); }
+      75%  { transform: rotate(4deg) translateY(-1px); }
+    }
+
+    /* Eyes */
+    .robot-eyes { display: flex; gap: 14px; }
+    .robot-eye {
+      width: 18px;
+      height: 18px;
+      background: radial-gradient(circle at 35% 30%, #80ffff, #00c8ff 55%, #006888);
+      border-radius: 50%;
+      box-shadow: 0 0 7px #00e5ff, 0 0 14px rgba(0,229,255,0.45);
+      transition: transform 0.3s;
+    }
+    .robot.robot-talking .robot-eye {
+      animation: eyePulse 0.45s ease-in-out infinite;
+    }
+    .robot.robot-state-celebrate .robot-eye {
+      background: radial-gradient(circle at 35% 30%, #aaffaa, #00cc44);
+      box-shadow: 0 0 10px #00ee44, 0 0 22px rgba(0,238,68,0.5);
+    }
+    .robot.robot-state-sad .robot-eye {
+      background: radial-gradient(circle at 35% 30%, #aaaaff, #5555cc);
+      box-shadow: 0 0 6px #6666ff, 0 0 12px rgba(100,100,255,0.35);
+    }
+    @keyframes eyePulse {
+      0%, 100% { box-shadow: 0 0 7px #00e5ff, 0 0 14px rgba(0,229,255,0.45); transform: scale(1); }
+      50% { box-shadow: 0 0 18px #00e5ff, 0 0 34px rgba(0,229,255,0.7); transform: scale(1.18); }
+    }
+
+    /* Mouth */
+    .robot-mouth {
+      width: 30px;
+      height: 5px;
+      background: #1a2a3a;
+      border-radius: 0 0 4px 4px;
+      border: 1px solid #0e1a26;
+      transition: height 0.1s, border-radius 0.1s;
+    }
+    .robot.robot-talking .robot-mouth {
+      animation: mouthTalk 0.28s ease-in-out infinite;
+    }
+    @keyframes mouthTalk {
+      0%, 100% { height: 5px; border-radius: 0 0 4px 4px; }
+      50%  { height: 13px; border-radius: 3px 3px 8px 8px; background: #0e1824; }
+    }
+
+    /* Body */
+    .robot-body-wrap {
+      display: flex;
+      align-items: flex-start;
+      margin-top: -2px;
+    }
+    .robot-torso {
+      width: 90px;
+      height: 96px;
+      background: linear-gradient(145deg, #8ca2bc 0%, #687892 40%, #4a5a70 100%);
+      border-radius: 5px 5px 8px 8px;
+      border: 2px solid #3a4a5e;
+      box-shadow: inset 0 2px 5px rgba(255,255,255,0.2), inset 0 -3px 8px rgba(0,0,0,0.35), 0 4px 14px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chest-display {
+      width: 52px;
+      height: 48px;
+      background: #070d1a;
+      border: 2px solid #1e3a78;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 14px rgba(60,120,255,0.3);
+    }
+    .chest-light {
+      width: 14px;
+      height: 14px;
+      background: radial-gradient(circle, #5a96ff, #2255cc);
+      border-radius: 50%;
+      animation: chestPulse 2.2s ease-in-out infinite;
+    }
+    @keyframes chestPulse {
+      0%, 100% { box-shadow: 0 0 10px #4488ff, 0 0 20px rgba(68,136,255,0.4); transform: scale(1); }
+      50% { box-shadow: 0 0 22px #4488ff, 0 0 44px rgba(68,136,255,0.55); transform: scale(1.25); }
+    }
+
+    /* Arms */
+    .robot-arm {
+      width: 20px;
+      background: linear-gradient(to right, #7a8ea8, #5a6a80, #3e4e60);
+      border: 1.5px solid #334455;
+      box-shadow: inset 1px 0 3px rgba(255,255,255,0.12);
+      transform-origin: top center;
+      transition: transform 0.55s cubic-bezier(0.34,1.56,0.64,1);
+      border-radius: 3px 3px 6px 6px;
+      height: 52px;
+      margin-top: 10px;
+    }
+    .left-arm  { transform: rotate(12deg); }
+    .right-arm { transform: rotate(-12deg); }
+
+    /* Raise right arm when holding */
+    .robot.robot-state-holding .right-arm {
+      transform: rotate(-108deg);
+    }
+    .robot.robot-state-sad .left-arm  { transform: rotate(22deg); }
+    .robot.robot-state-sad .right-arm { transform: rotate(-22deg); }
+    .robot.robot-state-celebrate .left-arm  { transform: rotate(-30deg); }
+    .robot.robot-state-celebrate .right-arm { transform: rotate(30deg); }
+
+    /* Legs */
+    .robot-legs { display: flex; gap: 8px; margin-top: 3px; }
+    .robot-leg {
+      width: 26px;
+      height: 38px;
+      background: linear-gradient(to bottom, #687892, #4a5a70);
+      border-radius: 3px 3px 7px 7px;
+      border: 1.5px solid #3a4a5e;
+      box-shadow: inset 1px 0 2px rgba(255,255,255,0.1);
+    }
+
+    /* ── HELD CARD (next to robot) ── */
+    .robot-held-card {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 120px;
+      flex-shrink: 0;
+    }
+    .robot-held-card.visible {
+      display: flex;
+      animation: heldCardIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes heldCardIn {
+      0% { transform: translateY(24px) scale(0.75) rotate(8deg); opacity: 0; }
+      100% { transform: translateY(0) scale(1) rotate(-2deg); opacity: 1; }
+    }
+    .held-card-img-wrap {
+      width: 116px;
+      aspect-ratio: 3/4;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 6px 22px rgba(0,0,0,0.7), 0 0 0 2px rgba(201,161,50,0.7);
+      animation: heldCardFloat 2.5s ease-in-out infinite 0.5s;
+    }
+    @keyframes heldCardFloat {
+      0%, 100% { transform: rotate(-2deg) translateY(0); }
+      50% { transform: rotate(-2deg) translateY(-5px); }
+    }
+    .held-card-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .held-card-no-art {
+      width: 100%; height: 100%;
+      background: rgba(20,20,50,0.9);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; color: rgba(255,255,255,0.2);
+    }
+
+    /* ── CARD DETAILS PANEL ── */
+    .card-details-panel {
+      width: 100%;
+      background: rgba(14,13,28,0.85);
+      border: 1.5px solid rgba(201,161,50,0.4);
+      border-radius: 6px;
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      animation: detailsSlideIn 0.3s ease-out forwards;
+    }
+    .card-details-panel.visible { display: flex; }
+    @keyframes detailsSlideIn {
+      0% { transform: translateY(10px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .detail-card-name {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fbbf24;
+      line-height: 1.2;
+    }
+    .detail-rarity-row { display: flex; align-items: center; gap: 8px; }
+    .rarity-badge {
+      display: inline-block; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; padding: 2px 6px; border-radius: 3px;
+    }
+    .rarity-badge.common { background: rgba(156,163,175,0.2); color: #9ca3af; }
+    .rarity-badge.rare { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .rarity-badge.legendary { background: rgba(251,191,36,0.2); color: #fbbf24; }
+    .detail-type { font-size: 11px; color: #64748b; }
+    .detail-stats { font-size: 12px; color: #94a3b8; }
+    .detail-effect {
+      font-size: 11px;
+      color: #cbd5e1;
+      line-height: 1.45;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 6px;
+    }
+    .detail-effect-label { color: #a78bfa; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+    .detail-price-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding-top: 4px;
+    }
+    .detail-price-original { text-decoration: line-through; color: #64748b; font-size: 13px; }
+    .detail-price-sale { color: #fbbf24; font-weight: 800; font-size: 18px; }
+    .detail-owned { font-size: 10px; color: #64748b; text-align: center; margin-top: 2px; }
+
+    /* ── BUY PANEL ── */
+    .buy-panel {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .buy-panel.visible { display: flex; }
+    .shop-buy-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #c9a132 0%, #e8c44a 40%, #c9a132 70%, #a07820 100%);
+      border: 2px solid #e8c44a;
+      border-radius: 0;
+      color: #3b0764;
+      font-family: 'Cinzel', serif;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: all 0.2s;
+      text-shadow: 0 1px 2px rgba(255,230,100,0.3);
+      box-shadow: 0 0 16px rgba(201,161,50,0.3);
+    }
+    .shop-buy-btn:hover:not(:disabled) { filter: brightness(1.12); box-shadow: 0 0 26px rgba(201,161,50,0.55); }
+    .shop-buy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .shop-putback-btn {
+      width: 100%;
+      padding: 9px;
+      background: rgba(20,20,40,0.5);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      color: #64748b;
       font-family: 'Inter', sans-serif;
       font-size: 13px;
       cursor: pointer;
       transition: all 0.2s;
-    }
-    .buy-btn:hover:not(:disabled) { filter: brightness(1.15); box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
-    .buy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .buy-btn.sell-btn { background: linear-gradient(135deg, #ef4444, #b91c1c); }
-    .buy-btn.sell-btn:hover:not(:disabled) { box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); }
-
-    .packs-grid {
-      margin-bottom: 32px;
-    }
-
-    .faction-packs-section {
-      margin-bottom: 20px;
-    }
-
-    .faction-pack-header {
-      font-family: 'Cinzel', serif;
-      font-size: 22px;
-      font-weight: 700;
-      color: #fbbf24;
-      margin-bottom: 28px;
-      padding-bottom: 12px;
-      display: block;
-      text-align: center;
-      position: relative;
-    }
-    .faction-pack-header::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(to right, transparent 0%, #c9a132 25%, #fbbf24 50%, #c9a132 75%, transparent 100%);
-      box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
-    }
-
-    .faction-pack-row {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 14px;
-      margin-bottom: 8px;
-    }
-    .pack-tile-wrap { display: flex; flex-direction: column; gap: 8px; width: 200px; }
-
-    .pack-card {
-      position: relative;
-      overflow: hidden;
-      border: 2px solid #c9a132;
       border-radius: 0;
-      aspect-ratio: 3 / 4;
-      text-align: center;
-      transition: all 0.3s;
     }
-    .pack-card:hover {
-      border-color: #fbbf24;
-      box-shadow: 0 0 22px rgba(201, 161, 50, 0.35);
-      transform: translateY(-2px);
-    }
-    .pack-montage {
-      position: absolute;
-      inset: 0;
-    }
-    .montage-layer {
-      position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center;
-      transition: opacity 0.7s ease;
-    }
-    .pack-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 3;
-      background: radial-gradient(ellipse at center, rgba(5,5,18,0.95) 0%, rgba(5,5,18,0.6) 60%, rgba(5,5,18,0.0) 95%);
-    }
-    .pack-content {
-      position: relative;
-      z-index: 4;
-      height: 100%;
+    .shop-putback-btn:hover { border-color: rgba(239,68,68,0.45); color: #f87171; background: rgba(239,68,68,0.07); }
+
+    /* Idle nudge */
+    .idle-nudge {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 14px 16px;
+      gap: 6px;
+      color: #475569;
+      font-size: 12px;
+      margin-top: 4px;
+      animation: nudgePulse 2s ease-in-out infinite;
     }
+    @keyframes nudgePulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    .idle-nudge-arrow {
+      font-size: 20px;
+      transform: rotate(180deg);
+      display: inline-block;
+      animation: arrowBounce 1.5s ease-in-out infinite;
+    }
+    @keyframes arrowBounce {
+      0%, 100% { transform: rotate(180deg) translateY(0); }
+      50% { transform: rotate(180deg) translateY(-5px); }
+    }
+
+    /* ── OTHER TABS ── */
+    .other-tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      scrollbar-width: none;
+    }
+    .other-tab-content::-webkit-scrollbar { display: none; }
+
+    .section-header {
+      font-family: 'Cinzel', serif; font-size: 18px; margin-bottom: 16px;
+      color: #c4b5fd; display: flex; align-items: center; gap: 10px;
+    }
+    .section-header .subtitle { font-family: 'Inter', sans-serif; font-size: 12px; color: #94a3b8; font-weight: 400; }
+
+    /* Packs */
+    .packs-grid { margin-bottom: 32px; }
+    .faction-packs-section { margin-bottom: 20px; }
+    .faction-pack-header {
+      font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; color: #fbbf24;
+      margin-bottom: 28px; padding-bottom: 12px; display: block; text-align: center; position: relative;
+    }
+    .faction-pack-header::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(to right, transparent 0%, #c9a132 25%, #fbbf24 50%, #c9a132 75%, transparent 100%);
+      box-shadow: 0 0 8px rgba(251,191,36,0.4);
+    }
+    .faction-pack-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-bottom: 8px; }
+    .pack-tile-wrap { display: flex; flex-direction: column; gap: 8px; width: 200px; }
+    .pack-card {
+      position: relative; overflow: hidden; border: 2px solid #c9a132; border-radius: 0;
+      aspect-ratio: 3/4; text-align: center; transition: all 0.3s;
+    }
+    .pack-card:hover { border-color: #fbbf24; box-shadow: 0 0 22px rgba(201,161,50,0.35); transform: translateY(-2px); }
+    .pack-montage { position: absolute; inset: 0; }
+    .montage-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: opacity 0.7s ease; }
+    .pack-overlay { position: absolute; inset: 0; z-index: 3; background: radial-gradient(ellipse at center, rgba(5,5,18,0.95) 0%, rgba(5,5,18,0.6) 60%, rgba(5,5,18,0.0) 95%); }
+    .pack-content { position: relative; z-index: 4; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 14px 16px; }
     .pack-name { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: #fbbf24; margin-bottom: 4px; }
     .pack-desc { font-size: 11px; color: #cbd5e1; }
     .pack-price { font-size: 18px; font-weight: 700; color: #fbbf24; }
@@ -474,48 +776,7 @@
     .pack-buy-btn:hover:not(:disabled) { background: rgba(251,191,36,0.1); color: #fbbf24; border-color: #fbbf24; }
     .pack-buy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .market-controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-    .market-search {
-      flex: 1;
-      min-width: 200px;
-      padding: 10px 14px;
-      background: rgba(30, 30, 60, 0.8);
-      border: 2px solid rgba(138, 43, 226, 0.3);
-      border-radius: 8px;
-      color: #e2e8f0;
-      font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      outline: none;
-    }
-    .market-search:focus { border-color: rgba(138, 43, 226, 0.7); box-shadow: 0 0 12px rgba(138, 43, 226, 0.3); }
-    
-    .filter-btn {
-      padding: 10px 16px;
-      background: rgba(30, 30, 60, 0.8);
-      border: 2px solid rgba(138, 43, 226, 0.3);
-      border-radius: 8px;
-      color: #94a3b8;
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .filter-btn.active { background: rgba(138, 43, 226, 0.3); border-color: rgba(138, 43, 226, 0.6); color: #e2e8f0; }
-    .filter-btn:hover { border-color: rgba(138, 43, 226, 0.5); color: #c4b5fd; }
-
-    .market-grid, .sell-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 12px;
-    }
-
-    .owned-badge { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
-
+    /* Sell */
     .sell-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; background: rgba(30,30,60,0.3); border-bottom: 1px solid rgba(251,191,36,0.2); align-items: center; margin-bottom: 16px; }
     .sell-filter-group { display: flex; align-items: center; gap: 4px; }
     .sell-filter-group label { color: #f59e0b; font-size: 12px; font-weight: 700; }
@@ -525,119 +786,74 @@
     .sell-filter-select:focus { outline: none; border-color: rgba(251,191,36,0.9); }
     .sell-reset-btn { padding: 5px 8px; background: rgba(30,30,60,0.5); border: 1px solid rgba(251,191,36,0.45); border-radius: 5px; color: #f59e0b; font-size: 10px; cursor: pointer; }
     .sell-reset-btn:hover { background: rgba(251,191,36,0.15); color: #fbbf24; border-color: rgba(251,191,36,0.8); }
+    .sell-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
 
-    /* Pack Modal */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-    }
+    /* Sell cards (use existing flip design) */
+    .sell-card-item { perspective: 800px; border-radius: 10px; position: relative; aspect-ratio: 3/4; }
+    .card-flip-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s ease; transform-style: preserve-3d; border-radius: inherit; }
+    .card-flip-inner.flipped { transform: rotateY(180deg); }
+    .card-front, .card-back { position: absolute; inset: 0; backface-visibility: hidden; border-radius: inherit; overflow: hidden; }
+    .card-front { background: rgba(30,30,60,0.8); border: 2px solid rgba(100,100,140,0.3); }
+    .card-back { background: rgba(20,20,45,0.98); border: 2px solid rgba(138,43,226,0.5); transform: rotateY(180deg); display: flex; flex-direction: column; padding: 14px; overflow-y: auto; scrollbar-width: none; }
+    .sell-card-item:hover .card-front { border-color: rgba(239,68,68,0.5); box-shadow: 0 0 15px rgba(239,68,68,0.1); }
+    .card-front.rare-border { border-color: rgba(59,130,246,0.4); }
+    .card-front.legendary-border { border-color: rgba(251,191,36,0.4); }
+    .card-hover-overlay { position: absolute; inset: 0; background: rgba(10,10,30,0.88); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; opacity: 0; transition: opacity 0.25s ease; z-index: 2; text-align: center; }
+    .card-flip-inner:not(.flipped) .card-front:hover .card-hover-overlay { opacity: 1; }
+    .card-name-bar { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(10,10,30,0.95)); padding: 24px 10px 8px; z-index: 1; text-align: center; }
+    .card-name { font-weight: 700; font-size: 13px; }
+    .card-stats-line { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+    .owned-badge { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+    .card-img { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; inset: 0; }
+    .card-back-header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(138,43,226,0.3); }
+    .card-back-name { font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .card-back-stats { font-size: 13px; color: #94a3b8; margin-bottom: 4px; }
+    .card-back-effect { flex: 1; font-size: 12px; line-height: 1.5; color: #cbd5e1; margin-bottom: 10px; }
+    .card-back-effect .effect-label { color: #a78bfa; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .card-back-effect .effect-text { color: #e2e8f0; font-size: 13px; }
+    .card-back-effect .no-effect { color: #64748b; font-style: italic; }
+    .card-back-footer { text-align: center; font-size: 11px; color: #64748b; margin-top: auto; padding-top: 6px; border-top: 1px solid rgba(100,100,140,0.2); }
+    .price-current { color: #fbbf24; font-weight: 700; font-size: 16px; }
+    .buy-btn { width: 100%; margin-top: 10px; padding: 8px 16px; background: linear-gradient(135deg,#f59e0b,#b45309); border: none; border-radius: 8px; color: white; font-weight: 700; font-family: 'Inter',sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .buy-btn:hover:not(:disabled) { filter: brightness(1.15); }
+    .buy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .buy-btn.sell-btn { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
     .modal-overlay.active { display: flex; }
-    
     .modal {
       position: relative;
-      background:
-        radial-gradient(ellipse at 15% 20%, rgba(139, 92, 246, 0.22) 0%, transparent 50%),
-        radial-gradient(ellipse at 85% 80%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
-        radial-gradient(ellipse at 60% 10%, rgba(168, 85, 247, 0.12) 0%, transparent 40%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Ccircle cx='42' cy='18' r='1' fill='white' opacity='.7'/%3E%3Ccircle cx='120' cy='55' r='.8' fill='white' opacity='.5'/%3E%3Ccircle cx='200' cy='30' r='1.2' fill='white' opacity='.8'/%3E%3Ccircle cx='310' cy='12' r='.7' fill='white' opacity='.6'/%3E%3Ccircle cx='370' cy='70' r='1' fill='white' opacity='.5'/%3E%3Ccircle cx='80' cy='130' r='.9' fill='white' opacity='.6'/%3E%3Ccircle cx='160' cy='100' r='1.1' fill='white' opacity='.7'/%3E%3Ccircle cx='260' cy='90' r='.8' fill='white' opacity='.4'/%3E%3Ccircle cx='340' cy='140' r='1' fill='white' opacity='.65'/%3E%3Ccircle cx='30' cy='200' r='.7' fill='white' opacity='.5'/%3E%3Ccircle cx='110' cy='230' r='1.2' fill='white' opacity='.75'/%3E%3Ccircle cx='220' cy='185' r='.9' fill='white' opacity='.55'/%3E%3Ccircle cx='300' cy='210' r='1' fill='white' opacity='.7'/%3E%3Ccircle cx='380' cy='195' r='.8' fill='white' opacity='.5'/%3E%3Ccircle cx='60' cy='310' r='1.1' fill='white' opacity='.6'/%3E%3Ccircle cx='150' cy='350' r='.7' fill='white' opacity='.45'/%3E%3Ccircle cx='240' cy='320' r='1' fill='white' opacity='.7'/%3E%3Ccircle cx='320' cy='370' r='.9' fill='white' opacity='.55'/%3E%3Ccircle cx='390' cy='300' r='1.2' fill='white' opacity='.65'/%3E%3Ccircle cx='180' cy='270' r='.8' fill='white' opacity='.5'/%3E%3C/svg%3E") repeat,
-        #04040f;
-      border: 1.5px solid rgba(251, 191, 36, 0.7);
-      border-radius: 0;
-      padding: 32px;
-      max-width: min(90vw, 920px);
-      width: 90%;
-      text-align: center;
+      background: radial-gradient(ellipse at 15% 20%, rgba(139,92,246,0.22) 0%, transparent 50%), radial-gradient(ellipse at 85% 80%, rgba(59,130,246,0.18) 0%, transparent 50%), #04040f;
+      border: 1.5px solid rgba(251,191,36,0.7); border-radius: 0; padding: 32px;
+      max-width: min(90vw,920px); width: 90%; text-align: center;
     }
-    .modal::before {
-      content: '';
-      position: absolute;
-      top: 6px; left: 6px; right: 6px; bottom: 6px;
-      border: 1px solid rgba(251, 191, 36, 0.3);
-      pointer-events: none;
-    }
+    .modal::before { content: ''; position: absolute; top: 6px; left: 6px; right: 6px; bottom: 6px; border: 1px solid rgba(251,191,36,0.3); pointer-events: none; }
     .modal h2 { font-family: 'Cinzel', serif; margin-bottom: 20px; color: #fbbf24; }
     .modal-cards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
-
-    .modal-card {
-      position: relative;
-      width: 150px;
-      aspect-ratio: 3 / 4;
-      overflow: hidden;
-      flex-shrink: 0;
-      border: 2px solid rgba(100, 100, 140, 0.4);
-      border-radius: 0;
-    }
-    .modal-card.unrevealed {
-      background: linear-gradient(145deg, #0e0e24, #1a1a3e);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-color: rgba(138, 43, 226, 0.35);
-    }
+    .modal-card { position: relative; width: 150px; aspect-ratio: 3/4; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(100,100,140,0.4); border-radius: 0; }
+    .modal-card.unrevealed { background: linear-gradient(145deg,#0e0e24,#1a1a3e); display: flex; align-items: center; justify-content: center; border-color: rgba(138,43,226,0.35); }
     .modal-mystery-icon { font-size: 40px; opacity: 0.25; }
-    .modal-card.common  { border-color: rgba(156, 163, 175, 0.6); }
-    .modal-card.rare    { border-color: rgba(59, 130, 246, 0.7); box-shadow: 0 0 14px rgba(59, 130, 246, 0.25); }
-    .modal-card.legendary { border-color: rgba(251, 191, 36, 0.8); box-shadow: 0 0 18px rgba(251, 191, 36, 0.35); }
+    .modal-card.common { border-color: rgba(156,163,175,0.6); }
+    .modal-card.rare { border-color: rgba(59,130,246,0.7); box-shadow: 0 0 14px rgba(59,130,246,0.25); }
+    .modal-card.legendary { border-color: rgba(251,191,36,0.8); box-shadow: 0 0 18px rgba(251,191,36,0.35); }
     .modal-card .card-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .modal-card-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 8px 8px; background: linear-gradient(transparent, rgba(0,0,0,0.88)); text-align: center; }
+    .modal-card-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px 8px 8px; background: linear-gradient(transparent,rgba(0,0,0,0.88)); text-align: center; }
     .modal-card-info .card-name { font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 3px; }
-
-    @keyframes packCardReveal {
-      0%   { opacity: 0; transform: scale(0.6) rotateY(180deg); }
-      60%  { transform: scale(1.04) rotateY(0deg); }
-      100% { opacity: 1; transform: scale(1) rotateY(0deg); }
-    }
+    @keyframes packCardReveal { 0% { opacity: 0; transform: scale(0.6) rotateY(180deg); } 60% { transform: scale(1.04) rotateY(0deg); } 100% { opacity: 1; transform: scale(1) rotateY(0deg); } }
     .modal-card.revealed { animation: packCardReveal 0.55s ease-out; }
+    .close-btn { position: relative; padding: 10px 40px; background: rgba(20,20,40,0.9); border: 1.5px solid rgba(251,191,36,0.7); border-radius: 0; color: #f59e0b; font-family: 'Cinzel',serif; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .close-btn:hover { background: rgba(251,191,36,0.1); color: #fbbf24; border-color: #fbbf24; }
 
-    .close-btn {
-      position: relative;
-      padding: 10px 40px;
-      background: rgba(20, 20, 40, 0.9);
-      border: 1.5px solid rgba(251, 191, 36, 0.7);
-      border-radius: 0;
-      color: #f59e0b;
-      font-family: 'Cinzel', serif;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .close-btn:hover { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border-color: #fbbf24; }
-
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: rgba(30, 30, 60, 0.95);
-      border: 1px solid rgba(138, 43, 226, 0.5);
-      border-radius: 10px;
-      padding: 12px 24px;
-      font-size: 14px;
-      z-index: 300;
-      transition: transform 0.3s ease;
-      pointer-events: none;
-    }
+    /* Toast */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(30,30,60,0.95); border: 1px solid rgba(138,43,226,0.5); border-radius: 10px; padding: 12px 24px; font-size: 14px; z-index: 300; transition: transform 0.3s ease; pointer-events: none; }
     .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.success { border-color: rgba(34, 197, 94, 0.6); color: #4ade80; }
-    .toast.error { border-color: rgba(239, 68, 68, 0.6); color: #f87171; }
+    .toast.success { border-color: rgba(34,197,94,0.6); color: #4ade80; }
+    .toast.error { border-color: rgba(239,68,68,0.6); color: #f87171; }
 
     .empty-state { text-align: center; padding: 40px; color: #64748b; font-size: 14px; }
     .loading { text-align: center; padding: 40px; color: #94a3b8; }
-    .spinner {
-      display: inline-block;
-      width: 30px;
-      height: 30px;
-      border: 3px solid rgba(138, 43, 226, 0.2);
-      border-top-color: #8b5cf6;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+    .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(138,43,226,0.2); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
@@ -648,7 +864,7 @@
     <div class="gold-display">🪙 <span id="goldAmount">0</span></div>
   </div>
 
-  <div class="shop-content">
+  <div class="shop-shell">
     <div class="tabs">
       <button class="tab active" data-tab="deals">Daily Deals</button>
       <button class="tab" data-tab="packs">Faction Packs</button>
@@ -656,47 +872,136 @@
       <button class="tab" data-tab="sell">Sell Cards</button>
     </div>
 
+    <!-- DEALS TAB: Arena Layout -->
     <div class="tab-panel active" id="tab-deals">
-      <div class="section-header">
-        Today's Deals
-        <span class="subtitle">15 discounted cards from your unlocked factions — refreshes daily</span>
-      </div>
-      <div class="deal-timer" id="dealTimer">Refreshes in --:--:--</div>
-      <div class="deals-grid" id="dealsGrid">
-        <div class="loading"><div class="spinner"></div><p>Loading deals...</p></div>
+      <div class="shop-arena">
+
+        <!-- LEFT: Shelves -->
+        <div class="shelves-col">
+          <div class="deal-timer-bar">
+            <span id="dealTimer">Refreshes in --:--:--</span>
+            <span style="color:#475569">• 15 discounted cards from your factions</span>
+          </div>
+          <div id="shelvesContainer">
+            <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading deals...</p></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Robot Shopkeeper -->
+        <div class="robot-col">
+          <!-- Speech bubble -->
+          <div class="speech-bubble">
+            <span id="speechText"></span><span class="type-cursor" id="typeCursor">|</span>
+          </div>
+
+          <!-- Robot + held card -->
+          <div class="robot-scene">
+            <div class="robot robot-state-idle robot-talking" id="robot">
+              <div class="robot-antenna-wrap">
+                <div class="antenna-ball"></div>
+                <div class="antenna-pole"></div>
+              </div>
+              <div class="robot-head" id="robotHead">
+                <div class="robot-eyes">
+                  <div class="robot-eye" id="eyeL"></div>
+                  <div class="robot-eye" id="eyeR"></div>
+                </div>
+                <div class="robot-mouth" id="robotMouth"></div>
+              </div>
+              <div class="robot-body-wrap">
+                <div class="robot-arm left-arm"></div>
+                <div class="robot-torso">
+                  <div class="chest-display"><div class="chest-light"></div></div>
+                </div>
+                <div class="robot-arm right-arm" id="rightArm"></div>
+              </div>
+              <div class="robot-legs">
+                <div class="robot-leg"></div>
+                <div class="robot-leg"></div>
+              </div>
+            </div>
+
+            <!-- Card held by robot (beside arm) -->
+            <div class="robot-held-card" id="robotHeldCard">
+              <div class="held-card-img-wrap" id="heldCardImgWrap">
+                <div class="held-card-no-art" id="heldCardNoArt">🃏</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card details (shown when selected) -->
+          <div class="card-details-panel" id="cardDetailsPanel">
+            <div class="detail-card-name" id="detailName"></div>
+            <div class="detail-rarity-row">
+              <span class="rarity-badge" id="detailRarity"></span>
+              <span class="detail-type" id="detailType"></span>
+            </div>
+            <div class="detail-stats" id="detailStats"></div>
+            <div class="detail-effect" id="detailEffect"></div>
+            <div class="detail-price-row">
+              <span class="detail-price-original" id="detailPriceOrig"></span>
+              <span class="detail-price-sale" id="detailPriceSale"></span>
+            </div>
+            <div class="detail-owned" id="detailOwned"></div>
+          </div>
+
+          <!-- Buy buttons (shown when selected) -->
+          <div class="buy-panel" id="buyPanel">
+            <button class="shop-buy-btn" id="shopBuyBtn">🪙 Buy Now</button>
+            <button class="shop-putback-btn" id="shopPutbackBtn">Put It Back</button>
+          </div>
+
+          <!-- Idle nudge (shown when nothing selected) -->
+          <div class="idle-nudge" id="idleNudge">
+            <span class="idle-nudge-arrow">↑</span>
+            <span>Click a card to inspect it!</span>
+          </div>
+        </div>
+
       </div>
     </div>
 
+    <!-- PACKS TAB -->
     <div class="tab-panel" id="tab-packs">
-      <div class="section-header">Faction Packs <span class="subtitle">Buy packs from unlocked factions</span></div>
-      <div class="packs-grid" id="packsGrid">
-        <div class="loading"><div class="spinner"></div><p>Loading packs...</p></div>
+      <div class="other-tab-content">
+        <div class="section-header">Faction Packs <span class="subtitle">Buy packs from unlocked factions</span></div>
+        <div class="packs-grid" id="packsGrid">
+          <div class="loading"><div class="spinner"></div><p>Loading packs...</p></div>
+        </div>
       </div>
     </div>
 
+    <!-- EXCLUSIVES TAB -->
     <div class="tab-panel" id="tab-exclusives">
-      <div class="section-header">Shop Exclusives <span class="subtitle">Cards only available here!</span></div>
-      <div class="market-grid" id="exclusivesGrid">
-        <div class="empty-state">Coming soon! Check back later for exclusive cards.</div>
+      <div class="other-tab-content">
+        <div class="section-header">Shop Exclusives <span class="subtitle">Cards only available here!</span></div>
+        <div id="exclusivesGrid" class="sell-grid">
+          <div class="empty-state">Coming soon! Check back later for exclusive cards.</div>
+        </div>
       </div>
     </div>
 
+    <!-- SELL TAB -->
     <div class="tab-panel" id="tab-sell">
-      <div class="section-header">Sell Cards <span class="subtitle">Sell for 40% of buy price</span></div>
-      <div class="sell-filters">
-        <input type="text" class="sell-search-input" id="sellSearch" placeholder="Search...">
-        <div class="sell-filter-group"><label>Set:</label><select class="sell-filter-select" id="sellSetFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option><option value="elunes-chosen">Elune's Chosen</option><option value="dragon-wizard">Dragon Wizard</option><option value="celestial-host">Celestial Host</option><option value="8bit-battalion">8-Bit Battalion</option></select></div>
-        <div class="sell-filter-group"><label>Type:</label><select class="sell-filter-select" id="sellTypeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option><option value="structure">Structures</option></select></div>
-        <div class="sell-filter-group"><label>Own #:</label><select class="sell-filter-select" id="sellCountFilter"><option value="all">All</option><option value="1">1 copy</option><option value="2">2 copies</option><option value="3">3 copies</option><option value="4+">4+ copies</option></select></div>
-        <div class="sell-filter-group"><label>Rarity:</label><select class="sell-filter-select" id="sellRarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
-        <button class="sell-reset-btn" id="sellResetBtn">Reset</button>
-      </div>
-      <div class="sell-grid" id="sellGrid">
-        <div class="loading"><div class="spinner"></div><p>Loading collection...</p></div>
+      <div class="other-tab-content">
+        <div class="section-header">Sell Cards <span class="subtitle">Sell for 40% of buy price</span></div>
+        <div class="sell-filters">
+          <input type="text" class="sell-search-input" id="sellSearch" placeholder="Search...">
+          <div class="sell-filter-group"><label>Set:</label><select class="sell-filter-select" id="sellSetFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option><option value="elunes-chosen">Elune's Chosen</option><option value="dragon-wizard">Dragon Wizard</option><option value="celestial-host">Celestial Host</option><option value="8bit-battalion">8-Bit Battalion</option></select></div>
+          <div class="sell-filter-group"><label>Type:</label><select class="sell-filter-select" id="sellTypeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option><option value="structure">Structures</option></select></div>
+          <div class="sell-filter-group"><label>Own #:</label><select class="sell-filter-select" id="sellCountFilter"><option value="all">All</option><option value="1">1 copy</option><option value="2">2 copies</option><option value="3">3 copies</option><option value="4+">4+ copies</option></select></div>
+          <div class="sell-filter-group"><label>Rarity:</label><select class="sell-filter-select" id="sellRarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
+          <button class="sell-reset-btn" id="sellResetBtn">Reset</button>
+        </div>
+        <div class="sell-grid" id="sellGrid">
+          <div class="loading"><div class="spinner"></div><p>Loading collection...</p></div>
+        </div>
       </div>
     </div>
-  </div>
 
+  </div><!-- end shop-shell -->
+
+  <!-- Pack Modal -->
   <div class="modal-overlay" id="packModal">
     <div class="modal">
       <h2 id="modalTitle">Summon Your Card</h2>
@@ -718,6 +1023,202 @@
 
     const PRICES = { common: 50, rare: 150, legendary: 2000 };
     const SELL_MULT = 0.4;
+
+    // ── Robot state ──
+    let selectedDeal = null;   // { cardKey, card, deal, el }
+    let robotTypingTimer = null;
+    let idleMsgTimer = null;
+    let idleMsgIdx = 0;
+    let isTalking = false;
+
+    const IDLE_MSGS = [
+      "Welcome, adventurer! Browse my finest wares...",
+      "Best deals in the realm, guaranteed or your gold back!",
+      "My sensors detect someone with excellent taste!",
+      "All deals expire at midnight — don't delay!",
+      "Click any card and I'll give you the full rundown!",
+      "Legends say these cards once belonged to great heroes...",
+      "I've been running this shop for 3,000 cycles. Trust me.",
+      "The Legendary shelf is looking especially fine today!",
+    ];
+
+    const BUY_MSGS = [
+      "Excellent choice! A wise investment indeed!!",
+      "BEEP BOOP — transaction complete! You won't regret this!",
+      "Splendid! That card will serve you well, adventurer!",
+      "My sales algorithm is very pleased with you!",
+    ];
+
+    const PUTBACK_MSGS = [
+      "Hmm... perhaps another time. I'll keep it warm for you.",
+      "No rush! It'll be right here on the shelf.",
+      "The card understands... I think. Goodbye, friend.",
+      "Smart adventurers think twice. Come back soon!",
+    ];
+
+    const BROKE_MSGS = [
+      "Hmm, it seems your coin purse is feeling rather light...",
+      "ERROR: Insufficient gold detected. Win some battles!",
+      "Even I can't bend the laws of commerce, friend.",
+    ];
+
+    function robotSpeak(text, onDone) {
+      if (robotTypingTimer) clearInterval(robotTypingTimer);
+      const el = document.getElementById('speechText');
+      const robot = document.getElementById('robot');
+      el.textContent = '';
+      isTalking = true;
+      robot.classList.add('robot-talking');
+      let i = 0;
+      robotTypingTimer = setInterval(() => {
+        if (i < text.length) {
+          el.textContent += text[i];
+          i++;
+        } else {
+          clearInterval(robotTypingTimer);
+          robotTypingTimer = null;
+          isTalking = false;
+          robot.classList.remove('robot-talking');
+          if (onDone) onDone();
+        }
+      }, 38);
+    }
+
+    function setRobotState(state) {
+      const robot = document.getElementById('robot');
+      const held = document.getElementById('robotHeldCard');
+      const details = document.getElementById('cardDetailsPanel');
+      const buyPanel = document.getElementById('buyPanel');
+      const nudge = document.getElementById('idleNudge');
+
+      // Remove old state classes
+      robot.classList.remove('robot-state-idle','robot-state-holding','robot-state-celebrate','robot-state-sad');
+      robot.classList.add('robot-state-' + state);
+
+      if (state === 'holding') {
+        held.classList.add('visible');
+        details.classList.add('visible');
+        buyPanel.classList.add('visible');
+        nudge.style.display = 'none';
+      } else {
+        held.classList.remove('visible');
+        details.classList.remove('visible');
+        buyPanel.classList.remove('visible');
+        nudge.style.display = state === 'idle' ? 'flex' : 'none';
+      }
+    }
+
+    function startIdleLoop() {
+      stopIdleLoop();
+      const speak = () => {
+        robotSpeak(IDLE_MSGS[idleMsgIdx % IDLE_MSGS.length], () => {
+          idleMsgTimer = setTimeout(speak, 3500);
+        });
+        idleMsgIdx++;
+      };
+      speak();
+    }
+
+    function stopIdleLoop() {
+      if (idleMsgTimer) { clearTimeout(idleMsgTimer); idleMsgTimer = null; }
+      if (robotTypingTimer) { clearInterval(robotTypingTimer); robotTypingTimer = null; }
+    }
+
+    function selectDealCard(cardKey, deal, cardEl) {
+      // Deselect old
+      if (selectedDeal && selectedDeal.el) {
+        selectedDeal.el.classList.remove('selected');
+      }
+
+      const card = findCard(cardKey);
+      if (!card) return;
+
+      selectedDeal = { cardKey, card, deal, el: cardEl };
+      cardEl.classList.add('selected');
+
+      // Update held card image
+      const wrap = document.getElementById('heldCardImgWrap');
+      const noArt = document.getElementById('heldCardNoArt');
+      // Remove existing img if any
+      const oldImg = wrap.querySelector('img');
+      if (oldImg) oldImg.remove();
+
+      const img = document.createElement('img');
+      img.src = card.art;
+      img.alt = card.name;
+      img.onerror = () => { img.style.display = 'none'; noArt.style.display = 'flex'; };
+      img.onload = () => { noArt.style.display = 'none'; };
+      noArt.style.display = 'flex';
+      wrap.appendChild(img);
+
+      // Re-trigger held card animation
+      const heldCard = document.getElementById('robotHeldCard');
+      heldCard.classList.remove('visible');
+      void heldCard.offsetWidth;
+      setRobotState('holding');
+
+      // Populate card details
+      document.getElementById('detailName').textContent = card.name;
+      const rarityEl = document.getElementById('detailRarity');
+      rarityEl.textContent = card.rarity || 'common';
+      rarityEl.className = 'rarity-badge ' + (card.rarity || 'common');
+      const typeLabel = card.type === 'spell' ? 'Spell' : card.type === 'structure' ? 'Structure' : 'Unit';
+      document.getElementById('detailType').textContent = typeLabel;
+      document.getElementById('detailStats').textContent = card.type === 'spell'
+        ? 'Cost: ' + card.cost + ' ⚡'
+        : '⚔ ' + card.atk + '  ♥ ' + card.hp + '  ⚡ ' + card.cost;
+
+      const effectEl = document.getElementById('detailEffect');
+      if (card.effectDesc) {
+        effectEl.innerHTML = '<div class="detail-effect-label">' + (card.effect || 'Effect') + '</div>' + card.effectDesc;
+        effectEl.style.display = '';
+      } else {
+        effectEl.style.display = 'none';
+      }
+
+      document.getElementById('detailPriceOrig').textContent = '🪙 ' + deal.fullPrice;
+      document.getElementById('detailPriceSale').textContent = '🪙 ' + deal.salePrice;
+      const owned = cardCollection[cardKey] || 0;
+      document.getElementById('detailOwned').textContent = 'You own: ' + owned + (owned === 1 ? ' copy' : ' copies');
+
+      // Update buy button
+      const canAfford = currentGold >= deal.salePrice;
+      const buyBtn = document.getElementById('shopBuyBtn');
+      buyBtn.disabled = !canAfford;
+      buyBtn.textContent = canAfford ? '🪙 Buy Now — ' + deal.salePrice + ' gold' : 'Not enough gold';
+
+      // Robot speaks
+      stopIdleLoop();
+      const msg = canAfford
+        ? pickRandom([
+            `Ah, ${card.name}! A splendid choice!`,
+            `${card.name} — only ${deal.salePrice} gold, marked down from ${deal.fullPrice}!`,
+            `This ${card.rarity} card is one of my finest!`,
+            `A wise eye for quality! That's ${card.name} for you.`,
+          ])
+        : pickRandom(BROKE_MSGS);
+      robotSpeak(msg);
+    }
+
+    function putCardBack() {
+      if (selectedDeal && selectedDeal.el) {
+        selectedDeal.el.classList.remove('selected');
+      }
+      selectedDeal = null;
+      setRobotState('sad');
+      stopIdleLoop();
+      const msg = pickRandom(PUTBACK_MSGS);
+      robotSpeak(msg, () => {
+        setTimeout(() => {
+          setRobotState('idle');
+          startIdleLoop();
+        }, 600);
+      });
+    }
+
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
 
     function loadUser() {
       const stored = localStorage.getItem('gridCardUser');
@@ -763,8 +1264,7 @@
       });
     });
 
-    // Rarity filter - removed (no more card market tab)
-
+    // Sell filters
     document.getElementById('sellSearch').addEventListener('input', () => renderSellGrid());
     document.getElementById('sellSetFilter').addEventListener('change', () => renderSellGrid());
     document.getElementById('sellTypeFilter').addEventListener('change', () => renderSellGrid());
@@ -779,16 +1279,20 @@
       renderSellGrid();
     });
 
+    // Buy / Put back
+    document.getElementById('shopBuyBtn').addEventListener('click', () => {
+      if (!selectedDeal) return;
+      buySelectedDeal();
+    });
+    document.getElementById('shopPutbackBtn').addEventListener('click', putCardBack);
+
     // Deal timer
     function updateDealTimer() {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setHours(24, 0, 0, 0);
+      const now = new Date(), tomorrow = new Date(now);
+      tomorrow.setHours(24,0,0,0);
       const diff = tomorrow - now;
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      document.getElementById('dealTimer').textContent = 
+      const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+      document.getElementById('dealTimer').textContent =
         `Refreshes in ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
     setInterval(updateDealTimer, 1000);
@@ -800,21 +1304,15 @@
           fetch('/api/shop?userId=' + currentUser.id).then(r => r.json()),
           fetch('/api/all-cards').then(r => r.json())
         ]);
-        
         shopData = shopRes;
-        
-        // Deduplicate cards by key
         const seen = new Set();
-        allCards = cardsRes.cards.filter(c => {
-          if (seen.has(c.key)) return false;
-          seen.add(c.key);
-          return true;
-        });
-
+        allCards = cardsRes.cards.filter(c => { if (seen.has(c.key)) return false; seen.add(c.key); return true; });
         renderDeals();
         renderPacks();
         renderExclusives();
         renderSellGrid();
+        // Start robot idle loop after a short intro
+        setTimeout(startIdleLoop, 500);
       } catch (err) {
         console.error('Shop load error:', err);
         showToast('Failed to load shop data', 'error');
@@ -825,96 +1323,156 @@
       return allCards.find(c => c.key === key);
     }
 
-    function cardBackHtml(card) {
-      const typeLabel = card.type === 'spell' ? 'Spell' : card.type === 'structure' ? 'Structure' : 'Unit';
-      const statsLine = card.type === 'spell' ? 'Cost: ' + card.cost + ' ⚡' : '⚔ ' + card.atk + '  ♥ ' + card.hp + '  ⚡ ' + card.cost;
-      const effectHtml = card.effectDesc 
-        ? '<div class="effect-label">' + (card.effect || 'Effect') + '</div><div class="effect-text">' + card.effectDesc + '</div>'
-        : '<div class="no-effect">No special effect</div>';
-      const rarityColor = card.rarity === 'legendary' ? '#fbbf24' : card.rarity === 'rare' ? '#60a5fa' : '#94a3b8';
-      
-      return `
-        <div class="card-back-header">
-          <div class="card-back-name">${card.name}</div>
-          <span class="rarity-badge ${card.rarity}">${card.rarity}</span>
-          <div class="card-back-stats">${typeLabel} • ${statsLine}</div>
-        </div>
-        <div class="card-back-effect">${effectHtml}</div>
-        <div class="card-back-footer">Tap to flip back</div>
-      `;
-    }
-
-    function toggleFlip(el, e) {
-      // Don't flip if clicking a button
-      if (e.target.closest('button')) return;
-      const inner = el.querySelector('.card-flip-inner');
-      if (inner) inner.classList.toggle('flipped');
-    }
-
     function renderDeals() {
-      const grid = document.getElementById('dealsGrid');
-      if (!shopData || !shopData.dailyDeals) {
-        grid.innerHTML = '<div class="empty-state">No deals available</div>';
+      const container = document.getElementById('shelvesContainer');
+      if (!shopData || !shopData.dailyDeals || shopData.dailyDeals.length === 0) {
+        container.innerHTML = '<div class="empty-state">No deals available today.</div>';
         return;
       }
 
-      grid.innerHTML = shopData.dailyDeals.map(deal => {
+      // Group by rarity
+      const groups = { legendary: [], rare: [], common: [] };
+      for (const deal of shopData.dailyDeals) {
         const card = findCard(deal.cardKey);
-        if (!card) return '';
-        const owned = cardCollection[deal.cardKey] || 0;
-        const canAfford = currentGold >= deal.salePrice;
-        
-        return `
-          <div class="deal-card" onclick="toggleFlip(this, event)">
-            <div class="card-flip-inner">
-              <div class="card-front">
-                <div class="deal-badge">-${deal.discount}%</div>
-                <img class="card-img" src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
-                <div class="card-name-bar"><div class="card-name">${card.name}</div></div>
-                <div class="card-hover-overlay">
-                  <div class="card-name" style="font-size:16px;margin-bottom:4px">${card.name}</div>
-                  <span class="rarity-badge ${deal.rarity}">${deal.rarity}</span>
-                  <div class="card-stats-line">${card.type === 'spell' ? 'Spell' : '⚔' + card.atk + ' ♥' + card.hp} • ⚡${card.cost}</div>
-                  <div class="owned-badge">Owned: ${owned}</div>
-                  <div class="price-line">
-                    <span class="price-original">🪙 ${deal.fullPrice}</span>
-                    <span class="price-current">🪙 ${deal.salePrice}</span>
-                  </div>
-                  <button class="buy-btn" onclick="buyDeal('${deal.cardKey}')" ${!canAfford ? 'disabled' : ''}>
-                    ${canAfford ? 'Buy' : 'Not enough gold'}
-                  </button>
-                </div>
-              </div>
-              <div class="card-back">
-                ${cardBackHtml(card)}
+        if (!card) continue;
+        const r = deal.rarity || card.rarity || 'common';
+        if (groups[r]) groups[r].push({ deal, card });
+        else groups.common.push({ deal, card });
+      }
+
+      const shelfDefs = [
+        { key: 'legendary', label: 'Legendary',  icon: '⭐' },
+        { key: 'rare',      label: 'Rare',        icon: '💎' },
+        { key: 'common',    label: 'Common',      icon: '🃏' },
+      ];
+
+      let html = '';
+      for (const def of shelfDefs) {
+        const items = groups[def.key];
+        if (!items || items.length === 0) continue;
+
+        const cardsHtml = items.map(({ deal, card }) => {
+          const owned = cardCollection[deal.cardKey] || 0;
+          return `
+            <div class="shelf-card rarity-${def.key}" data-key="${deal.cardKey}" onclick="handleShelfCardClick('${deal.cardKey}')">
+              <img src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
+              <div class="shelf-card-placeholder" style="display:none">🃏</div>
+              <div class="shelf-deal-badge">-${deal.discount}%</div>
+              ${owned > 0 ? `<div class="shelf-own-badge">×${owned}</div>` : ''}
+              <div class="shelf-card-overlay">
+                <div class="shelf-card-name">${card.name}</div>
               </div>
             </div>
+          `;
+        }).join('');
+
+        html += `
+          <div class="shelf" id="shelf-${def.key}">
+            <div class="shelf-header">
+              <span>${def.icon}</span>
+              <span class="shelf-rarity-label ${def.key}">${def.label}</span>
+              <span class="shelf-count-badge ${def.key}">${items.length} card${items.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="shelf-scroll-wrap">
+              <button class="shelf-arrow left" onclick="scrollShelf('${def.key}', -1)">‹</button>
+              <div class="shelf-cards" id="shelf-cards-${def.key}">
+                ${cardsHtml}
+              </div>
+              <button class="shelf-arrow right" onclick="scrollShelf('${def.key}', 1)">›</button>
+            </div>
+            <div class="shelf-board"></div>
           </div>
         `;
-      }).join('');
+      }
+
+      container.innerHTML = html || '<div class="empty-state">No deals available.</div>';
+
+      // Store deal data for click handler
+      window._dealMap = {};
+      for (const deal of shopData.dailyDeals) {
+        window._dealMap[deal.cardKey] = deal;
+      }
+    }
+
+    function scrollShelf(rarity, dir) {
+      const el = document.getElementById('shelf-cards-' + rarity);
+      if (el) el.scrollBy({ left: dir * 370, behavior: 'smooth' });
+    }
+
+    function handleShelfCardClick(cardKey) {
+      const deal = window._dealMap && window._dealMap[cardKey];
+      if (!deal) return;
+      const el = document.querySelector(`.shelf-card[data-key="${cardKey}"]`);
+      selectDealCard(cardKey, deal, el);
+    }
+
+    async function buySelectedDeal() {
+      if (!selectedDeal) return;
+      const { cardKey, card, deal } = selectedDeal;
+      try {
+        const result = await apiPost('/api/shop/buy-deal', { cardKey, unlockedDecks: shopData.unlockedDecks });
+        if (result.success) {
+          currentGold = result.gold;
+          cardCollection = result.cardCollection;
+          updateGoldDisplay();
+          updateLocalUser();
+
+          // Celebrate!
+          const robot = document.getElementById('robot');
+          stopIdleLoop();
+          robot.classList.remove('robot-state-idle','robot-state-holding','robot-state-sad');
+          robot.classList.add('robot-state-celebrate');
+
+          // Hide held card and buy panel briefly
+          document.getElementById('robotHeldCard').classList.remove('visible');
+          document.getElementById('cardDetailsPanel').classList.remove('visible');
+          document.getElementById('buyPanel').classList.remove('visible');
+          document.getElementById('idleNudge').style.display = 'none';
+
+          robotSpeak(pickRandom(BUY_MSGS));
+
+          // Remove selected card from shelf
+          if (selectedDeal.el) selectedDeal.el.classList.remove('selected');
+          selectedDeal = null;
+
+          // Re-render deals & sell grid
+          renderDeals();
+          renderSellGrid();
+
+          showToast('Purchased ' + card.name + '!');
+
+          // Return to idle after celebrate
+          setTimeout(() => {
+            robot.classList.remove('robot-state-celebrate');
+            setRobotState('idle');
+            setTimeout(startIdleLoop, 1000);
+          }, 2200);
+        } else {
+          showToast(result.error || 'Purchase failed', 'error');
+          if (result.error && result.error.toLowerCase().includes('gold')) {
+            robotSpeak(pickRandom(BROKE_MSGS));
+          }
+        }
+      } catch (err) {
+        showToast('Purchase failed', 'error');
+      }
     }
 
     function renderPacks() {
       const grid = document.getElementById('packsGrid');
       if (!shopData || !shopData.packs || !shopData.unlockedDecks) return;
-
       const factionNames = shopData.factionNames || {};
       const packTypes = Object.values(shopData.packs);
-
       let html = '';
       for (const deckId of shopData.unlockedDecks) {
         const name = factionNames[deckId] || deckId;
-
-        html += `<div class="faction-packs-section">
-          <div class="faction-pack-header">${name}</div>
-          <div class="faction-pack-row">`;
-        
+        html += `<div class="faction-packs-section"><div class="faction-pack-header">${name}</div><div class="faction-pack-row">`;
         for (const pack of packTypes) {
           const canAfford = currentGold >= pack.price;
           html += `
             <div class="pack-tile-wrap">
               <div class="pack-card">
-                <div class="pack-montage" data-deckid="${deckId}" data-rarity="${{basic:'common',premium:'rare',legendary:'legendary'}[pack.id] || 'common'}"></div>
+                <div class="pack-montage" data-deckid="${deckId}" data-rarity="${{basic:'common',premium:'rare',legendary:'legendary'}[pack.id]||'common'}"></div>
                 <div class="pack-overlay"></div>
                 <div class="pack-content">
                   <div class="pack-name">${pack.name}</div>
@@ -923,16 +1481,13 @@
                   <div class="pack-price">🪙 ${pack.price}</div>
                 </div>
               </div>
-              <button class="pack-buy-btn" onclick="buyPack('${pack.id}', '${deckId}')" ${!canAfford ? 'disabled' : ''}>
+              <button class="pack-buy-btn" onclick="buyPack('${pack.id}','${deckId}')" ${!canAfford?'disabled':''}>
                 ${canAfford ? 'Open Pack' : 'Not enough gold'}
               </button>
-            </div>
-          `;
+            </div>`;
         }
-
-        html += `</div></div>`;
+        html += '</div></div>';
       }
-
       grid.innerHTML = html || '<div class="empty-state">Unlock factions in campaign to buy packs!</div>';
       setTimeout(startPackMontages, 0);
     }
@@ -941,256 +1496,200 @@
       montageIntervals.forEach(clearInterval);
       montageIntervals = [];
       document.querySelectorAll('.pack-montage').forEach(el => {
-        const deckId = el.dataset.deckid;
-        const rarity = el.dataset.rarity;
-        const images = allCards
-          .filter(c => c.deckId === deckId && c.art && c.rarity === rarity)
-          .map(c => c.art)
-          .filter((art, i, arr) => arr.indexOf(art) === i);
-        if (images.length === 0) return;
-
-        // Two stacked layers for true crossfade (no black gap)
+        const deckId = el.dataset.deckid, rarity = el.dataset.rarity;
+        const images = allCards.filter(c => c.deckId===deckId && c.art && c.rarity===rarity).map(c=>c.art).filter((a,i,arr)=>arr.indexOf(a)===i);
+        if (!images.length) return;
         el.innerHTML = '<div class="montage-layer"></div><div class="montage-layer"></div>';
-        const top = el.children[0];
-        const bot = el.children[1];
-        top.style.zIndex = '2';
-        bot.style.zIndex = '1';
-        top.style.backgroundImage = `url('${images[0]}')`;
-        bot.style.backgroundImage = `url('${images[0]}')`;
-        if (images.length <= 1) return;
-
-        let idx = 0;
-        const interval = setInterval(() => {
-          idx = (idx + 1) % images.length;
-          bot.style.backgroundImage = `url('${images[idx]}')`;
-          top.style.opacity = '0';
-          setTimeout(() => {
-            top.style.transition = 'none';
-            top.style.backgroundImage = `url('${images[idx]}')`;
-            top.style.opacity = '1';
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-              top.style.transition = 'opacity 0.7s ease';
-            }));
-          }, 750);
-        }, 3000);
+        const top = el.children[0], bot = el.children[1];
+        top.style.zIndex='2'; bot.style.zIndex='1';
+        top.style.backgroundImage=`url('${images[0]}')`;
+        bot.style.backgroundImage=`url('${images[0]}')`;
+        if (images.length<=1) return;
+        let idx=0;
+        const interval = setInterval(()=>{
+          idx=(idx+1)%images.length;
+          bot.style.backgroundImage=`url('${images[idx]}')`;
+          top.style.opacity='0';
+          setTimeout(()=>{
+            top.style.transition='none';
+            top.style.backgroundImage=`url('${images[idx]}')`;
+            top.style.opacity='1';
+            requestAnimationFrame(()=>requestAnimationFrame(()=>{ top.style.transition='opacity 0.7s ease'; }));
+          },750);
+        },3000);
         montageIntervals.push(interval);
       });
     }
 
     function renderExclusives() {
       const grid = document.getElementById('exclusivesGrid');
-      if (!shopData || !shopData.exclusives || shopData.exclusives.length === 0) {
+      if (!shopData || !shopData.exclusives || !shopData.exclusives.length) {
         grid.innerHTML = '<div class="empty-state">🔮 Coming soon! Check back later for exclusive cards.</div>';
         return;
       }
-
       grid.innerHTML = shopData.exclusives.map(exc => {
-        const owned = cardCollection[exc.key] || 0;
-        const canAfford = currentGold >= exc.price;
-        const borderClass = exc.rarity === 'rare' ? ' rare-border' : exc.rarity === 'legendary' ? ' legendary-border' : '';
-        
-        return `
-          <div class="market-card" onclick="toggleFlip(this, event)">
-            <div class="card-flip-inner">
-              <div class="card-front${borderClass}">
-                <img class="card-img" src="${exc.art}" alt="${exc.name}" onerror="this.style.display='none'">
-                <div class="card-name-bar"><div class="card-name">${exc.name}</div></div>
-                <div class="card-hover-overlay">
-                  <div class="card-name" style="font-size:15px;margin-bottom:4px">${exc.name}</div>
-                  <span class="rarity-badge ${exc.rarity}">${exc.rarity}</span>
-                  <div class="card-stats-line">${exc.type === 'spell' ? 'Spell' : '⚔' + exc.atk + ' ♥' + exc.hp} • ⚡${exc.cost}</div>
-                  <div class="owned-badge">Owned: ${owned}</div>
-                  <div class="price-current" style="margin-top:6px;font-size:16px">🪙 ${exc.price}</div>
-                  <button class="buy-btn" onclick="buyExclusive('${exc.key}')" ${!canAfford ? 'disabled' : ''}>
-                    ${canAfford ? 'Buy' : 'Not enough gold'}
-                  </button>
-                </div>
-              </div>
-              <div class="card-back">
-                ${cardBackHtml(exc)}
+        const owned = cardCollection[exc.key]||0, canAfford = currentGold>=exc.price;
+        const borderClass = exc.rarity==='rare'?' rare-border':exc.rarity==='legendary'?' legendary-border':'';
+        return `<div class="sell-card-item" onclick="toggleFlip(this,event)">
+          <div class="card-flip-inner">
+            <div class="card-front${borderClass}">
+              <img class="card-img" src="${exc.art}" alt="${exc.name}" onerror="this.style.display='none'">
+              <div class="card-name-bar"><div class="card-name">${exc.name}</div></div>
+              <div class="card-hover-overlay">
+                <div class="card-name" style="font-size:15px;margin-bottom:4px">${exc.name}</div>
+                <span class="rarity-badge ${exc.rarity}">${exc.rarity}</span>
+                <div class="owned-badge">Owned: ${owned}</div>
+                <div class="price-current" style="margin-top:6px">🪙 ${exc.price}</div>
+                <button class="buy-btn" onclick="buyExclusive('${exc.key}')" ${!canAfford?'disabled':''}>
+                  ${canAfford?'Buy':'Not enough gold'}
+                </button>
               </div>
             </div>
+            <div class="card-back">${cardBackHtml(exc)}</div>
           </div>
-        `;
+        </div>`;
       }).join('');
-    }
-
-    async function buyExclusive(cardKey) {
-      try {
-        const result = await apiPost('/api/shop/buy-exclusive', { cardKey });
-        if (result.success) {
-          currentGold = result.gold;
-          cardCollection = result.cardCollection;
-          updateGoldDisplay();
-          updateLocalUser();
-          renderExclusives();
-          renderSellGrid();
-          const exc = shopData.exclusives.find(e => e.key === cardKey);
-          showToast('Purchased ' + (exc ? exc.name : cardKey) + '!');
-        } else {
-          showToast(result.error || 'Purchase failed', 'error');
-        }
-      } catch (err) { showToast('Purchase failed', 'error'); }
     }
 
     function renderSellGrid() {
       const grid = document.getElementById('sellGrid');
-      const search    = document.getElementById('sellSearch').value.toLowerCase();
-      const setVal    = document.getElementById('sellSetFilter').value;
-      const typeVal   = document.getElementById('sellTypeFilter').value;
-      const countVal  = document.getElementById('sellCountFilter').value;
-      const rarityVal = document.getElementById('sellRarityFilter').value;
+      const search=document.getElementById('sellSearch').value.toLowerCase();
+      const setVal=document.getElementById('sellSetFilter').value;
+      const typeVal=document.getElementById('sellTypeFilter').value;
+      const countVal=document.getElementById('sellCountFilter').value;
+      const rarityVal=document.getElementById('sellRarityFilter').value;
 
-      const ownedCards = Object.entries(cardCollection)
-        .filter(([key, count]) => count > 0)
-        .map(([key, count]) => ({ key, count, card: findCard(key) }))
-        .filter(item => item.card)
-        .filter(item => {
-          const c = item.card;
-          if (search && !c.name.toLowerCase().includes(search) && !item.key.includes(search)) return false;
-          if (setVal !== 'all' && c.deckId !== setVal) return false;
-          if (typeVal !== 'all' && c.type !== typeVal) return false;
-          if (countVal !== 'all') {
-            if (countVal === '4+' && item.count < 4) return false;
-            if (countVal !== '4+' && item.count !== parseInt(countVal)) return false;
+      const owned = Object.entries(cardCollection)
+        .filter(([,c])=>c>0)
+        .map(([key,count])=>({key,count,card:findCard(key)}))
+        .filter(i=>i.card)
+        .filter(i=>{
+          const c=i.card;
+          if(search&&!c.name.toLowerCase().includes(search)&&!i.key.includes(search))return false;
+          if(setVal!=='all'&&c.deckId!==setVal)return false;
+          if(typeVal!=='all'&&c.type!==typeVal)return false;
+          if(countVal!=='all'){
+            if(countVal==='4+'&&i.count<4)return false;
+            if(countVal!=='4+'&&i.count!==parseInt(countVal))return false;
           }
-          if (rarityVal !== 'all' && (c.rarity || 'common') !== rarityVal) return false;
+          if(rarityVal!=='all'&&(c.rarity||'common')!==rarityVal)return false;
           return true;
         });
 
-      if (ownedCards.length === 0) {
-        grid.innerHTML = '<div class="empty-state">No cards to sell</div>';
-        return;
-      }
+      if(!owned.length){ grid.innerHTML='<div class="empty-state">No cards to sell</div>'; return; }
 
-      const rarityOrder = { legendary: 0, rare: 1, common: 2 };
-      ownedCards.sort((a, b) => (rarityOrder[a.card.rarity] || 3) - (rarityOrder[b.card.rarity] || 3) || a.card.name.localeCompare(b.card.name));
+      const ro={legendary:0,rare:1,common:2};
+      owned.sort((a,b)=>(ro[a.card.rarity]||3)-(ro[b.card.rarity]||3)||a.card.name.localeCompare(b.card.name));
 
-      grid.innerHTML = ownedCards.map(item => {
-        const sellPrice = Math.floor((PRICES[item.card.rarity] || 50) * SELL_MULT);
-        const borderClass = item.card.rarity === 'rare' ? ' rare-border' : item.card.rarity === 'legendary' ? ' legendary-border' : '';
-        return `
-          <div class="sell-card-item" onclick="toggleFlip(this, event)">
-            <div class="card-flip-inner">
-              <div class="card-front${borderClass}">
-                <img class="card-img" src="${item.card.art}" alt="${item.card.name}" onerror="this.style.display='none'">
-                <div class="card-name-bar"><div class="card-name">${item.card.name}</div></div>
-                <div class="card-hover-overlay">
-                  <div class="card-name" style="font-size:15px;margin-bottom:4px">${item.card.name}</div>
-                  <span class="rarity-badge ${item.card.rarity}">${item.card.rarity}</span>
-                  <div class="owned-badge" style="margin-top:6px">Owned: ${item.count}</div>
-                  <div class="price-current" style="margin-top:6px; color: #4ade80; font-size:16px">+🪙 ${sellPrice}</div>
-                  <button class="buy-btn sell-btn" onclick="sellCard('${item.key}')">Sell 1</button>
-                </div>
-              </div>
-              <div class="card-back">
-                ${cardBackHtml(item.card)}
+      grid.innerHTML=owned.map(item=>{
+        const sellPrice=Math.floor((PRICES[item.card.rarity]||50)*SELL_MULT);
+        const bc=item.card.rarity==='rare'?' rare-border':item.card.rarity==='legendary'?' legendary-border':'';
+        return `<div class="sell-card-item" onclick="toggleFlip(this,event)">
+          <div class="card-flip-inner">
+            <div class="card-front${bc}">
+              <img class="card-img" src="${item.card.art}" alt="${item.card.name}" onerror="this.style.display='none'">
+              <div class="card-name-bar"><div class="card-name">${item.card.name}</div></div>
+              <div class="card-hover-overlay">
+                <div class="card-name" style="font-size:15px;margin-bottom:4px">${item.card.name}</div>
+                <span class="rarity-badge ${item.card.rarity}">${item.card.rarity}</span>
+                <div class="owned-badge" style="margin-top:6px">Owned: ${item.count}</div>
+                <div class="price-current" style="margin-top:6px;color:#4ade80">+🪙 ${sellPrice}</div>
+                <button class="buy-btn sell-btn" onclick="sellCard('${item.key}')">Sell 1</button>
               </div>
             </div>
+            <div class="card-back">${cardBackHtml(item.card)}</div>
           </div>
-        `;
+        </div>`;
       }).join('');
     }
 
-    async function buyDeal(cardKey) {
+    function cardBackHtml(card) {
+      const typeLabel=card.type==='spell'?'Spell':card.type==='structure'?'Structure':'Unit';
+      const statsLine=card.type==='spell'?'Cost: '+card.cost+' ⚡':'⚔ '+card.atk+'  ♥ '+card.hp+'  ⚡ '+card.cost;
+      const effectHtml=card.effectDesc
+        ?'<div class="effect-label">'+(card.effect||'Effect')+'</div><div class="effect-text">'+card.effectDesc+'</div>'
+        :'<div class="no-effect">No special effect</div>';
+      return `<div class="card-back-header">
+        <div class="card-back-name">${card.name}</div>
+        <span class="rarity-badge ${card.rarity}">${card.rarity}</span>
+        <div class="card-back-stats">${typeLabel} • ${statsLine}</div>
+      </div>
+      <div class="card-back-effect">${effectHtml}</div>
+      <div class="card-back-footer">Tap to flip back</div>`;
+    }
+
+    function toggleFlip(el,e) {
+      if(e.target.closest('button'))return;
+      const inner=el.querySelector('.card-flip-inner');
+      if(inner)inner.classList.toggle('flipped');
+    }
+
+    async function buyExclusive(cardKey) {
       try {
-        const result = await apiPost('/api/shop/buy-deal', { cardKey, unlockedDecks: shopData.unlockedDecks });
-        if (result.success) {
-          currentGold = result.gold;
-          cardCollection = result.cardCollection;
-          updateGoldDisplay();
-          updateLocalUser();
-          renderDeals();
-          renderSellGrid();
-          const card = findCard(cardKey);
-          showToast(`Deal purchased: ${card ? card.name : cardKey}!`);
-        } else {
-          showToast(result.error || 'Purchase failed', 'error');
-        }
-      } catch (err) { showToast('Purchase failed', 'error'); }
+        const result=await apiPost('/api/shop/buy-exclusive',{cardKey});
+        if(result.success){
+          currentGold=result.gold; cardCollection=result.cardCollection;
+          updateGoldDisplay(); updateLocalUser(); renderExclusives(); renderSellGrid();
+          const exc=shopData.exclusives.find(e=>e.key===cardKey);
+          showToast('Purchased '+(exc?exc.name:cardKey)+'!');
+        } else { showToast(result.error||'Purchase failed','error'); }
+      } catch(err){ showToast('Purchase failed','error'); }
     }
 
     async function buyPack(packId, deckId) {
       try {
-        const result = await apiPost('/api/shop/buy-pack', { packId, deckId });
-        if (result.success) {
-          currentGold = result.gold;
-          cardCollection = result.cardCollection;
-          updateGoldDisplay();
-          updateLocalUser();
-          renderPacks();
-          renderSellGrid();
+        const result=await apiPost('/api/shop/buy-pack',{packId,deckId});
+        if(result.success){
+          currentGold=result.gold; cardCollection=result.cardCollection;
+          updateGoldDisplay(); updateLocalUser(); renderPacks(); renderSellGrid();
           showPackModal(result.cards);
-        } else {
-          showToast(result.error || 'Purchase failed', 'error');
-        }
-      } catch (err) { showToast('Purchase failed', 'error'); }
+        } else { showToast(result.error||'Purchase failed','error'); }
+      } catch(err){ showToast('Purchase failed','error'); }
     }
 
     async function sellCard(cardKey) {
       try {
-        const result = await apiPost('/api/shop/sell-card', { cardKey });
-        if (result.success) {
-          currentGold = result.gold;
-          cardCollection = result.cardCollection;
-          updateGoldDisplay();
-          updateLocalUser();
-          renderSellGrid();
-          const card = findCard(cardKey);
-          showToast(`Sold ${card ? card.name : cardKey} for 🪙 ${result.sellPrice}!`);
-        } else {
-          showToast(result.error || 'Sale failed', 'error');
-        }
-      } catch (err) { showToast('Sale failed', 'error'); }
+        const result=await apiPost('/api/shop/sell-card',{cardKey});
+        if(result.success){
+          currentGold=result.gold; cardCollection=result.cardCollection;
+          updateGoldDisplay(); updateLocalUser(); renderSellGrid();
+          const card=findCard(cardKey);
+          showToast('Sold '+(card?card.name:cardKey)+' for 🪙 '+result.sellPrice+'!');
+        } else { showToast(result.error||'Sale failed','error'); }
+      } catch(err){ showToast('Sale failed','error'); }
     }
 
     function updateLocalUser() {
-      currentUser.gold = currentGold;
-      currentUser.cardCollection = cardCollection;
-      localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+      currentUser.gold=currentGold; currentUser.cardCollection=cardCollection;
+      localStorage.setItem('gridCardUser',JSON.stringify(currentUser));
     }
 
     function showPackModal(cards) {
-      pendingCards = cards;
-      revealedCount = 0;
-
-      const modal = document.getElementById('packModal');
-      const modalCards = document.getElementById('modalCards');
-      const btn = document.getElementById('modalClose');
-
-      modalCards.innerHTML = cards.map((_, i) =>
-        `<div class="modal-card unrevealed" id="modal-card-${i}"><div class="modal-mystery-icon">✦</div></div>`
-      ).join('');
-
-      btn.textContent = 'Summon';
-      btn.onclick = revealNextCard;
+      pendingCards=cards; revealedCount=0;
+      const modal=document.getElementById('packModal');
+      const modalCards=document.getElementById('modalCards');
+      const btn=document.getElementById('modalClose');
+      modalCards.innerHTML=cards.map((_,i)=>`<div class="modal-card unrevealed" id="modal-card-${i}"><div class="modal-mystery-icon">✦</div></div>`).join('');
+      btn.textContent='Summon'; btn.onclick=revealNextCard;
       modal.classList.add('active');
     }
 
     function revealNextCard() {
-      if (revealedCount >= pendingCards.length) return;
-
-      const cardKey = pendingCards[revealedCount];
-      const card = findCard(cardKey);
-      const tile = document.getElementById(`modal-card-${revealedCount}`);
+      if(revealedCount>=pendingCards.length)return;
+      const cardKey=pendingCards[revealedCount];
+      const card=findCard(cardKey);
+      const tile=document.getElementById(`modal-card-${revealedCount}`);
       revealedCount++;
-
-      if (tile && card) {
-        const rarity = card.rarity || 'common';
-        tile.className = `modal-card ${rarity} revealed`;
-        tile.innerHTML = `
-          <img class="card-img" src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
-          <div class="modal-card-info">
-            <div class="card-name">${card.name}</div>
-            <span class="rarity-badge ${rarity}">${rarity}</span>
-          </div>
-        `;
+      if(tile&&card){
+        const rarity=card.rarity||'common';
+        tile.className=`modal-card ${rarity} revealed`;
+        tile.innerHTML=`<img class="card-img" src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
+          <div class="modal-card-info"><div class="card-name">${card.name}</div><span class="rarity-badge ${rarity}">${rarity}</span></div>`;
       }
-
-      const btn = document.getElementById('modalClose');
-      if (revealedCount >= pendingCards.length) {
-        btn.textContent = 'Continue';
-        btn.onclick = () => document.getElementById('packModal').classList.remove('active');
+      const btn=document.getElementById('modalClose');
+      if(revealedCount>=pendingCards.length){
+        btn.textContent='Continue';
+        btn.onclick=()=>document.getElementById('packModal').classList.remove('active');
       }
     }
 
