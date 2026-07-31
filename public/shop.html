@@ -110,12 +110,18 @@
     .tab-panel { display: none; flex: 1; min-height: 0; }
     .tab-panel.active { display: flex; flex-direction: column; }
 
-    /* ── DEALS TAB: ARENA LAYOUT ── */
-    .shop-arena {
+    /* ── MAIN LAYOUT ── */
+    .shop-main {
       display: flex;
       flex: 1;
       min-height: 0;
-      gap: 0;
+    }
+    .tab-content-area {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     /* LEFT: SHELVES */
@@ -872,12 +878,12 @@
       <button class="tab" data-tab="sell">Sell Cards</button>
     </div>
 
-    <!-- DEALS TAB: Arena Layout -->
-    <div class="tab-panel active" id="tab-deals">
-      <div class="shop-arena">
+    <div class="shop-main">
+      <div class="tab-content-area">
 
-        <!-- LEFT: Shelves -->
-        <div class="shelves-col">
+    <!-- DEALS TAB -->
+    <div class="tab-panel active" id="tab-deals">
+      <div class="shelves-col">
           <div class="deal-timer-bar">
             <span id="dealTimer">Refreshes in --:--:--</span>
             <span style="color:#475569">• 15 discounted cards from your factions</span>
@@ -885,10 +891,51 @@
           <div id="shelvesContainer">
             <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading deals...</p></div>
           </div>
-        </div>
+      </div>
+    </div><!-- end tab-deals -->
 
-        <!-- RIGHT: Robot Shopkeeper -->
-        <div class="robot-col">
+    <!-- PACKS TAB -->
+    <div class="tab-panel" id="tab-packs">
+      <div class="other-tab-content">
+        <div class="section-header">Faction Packs <span class="subtitle">Buy packs from unlocked factions</span></div>
+        <div class="packs-grid" id="packsGrid">
+          <div class="loading"><div class="spinner"></div><p>Loading packs...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXCLUSIVES TAB -->
+    <div class="tab-panel" id="tab-exclusives">
+      <div class="other-tab-content">
+        <div class="section-header">Shop Exclusives <span class="subtitle">Cards only available here!</span></div>
+        <div id="exclusivesGrid" class="sell-grid">
+          <div class="empty-state">Coming soon! Check back later for exclusive cards.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SELL TAB -->
+    <div class="tab-panel" id="tab-sell">
+      <div class="other-tab-content">
+        <div class="section-header">Sell Cards <span class="subtitle">Sell for 40% of buy price</span></div>
+        <div class="sell-filters">
+          <input type="text" class="sell-search-input" id="sellSearch" placeholder="Search...">
+          <div class="sell-filter-group"><label>Set:</label><select class="sell-filter-select" id="sellSetFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option><option value="elunes-chosen">Elune's Chosen</option><option value="dragon-wizard">Dragon Wizard</option><option value="celestial-host">Celestial Host</option><option value="8bit-battalion">8-Bit Battalion</option></select></div>
+          <div class="sell-filter-group"><label>Type:</label><select class="sell-filter-select" id="sellTypeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option><option value="structure">Structures</option></select></div>
+          <div class="sell-filter-group"><label>Own #:</label><select class="sell-filter-select" id="sellCountFilter"><option value="all">All</option><option value="1">1 copy</option><option value="2">2 copies</option><option value="3">3 copies</option><option value="4+">4+ copies</option></select></div>
+          <div class="sell-filter-group"><label>Rarity:</label><select class="sell-filter-select" id="sellRarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
+          <button class="sell-reset-btn" id="sellResetBtn">Reset</button>
+        </div>
+        <div class="sell-grid" id="sellGrid">
+          <div class="loading"><div class="spinner"></div><p>Loading collection...</p></div>
+        </div>
+      </div>
+    </div>
+
+      </div><!-- end tab-content-area -->
+
+      <!-- RIGHT: Robot Shopkeeper (always visible) -->
+      <div class="robot-col">
           <!-- Speech bubble -->
           <div class="speech-bubble">
             <span id="speechText"></span><span class="type-cursor" id="typeCursor">|</span>
@@ -956,48 +1003,9 @@
             <span class="idle-nudge-arrow">↑</span>
             <span>Click a card to inspect it!</span>
           </div>
-        </div>
 
-      </div>
-    </div>
-
-    <!-- PACKS TAB -->
-    <div class="tab-panel" id="tab-packs">
-      <div class="other-tab-content">
-        <div class="section-header">Faction Packs <span class="subtitle">Buy packs from unlocked factions</span></div>
-        <div class="packs-grid" id="packsGrid">
-          <div class="loading"><div class="spinner"></div><p>Loading packs...</p></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- EXCLUSIVES TAB -->
-    <div class="tab-panel" id="tab-exclusives">
-      <div class="other-tab-content">
-        <div class="section-header">Shop Exclusives <span class="subtitle">Cards only available here!</span></div>
-        <div id="exclusivesGrid" class="sell-grid">
-          <div class="empty-state">Coming soon! Check back later for exclusive cards.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SELL TAB -->
-    <div class="tab-panel" id="tab-sell">
-      <div class="other-tab-content">
-        <div class="section-header">Sell Cards <span class="subtitle">Sell for 40% of buy price</span></div>
-        <div class="sell-filters">
-          <input type="text" class="sell-search-input" id="sellSearch" placeholder="Search...">
-          <div class="sell-filter-group"><label>Set:</label><select class="sell-filter-select" id="sellSetFilter"><option value="all">All</option><option value="medieval">Medieval</option><option value="void-alien">Void Alien</option><option value="western-skeleton">Western Skeleton</option><option value="crimson-court">Crimson Court</option><option value="jeweled-court">Jeweled Court</option><option value="elunes-chosen">Elune's Chosen</option><option value="dragon-wizard">Dragon Wizard</option><option value="celestial-host">Celestial Host</option><option value="8bit-battalion">8-Bit Battalion</option></select></div>
-          <div class="sell-filter-group"><label>Type:</label><select class="sell-filter-select" id="sellTypeFilter"><option value="all">All</option><option value="monster">Units</option><option value="spell">Spells</option><option value="structure">Structures</option></select></div>
-          <div class="sell-filter-group"><label>Own #:</label><select class="sell-filter-select" id="sellCountFilter"><option value="all">All</option><option value="1">1 copy</option><option value="2">2 copies</option><option value="3">3 copies</option><option value="4+">4+ copies</option></select></div>
-          <div class="sell-filter-group"><label>Rarity:</label><select class="sell-filter-select" id="sellRarityFilter"><option value="all">All</option><option value="common">Common</option><option value="rare">Rare</option><option value="legendary">Legendary</option></select></div>
-          <button class="sell-reset-btn" id="sellResetBtn">Reset</button>
-        </div>
-        <div class="sell-grid" id="sellGrid">
-          <div class="loading"><div class="spinner"></div><p>Loading collection...</p></div>
-        </div>
-      </div>
-    </div>
+      </div><!-- end robot-col -->
+    </div><!-- end shop-main -->
 
   </div><!-- end shop-shell -->
 
@@ -1111,7 +1119,8 @@
     function startIdleLoop() {
       stopIdleLoop();
       const speak = () => {
-        robotSpeak(IDLE_MSGS[idleMsgIdx % IDLE_MSGS.length], () => {
+        const pool = window._currentTabMsgs || IDLE_MSGS;
+        robotSpeak(pool[idleMsgIdx % pool.length], () => {
           idleMsgTimer = setTimeout(speak, 3500);
         });
         idleMsgIdx++;
@@ -1254,6 +1263,65 @@
       return res.json();
     }
 
+    const TAB_MSGS = {
+      deals: [
+        "Welcome, adventurer! Browse my finest wares...",
+        "Best deals in the realm, guaranteed or your gold back!",
+        "My sensors detect someone with excellent taste!",
+        "All deals expire at midnight — don't delay!",
+        "Click any card and I'll give you the full rundown!",
+        "Legends say these cards once belonged to great heroes...",
+        "I've been running this shop for 3,000 cycles. Trust me.",
+        "The Legendary shelf is looking especially fine today!",
+      ],
+      packs: [
+        "Faction packs — a gamble, but a thrilling one!",
+        "Each pack is sealed with my personal quality guarantee!",
+        "BEEP BOOP: probability of rare is greater than zero!",
+        "The more packs you open, the luckier you feel. Trust me.",
+        "Unlock more factions to unlock more packs!",
+      ],
+      exclusives: [
+        "These cards cannot be found anywhere else in the realm!",
+        "Exclusives — for adventurers of distinguished taste.",
+        "More exclusives are being forged in my back room...",
+        "Check back often — the selection rotates!",
+      ],
+      sell: [
+        "Parting with old friends is never easy... but gold helps.",
+        "I'll give you a fair price. Forty percent. That's final.",
+        "Every card finds a new purpose in my capable circuits.",
+        "Selling? Bold move. I respect it.",
+        "Your cards will be well cared for, I assure you.",
+      ],
+    };
+
+    const TAB_NUDGE = {
+      deals: 'Click a card to inspect it!',
+      packs: 'Click "Open Pack" to buy!',
+      exclusives: 'Nothing here yet — come back soon!',
+      sell: 'Hover a card to see the sell price!',
+    };
+
+    function setRobotTab(tabName) {
+      // Clear any selected deal when leaving deals tab
+      if (tabName !== 'deals' && selectedDeal) {
+        if (selectedDeal.el) selectedDeal.el.classList.remove('selected');
+        selectedDeal = null;
+        setRobotState('idle');
+      }
+      // Update nudge text
+      const nudge = document.getElementById('idleNudge');
+      const nudgeText = nudge.querySelector('span:last-child');
+      if (nudgeText) nudgeText.textContent = TAB_NUDGE[tabName] || '';
+
+      // Switch idle message pool and restart
+      window._currentTabMsgs = TAB_MSGS[tabName] || TAB_MSGS.deals;
+      idleMsgIdx = 0;
+      stopIdleLoop();
+      setTimeout(startIdleLoop, 200);
+    }
+
     // Tabs
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -1261,6 +1329,7 @@
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        setRobotTab(tab.dataset.tab);
       });
     });
 
@@ -1312,6 +1381,7 @@
         renderExclusives();
         renderSellGrid();
         // Start robot idle loop after a short intro
+        window._currentTabMsgs = TAB_MSGS.deals;
         setTimeout(startIdleLoop, 500);
       } catch (err) {
         console.error('Shop load error:', err);
