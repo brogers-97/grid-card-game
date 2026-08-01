@@ -2128,6 +2128,7 @@
         if (data.success) {
           currentUser = data.user;
           localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+          if (data.token) localStorage.setItem('gridCardToken', data.token);
           if (document.getElementById('rememberMeChk')?.checked) {
             localStorage.setItem('gridCardRememberMe', JSON.stringify({ username, password }));
           } else {
@@ -2167,6 +2168,7 @@
         if (data.success) {
           currentUser = data.user;
           localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+          if (data.token) localStorage.setItem('gridCardToken', data.token);
           showLoggedIn();
           showAuthSuccess('Account created! Welcome, ' + currentUser.username + '!');
         } else {
@@ -2195,6 +2197,7 @@
     function logout() {
       currentUser = null;
       localStorage.removeItem('gridCardUser');
+      localStorage.removeItem('gridCardToken');
       localStorage.removeItem('gridCardRememberMe');
       accountBadge.classList.add('hidden');
       showScreen(loginScreen);
@@ -2254,9 +2257,20 @@
     function getUsername() {
       return currentUser?.username || 'Guest';
     }
-    
+
     function getUserId() {
       return currentUser?.id || null;
+    }
+
+    function getToken() {
+      return localStorage.getItem('gridCardToken') || null;
+    }
+
+    function authHeaders() {
+      const token = getToken();
+      return token
+        ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+        : { 'Content-Type': 'application/json' };
     }
     
     // Event listeners
@@ -2367,11 +2381,10 @@
         currentUser.preferences = currentUser.preferences || {};
         currentUser.preferences.tutorialCompleted = true;
         localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
-        const userId = getUserId();
-        if (userId) fetch('/api/tutorial-status', {
+        if (getUserId()) fetch('/api/tutorial-status', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, completed: true })
+          headers: authHeaders(),
+          body: JSON.stringify({ completed: true })
         }).catch(() => {});
       }
       localStorage.setItem('gridCardTutorialDone', '1');
@@ -2633,11 +2646,10 @@
           currentUser.preferences = currentUser.preferences || {};
           currentUser.preferences.tutorialCompleted = false;
           localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
-          const userId = getUserId();
-          if (userId) fetch('/api/tutorial-status', {
+          if (getUserId()) fetch('/api/tutorial-status', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, completed: false })
+            headers: authHeaders(),
+            body: JSON.stringify({ completed: false })
           }).catch(() => {});
         }
         localStorage.removeItem('gridCardTutorialDone');
@@ -3719,8 +3731,8 @@
       try {
         const res = await fetch('/api/change-username', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.id, password, newUsername })
+          headers: authHeaders(),
+          body: JSON.stringify({ password, newUsername })
         });
         const data = await res.json();
         if (data.success) {
@@ -3744,8 +3756,8 @@
       try {
         const res = await fetch('/api/change-password', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.id, currentPassword, newPassword })
+          headers: authHeaders(),
+          body: JSON.stringify({ currentPassword, newPassword })
         });
         const data = await res.json();
         if (data.success) {
@@ -3766,8 +3778,8 @@
       try {
         const res = await fetch('/api/delete-account', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.id, password })
+          headers: authHeaders(),
+          body: JSON.stringify({ password })
         });
         const data = await res.json();
         if (data.success) {

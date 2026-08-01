@@ -1130,10 +1130,10 @@
       
       saveBtn.disabled = true; saveBtn.textContent = '💾 Saving...';
       try {
-        const res = await fetch('/api/saveDeck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ 
-          userId: currentUser.id, 
-          deckType: currentDeckType, 
-          deckName: currentDeckName.trim(), 
+        const _token = localStorage.getItem('gridCardToken');
+        const res = await fetch('/api/saveDeck', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(_token ? { 'Authorization': 'Bearer ' + _token } : {}) }, body: JSON.stringify({
+          deckType: currentDeckType,
+          deckName: currentDeckName.trim(),
           cards: currentDeck,
           music: currentMusic,
           background: currentBackground

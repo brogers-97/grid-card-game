@@ -362,10 +362,11 @@
       if (!name || !selectedEffectId) return;
       const btn = document.getElementById('buildBtn');
       btn.disabled = true;
+      const _tok = localStorage.getItem('gridCardToken');
       fetch('/api/cardcreator/build', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, name, atk, hp, effectId: selectedEffectId })
+        headers: { 'Content-Type': 'application/json', ...(_tok ? { 'Authorization': 'Bearer ' + _tok } : {}) },
+        body: JSON.stringify({ name, atk, hp, effectId: selectedEffectId })
       }).then(r => r.json()).then(result => {
         if (!result.success) { showToast(result.error || 'Failed to build card', true); updatePreview(); return; }
         currentUser.riftGems = result.riftGems;
@@ -380,10 +381,11 @@
 
     function buildRandomCard() {
       if (!currentUser) return;
+      const _tok = localStorage.getItem('gridCardToken');
       fetch('/api/cardcreator/random', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id })
+        headers: { 'Content-Type': 'application/json', ...(_tok ? { 'Authorization': 'Bearer ' + _tok } : {}) },
+        body: JSON.stringify({})
       }).then(r => r.json()).then(result => {
         if (!result.success) { showToast(result.error || 'Failed to generate card', true); return; }
         currentUser.riftGems = result.riftGems;

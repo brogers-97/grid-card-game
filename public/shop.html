@@ -1254,11 +1254,19 @@
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
+    function getToken() {
+      return localStorage.getItem('gridCardToken') || null;
+    }
+
     async function apiPost(endpoint, data) {
+      const token = getToken();
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, userId: currentUser.id })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+        },
+        body: JSON.stringify(data)
       });
       return res.json();
     }
@@ -1369,8 +1377,10 @@
 
     async function loadShop() {
       try {
+        const token = getToken();
+        const shopHeaders = token ? { 'Authorization': 'Bearer ' + token } : {};
         const [shopRes, cardsRes] = await Promise.all([
-          fetch('/api/shop?userId=' + currentUser.id).then(r => r.json()),
+          fetch('/api/shop', { headers: shopHeaders }).then(r => r.json()),
           fetch('/api/all-cards').then(r => r.json())
         ]);
         shopData = shopRes;

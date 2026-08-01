@@ -3,6 +3,8 @@ const path = require("path");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 const { connectDB, User, CAMPAIGN_BOSSES, CARD_RARITIES, CARD_PRICES, PACKS, FACTION_NAMES, CAMPAIGN_GOLD, CAMPAIGN_GEMS, authHelpers, shopHelpers, cardCreatorHelpers, getDailyDeals, getBuyPrice, getSellPrice } = require("./database");
 const GameAI = require("./gameAI");
 
@@ -14,7 +16,41 @@ const io = new Server(server);
 connectDB();
 
 app.use(express.static(path.join(__dirname, "public")));
-app.use(express.json()); // For parsing JSON bodies
+app.use(express.json());
+
+// ── Rate limiters ──────────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15,
+  standardHeaders: true, legacyHeaders: false,
+  message: { success: false, error: 'Too many attempts, please try again in 15 minutes.' }
+});
+
+const shopLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60,
+  message: { success: false, error: 'Slow down! Too many shop requests.' }
+});
+
+// ── JWT helpers ────────────────────────────────────────────────────────────────
+function generateToken(userId, isAdmin = false) {
+  return jwt.sign({ userId, isAdmin }, process.env.JWT_SECRET, { expiresIn: '90d' });
+}
+
+function requireAuth(req, res, next) {
+  const auth = req.headers['authorization'];
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Not authenticated.' });
+  }
+  try {
+    const decoded = jwt.verify(auth.slice(7), process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    req.isAdmin = decoded.isAdmin || false;
+    next();
+  } catch {
+    return res.status(401).json({ success: false, error: 'Session expired. Please log in again.' });
+  }
+}
 
 // Redirect root to home page
 app.get("/", (req, res) => {
@@ -22,17 +58,17 @@ app.get("/", (req, res) => {
 });
 
 // REST API endpoints for auth
-app.post("/api/register", async (req, res) => {
+app.post("/api/register", authLimiter, async (req, res) => {
   try {
     const { username, password, email } = req.body;
     const user = await authHelpers.register(username, password);
-    // Save optional email if provided
     if (email && email.trim()) {
       const { User } = require('./database');
       await User.findByIdAndUpdate(user.id, { email: email.trim().toLowerCase() });
       user.email = email.trim().toLowerCase();
     }
-    res.json({ success: true, user });
+    const token = generateToken(user.id, false);
+    res.json({ success: true, user, token });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
@@ -54,49 +90,51 @@ app.post("/api/admin/reset-password", async (req, res) => {
   }
 });
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await authHelpers.login(username, password);
+    const token = generateToken(user.id, user.isAdmin || false);
+    res.json({ success: true, user, token });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/change-username", requireAuth, async (req, res) => {
+  try {
+    const { password, newUsername } = req.body;
+    const user = await authHelpers.changeUsername(req.userId, password, newUsername);
     res.json({ success: true, user });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.post("/api/change-username", async (req, res) => {
+app.post("/api/change-password", requireAuth, async (req, res) => {
   try {
-    const { userId, password, newUsername } = req.body;
-    const user = await authHelpers.changeUsername(userId, password, newUsername);
-    res.json({ success: true, user });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
-
-app.post("/api/change-password", async (req, res) => {
-  try {
-    const { userId, currentPassword, newPassword } = req.body;
-    await authHelpers.changePassword(userId, currentPassword, newPassword);
+    const { currentPassword, newPassword } = req.body;
+    await authHelpers.changePassword(req.userId, currentPassword, newPassword);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.post("/api/delete-account", async (req, res) => {
+app.post("/api/delete-account", requireAuth, async (req, res) => {
   try {
-    const { userId, password } = req.body;
-    await authHelpers.deleteAccount(userId, password);
+    const { password } = req.body;
+    await authHelpers.deleteAccount(req.userId, password);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.post("/api/tutorial-status", async (req, res) => {
+app.post("/api/tutorial-status", requireAuth, async (req, res) => {
   try {
-    const { userId, completed } = req.body;
+    const { completed } = req.body;
+    const userId = req.userId;
     console.log(`[TUTORIAL] /api/tutorial-status userId=${userId} completed=${completed}`);
     if (!userId || userId === 'admin') return res.json({ success: true });
     const user = await User.findById(userId);
@@ -112,26 +150,6 @@ app.post("/api/tutorial-status", async (req, res) => {
   }
 });
 
-// One-time admin password reset - DELETE THIS AFTER USE
-app.get("/api/reset-admin-password", async (req, res) => {
-  try {
-    const newPassword = req.query.newpass || "admin123";
-    
-    // Delete existing admin user
-    await User.deleteOne({ username: "admin" });
-    
-    // Create new admin user with specified password
-    const user = await authHelpers.register("admin", newPassword);
-    
-    res.json({ 
-      success: true, 
-      message: "Admin password reset to: " + newPassword,
-      note: "DELETE THIS ENDPOINT FROM server.js AFTER USE!"
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
 
 app.get("/api/campaign/bosses", (req, res) => {
   res.json({ bosses: CAMPAIGN_BOSSES });
@@ -167,14 +185,14 @@ app.get("/api/all-cards", (req, res) => {
 });
 
 // Fix medieval card collection - ensure user has 3 copies of each medieval card, cap all at 3
-app.post("/api/fixCollection", async (req, res) => {
+app.post("/api/fixCollection", requireAuth, async (req, res) => {
   try {
-    const { userId } = req.body;
-    
+    const userId = req.userId;
+
     if (!userId || userId === 'admin') {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
-    
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
@@ -277,10 +295,11 @@ app.post("/api/fixCollection", async (req, res) => {
 // Admin custom decks storage (in-memory, persists while server runs)
 const adminCustomDecks = [];
 
-app.post("/api/saveDeck", async (req, res) => {
+app.post("/api/saveDeck", requireAuth, async (req, res) => {
   try {
-    const { userId, deckType, deckName, cards, music, background } = req.body;
-    
+    const { deckType, deckName, cards, music, background } = req.body;
+    const userId = req.userId;
+
     // Handle admin deck saving
     if (userId === 'admin') {
       if (!deckType || !['medieval', 'void-alien', 'western-skeleton', 'crimson-court', 'jeweled-court', 'elunes-chosen', 'dragon-wizard', 'celestial-host', '8bit-battalion'].includes(deckType)) {
@@ -433,14 +452,15 @@ app.post("/api/saveDeck", async (req, res) => {
 });
 
 // Delete deck endpoint - resets to default
-app.post("/api/deleteDeck", async (req, res) => {
+app.post("/api/deleteDeck", requireAuth, async (req, res) => {
   try {
-    const { userId, deckType } = req.body;
-    
+    const { deckType } = req.body;
+    const userId = req.userId;
+
     if (!userId || userId === 'admin') {
       return res.status(400).json({ success: false, error: 'Invalid user' });
     }
-    
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
@@ -463,9 +483,9 @@ app.post("/api/deleteDeck", async (req, res) => {
 // ==================== SHOP API ROUTES ====================
 
 // Get shop data (daily deals, packs, prices, unlocked factions)
-app.get("/api/shop", async (req, res) => {
+app.get("/api/shop", requireAuth, shopLimiter, async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.userId;
     let unlockedDecks = ['medieval'];
 
     if (userId === 'admin') {
@@ -488,13 +508,11 @@ app.get("/api/shop", async (req, res) => {
 });
 
 // Buy a card from the market
-app.post("/api/shop/buy-card", async (req, res) => {
+app.post("/api/shop/buy-card", requireAuth, shopLimiter, async (req, res) => {
   try {
-    const { userId, cardKey } = req.body;
-    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+    const { cardKey } = req.body;
     if (!CARD_RARITIES[cardKey]) return res.status(400).json({ success: false, error: 'Invalid card' });
-    
-    const result = await shopHelpers.buyCard(userId, cardKey);
+    const result = await shopHelpers.buyCard(req.userId, cardKey);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -502,12 +520,10 @@ app.post("/api/shop/buy-card", async (req, res) => {
 });
 
 // Buy a daily deal
-app.post("/api/shop/buy-deal", async (req, res) => {
+app.post("/api/shop/buy-deal", requireAuth, shopLimiter, async (req, res) => {
   try {
-    const { userId, cardKey } = req.body;
-    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
-    
-    const result = await shopHelpers.buyDailyDeal(userId, cardKey);
+    const { cardKey } = req.body;
+    const result = await shopHelpers.buyDailyDeal(req.userId, cardKey);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -515,13 +531,11 @@ app.post("/api/shop/buy-deal", async (req, res) => {
 });
 
 // Buy a pack
-app.post("/api/shop/buy-pack", async (req, res) => {
+app.post("/api/shop/buy-pack", requireAuth, shopLimiter, async (req, res) => {
   try {
-    const { userId, packId, deckId } = req.body;
-    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+    const { packId, deckId } = req.body;
     if (!PACKS[packId]) return res.status(400).json({ success: false, error: 'Invalid pack' });
-
-    const result = await shopHelpers.buyPack(userId, packId, deckId);
+    const result = await shopHelpers.buyPack(req.userId, packId, deckId);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -529,13 +543,11 @@ app.post("/api/shop/buy-pack", async (req, res) => {
 });
 
 // Sell a card
-app.post("/api/shop/sell-card", async (req, res) => {
+app.post("/api/shop/sell-card", requireAuth, shopLimiter, async (req, res) => {
   try {
-    const { userId, cardKey } = req.body;
-    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
+    const { cardKey } = req.body;
     if (!CARD_RARITIES[cardKey]) return res.status(400).json({ success: false, error: 'Invalid card' });
-    
-    const result = await shopHelpers.sellCard(userId, cardKey);
+    const result = await shopHelpers.sellCard(req.userId, cardKey);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -548,12 +560,10 @@ app.get("/api/cardcreator/effects", (req, res) => {
 });
 
 // Card Creator: build a deliberate custom card
-app.post("/api/cardcreator/build", async (req, res) => {
+app.post("/api/cardcreator/build", requireAuth, async (req, res) => {
   try {
-    const { userId, name, atk, hp, effectId } = req.body;
-    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
-
-    const result = await cardCreatorHelpers.buildCard(userId, { name, atk, hp, effectId });
+    const { name, atk, hp, effectId } = req.body;
+    const result = await cardCreatorHelpers.buildCard(req.userId, { name, atk, hp, effectId });
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -561,12 +571,9 @@ app.post("/api/cardcreator/build", async (req, res) => {
 });
 
 // Card Creator: build a discounted random card
-app.post("/api/cardcreator/random", async (req, res) => {
+app.post("/api/cardcreator/random", requireAuth, async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ success: false, error: 'Not logged in' });
-
-    const result = await cardCreatorHelpers.buildRandomCard(userId);
+    const result = await cardCreatorHelpers.buildRandomCard(req.userId);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
