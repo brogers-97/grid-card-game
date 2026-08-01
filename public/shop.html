@@ -1008,73 +1008,30 @@
 
   <div class="shop-shell">
     <div class="tabs">
-      <button class="tab active" data-tab="deals">Daily Deals</button>
-      <button class="tab" data-tab="packs">Faction Packs</button>
-      <button class="tab" data-tab="exclusives">Exclusives</button>
-      <button class="tab" data-tab="blackmarket" style="color:#ef4444">🕵️ Black Market</button>
-      <button class="tab" data-tab="holo" style="color:#a78bfa">✨ Holo Upgrades</button>
-      <button class="tab" data-tab="sell">Sell Cards</button>
+      <button class="tab active" data-tab="buy">🛒 Buy Cards</button>
+      <button class="tab" data-tab="sell">💰 Sell Cards</button>
     </div>
 
     <div class="shop-main">
       <div class="tab-content-area">
 
-    <!-- DEALS TAB -->
-    <div class="tab-panel active" id="tab-deals">
-      <div class="shelves-col">
-          <div class="deal-timer-bar">
-            <span id="dealTimer">Refreshes in --:--:--</span>
-            <span style="color:#475569">• 15 discounted cards from your factions</span>
-          </div>
-          <div id="shelvesContainer">
-            <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading deals...</p></div>
-          </div>
-      </div>
-    </div><!-- end tab-deals -->
-
-    <!-- PACKS TAB -->
-    <div class="tab-panel" id="tab-packs">
-      <div class="other-tab-content">
-        <div class="section-header">Faction Packs <span class="subtitle">Buy packs from unlocked factions</span></div>
-        <div class="packs-grid" id="packsGrid">
-          <div class="loading"><div class="spinner"></div><p>Loading packs...</p></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- EXCLUSIVES TAB -->
-    <div class="tab-panel" id="tab-exclusives">
-      <div class="other-tab-content">
-        <div class="section-header">Shop Exclusives <span class="subtitle">Cards only available here!</span></div>
-        <div id="exclusivesGrid" class="sell-grid">
-          <div class="empty-state">Coming soon! Check back later for exclusive cards.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- BLACK MARKET TAB -->
-    <div class="tab-panel" id="tab-blackmarket">
+    <!-- BUY TAB -->
+    <div class="tab-panel active" id="tab-buy">
       <div class="shelves-col">
         <div class="deal-timer-bar">
-          <span id="bmTimer">Rotates in --:--:--</span>
-          <span style="color:#f87171">• 1 purchase per card per rotation • Limited rare &amp; legendary cards</span>
+          <span id="dealTimer">Deals in --:--:--</span>
+          <span style="color:#475569">•</span>
+          <span id="bmTimer" style="color:#f87171">Market in --:--:--</span>
+          <span style="color:#475569">•</span>
+          <span id="holoTimer" style="color:#a78bfa">Holos reset in --:--:--</span>
         </div>
-        <div id="bmContainer">
-          <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading black market...</p></div>
+        <div id="shelvesContainer">
+          <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading...</p></div>
         </div>
-      </div>
-    </div>
-
-    <!-- HOLO UPGRADES TAB -->
-    <div class="tab-panel" id="tab-holo">
-      <div class="shelves-col">
-        <div class="deal-timer-bar">
-          <span id="holoTimer">Refreshes in --:--:--</span>
-          <span style="color:#a78bfa">• 15 random upgrades from your collection • Resets daily at midnight</span>
-        </div>
-        <div id="holoContainer">
-          <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading holo upgrades...</p></div>
-        </div>
+        <div id="bmContainer"></div>
+        <div id="holoContainer"></div>
+        <div id="packsContainer"></div>
+        <div id="exclusivesContainer"></div>
       </div>
     </div>
 
@@ -1445,28 +1402,17 @@
     }
 
     const TAB_MSGS = {
-      deals: [
+      buy: [
         "Welcome, adventurer! Browse my finest wares...",
         "Best deals in the realm, guaranteed or your gold back!",
         "My sensors detect someone with excellent taste!",
-        "All deals expire at midnight — don't delay!",
-        "Click any card and I'll give you the full rundown!",
-        "Legends say these cards once belonged to great heroes...",
+        "Daily deals, black market finds, faction packs — it's all here!",
+        "Click any deal card and I'll tell you all about it!",
         "I've been running this shop for 3,000 cycles. Trust me.",
-        "The Legendary shelf is looking especially fine today!",
-      ],
-      packs: [
+        "Shhh... not everyone gets to see the black market shelf.",
+        "Rift Gems power the holo upgrades. Science. Probably.",
         "Faction packs — a gamble, but a thrilling one!",
-        "Each pack is sealed with my personal quality guarantee!",
-        "BEEP BOOP: probability of rare is greater than zero!",
-        "The more packs you open, the luckier you feel. Trust me.",
-        "Unlock more factions to unlock more packs!",
-      ],
-      exclusives: [
-        "These cards cannot be found anywhere else in the realm!",
-        "Exclusives — for adventurers of distinguished taste.",
-        "More exclusives are being forged in my back room...",
-        "Check back often — the selection rotates!",
+        "The black market rotates every three days. Don't sleep on it!",
       ],
       sell: [
         "Parting with old friends is never easy... but gold helps.",
@@ -1475,47 +1421,23 @@
         "Selling? Bold move. I respect it.",
         "Your cards will be well cared for, I assure you.",
       ],
-      blackmarket: [
-        "Shhh... not everyone gets to see this shelf.",
-        "These cards fell off the back of a dragon. Allegedly.",
-        "One per customer. No questions asked.",
-        "Premium goods for discerning adventurers. That means expensive.",
-        "Rotates every three days. Don't sleep on it!",
-        "My most exclusive wares. Handle with care.",
-      ],
-      holo: [
-        "A little shimmer goes a long way, don't you think?",
-        "Holo cards glow with an inner light. Very prestigious.",
-        "I've selected 15 of YOUR cards for today's upgrade offer!",
-        "The featured upgrade is especially discounted. Just for you!",
-        "Rift Gems power the holo process. Science. Probably.",
-        "These offers refresh at midnight. Don't miss your window!",
-      ],
     };
 
     const TAB_NUDGE = {
-      deals: 'Click a card to inspect it!',
-      packs: 'Click "Open Pack" to buy!',
-      exclusives: 'Nothing here yet — come back soon!',
-      blackmarket: 'One purchase per card per rotation!',
-      holo: 'Spend Rift Gems to upgrade cards to holo!',
+      buy: 'Click a deal card to inspect it!',
       sell: 'Hover a card to see the sell price!',
     };
 
     function setRobotTab(tabName) {
-      // Clear any selected deal when leaving deals tab
-      if (tabName !== 'deals' && selectedDeal) {
+      if (tabName === 'sell' && selectedDeal) {
         if (selectedDeal.el) selectedDeal.el.classList.remove('selected');
         selectedDeal = null;
         setRobotState('idle');
       }
-      // Update nudge text
       const nudge = document.getElementById('idleNudge');
-      const nudgeText = nudge.querySelector('span:last-child');
+      const nudgeText = nudge && nudge.querySelector('span:last-child');
       if (nudgeText) nudgeText.textContent = TAB_NUDGE[tabName] || '';
-
-      // Switch idle message pool and restart
-      window._currentTabMsgs = TAB_MSGS[tabName] || TAB_MSGS.deals;
+      window._currentTabMsgs = TAB_MSGS[tabName] || TAB_MSGS.buy;
       idleMsgIdx = 0;
       stopIdleLoop();
       setTimeout(startIdleLoop, 200);
@@ -1609,13 +1531,13 @@
         bmPurchased = shopData.blackMarket ? (shopData.blackMarket.purchased || []) : [];
         holoBought = [];
         renderDeals();
-        renderPacks();
-        renderExclusives();
         renderBlackMarket();
         renderHoloUpgrades();
+        renderPacks();
+        renderExclusives();
         renderSellGrid();
         updateBmTimer();
-        window._currentTabMsgs = TAB_MSGS.deals;
+        window._currentTabMsgs = TAB_MSGS.buy;
         setTimeout(startIdleLoop, 500);
       } catch (err) {
         console.error('Shop load error:', err);
@@ -1763,17 +1685,17 @@
     }
 
     function renderPacks() {
-      const grid = document.getElementById('packsGrid');
+      const container = document.getElementById('packsContainer');
       if (!shopData || !shopData.packs || !shopData.unlockedDecks) return;
       const factionNames = shopData.factionNames || {};
       const packTypes = Object.values(shopData.packs);
-      let html = '';
+      let innerHtml = '';
       for (const deckId of shopData.unlockedDecks) {
         const name = factionNames[deckId] || deckId;
-        html += `<div class="faction-packs-section"><div class="faction-pack-header">${name}</div><div class="faction-pack-row">`;
+        innerHtml += `<div class="faction-packs-section"><div class="faction-pack-header">${name}</div><div class="faction-pack-row">`;
         for (const pack of packTypes) {
           const canAfford = currentGold >= pack.price;
-          html += `
+          innerHtml += `
             <div class="pack-tile-wrap">
               <div class="pack-card">
                 <div class="pack-montage" data-deckid="${deckId}" data-rarity="${{basic:'common',premium:'rare',legendary:'legendary'}[pack.id]||'common'}"></div>
@@ -1790,9 +1712,18 @@
               </button>
             </div>`;
         }
-        html += '</div></div>';
+        innerHtml += '</div></div>';
       }
-      grid.innerHTML = html || '<div class="empty-state">Unlock factions in campaign to buy packs!</div>';
+      container.innerHTML = `
+        <div class="shelf" style="background:rgba(14,13,28,0.5);border:1px solid rgba(138,43,226,0.25);margin-bottom:18px">
+          <div class="shelf-header">
+            <span>📦</span>
+            <span class="shelf-rarity-label" style="color:#a78bfa">Faction Packs</span>
+            <span class="shelf-count-badge" style="background:rgba(138,43,226,0.15);color:#a78bfa">${shopData.unlockedDecks.length} faction${shopData.unlockedDecks.length !== 1 ? 's' : ''} available</span>
+          </div>
+          <div style="padding:4px 0 8px">${innerHtml || '<div class="empty-state">Unlock factions in campaign to buy packs!</div>'}</div>
+          <div class="shelf-board"></div>
+        </div>`;
       setTimeout(startPackMontages, 0);
     }
 
@@ -1826,33 +1757,52 @@
     }
 
     function renderExclusives() {
-      const grid = document.getElementById('exclusivesGrid');
+      const container = document.getElementById('exclusivesContainer');
+      const shelfHeader = `
+        <div class="shelf-header">
+          <span>🔮</span>
+          <span class="shelf-rarity-label" style="color:#fb923c">Shop Exclusives</span>
+          <span class="shelf-count-badge" style="color:#94a3b8;background:rgba(251,146,60,0.1)">only available here</span>
+        </div>`;
+
       if (!shopData || !shopData.exclusives || !shopData.exclusives.length) {
-        grid.innerHTML = '<div class="empty-state">🔮 Coming soon! Check back later for exclusive cards.</div>';
-        return;
-      }
-      grid.innerHTML = shopData.exclusives.map(exc => {
-        const owned = cardCollection[exc.key]||0, canAfford = currentGold>=exc.price;
-        const borderClass = exc.rarity==='rare'?' rare-border':exc.rarity==='legendary'?' legendary-border':'';
-        return `<div class="sell-card-item" onclick="toggleFlip(this,event)">
-          <div class="card-flip-inner">
-            <div class="card-front${borderClass}">
-              <img class="card-img" src="${exc.art}" alt="${exc.name}" onerror="this.style.display='none'">
-              <div class="card-name-bar"><div class="card-name">${exc.name}</div></div>
-              <div class="card-hover-overlay">
-                <div class="card-name" style="font-size:15px;margin-bottom:4px">${exc.name}</div>
-                <span class="rarity-badge ${exc.rarity}">${exc.rarity}</span>
-                <div class="owned-badge">Owned: ${owned}</div>
-                <div class="price-current" style="margin-top:6px">🪙 ${exc.price}</div>
-                <button class="buy-btn" onclick="buyExclusive('${exc.key}')" ${!canAfford?'disabled':''}>
-                  ${canAfford?'Buy':'Not enough gold'}
-                </button>
+        container.innerHTML = `
+          <div class="shelf" style="background:rgba(14,13,28,0.5);border:1px solid rgba(251,146,60,0.2);margin-bottom:18px">
+            ${shelfHeader}
+            <div class="shelf-scroll-wrap">
+              <div class="shelf-cards" style="justify-content:center;align-items:center;min-height:90px">
+                <div class="empty-state" style="padding:16px 32px">🔮 Exclusive cards coming soon — check back often!</div>
               </div>
             </div>
-            <div class="card-back">${cardBackHtml(exc)}</div>
-          </div>
-        </div>`;
+            <div class="shelf-board"></div>
+          </div>`;
+        return;
+      }
+
+      const cardsHtml = shopData.exclusives.map(exc => {
+        const owned = cardCollection[exc.key] || 0, canAfford = currentGold >= exc.price;
+        return `
+          <div class="shelf-card rarity-${exc.rarity}" onclick="buyExclusive('${exc.key}')" title="${exc.name}">
+            <img src="${exc.art}" alt="${exc.name}" onerror="this.style.display='none'">
+            ${owned > 0 ? `<div class="shelf-own-badge">×${owned}</div>` : ''}
+            <div class="shelf-card-overlay">
+              <div class="shelf-card-name">${exc.name}</div>
+              <div style="font-size:11px;color:#fbbf24;margin-top:3px">🪙 ${exc.price}</div>
+              ${!canAfford ? '<div style="font-size:10px;color:#ef4444">need gold</div>' : ''}
+            </div>
+          </div>`;
       }).join('');
+
+      container.innerHTML = `
+        <div class="shelf" style="background:rgba(14,13,28,0.5);border:1px solid rgba(251,146,60,0.2);margin-bottom:18px">
+          ${shelfHeader}
+          <div class="shelf-scroll-wrap">
+            <button class="shelf-arrow left" onclick="document.getElementById('shelf-cards-exclusives').scrollBy({left:-370,behavior:'smooth'})">‹</button>
+            <div class="shelf-cards" id="shelf-cards-exclusives">${cardsHtml}</div>
+            <button class="shelf-arrow right" onclick="document.getElementById('shelf-cards-exclusives').scrollBy({left:370,behavior:'smooth'})">›</button>
+          </div>
+          <div class="shelf-board"></div>
+        </div>`;
     }
 
     function renderSellGrid() {
