@@ -5,7 +5,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
-const { connectDB, User, CAMPAIGN_BOSSES, CARD_RARITIES, CARD_PRICES, PACKS, FACTION_NAMES, CAMPAIGN_GOLD, CAMPAIGN_GEMS, authHelpers, shopHelpers, cardCreatorHelpers, getDailyDeals, getBuyPrice, getSellPrice } = require("./database");
+const { connectDB, User, CAMPAIGN_BOSSES, CARD_RARITIES, CARD_PRICES, PACKS, FACTION_NAMES, CAMPAIGN_GOLD, CAMPAIGN_GEMS, authHelpers, shopHelpers, cardCreatorHelpers, getDailyDeals, getBlackMarket, getHoloOfferings, getBuyPrice, getSellPrice } = require("./database");
 const GameAI = require("./gameAI");
 
 const app = express();
@@ -482,25 +482,39 @@ app.post("/api/deleteDeck", requireAuth, async (req, res) => {
 
 // ==================== SHOP API ROUTES ====================
 
-// Get shop data (daily deals, packs, prices, unlocked factions)
+// Get shop data (daily deals, packs, prices, unlocked factions, black market, holo offerings)
 app.get("/api/shop", requireAuth, shopLimiter, async (req, res) => {
   try {
     const userId = req.userId;
     let unlockedDecks = ['medieval'];
+    let holoOfferings = { offerings: [], date: '' };
+    let blackMarketPurchased = [];
 
     if (userId === 'admin') {
       unlockedDecks = Object.keys(FACTION_NAMES);
     } else if (userId) {
       const user = await User.findById(userId);
-      if (user) unlockedDecks = user.unlockedDecks || ['medieval'];
+      if (user) {
+        unlockedDecks = user.unlockedDecks || ['medieval'];
+        const cardCollObj = Object.fromEntries(user.cardCollection);
+        const holoCollObj = Object.fromEntries(user.holoCollection || new Map());
+        holoOfferings = getHoloOfferings(userId.toString(), cardCollObj, holoCollObj);
+        const market = getBlackMarket();
+        const periodKey = String(market.period);
+        blackMarketPurchased = user.blackMarketPurchases ? (user.blackMarketPurchases.get(periodKey) || []) : [];
+      }
     }
+
+    const market = getBlackMarket();
 
     res.json({
       dailyDeals: getDailyDeals(),
       packs: PACKS,
       prices: CARD_PRICES,
       unlockedDecks,
-      factionNames: FACTION_NAMES
+      factionNames: FACTION_NAMES,
+      blackMarket: { ...market, purchased: blackMarketPurchased },
+      holoOfferings
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -548,6 +562,28 @@ app.post("/api/shop/sell-card", requireAuth, shopLimiter, async (req, res) => {
     const { cardKey } = req.body;
     if (!CARD_RARITIES[cardKey]) return res.status(400).json({ success: false, error: 'Invalid card' });
     const result = await shopHelpers.sellCard(req.userId, cardKey);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Buy from black market
+app.post("/api/shop/buy-black-market", requireAuth, shopLimiter, async (req, res) => {
+  try {
+    const { cardKey } = req.body;
+    const result = await shopHelpers.buyBlackMarket(req.userId, cardKey);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Buy a holo upgrade
+app.post("/api/shop/buy-holo-upgrade", requireAuth, shopLimiter, async (req, res) => {
+  try {
+    const { cardKey } = req.body;
+    const result = await shopHelpers.buyHoloUpgrade(req.userId, cardKey);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });

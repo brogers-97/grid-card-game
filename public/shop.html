@@ -861,13 +861,149 @@
     .loading { text-align: center; padding: 40px; color: #94a3b8; }
     .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(138,43,226,0.2); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── BLACK MARKET ── */
+    .bm-shelf {
+      background: linear-gradient(180deg, rgba(30,5,5,0.85) 0%, rgba(15,0,0,0.7) 100%);
+      border: 1px solid rgba(180,20,20,0.35);
+      border-radius: 10px;
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+    .bm-shelf-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      background: rgba(120,10,10,0.3);
+      border-bottom: 1px solid rgba(180,20,20,0.25);
+      font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+    }
+    .bm-rotate-badge {
+      margin-left: auto; font-size: 11px; color: #f87171;
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+      padding: 2px 8px; border-radius: 20px;
+    }
+    .bm-card {
+      position: relative; flex-shrink: 0;
+      width: 110px; aspect-ratio: 3/4;
+      border-radius: 8px; overflow: hidden;
+      cursor: pointer;
+      border: 2px solid rgba(239,68,68,0.3);
+      background: rgba(20,0,0,0.6);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .bm-card:hover:not(.bm-purchased) { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(239,68,68,0.3); }
+    .bm-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .bm-card.rarity-legendary { border-color: rgba(251,191,36,0.5); }
+    .bm-card.rarity-rare { border-color: rgba(59,130,246,0.5); }
+    .bm-limited-badge {
+      position: absolute; top: 5px; left: 5px;
+      background: rgba(239,68,68,0.85); color: #fff;
+      font-size: 9px; font-weight: 700; padding: 2px 6px;
+      border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .bm-price-badge {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.92));
+      padding: 16px 6px 6px; text-align: center;
+      font-size: 11px; font-weight: 700; color: #fbbf24;
+    }
+    .bm-card.bm-purchased { opacity: 0.45; cursor: default; }
+    .bm-purchased-overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.6); font-size: 11px; font-weight: 700;
+      color: #ef4444; letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    /* ── HOLO UPGRADES ── */
+    .holo-shelf {
+      background: linear-gradient(180deg, rgba(15,5,35,0.85) 0%, rgba(8,0,20,0.7) 100%);
+      border: 1px solid rgba(167,139,250,0.3);
+      border-radius: 10px;
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+    .holo-shelf-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      background: rgba(88,28,135,0.3);
+      border-bottom: 1px solid rgba(167,139,250,0.2);
+      font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+    }
+    .holo-card {
+      position: relative; flex-shrink: 0;
+      width: 110px; aspect-ratio: 3/4;
+      border-radius: 8px; overflow: hidden;
+      cursor: pointer;
+      border: 2px solid rgba(167,139,250,0.4);
+      background: rgba(15,5,30,0.6);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .holo-card:hover:not(.holo-bought) { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(167,139,250,0.35); }
+    .holo-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .holo-card.holo-bought { opacity: 0.4; cursor: default; }
+    @keyframes holoShimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    .holo-shimmer-overlay {
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(105deg,
+        transparent 40%, rgba(200,180,255,0.18) 50%, rgba(160,230,255,0.12) 55%, transparent 65%);
+      background-size: 200% 100%;
+      animation: holoShimmer 2.4s linear infinite;
+    }
+    .holo-gem-badge {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.92));
+      padding: 16px 6px 6px; text-align: center;
+      font-size: 11px; font-weight: 700; color: #a78bfa;
+    }
+    .holo-featured-badge {
+      position: absolute; top: 5px; right: 5px;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: #fff; font-size: 9px; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;
+    }
+    .holo-bought-overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.6); font-size: 11px; font-weight: 700;
+      color: #a78bfa; letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    /* shared shelf scroll area for bm + holo */
+    .bm-scroll-wrap, .holo-scroll-wrap {
+      position: relative;
+    }
+    .bm-cards, .holo-cards {
+      display: flex; gap: 10px; overflow-x: hidden; padding: 14px 16px;
+    }
+    .bm-board, .holo-board {
+      height: 10px;
+      background: linear-gradient(to bottom, rgba(60,20,20,0.4), transparent);
+    }
+    .holo-board { background: linear-gradient(to bottom, rgba(60,20,80,0.4), transparent); }
+    .bm-arrow, .holo-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(20,0,0,0.7); border: 1px solid rgba(239,68,68,0.3);
+      color: #f87171; width: 28px; height: 48px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; z-index: 2; transition: background 0.2s;
+    }
+    .holo-arrow { background: rgba(15,0,30,0.7); border-color: rgba(167,139,250,0.3); color: #a78bfa; }
+    .bm-arrow:hover { background: rgba(60,0,0,0.9); }
+    .holo-arrow:hover { background: rgba(40,0,60,0.9); }
+    .bm-arrow.left, .holo-arrow.left { left: 0; border-radius: 0 6px 6px 0; }
+    .bm-arrow.right, .holo-arrow.right { right: 0; border-radius: 6px 0 0 6px; }
   </style>
 </head>
 <body>
   <div class="top-bar">
     <button class="back-btn" onclick="window.location.href='/'">← Back</button>
     <div class="shop-title">🪙 Shop</div>
-    <div class="gold-display">🪙 <span id="goldAmount">0</span></div>
+    <div style="display:flex;gap:16px;align-items:center">
+      <div class="gold-display">🪙 <span id="goldAmount">0</span></div>
+      <div class="gold-display" style="color:#a78bfa;border-color:rgba(167,139,250,0.4)">💎 <span id="gemAmount">0</span></div>
+    </div>
   </div>
 
   <div class="shop-shell">
@@ -875,6 +1011,8 @@
       <button class="tab active" data-tab="deals">Daily Deals</button>
       <button class="tab" data-tab="packs">Faction Packs</button>
       <button class="tab" data-tab="exclusives">Exclusives</button>
+      <button class="tab" data-tab="blackmarket" style="color:#ef4444">🕵️ Black Market</button>
+      <button class="tab" data-tab="holo" style="color:#a78bfa">✨ Holo Upgrades</button>
       <button class="tab" data-tab="sell">Sell Cards</button>
     </div>
 
@@ -910,6 +1048,32 @@
         <div class="section-header">Shop Exclusives <span class="subtitle">Cards only available here!</span></div>
         <div id="exclusivesGrid" class="sell-grid">
           <div class="empty-state">Coming soon! Check back later for exclusive cards.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLACK MARKET TAB -->
+    <div class="tab-panel" id="tab-blackmarket">
+      <div class="shelves-col">
+        <div class="deal-timer-bar">
+          <span id="bmTimer">Rotates in --:--:--</span>
+          <span style="color:#f87171">• 1 purchase per card per rotation • Limited rare &amp; legendary cards</span>
+        </div>
+        <div id="bmContainer">
+          <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading black market...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOLO UPGRADES TAB -->
+    <div class="tab-panel" id="tab-holo">
+      <div class="shelves-col">
+        <div class="deal-timer-bar">
+          <span id="holoTimer">Refreshes in --:--:--</span>
+          <span style="color:#a78bfa">• 15 random upgrades from your collection • Resets daily at midnight</span>
+        </div>
+        <div id="holoContainer">
+          <div class="loading"><div class="spinner"></div><p style="margin-top:12px">Loading holo upgrades...</p></div>
         </div>
       </div>
     </div>
@@ -1027,7 +1191,11 @@
     let montageIntervals = [];
     let pendingCards = [], revealedCount = 0;
     let cardCollection = {};
+    let holoCollection = {};
     let currentGold = 0;
+    let currentRiftGems = 0;
+    let bmPurchased = [];
+    let holoBought = [];
 
     const PRICES = { common: 50, rare: 150, legendary: 2000 };
     const SELL_MULT = 0.4;
@@ -1234,17 +1402,22 @@
       if (stored) {
         currentUser = JSON.parse(stored);
         currentGold = currentUser.gold || 0;
+        currentRiftGems = currentUser.riftGems || 0;
         cardCollection = currentUser.cardCollection || {};
-        updateGoldDisplay();
+        holoCollection = currentUser.holoCollection || {};
+        updateCurrencyDisplay();
       } else {
         showToast('Please log in first!', 'error');
         setTimeout(() => window.location.href = '/', 1500);
       }
     }
 
-    function updateGoldDisplay() {
+    function updateCurrencyDisplay() {
       document.getElementById('goldAmount').textContent = currentGold.toLocaleString();
+      document.getElementById('gemAmount').textContent = currentRiftGems.toLocaleString();
     }
+
+    function updateGoldDisplay() { updateCurrencyDisplay(); }
 
     function showToast(msg, type = 'success') {
       const toast = document.getElementById('toast');
@@ -1302,12 +1475,30 @@
         "Selling? Bold move. I respect it.",
         "Your cards will be well cared for, I assure you.",
       ],
+      blackmarket: [
+        "Shhh... not everyone gets to see this shelf.",
+        "These cards fell off the back of a dragon. Allegedly.",
+        "One per customer. No questions asked.",
+        "Premium goods for discerning adventurers. That means expensive.",
+        "Rotates every three days. Don't sleep on it!",
+        "My most exclusive wares. Handle with care.",
+      ],
+      holo: [
+        "A little shimmer goes a long way, don't you think?",
+        "Holo cards glow with an inner light. Very prestigious.",
+        "I've selected 15 of YOUR cards for today's upgrade offer!",
+        "The featured upgrade is especially discounted. Just for you!",
+        "Rift Gems power the holo process. Science. Probably.",
+        "These offers refresh at midnight. Don't miss your window!",
+      ],
     };
 
     const TAB_NUDGE = {
       deals: 'Click a card to inspect it!',
       packs: 'Click "Open Pack" to buy!',
       exclusives: 'Nothing here yet — come back soon!',
+      blackmarket: 'One purchase per card per rotation!',
+      holo: 'Spend Rift Gems to upgrade cards to holo!',
       sell: 'Hover a card to see the sell price!',
     };
 
@@ -1375,6 +1566,35 @@
     setInterval(updateDealTimer, 1000);
     updateDealTimer();
 
+    // Black market countdown
+    function updateBmTimer() {
+      const market = shopData && shopData.blackMarket;
+      if (!market) return;
+      const diff = market.expiresAt - Date.now();
+      if (diff <= 0) { document.getElementById('bmTimer').textContent = 'Rotating now...'; return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      const parts = d > 0
+        ? `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`
+        : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      document.getElementById('bmTimer').textContent = `Rotates in ${parts}`;
+    }
+    setInterval(updateBmTimer, 1000);
+
+    // Holo daily countdown
+    function updateHoloTimer() {
+      const now = new Date(), tomorrow = new Date(now);
+      tomorrow.setHours(24,0,0,0);
+      const diff = tomorrow - now;
+      const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+      document.getElementById('holoTimer').textContent =
+        `Refreshes in ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    setInterval(updateHoloTimer, 1000);
+    updateHoloTimer();
+
     async function loadShop() {
       try {
         const token = getToken();
@@ -1386,11 +1606,15 @@
         shopData = shopRes;
         const seen = new Set();
         allCards = cardsRes.cards.filter(c => { if (seen.has(c.key)) return false; seen.add(c.key); return true; });
+        bmPurchased = shopData.blackMarket ? (shopData.blackMarket.purchased || []) : [];
+        holoBought = [];
         renderDeals();
         renderPacks();
         renderExclusives();
+        renderBlackMarket();
+        renderHoloUpgrades();
         renderSellGrid();
-        // Start robot idle loop after a short intro
+        updateBmTimer();
         window._currentTabMsgs = TAB_MSGS.deals;
         setTimeout(startIdleLoop, 500);
       } catch (err) {
@@ -1740,8 +1964,160 @@
     }
 
     function updateLocalUser() {
-      currentUser.gold=currentGold; currentUser.cardCollection=cardCollection;
-      localStorage.setItem('gridCardUser',JSON.stringify(currentUser));
+      currentUser.gold = currentGold;
+      currentUser.riftGems = currentRiftGems;
+      currentUser.cardCollection = cardCollection;
+      currentUser.holoCollection = holoCollection;
+      localStorage.setItem('gridCardUser', JSON.stringify(currentUser));
+    }
+
+    // ── BLACK MARKET ─────────────────────────────────────────────────────────
+
+    function renderBlackMarket() {
+      const container = document.getElementById('bmContainer');
+      const market = shopData && shopData.blackMarket;
+      if (!market || !market.items || !market.items.length) {
+        container.innerHTML = '<div class="empty-state">No black market items available.</div>';
+        return;
+      }
+
+      const cardsHtml = market.items.map(item => {
+        const card = findCard(item.cardKey);
+        if (!card) return '';
+        const purchased = bmPurchased.includes(item.cardKey);
+        const canAfford = currentGold >= item.price;
+        const markup = Math.round((item.price / item.basePrice - 1) * 100);
+        return `
+          <div class="bm-card rarity-${item.rarity} ${purchased ? 'bm-purchased' : ''}"
+               onclick="${purchased ? '' : `buyBlackMarket('${item.cardKey}')`}"
+               title="${card.name}">
+            <img src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
+            <div class="bm-limited-badge">LIMITED</div>
+            <div class="bm-price-badge">
+              🪙 ${item.price.toLocaleString()}
+              <span style="font-size:9px;color:${canAfford?'#fbbf24':'#ef4444'}">+${markup}%</span>
+            </div>
+            ${purchased ? '<div class="bm-purchased-overlay">PURCHASED</div>' : ''}
+          </div>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="bm-shelf">
+          <div class="bm-shelf-header">
+            <span>🕵️</span>
+            <span>Black Market</span>
+            <span style="font-size:11px;color:#94a3b8;font-family:Inter,sans-serif;font-weight:400">2 legendaries · 3 rares · one purchase per card</span>
+            <span class="bm-rotate-badge" id="bmTimerInline"></span>
+          </div>
+          <div class="bm-scroll-wrap">
+            <button class="bm-arrow left" onclick="scrollBm(-1)">‹</button>
+            <div class="bm-cards" id="bmCards">${cardsHtml}</div>
+            <button class="bm-arrow right" onclick="scrollBm(1)">›</button>
+          </div>
+          <div class="bm-board"></div>
+        </div>`;
+    }
+
+    function scrollBm(dir) {
+      const el = document.getElementById('bmCards');
+      if (el) el.scrollBy({ left: dir * 370, behavior: 'smooth' });
+    }
+
+    async function buyBlackMarket(cardKey) {
+      const item = shopData.blackMarket.items.find(i => i.cardKey === cardKey);
+      if (!item) return;
+      if (currentGold < item.price) { showToast('Not enough gold!', 'error'); return; }
+      try {
+        const result = await apiPost('/api/shop/buy-black-market', { cardKey });
+        if (result.success) {
+          currentGold = result.gold;
+          cardCollection = result.cardCollection;
+          bmPurchased.push(cardKey);
+          updateCurrencyDisplay();
+          updateLocalUser();
+          renderBlackMarket();
+          const card = findCard(cardKey);
+          showToast(`Acquired ${card ? card.name : cardKey} from the black market!`);
+        } else {
+          showToast(result.error || 'Purchase failed', 'error');
+        }
+      } catch { showToast('Purchase failed', 'error'); }
+    }
+
+    // ── HOLO UPGRADES ────────────────────────────────────────────────────────
+
+    function renderHoloUpgrades() {
+      const container = document.getElementById('holoContainer');
+      const holo = shopData && shopData.holoOfferings;
+      if (!holo || !holo.offerings || !holo.offerings.length) {
+        container.innerHTML = `<div class="empty-state">
+          No holo upgrades available today.<br>
+          <span style="font-size:12px;color:#64748b">You need cards in your collection to see offerings here.</span>
+        </div>`;
+        return;
+      }
+
+      const cardsHtml = holo.offerings.map(offering => {
+        const card = findCard(offering.cardKey);
+        if (!card) return '';
+        const bought = holoBought.includes(offering.cardKey);
+        const canAfford = currentRiftGems >= offering.gemCost;
+        return `
+          <div class="holo-card ${bought ? 'holo-bought' : ''}"
+               onclick="${bought ? '' : `buyHoloUpgrade('${offering.cardKey}')`}"
+               title="${card.name}">
+            <img src="${card.art}" alt="${card.name}" onerror="this.style.display='none'">
+            <div class="holo-shimmer-overlay"></div>
+            ${offering.featured ? '<div class="holo-featured-badge">⭐ FEATURED</div>' : ''}
+            <div class="holo-gem-badge">
+              💎 ${offering.gemCost}
+              ${offering.featured ? '<span style="font-size:9px;color:#22c55e">−20%</span>' : ''}
+              ${!canAfford && !bought ? '<br><span style="font-size:9px;color:#ef4444">need gems</span>' : ''}
+            </div>
+            ${bought ? '<div class="holo-bought-overlay">UPGRADED</div>' : ''}
+          </div>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="holo-shelf">
+          <div class="holo-shelf-header">
+            <span>✨</span>
+            <span>Today's Holo Upgrades</span>
+            <span style="font-size:11px;color:#94a3b8;font-family:Inter,sans-serif;font-weight:400">From your collection · common 75 · rare 200 · legendary 500 gems</span>
+          </div>
+          <div class="holo-scroll-wrap">
+            <button class="holo-arrow left" onclick="scrollHolo(-1)">‹</button>
+            <div class="holo-cards" id="holoCards">${cardsHtml}</div>
+            <button class="holo-arrow right" onclick="scrollHolo(1)">›</button>
+          </div>
+          <div class="holo-board"></div>
+        </div>`;
+    }
+
+    function scrollHolo(dir) {
+      const el = document.getElementById('holoCards');
+      if (el) el.scrollBy({ left: dir * 370, behavior: 'smooth' });
+    }
+
+    async function buyHoloUpgrade(cardKey) {
+      const offering = shopData.holoOfferings.offerings.find(o => o.cardKey === cardKey);
+      if (!offering) return;
+      if (currentRiftGems < offering.gemCost) { showToast('Not enough Rift Gems!', 'error'); return; }
+      try {
+        const result = await apiPost('/api/shop/buy-holo-upgrade', { cardKey });
+        if (result.success) {
+          currentRiftGems = result.riftGems;
+          holoCollection = result.holoCollection;
+          holoBought.push(cardKey);
+          updateCurrencyDisplay();
+          updateLocalUser();
+          renderHoloUpgrades();
+          const card = findCard(cardKey);
+          showToast(`✨ ${card ? card.name : cardKey} upgraded to holo! (−${result.gemCost} gems)`);
+        } else {
+          showToast(result.error || 'Upgrade failed', 'error');
+        }
+      } catch { showToast('Upgrade failed', 'error'); }
     }
 
     function showPackModal(cards) {

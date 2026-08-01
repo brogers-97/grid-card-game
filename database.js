@@ -159,6 +159,20 @@ const userSchema = new mongoose.Schema({
     type: Map,
     of: mongoose.Schema.Types.Mixed,
     default: () => new Map()
+  },
+
+  // Black market purchases: rotation-period-number -> [cardKey, ...]
+  blackMarketPurchases: {
+    type: Map,
+    of: [String],
+    default: () => new Map()
+  },
+
+  // Holo upgrade purchases: 'YYYY-MM-DD' -> [cardKey, ...]
+  holoUpgradePurchases: {
+    type: Map,
+    of: [String],
+    default: () => new Map()
   }
 });
 
@@ -1785,6 +1799,79 @@ function getDailyDeals() {
   return deals;
 }
 
+// Black market: 2 legendaries + 3 rares, rotates every 3 days, same for all players
+function getBlackMarket() {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysSinceEpoch = Math.floor(Date.now() / msPerDay);
+  const period = Math.floor(daysSinceEpoch / 3);
+
+  let rng = period * 7919 + 31337;
+  function seededRandom() {
+    rng = (rng * 1103515245 + 12345) & 0x7fffffff;
+    return rng / 0x7fffffff;
+  }
+
+  const allCards = Object.keys(CARD_RARITIES);
+  const usedCards = new Set();
+  const items = [];
+  const slots = ['legendary', 'legendary', 'rare', 'rare', 'rare'];
+
+  for (const rarity of slots) {
+    const pool = allCards.filter(c => CARD_RARITIES[c] === rarity && !usedCards.has(c));
+    if (!pool.length) continue;
+    const card = pool[Math.floor(seededRandom() * pool.length)];
+    usedCards.add(card);
+    const basePrice = getBuyPrice(card);
+    const markup = Math.floor(seededRandom() * 31) + 130; // 130–160% of normal
+    items.push({ cardKey: card, rarity, price: Math.floor(basePrice * markup / 100), basePrice, period });
+  }
+
+  const expiresAt = (period + 1) * 3 * msPerDay;
+  return { items, period, expiresAt };
+}
+
+// Holo upgrades: 15 random upgradeable cards from a user's own collection, daily per-user
+function getHoloOfferings(userIdStr, cardCollection, holoCollection) {
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0, 10);
+
+  const userSeed = userIdStr.split('').reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) | 0, 0);
+  const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  let rng = Math.abs(userSeed + dateSeed) || 12345;
+
+  function seededRandom() {
+    rng = (rng * 1103515245 + 12345) & 0x7fffffff;
+    return rng / 0x7fffffff;
+  }
+
+  // Cards the player owns ≥1 copy of, and has fewer than 3 holo copies
+  const eligible = Object.entries(cardCollection)
+    .filter(([key, count]) => count > 0 && CARD_RARITIES[key] && (holoCollection[key] || 0) < 3)
+    .map(([key]) => key);
+
+  if (!eligible.length) return { offerings: [], date: dateStr };
+
+  // Seeded shuffle
+  const shuffled = [...eligible];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  const picked = shuffled.slice(0, 15);
+  const gemCosts = { common: 75, rare: 200, legendary: 500 };
+  const featuredIdx = Math.floor(seededRandom() * picked.length);
+
+  const offerings = picked.map((cardKey, i) => {
+    const rarity = CARD_RARITIES[cardKey] || 'common';
+    const base = gemCosts[rarity];
+    const featured = i === featuredIdx;
+    return { cardKey, rarity, gemCost: featured ? Math.floor(base * 0.8) : base, featured };
+  });
+
+  return { offerings, date: dateStr };
+}
+
 // Open a pack - returns array of card keys
 function openPack(packId, deckId) {
   const pack = PACKS[packId];
@@ -1911,6 +1998,72 @@ const shopHelpers = {
     return { success: true, gold: user.gold, sellPrice: sellPrice, cardCollection: Object.fromEntries(user.cardCollection) };
   },
   
+  async buyBlackMarket(userId, cardKey) {
+    if (userId === 'admin') return { success: true, gold: 99999, cardCollection: {} };
+
+    const market = getBlackMarket();
+    const item = market.items.find(i => i.cardKey === cardKey);
+    if (!item) throw new Error('Card not available in black market this rotation');
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const periodKey = String(market.period);
+    const purchased = user.blackMarketPurchases ? (user.blackMarketPurchases.get(periodKey) || []) : [];
+    if (purchased.includes(cardKey)) throw new Error('Already purchased this card in the current rotation');
+
+    if (user.gold < item.price) throw new Error('Not enough gold');
+
+    user.gold -= item.price;
+    user.cardCollection.set(cardKey, (user.cardCollection.get(cardKey) || 0) + 1);
+    if (!user.blackMarketPurchases) user.blackMarketPurchases = new Map();
+    user.blackMarketPurchases.set(periodKey, [...purchased, cardKey]);
+    user.markModified('blackMarketPurchases');
+
+    await user.save();
+    return { success: true, gold: user.gold, cardCollection: Object.fromEntries(user.cardCollection) };
+  },
+
+  async buyHoloUpgrade(userId, cardKey) {
+    if (userId === 'admin') return { success: true, riftGems: 99999, holoCollection: {}, gemCost: 0 };
+
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const cardCollObj = Object.fromEntries(user.cardCollection);
+    const holoCollObj = Object.fromEntries(user.holoCollection || new Map());
+    const { offerings, date } = getHoloOfferings(userId.toString(), cardCollObj, holoCollObj);
+
+    const offering = offerings.find(o => o.cardKey === cardKey);
+    if (!offering) throw new Error("Card not in today's holo offerings");
+
+    const purchased = user.holoUpgradePurchases ? (user.holoUpgradePurchases.get(date) || []) : [];
+    if (purchased.includes(cardKey)) throw new Error('Already upgraded this card today');
+
+    if ((user.cardCollection.get(cardKey) || 0) < 1) throw new Error("You don't own this card");
+
+    const holoCount = (user.holoCollection || new Map()).get(cardKey) || 0;
+    if (holoCount >= 3) throw new Error('Already have max holo copies of this card');
+
+    if ((user.riftGems || 0) < offering.gemCost) throw new Error('Not enough Rift Gems');
+
+    user.riftGems -= offering.gemCost;
+    if (!user.holoCollection) user.holoCollection = new Map();
+    user.holoCollection.set(cardKey, holoCount + 1);
+    if (!user.holoUpgradePurchases) user.holoUpgradePurchases = new Map();
+    user.holoUpgradePurchases.set(date, [...purchased, cardKey]);
+    user.markModified('holoUpgradePurchases');
+    user.markModified('holoCollection');
+
+    await user.save();
+    return {
+      success: true,
+      riftGems: user.riftGems,
+      holoCollection: Object.fromEntries(user.holoCollection),
+      gemCost: offering.gemCost
+    };
+  },
+
   async addGold(userId, amount) {
     if (userId === 'admin') return { success: true, gold: 99999 };
 
@@ -2038,6 +2191,8 @@ module.exports = {
   shopHelpers,
   cardCreatorHelpers,
   getDailyDeals,
+  getBlackMarket,
+  getHoloOfferings,
   getBuyPrice,
   getSellPrice
 };
